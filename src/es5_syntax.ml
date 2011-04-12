@@ -1,6 +1,6 @@
 open Prelude
 
-type attr =
+type pattr =
   | Value
   | Getter
   | Setter
@@ -16,49 +16,23 @@ let string_of_attr attr = match attr with
   | Writable -> "#writable"
   | Enum -> "#enum"
 
-(* Borrowed from prelude *)
-module AttrOrderedType = struct
-  type t = attr
-  let compare = Pervasives.compare
-end
-
-module AttrMap = Map.Make (AttrOrderedType)
-
-type op1 = 
-  | Op1Prefix of id
-  | Prim1 of string
-
-type op2 = 
-  | Op2Infix of id
-  | Prim2 of string
-
-type op3 =
-  | Op3Prefix of id
-  | Prim3 of string
-
 type exp =
   | EConst of pos * JavaScript_syntax.const
   | EId of pos * id
-  | EObject of pos * (string * exp) list *
-      (string * (attr * exp) list) list
-      (** object, field, new value, args object *)
-  | EUpdateFieldSurface of pos * exp * exp * exp * exp
-      (** object, field, args object *)
-  | EGetFieldSurface of pos * exp * exp * exp
-  | EAttr of pos * attr * exp * exp
-  | ESetAttr of pos * attr * exp * exp * exp
-  | EUpdateField of pos * exp * exp * exp * exp * exp
-  | EGetField of pos * exp * exp * exp * exp
+  | EObject of pos * attrs * (string * prop) list
+  | EGetAttr of pos * pattr * exp * exp
+  | ESetAttr of pos * pattr * exp * exp * exp
+  | EGetField of pos * exp * exp
+  | ESetField of pos * exp * exp * exp
   | EDeleteField of pos * exp * exp
-  | ESet of pos * id * exp
-  | EOp1 of pos * op1 * exp
-  | EOp2 of pos * op2 * exp * exp
-  | EOp3 of pos * op3 * exp * exp * exp
+  | ESetBang of pos * id * exp
+  | EOp1 of pos * string * exp
+  | EOp2 of pos * string * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
   | ESeq of pos * exp * exp
   | ELet of pos * id * exp * exp
-  | EFix of pos * id * exp
+  | ERec of pos * id * exp * exp
   | ELabel of pos * id * exp
   | EBreak of pos * id * exp
   | ETryCatch of pos * exp * exp
@@ -66,6 +40,48 @@ type exp =
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
   | ELambda of pos * id list * exp
+and prop =
+  | Data of 
+      {value : exp;
+       writable : bool;
+       configurable : bool;
+       enumerable : bool; }
+  | Accessor of 
+      {getter : exp option;
+       setter : exp option;
+       configurable : bool;
+       enumerable : bool; }
+  | Generic of
+      {configurable : bool;
+       enumerable : bool; }
+and attrs =
+    { code : exp option;
+      proto : exp option;
+      klass : string;
+      extensible : bool; }
+
+(* Some useful defaults for these things, to avoid typing too much *)
+let d_attrs = 
+  { code = None;
+    proto = Some (ENull nopos);
+    klass = "Object";
+    extensible = true; }
+
+let d_data =
+  { value = EUndefined nopos;
+    writable = true;
+    configurable = true;
+    enumerable = true; }
+
+let d_accessor = 
+  { getter = None;
+    setter = None;
+    configurable = true;
+    extensible = true; }
+
+let d_generic = 
+  { configurable = true;
+    extensible = true; }
 
 (******************************************************************************)
 
@@ -113,7 +129,6 @@ let rename (x : id) (y : id) (exp : exp) : exp =
         if List.mem x args then exp
         else ELambda (p, args, ren body)
   in ren exp
-
 
 let rec fv (exp : exp) : IdSet.t = match exp with
   | EConst _ -> IdSet.empty
