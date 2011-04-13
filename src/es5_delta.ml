@@ -1,60 +1,46 @@
 open Prelude
 open Es5_syntax
-open JavaScript_syntax
 open Es5_values
 
-let undef = Const JavaScript_syntax.CUndefined
+let undef = Undefined
+let null = Null
+let str s = String s
+let num f = Num f
 
-let str s = Const (JavaScript_syntax.CString s)
-
-let num f = Const (JavaScript_syntax.CNum f)
-
-let bool b = Const (JavaScript_syntax.CBool b)
-
-let get_const v = match v with
-  | Const c -> c
-  | _ -> raise (Throw (str "expected primtive constant"))
+let bool b = match b with
+  | true -> True
+  | false -> False
 
 let to_int v = match v with
-  | Const (CInt n) -> n
-  | Const (CNum x) -> int_of_float x
-  | _ -> raise (Throw (str ("expected number, got " ^ pretty_value v)))
-
-let to_float v = match v with
-  | Const (CInt n) -> float_of_int n
-  | Const (CNum x) -> x
+  | Num x -> int_of_float x
   | _ -> raise (Throw (str ("expected number, got " ^ pretty_value v)))
 
 let typeof v = str begin match v with
-  | Const c -> begin match c with
-      | CUndefined -> "undefined"
-      | CNull -> "null"
-      | CString _ -> "string"
-      | CNum _ -> "number"
-      | CInt _ -> "number"
-      | CBool _ -> "boolean"
-    end
-  | ObjCell _ -> "object"
+  | Undefined -> "undefined"
+  | Null -> "null"
+  | String _ -> "string"
+  | Num _ -> "number"
+  | True 
+  | False -> "boolean"
+  | ObjCell o -> begin match !o with
+      | ({ code = Some cexp }, _) -> "function"
+      | _ -> "object"
+  end
   | Closure _ -> "lambda"
 end
 
-let surface_typeof v = str begin match v with
-  | Const c -> begin match c with
-      | CUndefined -> "undefined"
-      | CNull -> "null"
-      | CString _ -> "string"
-      | CNum _ -> "number"
-      | CInt _ -> "number"
-      | CBool _ -> "boolean"
-    end
-  | ObjCell o -> let (attrs, _) = !o in
-      if (IdMap.mem "code" attrs) then "function" else "object"
-  | _ -> raise (Throw (str "surface_typeof"))
+let surface_typeof v = begin match v with
+  | Closure _ -> raise (Throw (str "surface_typeof got lambda"))
+  | _ -> typeof v
 end
   
 let is_primitive v = match v with
-  | Const _ -> Const (CBool true)
-  | _ -> Const (CBool false)
+  | Undefined 
+  | Null
+  | String _
+  | Num _
+  | True | False -> True
+  | _ -> False
 
 let float_str n = 
   if n == nan then "NaN"
@@ -67,83 +53,70 @@ let float_str n =
 
 
 let prim_to_str v = str begin match v with
-  | Const c -> begin match c with
-      | CUndefined -> "undefined"
-      | CNull -> "null"
-      | CString s -> s
-      | CNum n -> float_str n
-      | CInt n -> string_of_int n
-      | CBool b -> string_of_bool b
-    end
+  | Undefined -> "undefined"
+  | Null -> "null"
+  | String s -> s
+  | Num n -> float_str n
+  | True -> "true"
+  | False -> "false"
   | _ -> raise (Throw (str "prim_to_str"))
 end
 
 (* Section 9.3, excluding objects *)
 let prim_to_num v = num begin match v with
-  | Const c -> begin match c with
-      | CUndefined -> nan 
-      | CNull -> 0.0
-      | CBool true -> 1.0
-      | CBool false -> 0.0
-      | CNum x -> x
-      | CInt n -> float_of_int n
-      | CString s -> begin try float_of_string s
-        with Failure _ -> nan end
-    end
+  | Undefined -> nan 
+  | Null -> 0.0
+  | True -> 1.0
+  | False -> 0.0
+  | Num x -> x
+  | String s -> begin try float_of_string s
+    with Failure _ -> nan end
   | _ -> raise (Throw (str "prim_to_str"))
 end
   
 let prim_to_bool v = bool begin match v with
-  | Const c -> begin match c with
-      | CBool b -> b
-      | CUndefined -> false
-      | CNull -> false
-      | CNum x -> not (x == nan || x = 0.0 || x = -0.0)
-      | CInt n -> not (n = 0)
-      | CString s -> not (String.length s = 0)
-    end
+  | True -> true
+  | False -> false
+  | Undefined -> false
+  | Null -> false
+  | Num x -> not (x == nan || x = 0.0 || x = -0.0)
+  | String s -> not (String.length s = 0)
   | _ -> true
 end
 
 let is_callable obj = bool begin match obj with
-  | ObjCell o -> let (attrs, props) = !o in begin try
-      match IdMap.find "code" attrs with
-	| Closure c -> true
-	| _ -> false
-    with Not_found -> false
-    end
+  | ObjCell o -> begin match !o with
+      | ({ code = Some (Closure c); }, _) -> true
+      | _ -> false
+  end
   | _ -> false
 end
 
 let print v = match v with
-  | Const (CString s) -> 
-      printf "%S\n" s; Const CUndefined
+  | String s -> 
+      printf "%S\n" s; Undefined
   | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
 
 let is_extensible obj = match obj with
-  | ObjCell o ->
-      let (attrs, props) = !o in begin try
-	  bool (IdMap.find "extensible" attrs =
-	      bool true)
-	with Not_found -> bool false
-	end
+  | ObjCell o -> begin match !o with
+      | ({ extensible = true; }, _) -> True
+      | _ -> False
+  end
   | _ -> raise (Throw (str "is-extensible"))
 
 let prevent_extensions obj = match obj with
-  | ObjCell o ->
+  | ObjCell o -> 
       let (attrs, props) = !o in begin
-	  o := (IdMap.add "extensible" (bool false) attrs, props);
+	  o := ({attrs with extensible = true}, props);
 	  obj
 	end
   | _ -> raise (Throw (str "prevent-extensions"))
       
 
 let get_proto obj = match obj with
-  | ObjCell o -> 
-      let (attrs, _) = !o in begin try
-	  IdMap.find "proto" attrs
-	with Not_found -> undef
-	end
+  | ObjCell o -> begin match !o with 
+      | ({ proto = pvalue; }, _) -> pvalue
+  end
   | _ -> raise (Throw (str "get-proto"))
 
 
@@ -162,68 +135,64 @@ let rec get_property_names obj = match obj with
       let name_list= IdSet.elements name_set in
       let prop_folder num name props = 
 	IdMap.add (string_of_int num) 
-	  (AttrMap.add Value (Const (CString name)) AttrMap.empty) props in
+          (Data ({ value = String name; writable = false; }, false, false))
+          props in
       let name_props = List.fold_right2 prop_folder 
         (iota (List.length name_list))
         name_list
         IdMap.empty in
-        ObjCell (ref (IdMap.empty, name_props))
+        ObjCell (ref (d_attrsv, name_props))
   | _ -> raise (Throw (str "get-property-names"))
 
 and all_protos o = 
   match o with
-    | ObjCell c ->
-	let (attrs, props) = !c in begin try
-	    let proto = (IdMap.find "proto" attrs) in
-	      proto::(all_protos proto)
-	  with Not_found -> []
-	  end
+    | ObjCell c -> begin match !c with 
+        | ({ proto = pvalue; }, _) -> pvalue::(all_protos pvalue)
+    end
     | _ -> []
 
-and enum prop = AttrMap.mem Enum prop && 
-  (AttrMap.find Enum prop = Const (CBool true))
+and enum prop = match prop with
+  | Accessor (_, b, _)
+  | Generic (b, _)
+  | Data (_, b, _) -> b
 
 let get_own_property_names obj = match obj with
   | ObjCell o ->
       let (_, props) = !o in
       let add_name n x m = 
-	IdMap.add (string_of_int x) (AttrMap.add Value (str n) AttrMap.empty) m in
+	IdMap.add (string_of_int x) 
+          (Data ({ value = String n; writable = false; }, false, false)) 
+          m in
       let namelist = IdMap.fold (fun k v l -> (k :: l)) props [] in
       let props = 
 	List.fold_right2 add_name namelist (iota (List.length namelist)) IdMap.empty
       in
-	ObjCell (ref (IdMap.empty, props))
+	ObjCell (ref (d_attrsv, props))
   | _ -> raise (Throw (str "own-property-names"))
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
 let object_to_string obj = match obj with
-  | ObjCell o -> let (attrs, props) = !o in begin try
-      match IdMap.find "class" attrs with
-	| Const (CString s) -> str ("[object " ^ s ^ "]")
-	| _ -> raise (Throw (str "object-to-string, class wasn't a string"))	
-    with Not_found -> raise (Throw (str "object-to-string, didn't find class"))
-    end
+  | ObjCell o -> begin match !o with
+      | ({ klass = s }, _) -> str ("[object " ^ s ^ "]")
+  end
   | _ -> raise (Throw (str "object-to-string, wasn't given object"))	
 
 let is_array obj = match obj with
-  | ObjCell o -> let (attrs, props) = !o in begin try
-      match IdMap.find "class" attrs with
-	| Const (CString "Array") -> Const (CBool true)
-	| _ -> Const (CBool false)
-    with Not_found -> raise (Throw (str "is-array"))
+  | ObjCell o -> begin match !o with
+      | ({ klass = "Array"; }, _) -> True
+      | _ -> False
     end
   | _ -> raise (Throw (str "is-array"))	
 
 
 let to_int32 v = match v with
-  | Const (CInt d) -> v
-  | Const (CNum d) -> Const (CInt (int_of_float d))
+  | Num d -> Num (float_of_int (int_of_float d))
   | _ -> raise (Throw (str "to-int"))
 
 let fail v = match v with
-  | Fail _ -> Const (CBool true)
-  | _ -> Const (CBool false)
+  | Fail _ -> True
+  | _ -> False
 
 let op1 op = match op with
   | "typeof" -> typeof
@@ -246,11 +215,9 @@ let op1 op = match op with
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with
-  | Const (CInt m), Const (CInt n) -> Const (CInt (i_op m n))
-  | Const (CNum x), Const (CNum y) -> Const (CNum (f_op x y))
-  | Const (CNum x), Const (CInt n) -> Const (CNum (f_op x (float_of_int n)))
-  | Const (CInt m), Const (CNum y) -> Const (CNum (f_op (float_of_int m) y))
-  | _ -> raise (Throw (str "arithmetic operator"))
+  | Num x, Num y -> Num (f_op x y)
+  | _ -> raise (Throw (str ("arithmetic operator got non-numbers, " ^
+                              "perhaps something wasn't desugared fully?")))
 
 let arith_sum = arith (+) (+.)
 
@@ -260,82 +227,73 @@ let arith_sub = arith (-) (-.)
 let arith_mul = arith (fun m n -> m * n) (fun x y -> x *. y)
 
 let arith_div x y = try arith (/) (/.) x y
-with Division_by_zero -> Const (CNum infinity)
+with Division_by_zero -> Num infinity
 
 let arith_mod x y = try arith (mod) mod_float x y
-with Division_by_zero -> Const (CNum nan)
+with Division_by_zero -> Num nan
 
-let arith_lt x y = bool (to_float x < to_float y)
+let arith_lt x y = bool (x < y)
 
-let arith_le x y = bool (to_float x <= to_float y)
+let arith_le x y = bool (x <= y)
 
-let arith_gt x y = bool (to_float x > to_float y)
+let arith_gt x y = bool (x > y)
 
-let arith_ge x y = bool (to_float x >= to_float y)
+let arith_ge x y = bool (x >= y)
 
-let bitwise_and v1 v2 = Const (CInt ((to_int v1) land (to_int v2)))
+let bitwise_and v1 v2 = Num (float_of_int ((to_int v1) land (to_int v2)))
 
-let bitwise_or v1 v2 = Const (CInt ((to_int v1) lor (to_int v2)))
+let bitwise_or v1 v2 = Num (float_of_int ((to_int v1) lor (to_int v2)))
 
-let bitwise_xor v1 v2 = Const (CInt ((to_int v1) lxor (to_int v2)))
+let bitwise_xor v1 v2 = Num (float_of_int ((to_int v1) lxor (to_int v2)))
 
-let bitwise_shiftl v1 v2 = Const (CInt ((to_int v1) lsl (to_int v2)))
+let bitwise_shiftl v1 v2 = Num (float_of_int ((to_int v1) lsl (to_int v2)))
 
-let bitwise_zfshiftr v1 v2 = Const (CInt ((to_int v1) lsr (to_int v2)))
+let bitwise_zfshiftr v1 v2 = Num (float_of_int ((to_int v1) lsr (to_int v2)))
 
-let bitwise_shiftr v1 v2 = Const (CInt ((to_int v1) asr (to_int v2)))
+let bitwise_shiftr v1 v2 = Num (float_of_int ((to_int v1) asr (to_int v2)))
 
 let string_plus v1 v2 = match v1, v2 with
-  | Const (CString s1), Const (CString s2) ->
-      Const (CString (s1 ^ s2))
+  | String s1, String s2 ->
+      String (s1 ^ s2)
   | _ -> raise (Throw (str "string concatenation"))
 
 let stx_eq v1 v2 = bool begin match v1, v2 with
-  | Const (CNum x1), Const (CInt x2) 
-  | Const (CInt x2), Const (CNum x1) -> 
-      float_of_int x2 = x1
-  | Const c1, Const c2 -> c1 = c2 (* syntactic on primitives *)
+  | Num x1, Num x2 -> x1 = x2
+  | String x1, String x2 -> x1 = x2
+  | Undefined, Undefined -> true
+  | Null, Null -> true
+  | True, True -> true
+  | False, False -> true
   | _ -> v1 == v2 (* otherwise, pointer equality *)
 end
 
 (* Algorithm 11.9.3, steps 1 through 19. Steps 20 and 21 are desugared to
    access the heap. *)
 let abs_eq v1 v2 = bool begin
-  let c1 = get_const v1 in
-  let c2 = get_const v2 in
-    if c1 = c2 then (* works correctly on floating point values *)
-      true
-    else match c1, c2 with
-      | CNull, CUndefined
-      | CUndefined, CNull -> true
-      | CString s, CNum x
-      | CNum x, CString s ->
+  if v1 = v2 then (* works correctly on floating point values *)
+    true
+  else match v1, v2 with
+    | Null, Undefined
+    | Undefined, Null -> true
+    | String s, Num x
+    | Num x, String s ->
           (try x = float_of_string s with Failure _ -> false)
-      | CString s, CInt n
-      | CInt n, CString s ->
-          (try float_of_int n = float_of_string s with Failure _ -> false)
-      | CNum x, CBool b
-      | CBool b, CNum x -> x = (if b then 1.0 else 0.0)
-      | CInt n, CBool b
-      | CBool b, CInt n -> n = (if b then 1 else 0)
-      | CNum x1, CInt x2
-      | CInt x2, CNum x1 -> float_of_int x2 = x1
-      | _ -> false
+    | Num x, True | True, Num x -> x = 1.0
+    | Num x, False | False, Num x -> x = 0.0
+    | _ -> false
+(* TODO: are these all the cases? *)
 end
 
 let rec has_property obj field = match obj, field with
-  | ObjCell o, Const (CString s) ->
-      let (attrs, props) = !o in
+  | ObjCell o, String s -> begin match !o, s with
+      ({ proto = pvalue; }, props), s ->
         if (IdMap.mem s props) then bool true
-        else begin try
-          let proto = IdMap.find "proto" attrs in
-            has_property proto field 
-        with Not_found -> bool false
-        end
+        else has_property pvalue field
+  end
   | _ -> bool false
 
 let has_own_property obj field = match obj, field with
-  | ObjCell o, Const (CString s) -> 
+  | ObjCell o, String s -> 
       let (attrs, props) = !o in
         bool (IdMap.mem s props)
   | _ -> raise (Throw (str "has-own-property?"))

@@ -1,6 +1,5 @@
 open Prelude
 open Es5_syntax
-open JavaScript_syntax
 open Es5_values
 open Es5_delta
 
@@ -252,7 +251,7 @@ let rec eval exp env = match exp with
 	IdMap.add name (fold_left eval_prop_attr AttrMap.empty attrs) m in
 	ObjCell (ref (fold_left eval_obj_attr IdMap.empty attrs,
 		      fold_left eval_prop IdMap.empty props))
-  | EUpdateFieldSurface (p, obj, f, v, args) ->
+  | EUpdateField (p, obj, f, v, args) ->
       let obj_value = eval obj env in
       let f_value = eval f env in
       let v_value = eval v env in
@@ -267,7 +266,7 @@ let rec eval exp env = match exp with
 	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
 			   ^ string_of_position p)
 	end
-  | EGetFieldSurface (p, obj, f, args) ->
+  | EGetField (p, obj, f, args) ->
       let obj_value = eval obj env in
       let f_value = eval f env in 
       let args_value = eval args env in begin

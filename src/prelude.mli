@@ -8,6 +8,7 @@ module Pos : sig
   val before : t -> t -> bool
 end
 
+val dummy_pos : pos
 
 module IntSet : Set.S
   with type elt = int
