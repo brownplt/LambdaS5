@@ -1,6 +1,7 @@
 {
   open Printf
   open Lexing
+  open Prelude
 
   open Json_type
   open Json_parser
@@ -29,13 +30,13 @@
       if big_int_mode then STRING s
       else raise (Json_error (s ^ " is too large for OCaml's type int"))
 
-  let utf8_of_point i =
-    Netconversion.ustring_of_uchar `Enc_utf8 i
+  let utf8_of_point i = failwith "utf8_of_point not implemented"
+ (*   Netconversion.ustring_of_uchar `Enc_utf8 i *)
 
   let custom_error descr lexbuf =
     raise (Json_error 
 	     (sprintf "%s:\n%s"
-		(string_of_loc (loc lexbuf))
+		(string_of_position (loc lexbuf))
 		descr))
 
   let lexer_error descr lexbuf =

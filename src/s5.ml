@@ -3,10 +3,10 @@ open Es5_eval
 module S5 = struct
 
   open Format
-    
-  module L = Json_parser
+  open SpiderMonkey
     
   let main () : unit =
+    let ast = parse_spidermonkey stdin "stdin" in
     printf "Hello, world\n"
 
 end;;
