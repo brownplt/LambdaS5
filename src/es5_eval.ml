@@ -241,12 +241,31 @@ let rec eval exp env = match exp with
 	failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
 		    (string_of_position p))
     end
-  | S.Object (p, attrs, props) ->
-      let eval_obj_attr m (name, e) = IdMap.add name (eval e env) m in
-      let eval_prop_attr m (name, e) = AttrMap.add name (eval e env) m in
-      let eval_prop m (name, attrs) = 
-	IdMap.add name (fold_left eval_prop_attr AttrMap.empty attrs) m in
-	ObjCell (ref (fold_left eval_obj_attr IdMap.empty attrs,
+  | S.Object (p, attrs, props) -> 
+    let attrsv = match attrs with
+      | { S.proto = protoexp;
+          S.code = codexp;
+          S.extensible = ext;
+          S.klass = kls; } ->
+        { proto = (match protoexp with 
+          | Some pexp -> eval pexp env 
+          | None -> Undefined);
+          code = (match codexp with
+            | Some cexp -> Some (eval cexp env)
+            | None -> None);
+          extensible = ext;
+          klass = kls} 
+    in
+    let eval_prop prop = match prop with
+      | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
+        Data ({ value = eval vexp env; writable = w; }, enum, config)
+      | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
+        Accessor ({ getter = eval ge env; setter = eval se env}, enum, config)
+      | S.Generic (enum, config) -> Generic (enum, config)
+    in
+      let eval_prop m (name, prop) = 
+	IdMap.add name (eval_prop prop) m in
+	ObjCell (ref (attrsv,
 		      fold_left eval_prop IdMap.empty props))
   | S.SetField (p, obj, f, v, args) ->
       let obj_value = eval obj env in
@@ -254,7 +273,7 @@ let rec eval exp env = match exp with
       let v_value = eval v env in
       let args_value = eval args env in begin
 	match (obj_value, f_value) with
-	  | (ObjCell o, Const (CString s)) ->
+	  | (ObjCell o, String s) ->
 	      update_field obj_value 
 		obj_value 
 		s
@@ -268,7 +287,7 @@ let rec eval exp env = match exp with
       let f_value = eval f env in 
       let args_value = eval args env in begin
 	match (obj_value, f_value) with
-	  | (ObjCell o, Const (CString s)) ->
+	  | (ObjCell o, String s) ->
 	      get_field p obj_value obj_value s args_value
 	  | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
 			   ^ string_of_position p 
@@ -281,8 +300,8 @@ let rec eval exp env = match exp with
       let obj_val = eval obj env in
       let f_val = eval f env in begin
 	match (obj_val, f_val) with
-	  | (ObjCell c, Const (CString s)) ->
-	      let (attrs,props) = !c in
+	  | (ObjCell c, String s) -> 
+(*	      let (attrs,props) = !c in
 		if IdMap.mem s props 
 		  && IdMap.mem "configurable" attrs
 		  && (IdMap.find "configurable" attrs) == Const (CBool true)
@@ -290,7 +309,7 @@ let rec eval exp env = match exp with
 		  c := (attrs, IdMap.remove s props);
 		  Const (CBool true)
 		end
-		else Const (CBool false)
+		else *) failwith "delete nyi"
 	  | _ -> failwith ("[interp] DeleteField didn't get an object and string at " ^
 			     string_of_position p)
 	end
@@ -307,19 +326,17 @@ let rec eval exp env = match exp with
   | S.Op1 (p, op, e) ->
       let e_val = eval e env in
 	begin match op with
-	  | Prim1 str -> op1 str e_val
 	  | _ -> failwith ("[interp] Invalid Op1 form")
 	end
   | S.Op2 (p, op, e1, e2) -> 
       let e1_val = eval e1 env in
       let e2_val = eval e2 env in
 	begin match op with
-	  | Prim2 str -> op2 str e1_val e2_val
 	  | _ -> failwith ("[interp] Invalid Op2 form")
 	end
   | S.If (p, c, t, e) ->
       let c_val = eval c env in
-	if (c_val = Const (CBool true))
+	if (c_val = True)
 	then eval t env
 	else eval e env
   | S.App (p, func, args) -> 
@@ -386,11 +403,12 @@ with
 	  | ObjCell c ->
 	      let (attrs, props) = !c in
 		begin try
-		  let msg = IdMap.find "message" props in
-		  let msg_val = AttrMap.find Value msg in
-		    (pretty_value msg_val)
-		with Not_found -> (pretty_value v)
+		  match IdMap.find "message" props with
+                    | Data ({ value = msg_val; }, _, _) ->
+		      (pretty_value msg_val)
+                    | _ -> (pretty_value v)
+		  with Not_found -> (pretty_value v)
 		end
 	  | v -> (pretty_value v) in
-	failwith ("Uncaught exception: " ^ err_msg)
+      failwith ("Uncaught exception: " ^ err_msg)
   | Break (l, v) -> failwith ("Broke to top of execution, missed label: " ^ l)
