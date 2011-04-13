@@ -301,15 +301,19 @@ let rec eval exp env = match exp with
       let f_val = eval f env in begin
 	match (obj_val, f_val) with
 	  | (ObjCell c, String s) -> 
-(*	      let (attrs,props) = !c in
-		if IdMap.mem s props 
-		  && IdMap.mem "configurable" attrs
-		  && (IdMap.find "configurable" attrs) == Const (CBool true)
-		then begin
-		  c := (attrs, IdMap.remove s props);
-		  Const (CBool true)
-		end
-		else *) failwith "delete nyi"
+            begin match !c with
+              | (attrs, props) -> begin try
+		match IdMap.find s props with
+                  | Data (_, _, true) 
+                  | Accessor (_, _, true)
+                  | Generic (_, true) -> begin
+                    c := (attrs, IdMap.remove s props);
+                    True
+                  end
+                  | _ -> False
+                with Not_found -> False
+              end
+            end
 	  | _ -> failwith ("[interp] DeleteField didn't get an object and string at " ^
 			     string_of_position p)
 	end
