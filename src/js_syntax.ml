@@ -82,5 +82,7 @@ and catch = (id * block) option
 and finally = block option
 
 and srcElt =
-  | Stmt of pos * stmt
-  | FuncDecl of pos * id * id list * srcElt list
+  | Stmt of stmt
+  | FuncDecl of id * id list * srcElt list
+
+type program = srcElt list

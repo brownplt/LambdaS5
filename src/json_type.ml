@@ -31,3 +31,7 @@ let list v = match v with
 let is_null v = match v with
   | Null -> true
   | _ -> false
+
+let is_array v = match v with
+  | Array _ -> true
+  | _ -> false
