@@ -1,4 +1,5 @@
 open Es5_eval
+open Es5_eval_test
 
 module S5 = struct
 
@@ -7,7 +8,9 @@ module S5 = struct
     
   let main () : unit =
     let ast = parse_spidermonkey stdin "stdin" in
-    printf "Hello, world\n"
+    printf "Hello, world\n";
+    test ()
+
 
 end;;
 

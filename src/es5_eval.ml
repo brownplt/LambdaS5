@@ -7,6 +7,11 @@ let bool b = match b with
   | true -> True
   | false -> False
 
+let unbool b = match b with
+  | True -> true
+  | False -> false
+  | _ -> failwith "tried to unbool a non-bool"
+
 let rec interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
@@ -121,24 +126,6 @@ let rec get_attr attr obj field = match obj, field with
         end
   | _ -> failwith ("[interp] get-attr didn't get an object and a string.")
 
-(*  let attr_or_false attr prop = 
-  if (AttrMap.mem attr prop) then
-    match AttrMap.find attr prop with
-      | Const (CBool b) -> b
-      | _ -> failwith ("[interp] Bad error --- writable or configurable wasn't a boolean")
-  else
-    false 
-
-let to_acc prop = 
-  AttrMap.remove Value (AttrMap.remove Writable prop)
-
-let to_data prop = 
-  AttrMap.remove Setter (AttrMap.remove Getter prop)
-
-let is_data prop =
-  AttrMap.mem Writable prop || AttrMap.mem Value prop &&
-    not (AttrMap.mem Setter prop || AttrMap.mem Getter prop)
-*)
 (* 
    The goal here is to maintain a few invariants (implied by 8.12.9
    and 8.10.5), while keeping things simple from a semantic
@@ -153,52 +140,84 @@ let is_data prop =
        a. Value, which checks Writable
        b. Writable, which can change true->false
 *)
-(* let rec set_attr attr obj field newval = match obj, field with
-  | ObjCell c, Const (CString f_str) -> let (attrs, props) = !c in
-      if (not (IdMap.mem f_str props)) then
-	if (IdMap.mem "extensible" attrs) then
-	  match IdMap.find "extensible" attrs with
-	    | Const (CBool true) -> 
-		let new_prop = AttrMap.add attr newval AttrMap.empty in begin
-		    c := (attrs, IdMap.add f_str new_prop props);
-		    newval
-		  end
-	    | _ -> failwith ("[interp] Extensible not true on object to extend with an attr")								  
-	else
-	  failwith ("[interp] No extensible property on object to extend with an attr")
-      else
-	let prop = (IdMap.find f_str props) in
-	  (* 8.12.9: "If a field is absent, then its value is considered to be false" *)
-	let config = attr_or_false Config prop in
-	let writable = attr_or_false Writable prop in
-	let new_prop = match attr, newval, config, writable with
-	  | Enum, Const (CBool true), true, _
-	  | Enum, Const (CBool false), true, _ -> 
-	      AttrMap.add Enum newval prop
-	  | Config, Const (CBool true) , true, _
-	  | Config, Const (CBool false), true, _ -> 
-	      AttrMap.add Config newval prop
-	  | Writable, Const (CBool true), true, _
-	  | Writable, Const (CBool false), true, _ ->
-	      AttrMap.add Writable newval (to_data prop)
-	  | Writable, Const (CBool false), _, true ->
-	      if is_data prop then AttrMap.add Writable newval prop else prop
-	  | Value, v, _, true -> 
-	      AttrMap.add Value v (to_data prop)
-	  | Setter, value, true, _ -> 
-	      if fun_obj value then 
-		AttrMap.add Setter newval (to_acc prop) 
-	      else prop
-	  | Getter, value, true, _ -> 
-	      if fun_obj value then 
-		AttrMap.add Getter newval (to_acc prop) 
-	      else prop
-	  | _ -> prop
+let rec set_attr attr obj field newval = match obj, field with
+  | ObjCell c, String f_str -> begin match !c with
+      | ({ extensible = ext; } as attrsv, props) ->
+        if not (IdMap.mem f_str props) then
+          if ext then 
+            let newprop = match attr with
+              | S.Getter -> 
+                Accessor ({ getter = newval; setter = Undefined; }, 
+                          false, false)
+              | S.Setter -> 
+                Accessor ({ getter = Undefined; setter = newval; }, 
+                          false, false)
+              | S.Value -> 
+                Data ({ value = newval; writable = false; }, false, false)
+              | S.Writable ->
+                Data ({ value = Undefined; writable = unbool newval },
+                      false, false)
+              | S.Enum -> Generic (unbool newval, false)
+              | S.Config -> Generic (false, unbool newval) in
+            c := (attrsv, IdMap.add f_str newprop props);
+            true
+          else
+            failwith "[interp] Extending inextensible object ."
+        else
+	(* 8.12.9: "If a field is absent, then its value is considered
+	to be false" -- we ensure that fields are present and
+	(and false, if they would have been absent). *)
+	  let newprop = match (IdMap.find f_str props), attr, newval with
+            (* S.Writable true -> false when configurable is false *)
+            | Data ({ writable = true } as d, enum, config), S.Writable, new_w -> 
+              Data ({ d with writable = unbool new_w }, enum, config)
+            (* Updating values only checks writable *)
+            | Data ({ writable = true } as d, enum, config), S.Value, v ->
+              Data ({ d with value = v }, enum, config)
+            (* If we had a data property, update it to an accessor *)
+            | Data (d, enum, true), S.Setter, setterv ->
+              Accessor ({ getter = Undefined; setter = setterv }, enum, true)
+            | Data (d, enum, true), S.Getter, getterv ->
+              Accessor ({ getter = getterv; setter = Undefined }, enum, true)
+            (* Accessors can update their getter and setter properties *)
+            | Accessor (a, enum, true), S.Getter, getterv ->
+              Accessor ({ a with getter = getterv }, enum, true)
+            | Accessor (a, enum, true), S.Setter, setterv ->
+              Accessor ({ a with setter = setterv }, enum, true)
+            (* An accessor can be changed into a data property *)
+            | Accessor (a, enum, true), S.Value, v ->
+              Data ({ value = v; writable = false; }, enum, true)
+            | Accessor (a, enum, true), S.Writable, w ->
+              Data ({ value = Undefined; writable = unbool w; }, enum, true)
+            (* A generic property can become either a data or accessor *)
+            | Generic (enum, config), S.Value, v ->
+              Data ({ value = v; writable = false; }, enum, config)
+            | Generic (enum, config), S.Writable, w ->
+              Data ({ value = Undefined; writable = unbool w; }, enum, config)
+            | Generic (enum, config), S.Getter, getterv ->
+              Accessor ({ getter = getterv; setter = Undefined; }, enum, config)
+            | Generic (enum, config), S.Setter, setterv ->
+              Accessor ({ getter = Undefined; setter = setterv; }, enum, config)
+            (* enumerable and configurable need configurable=true *)
+            | Data (d, _, true), S.Enum, new_enum ->
+              Data (d, unbool new_enum, true)
+            | Data (d, enum, true), S.Config, new_config ->
+              Data (d, enum, unbool new_config)
+            | Accessor (a, enum, true), S.Config, new_config ->
+              Accessor (a, enum, unbool new_config)
+            | Accessor (a, enum, true), S.Enum, new_enum ->
+              Accessor (a, unbool new_enum, true)
+            | Generic (enum, true), S.Config, new_config ->
+              Generic (enum, unbool new_config)
+            | Generic (enum, true), S.Enum, new_enum ->
+              Generic (unbool new_enum, true)
+            | _ -> failwith "[interp] bad property set"
 	in begin
-	    c := (attrs, IdMap.add f_str new_prop props);
-	    newval
-	  end
-  | _ -> failwith ("[interp] set-attr didn't get an object and a string") *)
+            c := (attrsv, IdMap.add f_str newprop props);
+            true
+	end
+  end
+  | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
 (* 8.10.5, steps 7/8 "If iscallable(getter) is false and getter is not
    undefined..." *)
@@ -328,16 +347,11 @@ let rec eval exp env = match exp with
 (*	set_attr attr obj_val f_val v_val *)
       failwith "set_attr nyi"
   | S.Op1 (p, op, e) ->
-      let e_val = eval e env in
-	begin match op with
-	  | _ -> failwith ("[interp] Invalid Op1 form")
-	end
+      let e_val = eval e env in op1 op e_val
   | S.Op2 (p, op, e1, e2) -> 
       let e1_val = eval e1 env in
       let e2_val = eval e2 env in
-	begin match op with
-	  | _ -> failwith ("[interp] Invalid Op2 form")
-	end
+      op2 op e1_val e2_val
   | S.If (p, c, t, e) ->
       let c_val = eval c env in
 	if (c_val = True)
