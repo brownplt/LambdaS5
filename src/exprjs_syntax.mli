@@ -11,8 +11,13 @@
     and scope objects. *)
 open Prelude
 
-type expr
-  = ConstExpr of pos * JavaScript_syntax.const
+type expr = 
+  | True of pos
+  | False of pos
+  | Num of pos * float
+  | Undefined of pos
+  | Null of pos
+  | String of pos * string
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * expr) list
       (** Object properties are transformed into string literals *)
@@ -33,7 +38,6 @@ type expr
       (** We need let-expressions to simplify statements. *)
   | SeqExpr of pos * expr * expr
   | WhileExpr of pos * expr * expr
-  | DoWhileExpr of pos * expr * expr
   | LabelledExpr of pos * id * expr
   | BreakExpr of pos * id * expr
   | ForInExpr of pos * id * expr * expr

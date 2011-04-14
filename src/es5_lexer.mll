@@ -124,6 +124,10 @@ rule token = parse
    | "#writable" { WRITABLE }
    | "#value" { VALUE }
    | "#enumerable" { ENUM }
+   | "#proto" { PROTO }
+   | "#code" { CODE }
+   | "#extensible" { EXTENSIBLE }
+   | "#class" { CLASS }
 
    | ident as x { ID x }
  
