@@ -4,6 +4,8 @@ module S5 = struct
 
   open Format
   open SpiderMonkey
+  
+  module X = Js_to_exprjs
     
   let main () : unit =
     let ast = parse_spidermonkey stdin "stdin" in

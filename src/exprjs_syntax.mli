@@ -19,7 +19,7 @@ type expr =
   | Null of pos
   | String of pos * string
   | ArrayExpr of pos * expr list
-  | ObjectExpr of pos * (pos * string * expr) list
+  | ObjectExpr of pos * (pos * string * prop) list
       (** Object properties are transformed into string literals *)
   | ThisExpr of pos
   | VarExpr of pos * id (** identifiers bound in scope objects *)
@@ -29,7 +29,7 @@ type expr =
   | PrefixExpr of pos * id * expr
   | InfixExpr of pos * id * expr * expr
   | IfExpr of pos * expr * expr * expr
-  | AssignExpr of pos * lvalue * expr
+  | AssignExpr of pos * expr * expr * expr
   | AppExpr of pos * expr * expr list
   | FuncExpr of pos * id list * expr
   | GetterExpr of pos * expr
@@ -50,15 +50,15 @@ type expr =
       (** We leave function statements in place, so that they can be lifted
           for JavaScript to turned into letrecs for Typed JavaScript. *)
   | HintExpr of pos * string * expr
+and prop =
+  | Data of expr
+  | Accessor of expr option * expr option
 
-
-and lvalue =
-    VarLValue of pos * id
-  | PropLValue of pos * expr * expr
-
+  (*
 val from_javascript : JavaScript_syntax.prog -> expr
 
 val from_javascript_expr : JavaScript_syntax.expr -> expr
 
 (** locally defined functions. *)
 val locals : expr -> IdSet.t
+*)

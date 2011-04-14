@@ -9,18 +9,20 @@ type expr =
   | String of pos * string
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * prop) list
+  | ThisExpr of pos
+  | VarExpr of pos * id
+  | IdExpr of pos * id
   | BracketExpr of pos * expr * expr
-  | AssignExpr of pos * expr * expr * expr
-  | Id of pos * ident
   | NewExpr of pos * expr * expr list
-  | AppExpr of pos * expr * expr list
   | PrefixExpr of pos * id * expr
   | InfixExpr of pos * id * expr * expr
   | IfExpr of pos * expr * expr * expr
+  | AssignExpr of pos * expr * expr * expr
+  | AppExpr of pos * expr * expr list
   | FuncExpr of pos * id list * expr
-  | FuncStmtExpr of pos * id * id list * expr
+  | GetterExpr of pos * expr
+  | SetterExpr of pos * expr
   | LetExpr of pos * id * expr * expr
-  | RecExpr of pos * id * expr * expr
   | SeqExpr of pos * expr * expr
   | WhileExpr of pos * expr * expr
   | LabelledExpr of pos * id * expr
@@ -30,14 +32,17 @@ type expr =
   | TryCatchExpr of pos * expr * id * expr
   | TryFinallyExpr of pos * expr * expr
   | ThrowExpr of pos * expr
+  | FuncStmtExpr of pos * id * id list * expr
+  | HintExpr of pos * string * expr
 and prop =
   | Data of expr
   | Accessor of expr option * expr option
-(******************************************************************************)
 
-module S = JavaScript_syntax
+(******************************************************************************)
+(*module S = JavaScript_syntax
 
 let rec expr (e : S.expr) = match e with
   | _ -> failwith "No JS -> exprjs defined yet"
+  *)
 
     
