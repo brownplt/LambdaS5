@@ -1,4 +1,6 @@
 open Es5_eval
+open Es5_parser
+
 
 module S5 = struct
 
@@ -7,6 +9,8 @@ module S5 = struct
   
   module X = Js_to_exprjs
     
+    
+
   let main () : unit =
     let ast = parse_spidermonkey stdin "stdin" in
     printf "Hello, world\n";

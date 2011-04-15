@@ -102,6 +102,8 @@ let rec func_expr_lambda p ids body =
 					   args_thunk p [EId (p, "$funobj")]),
 		   Id (p, "$funobj"))))
 *)
+
+
  %}
 
 %token <int> INT
@@ -144,14 +146,12 @@ const :
  | NULL { Null ($startpos, $endpos) }
  | BOOL { if $1 then True ($startpos, $endpos) else False ($startpos, $endpos) }
 
-attr :
- | STRING COLON exp { ($1, $3) }
- | ID COLON exp { ($1, $3) }
-
-attrs :
- | { [] }
- | attr { [$1] }
- | attr COMMA attrs { $1 :: $3 }
+oattrsv :
+ | { d_attrs }
+ | EXTENSIBLE COLON BOOL COMMA oattrsv { { $5 with extensible = $3 } }
+ | PROTO COLON exp COMMA oattrsv { { $5 with proto = Some $3 } }
+ | CODE COLON exp COMMA oattrsv { {$5 with code = Some $3 } }
+ | CLASS COLON STRING COMMA oattrsv { { $5 with klass = $3 } }
 
 attr_name :
  | WRITABLE { Writable }
@@ -165,9 +165,13 @@ prop_attr :
  | attr_name COLON exp { ($1, $3) }
 
 prop_attrs :
- | { [] }
- | prop_attr { [$1] }
- | prop_attr COMMA prop_attrs { $1 :: $3 }
+ | { Generic (false, false) }
+ | WRITABLE BOOL COMMA VALUE exp 
+     { Data ({ value = $5; writable = $2 }, true, true) }
+ | VALUE exp COMMA WRITABLE BOOL
+     { Data ({ value = $2; writable = $5 }, true, true) }
+ | GETTER exp COMMA SETTER exp 
+     { Accessor ({ getter = $2; setter = $5 }, true, true) }
 
 prop :
  | STRING COLON LBRACE prop_attrs RBRACE { ($1, $4) }
@@ -195,7 +199,7 @@ func :
 atom :
  | const { $1 }
  | ID { Id (($startpos, $endpos), $1) }
- | LBRACE LBRACK attrs RBRACK props RBRACE 
+ | LBRACE LBRACK oattrsv RBRACK props RBRACE 
    { Object (($startpos, $endpos), $3, $5 )}
  | LBRACE seq_exp RBRACE
    { $2 }
