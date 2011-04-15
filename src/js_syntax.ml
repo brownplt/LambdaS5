@@ -24,8 +24,8 @@ type propName =
 
 type mem =
   | Field of propName * expr
-  | Get of propName * expr
-  | Set of propName * expr
+  | Get of propName * srcElt list
+  | Set of propName * id * srcElt list
 
 and expr =
   | This of pos
