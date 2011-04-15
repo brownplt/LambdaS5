@@ -51,7 +51,7 @@ and case =
   | Default of pos * stmt
           
 and varDecl =
-  | VarDecl of pos * id * expr option
+  | VarDecl of id * expr option
           
 and stmt =
   | Block of pos * block
