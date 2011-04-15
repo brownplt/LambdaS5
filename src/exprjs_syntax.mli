@@ -32,8 +32,6 @@ type expr =
   | AssignExpr of pos * expr * expr * expr
   | AppExpr of pos * expr * expr list
   | FuncExpr of pos * id list * expr
-  | GetterExpr of pos * expr
-  | SetterExpr of pos * expr
   | LetExpr of pos * id * expr * expr 
       (** We need let-expressions to simplify statements. *)
   | SeqExpr of pos * expr * expr
@@ -52,7 +50,8 @@ type expr =
   | HintExpr of pos * string * expr
 and prop =
   | Data of expr
-  | Accessor of expr option * expr option
+  | Getter of id * expr
+  | Setter of id * expr
 
   (*
 val from_javascript : JavaScript_syntax.prog -> expr

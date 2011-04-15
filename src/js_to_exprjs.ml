@@ -19,29 +19,31 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       and m_to_pr m = match m with
         | J.Field (name, e) -> 
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
-        | J.Get (name, sel) -> failwith "not done yet"
-        | J.Set (name, arg, sel) -> failwith "not done yet" in
+        | J.Get (name, e) -> let ns = prop_to_str name in
+          (p, ns, E.Getter (ns, jse_to_exprjs e))
+        | J.Set (name, e) -> let ns = prop_to_str name in
+          (p, ns, E.Setter (ns, jse_to_exprjs e)) in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | _ -> failwith "unimplemented expression type"
 
 let rec jss_to_exprjs (s : J.stmt) : E.expr = 
-        match s with
-        | J.Block (p, bl) -> 
-            let rec unroll sl = match sl with
-              | [] -> E.Undefined (p)
-              | [f] -> jss_to_exprjs f
-              | f :: rest -> E.SeqExpr (p, jss_to_exprjs f, unroll rest) in
-            unroll bl
-        | J.For (p, e1, e2, e3, body) -> 
-          let rec init1 a = match a with 
-            None -> E.Undefined p 
-            | Some a -> jse_to_exprjs a
-          and init2 b = match b with
-            None -> E.True p
-            | Some b -> jse_to_exprjs b in
-          E.SeqExpr(p, init1 e1,
-            E.WhileExpr(p, init2 e2, 
-              E.SeqExpr(p, jss_to_exprjs body, init1 e3)))
-        | _ -> failwith "unimplemented statement type"
+  match s with
+  | J.Block (p, bl) -> 
+    let rec unroll sl = match sl with
+      | [] -> E.Undefined (p)
+      | [f] -> jss_to_exprjs f
+      | f :: rest -> E.SeqExpr (p, jss_to_exprjs f, unroll rest) in
+    unroll bl
+  | J.For (p, e1, e2, e3, body) -> 
+    let rec init1 a = match a with 
+      | None -> E.Undefined p 
+      | Some a -> jse_to_exprjs a
+    and init2 b = match b with
+      | None -> E.True p
+      | Some b -> jse_to_exprjs b in
+    E.SeqExpr(p, init1 e1,
+      E.WhileExpr(p, init2 e2, 
+        E.SeqExpr(p, jss_to_exprjs body, init1 e3)))
+  | _ -> failwith "unimplemented statement type"
