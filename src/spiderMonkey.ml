@@ -42,10 +42,10 @@ let rec stmt (v : json_type) : stmt =
     let x = string (get "type" v) in
     (* Verify that x is prefixed by Statement, then drop the prefix. *)
     let open String in
-    if length x < 9 || (sub x (length x - 9) 9 != "Statement") then
-      failwith (sprintf "expected statement, got %s" x)
-    else 
-      sub x 0 (length x - 9) in  
+    if length x > 9 && (sub x (length x - 9) 9 = "Statement") then
+      sub x 0 (length x - 9) 
+    else
+      failwith (sprintf "expected statement, got %s" x) in
   match typ with
     | "Empty" -> Empty p
     | "Block" -> Block (p, block (get "body" v))
