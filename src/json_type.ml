@@ -35,3 +35,7 @@ let is_null v = match v with
 let is_array v = match v with
   | Array _ -> true
   | _ -> false
+
+let bool v = match v with
+  | Bool b -> b
+  | _ -> raise (Json_error "expected boolean")

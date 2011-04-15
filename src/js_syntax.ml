@@ -34,7 +34,7 @@ and expr =
   | Array of pos * expr list
   | Object of pos * mem list
   | Paren of pos * expr list
-  | FuncExpr of pos * id option * id list * srcElt list
+  | Func of pos * id option * id list * srcElt list
   | Bracket of pos * expr * expr
   | Dot of pos * expr * id
   | New of pos * expr * expr list

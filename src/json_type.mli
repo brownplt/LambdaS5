@@ -22,3 +22,5 @@ val list : t -> t list
 val is_null : t -> bool
 
 val is_array : t -> bool
+
+val bool : t -> bool
