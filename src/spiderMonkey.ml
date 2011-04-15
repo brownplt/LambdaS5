@@ -45,8 +45,12 @@ let rec stmt (v : json_type) : stmt =
     if length x > 9 && (sub x (length x - 9) 9 = "Statement") then
       sub x 0 (length x - 9) 
     else
-      failwith (sprintf "expected statement, got %s" x) in
+      x (* could be a VariableDeclaration *) in
   match typ with
+    | "VariableDeclaration" -> begin match string (get "kind" v) with
+	| "var" -> Var (p, map varDecl (list (get "declarations" v)))
+	| kind -> failwith (sprintf "%s declarations are not valid ES5" kind)
+    end
     | "Empty" -> Empty p
     | "Block" -> Block (p, block (get "body" v))
     | "Expression" -> Expr (p, expr (get "expression" v))
@@ -75,6 +79,9 @@ let rec stmt (v : json_type) : stmt =
     | "ForIn" -> failwith "NYI"
     | "Debugger" -> Debugger p
     | _ -> failwith (sprintf "unexpected %s statement" typ)
+
+and varDecl (v : json_type) : varDecl = 
+    VarDecl (identifier (get "id" v), maybe expr (get "init" v))
 
 and mem (v : json_type) : mem = 
     let name = propName (get "key" v) in
@@ -118,7 +125,8 @@ and expr (v : json_type) : expr =
 		expr (get "argument" v))
       else
 	failwith "unexpected POSTFIX unary operator"
-    | "Binary" ->
+    | "Binary"
+    | "Logical" ->
       Infix (p, string (get "token" (get "operator" v)),
 	     expr (get "left" v), expr (get "right" v))
     | "Assignment" -> 
@@ -129,12 +137,26 @@ and expr (v : json_type) : expr =
 	(if bool (get "prefix" v) then "prefix:" else "postfix:") ^
 	  string (get "token" (get "operator" v)) in
       UnaryAssign (p, op, expr (get "argument" v))
-    | _ -> This p (* TODO *)
+    | "Conditional" ->
+      Cond (p, expr (get "test" v), expr (get "consequent" v),
+	    expr (get "alternate" v))
+    | "New" ->
+      New (p, expr (get "constructor" v),
+	   let args = get "arguments" v in
+	   if is_null args then []
+	   else map expr (list args))
+    | "Call" ->
+      Call (p, expr (get "callee" v), map expr (list (get "arguments" v)))
+    | "Member" -> 
+      if bool (get "computed" v) then
+	Bracket (p, expr (get "object" v), expr (get "property" v))
+      else
+	Dot (p, expr (get "object" v), identifier (get "property" v))
+    | typ -> failwith (sprintf "%s expressions are not in ES5" typ)
 
+and case (v : json_type) : case = failwith "case NYI"
 
-and case (v : json_type) : case = failwith "NYI"
-
-and catch (v : json_type) : catch = failwith "NYI"
+and catch (v : json_type) : catch = failwith "catch NYI"
 
 and block (v : json_type) : block = match is_array v with
   | true -> map stmt (list v)
@@ -142,7 +164,12 @@ and block (v : json_type) : block = match is_array v with
       | "BlockStatement" -> map stmt (list (get "body" v))
       | _ -> failwith "expected array of statements or a BlockStatement"
 
-and srcElt (v : json_type) : srcElt = Stmt (stmt v) (* TODO *)
+and srcElt (v : json_type) : srcElt = match string (get "type" v) with
+  | "FunctionDeclaration" -> 
+    FuncDecl (identifier (get "id" v),
+	      map identifier (list (get "params" v)),
+	      srcElts (get "body" (get "body" v)))
+  | _ -> Stmt (stmt v) 
 
 and srcElts (v : json_type) : srcElt list =
     map srcElt (list v)
