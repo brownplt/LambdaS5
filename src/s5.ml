@@ -1,6 +1,6 @@
 open Es5_eval
 open Es5_parser
-
+open Es5_pretty
 
 module S5 = struct
 
