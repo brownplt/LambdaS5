@@ -19,16 +19,16 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       and m_to_pr m = match m with
         | J.Field (name, e) -> 
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
-        | J.Get (name, e) -> let ns = prop_to_str name in
-          (p, ns, E.Getter (ns, jse_to_exprjs e))
-        | J.Set (name, e) -> let ns = prop_to_str name in
-          (p, ns, E.Setter (ns, jse_to_exprjs e)) in
+        | J.Get (name, body) -> let ns = prop_to_str name in
+          (p, ns, E.Getter (ns, E.FuncExpr (p, [], srcElts body)))
+        | J.Set (name, arg, body) -> let ns = prop_to_str name in
+          (p, ns, E.Setter (ns, E.FuncExpr (p, [arg], srcElts body))) in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | _ -> failwith "unimplemented expression type"
 
-let rec jss_to_exprjs (s : J.stmt) : E.expr = 
+and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
   | J.Block (p, bl) -> 
     let rec unroll sl = match sl with
@@ -47,3 +47,5 @@ let rec jss_to_exprjs (s : J.stmt) : E.expr =
       E.WhileExpr(p, init2 e2, 
         E.SeqExpr(p, jss_to_exprjs body, init1 e3)))
   | _ -> failwith "unimplemented statement type"
+
+and srcElts (ss : J.srcElt list) : E.expr = failwith "nyi"
