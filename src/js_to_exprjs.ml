@@ -20,10 +20,11 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Field (name, e) -> 
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
         | J.Get (name, body) -> let ns = prop_to_str name in
-          (p, ns, E.Getter (ns, E.FuncExpr (p, [], srcElts body)))
+          (p, ns, E.Getter (ns, E.FuncExpr (p, [], srcElts p body)))
         | J.Set (name, arg, body) -> let ns = prop_to_str name in
-          (p, ns, E.Setter (ns, E.FuncExpr (p, [arg], srcElts body))) in
+          (p, ns, E.Setter (ns, E.FuncExpr (p, [arg], srcElts p body))) in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
+    | J.Func (p, nm, args, body) -> E.FuncExpr (p, args, srcElts p body)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | _ -> failwith "unimplemented expression type"
@@ -36,16 +37,35 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | [f] -> jss_to_exprjs f
       | f :: rest -> E.SeqExpr (p, jss_to_exprjs f, unroll rest) in
     unroll bl
+  | J.Var (p, vdl) ->
+    let rec vdj_to_vde v = match v with
+      | J.VarDecl (id, e) -> match e with
+        | None -> E.VarDeclExpr (p, id, E.Undefined (p))
+        | Some x -> E.VarDeclExpr (p, id, jse_to_exprjs x)
+    and unroll vl = match vl with
+      | [] -> E.Undefined (p)
+      | [f] -> vdj_to_vde f
+      | f :: rest -> E.SeqExpr(p, vdj_to_vde f, unroll rest) in
+    unroll vdl
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with 
-      | None -> E.Undefined p 
+      | None -> E.Undefined (p)
       | Some a -> jse_to_exprjs a
     and init2 b = match b with
-      | None -> E.True p
+      | None -> E.True (p)
       | Some b -> jse_to_exprjs b in
     E.SeqExpr(p, init1 e1,
       E.WhileExpr(p, init2 e2, 
         E.SeqExpr(p, jss_to_exprjs body, init1 e3)))
   | _ -> failwith "unimplemented statement type"
 
-and srcElts (ss : J.srcElt list) : E.expr = failwith "nyi"
+and srcElts (p : J.pos) (ss : J.srcElt list) : E.expr =
+  let rec se_to_e se = match se with
+    | J.Stmt (s) -> jss_to_exprjs s
+    | J.FuncDecl (nm, args, body) ->
+      let f = E.FuncExpr (p, args, srcElts p body) in
+      E.AssignExpr (p, E.String (p, "="), E.VarExpr (p, nm), f) in
+  match ss with
+    | [] -> E.Undefined (p)
+    | [first] -> se_to_e first
+    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts p rest)
