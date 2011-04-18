@@ -10,6 +10,7 @@ module S5 = struct
 
   let main () : unit =
     let rec ast = parse_spidermonkey stdin "stdin" in
+    let desugared = srcElts ast in
     printf "Hello, world\n";
 
 
