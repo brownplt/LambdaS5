@@ -12,7 +12,6 @@ module S5 = struct
   open Js_to_exprjs
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
-  let srcJS = ref (
 
   let load_s5 (path : string) : unit =
     srcES5 := Es5_syntax.Seq (dummy_pos, !srcES5,
