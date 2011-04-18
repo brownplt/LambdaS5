@@ -29,15 +29,16 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | _ -> failwith "unimplemented expression type"
 
+and lst_to_seqexpr (l : 'a list) (f : ('a -> E.expr)) (p : J.pos) : E.expr = 
+  match l with
+  | [] -> E.Undefined (p)
+  | [first] -> f first
+  | first :: rest -> E.SeqExpr (p, f first, lst_to_seqexpr rest f p)
+
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
-  | J.Block (p, bl) -> 
-    let rec unroll sl = match sl with
-      | [] -> E.Undefined (p)
-      | [f] -> jss_to_exprjs f
-      | f :: rest -> E.SeqExpr (p, jss_to_exprjs f, unroll rest) in
-    unroll bl
-  | J.Var (p, vdl) ->
+  | J.Block (p, bl) -> lst_to_seqexpr bl jss_to_exprjs p
+  | J.Var (p, vdl) -> 
     let rec vdj_to_vde v = match v with
       | J.VarDecl (id, e) -> match e with
         | None -> E.VarDeclExpr (p, id, E.Undefined (p))
@@ -47,6 +48,17 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | [f] -> vdj_to_vde f
       | f :: rest -> E.SeqExpr(p, vdj_to_vde f, unroll rest) in
     unroll vdl
+  | J.Labeled (p, id, s) -> E.LabelledExpr (p, id, jss_to_exprjs s)
+  | J.Continue (p, id) -> let lbl = match id with
+    | None -> "loopstart" | Some s -> s in
+    E.BreakExpr (p, lbl, E.Undefined (p))
+  | J.Break (p, id) -> let lbl = match id with
+    | None -> "loopend" | Some s -> s in 
+    E.BreakExpr (p, lbl, E.Undefined (p))
+  | J.Return (p, e) -> let rval = match e with
+    | None -> E.Undefined (p)
+    | Some x -> jse_to_exprjs x in
+    E.BreakExpr (p, "ret", rval)
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with 
       | None -> E.Undefined (p)
@@ -54,9 +66,13 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     and init2 b = match b with
       | None -> E.True (p)
       | Some b -> jse_to_exprjs b in
-    E.SeqExpr(p, init1 e1,
-      E.WhileExpr(p, init2 e2, 
-        E.SeqExpr(p, jss_to_exprjs body, init1 e3)))
+    let innerwhile = 
+      E.WhileExpr (p, init2 e2, 
+        E.SeqExpr (p, E.LabelledExpr (p, "loopstart", jss_to_exprjs body), 
+        init1 e3)) in
+    E.SeqExpr (p, init1 e1,
+      E.SeqExpr (p, innerwhile,
+        E.LabelledExpr (p, "loopend", E.Undefined (p))))
   | _ -> failwith "unimplemented statement type"
 
 and srcElts (p : J.pos) (ss : J.srcElt list) : E.expr =
