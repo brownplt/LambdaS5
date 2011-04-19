@@ -1,3 +1,9 @@
 obj
 es5conform
 src/es5.b.byte
+src/s5.d.byte
+
+*.swp
+tests/*.swp
+tests/unit-tests/*.swp
+src/*.swp

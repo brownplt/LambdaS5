@@ -10,6 +10,7 @@ module S5 = struct
   open Format
   open SpiderMonkey
   open Js_to_exprjs
+  open Exprjs_to_ljs
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
 
@@ -25,15 +26,23 @@ module S5 = struct
     Es5_eval.eval_expr !srcES5;
     print_newline ()
 
+  let desugar_js (path : string) : unit =
+    let ast = parse_spidermonkey (open_in path) path in
+    let exprjsd = srcElts ast in
+    let desugard = exprjs_to_ljs exprjsd in
+    srcES5 := desugard
+
   let main () : unit =
     Arg.parse
       [
+        ("-desugar", Arg.String desugar_js,
+        "<file> desugar json ast file");
         ("-s5", Arg.String load_s5,
          "<file> load file as s5");
         ("-pretty", Arg.Unit print_s5,
          "pretty-print s5 code");
         ("-eval", Arg.Unit eval,
-         "evaluate code")
+        "evaluate code");
       ]
       load_s5
       "Usage: s5 <action> <path> ...";;
