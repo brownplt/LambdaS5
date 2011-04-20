@@ -27,7 +27,7 @@ type exp =
   | Object of pos * attrs * (string * prop) list
   | GetAttr of pos * pattr * exp * exp
   | SetAttr of pos * pattr * exp * exp * exp
-  | GetField of pos * exp * exp * exp
+  | GetField of pos * exp * exp * exp (*pos, left, right, args object *)
   | SetField of pos * exp * exp * exp * exp
   | DeleteField of pos * exp * exp
   | SetBang of pos * id * exp

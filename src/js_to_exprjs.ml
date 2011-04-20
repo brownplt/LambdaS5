@@ -50,6 +50,7 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | [f] -> vdj_to_vde f
       | f :: rest -> E.SeqExpr(p, vdj_to_vde f, unroll rest) in
     unroll vdl
+  | J.Expr (p, e) -> jse_to_exprjs e (* ExpressionStatement *)
   | J.Labeled (p, id, s) -> E.LabelledExpr (p, id, jss_to_exprjs s)
   | J.Continue (p, id) -> let lbl = match id with
     | None -> "loopstart" | Some s -> s in
@@ -82,8 +83,7 @@ and srcElts (ss : J.srcElt list) : E.expr =
   and se_to_e se = match se with
     | J.Stmt (s) -> jss_to_exprjs s
     | J.FuncDecl (nm, args, body) ->
-      let f = E.FuncExpr (p, args, srcElts body) in
-      E.AssignExpr (p, E.String (p, "="), E.VarExpr (p, nm), f) in
+      E.FuncStmtExpr (p, nm, args, srcElts body) in
   match ss with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
