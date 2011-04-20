@@ -2,6 +2,7 @@ module E = Exprjs_syntax
 module J = Js_syntax
 
 open Prelude
+open Js_print
 
 let rec jse_to_exprjs (e : J.expr) : E.expr =
   match e with

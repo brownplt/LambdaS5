@@ -110,9 +110,10 @@ and expr (v : json_type) : expr =
       sub x 0 (length x - 10) in  
   match typ with
     | "Literal" -> Lit (p, literal v)
+    | "Identifier" -> Id (p, string (get "name" v))
     | "This" -> This p
     | "Array" -> Array (p, map expr (list (get "elements" v)))
-    | "Object" -> Object (p, map mem (list (get "properties" v)))
+    | ("Object" | "ObjectExpression") -> Object (p, map mem (list (get "properties" v)))
     | "Function" ->
       Func (p, maybe identifier (get "id" v), 
 	    map identifier (list (get "params" v)),
@@ -147,7 +148,7 @@ and expr (v : json_type) : expr =
 	   else map expr (list args))
     | "Call" ->
       Call (p, expr (get "callee" v), map expr (list (get "arguments" v)))
-    | "Member" -> 
+    | ("Member" | "MemberExpression") -> 
       if bool (get "computed" v) then
 	Bracket (p, expr (get "object" v), expr (get "property" v))
       else
