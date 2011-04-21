@@ -30,6 +30,8 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
     | J.Func (p, nm, args, body) -> E.FuncExpr (p, args, srcElts body)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
+    | J.Dot (p, e, nm) ->
+      E.BracketExpr (p, jse_to_exprjs e, E.String (p, nm))
     | _ -> failwith "unimplemented expression type"
 
 and lst_to_seqexpr (l : 'a list) (f : ('a -> E.expr)) (p : J.pos) : E.expr = 

@@ -29,8 +29,12 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | [] -> []
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
     S.Object (p, S.d_attrs, form_props pl)
-  | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
-  | E.VarDeclExpr (p, id, e) -> S.SetBang (p, id, exprjs_to_ljs e)
+  (*| E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)*)
+  | E.SeqExpr (p, e1, e2) -> match e1 with
+    | E.VarDeclExpr (pp, nm, ee) -> 
+      S.Let (pp, nm, exprjs_to_ljs ee, exprjs_to_ljs e2)
+    | _ -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
+  | E.VarDeclExpr (p, id, e) -> failwith "error: should have become a let"
   (* TODO: There's a comment in exprjs_syntax re: FuncStmtExpr.  Not sure
    * what it means. *)
   | E.FuncStmtExpr (p, nm, args, body) ->
