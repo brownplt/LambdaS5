@@ -45,7 +45,7 @@ let rec get_field p obj1 obj2 field args = match obj1 with
 	   get_field p pvalue obj2 field args
   end
   | _ -> failwith (interp_error p 
-		     "get_field received (or reached) a non-object.  The expression was (get-field " 
+		     "get_field on a non-object.  The expression was (get-field " 
 		   ^ pretty_value obj1 
 		   ^ " " ^ pretty_value obj2 
 		   ^ " " ^ field ^ ")")
@@ -409,6 +409,10 @@ let rec eval exp env = match exp with
 		       arity_mismatch_err p xs args
 		     else
 		       eval e (List.fold_right2 set_arg args xs env))
+  | S.Eval (p, e) ->
+    let evalstr = eval e env in
+    failwith (sprintf "No eval yet --- eval given this string: %s" 
+                (pretty_value evalstr))
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 

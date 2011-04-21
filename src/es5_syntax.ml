@@ -45,6 +45,7 @@ type exp =
   | TryFinally of pos * exp * exp
   | Throw of pos * exp
   | Lambda of pos * id list * exp
+  | Eval of p * exp
 and data =       
     {value : exp;
      writable : bool; }
