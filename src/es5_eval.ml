@@ -39,7 +39,6 @@ let rec get_field p obj1 obj2 field args = match obj1 with
              | Data ({ value = v; }, _, _) -> v
              | Accessor ({ getter = g; }, _, _) ->
 	       apply_obj g obj2 (apply args [g])
-             | Generic _ -> Undefined (* TODO: Check this! *)
         (* Not_found means prototype lookup is necessary *)
 	 with Not_found ->
 	   get_field p pvalue obj2 field args
@@ -113,10 +112,8 @@ let rec get_attr attr obj field = match obj, field with
       else
 	begin match (IdMap.find s props), attr with 
           | Data (_, _, config), S.Config
-          | Generic (_, config), S.Config
           | Accessor (_, _, config), S.Config -> bool config
           | Data (_, enum, _), S.Enum
-          | Generic (enum, _), S.Enum
           | Accessor (_, enum, _), S.Enum -> bool enum
           | Data ({ writable = b; }, _, _), S.Writable -> bool b
           | Data ({ value = v; }, _, _), S.Value -> v
@@ -156,9 +153,7 @@ let rec set_attr attr obj field newval = match obj, field with
                 Data ({ value = newval; writable = false; }, false, false)
               | S.Writable ->
                 Data ({ value = Undefined; writable = unbool newval },
-                      false, false)
-              | S.Enum -> Generic (unbool newval, false)
-              | S.Config -> Generic (false, unbool newval) in
+                      false, false) in
             c := (attrsv, IdMap.add f_str newprop props);
             true
           else
@@ -189,15 +184,6 @@ let rec set_attr attr obj field newval = match obj, field with
               Data ({ value = v; writable = false; }, enum, true)
             | Accessor (a, enum, true), S.Writable, w ->
               Data ({ value = Undefined; writable = unbool w; }, enum, true)
-            (* A generic property can become either a data or accessor *)
-            | Generic (enum, config), S.Value, v ->
-              Data ({ value = v; writable = false; }, enum, config)
-            | Generic (enum, config), S.Writable, w ->
-              Data ({ value = Undefined; writable = unbool w; }, enum, config)
-            | Generic (enum, config), S.Getter, getterv ->
-              Accessor ({ getter = getterv; setter = Undefined; }, enum, config)
-            | Generic (enum, config), S.Setter, setterv ->
-              Accessor ({ getter = Undefined; setter = setterv; }, enum, config)
             (* enumerable and configurable need configurable=true *)
             | Data (d, _, true), S.Enum, new_enum ->
               Data (d, unbool new_enum, true)
@@ -207,10 +193,6 @@ let rec set_attr attr obj field newval = match obj, field with
               Accessor (a, enum, unbool new_config)
             | Accessor (a, enum, true), S.Enum, new_enum ->
               Accessor (a, unbool new_enum, true)
-            | Generic (enum, true), S.Config, new_config ->
-              Generic (enum, unbool new_config)
-            | Generic (enum, true), S.Enum, new_enum ->
-              Generic (unbool new_enum, true)
             | _ -> failwith "[interp] bad property set"
 	in begin
             c := (attrsv, IdMap.add f_str newprop props);
@@ -280,7 +262,6 @@ let rec eval exp env = match exp with
         Data ({ value = eval vexp env; writable = w; }, enum, config)
       | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
         Accessor ({ getter = eval ge env; setter = eval se env}, enum, config)
-      | S.Generic (enum, config) -> Generic (enum, config)
     in
       let eval_prop m (name, prop) = 
 	IdMap.add name (eval_prop prop) m in
@@ -324,11 +305,11 @@ let rec eval exp env = match exp with
               | (attrs, props) -> begin try
 		match IdMap.find s props with
                   | Data (_, _, true) 
-                  | Accessor (_, _, true)
-                  | Generic (_, true) -> begin
-                    c := (attrs, IdMap.remove s props);
-                    True
-                  end
+                  | Accessor (_, _, true) ->
+                    begin
+                      c := (attrs, IdMap.remove s props);
+                      True
+                    end
                   | _ -> False
                 with Not_found -> False
               end
