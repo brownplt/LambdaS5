@@ -1,0 +1,2 @@
+let (o = {[] x : {#value 5, #writable true}})
+    o["x" = 22]
