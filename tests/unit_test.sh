@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ $# -eq 1 ]; then
-   js json_print.js $1 >> $1.ast
+   ../bin/js json_print.js $1 >> $1.ast
    ocamlrun ../src/s5.d.byte -desugar ../tests/$1.ast -pretty -eval
    rm $1.ast
 else

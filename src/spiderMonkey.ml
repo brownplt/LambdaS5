@@ -104,7 +104,7 @@ and expr (v : json_type) : expr =
     let x = string (get "type" v) in
     (* Verify that x is prefixed by Expression, then drop the prefix. *)
     let open String in
-    if length x < 10 || (sub x (length x - 10) 10 != "Expression") then
+    if length x < 10 || (sub x (length x - 10) 10 <> "Expression") then
       x (* perhaps a Literal, which isn't suffixed with Expression. *)
     else 
       sub x 0 (length x - 10) in  
