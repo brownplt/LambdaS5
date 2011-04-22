@@ -131,7 +131,7 @@ and expr (v : json_type) : expr =
       Infix (p, string (get "token" (get "operator" v)),
 	     expr (get "left" v), expr (get "right" v))
     | "Assignment" -> 
-      Assign (p, string (get "token" (get "operator" v)),
+      Assign (p, string (get "operator" v),
 	      expr (get "left" v), expr (get "right" v))
     | "Update" ->
       let op = 

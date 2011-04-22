@@ -26,11 +26,19 @@ module S5 = struct
     Es5_eval.eval_expr !srcES5;
     print_newline ()
 
-  let desugar_js (path : string) : unit =
+  let desugar_js (path : string) : unit = 
     let ast = parse_spidermonkey (open_in path) path in
-    let exprjsd = srcElts ast in
+    let open Exprjs_syntax in
+    let exprjsd = srcElts ast (Null (dummy_pos)) in
     let desugard = exprjs_to_ljs exprjsd in
     srcES5 := desugard
+    (*
+  let desugar_js (path : string) : unit =
+    let ast = parse_spidermonkey (open_in path) path in
+    let exprjsd = srcElts ast (ObjectExpr (dummy_pos, [])) in
+    let desugard = exprjs_to_ljs exprjsd in
+    srcES5 := desugard
+    *)
 
   let main () : unit =
     Arg.parse
