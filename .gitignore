@@ -7,3 +7,10 @@ src/s5.d.byte
 tests/*.swp
 tests/unit-tests/*.swp
 src/*.swp
+
+build/
+*~
+src/_build/
+
+*.tgz
+*.tar.gz

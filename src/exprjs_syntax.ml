@@ -10,7 +10,6 @@ type expr =
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * prop) list
   | ThisExpr of pos
-  | VarExpr of pos * id
   | IdExpr of pos * id
   | BracketExpr of pos * expr * expr
   | NewExpr of pos * expr * expr list
@@ -26,7 +25,6 @@ type expr =
   | LabelledExpr of pos * id * expr
   | BreakExpr of pos * id * expr
   | ForInExpr of pos * id * expr * expr
-  | VarDeclExpr of pos * id * expr
   | TryCatchExpr of pos * expr * id * expr
   | TryFinallyExpr of pos * expr * expr
   | ThrowExpr of pos * expr
