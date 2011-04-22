@@ -11,3 +11,6 @@ src/*.swp
 build/
 *~
 src/_build/
+
+*.tgz
+*.tar.gz
