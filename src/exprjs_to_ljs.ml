@@ -80,10 +80,12 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     S.App (p, exprjs_to_ljs e, sl)
   | E.FuncStmtExpr (p, nm, args, body) ->
     let rec f = exprjs_to_ljs body
-    and l = S.Lambda (p, args, f) in
-    S.Rec (p, nm, l, f)
+    and l = S.Lambda (p, args, S.Label (p, "%ret", f)) in
+    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), l, S.Null (p))
   | E.LetExpr (p, nm, vl, body) -> 
     let sv = exprjs_to_ljs vl
     and sb = exprjs_to_ljs body in
     S.Let (p, nm, sv, sb)
+  | E.BreakExpr (p, id, e) ->
+    S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"

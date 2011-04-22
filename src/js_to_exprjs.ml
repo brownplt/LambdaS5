@@ -102,7 +102,7 @@ and jss_to_exprjs (s : J.stmt) (context : E.expr) : E.expr =
   | J.Return (p, e) -> let rval = match e with
     | None -> E.Undefined (p)
     | Some x -> jse_to_exprjs x context in
-    E.BreakExpr (p, "ret", rval)
+    E.BreakExpr (p, "%ret", rval)
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with 
       | None -> E.Undefined (p)
