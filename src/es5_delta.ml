@@ -153,7 +153,6 @@ and all_protos o =
 
 and enum prop = match prop with
   | Accessor (_, b, _)
-  | Generic (b, _)
   | Data (_, b, _) -> b
 
 let get_own_property_names obj = match obj with

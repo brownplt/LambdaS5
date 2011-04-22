@@ -45,6 +45,7 @@ type exp =
   | TryFinally of pos * exp * exp
   | Throw of pos * exp
   | Lambda of pos * id list * exp
+  | Eval of pos * exp
 and data =       
     {value : exp;
      writable : bool; }
@@ -54,7 +55,6 @@ and accessor =
 and prop =
   | Data of data * bool * bool
   | Accessor of accessor * bool * bool
-  | Generic of bool * bool
 and attrs =
     { code : exp option;
       proto : exp option;
@@ -89,8 +89,7 @@ let rename (x : id) (y : id) (exp : exp) : exp =
       | Data ({ value=exp; writable=b }, c, e) -> 
         Data ({ value=ren exp; writable=b }, c, e) 
       | Accessor ({ getter=gexp; setter=sexp}, c, e) ->
-        Accessor ({ getter=ren gexp; setter=ren sexp }, c, e)
-      | Generic _ -> a in
+        Accessor ({ getter=ren gexp; setter=ren sexp }, c, e) in
     match exp with
       | Null _
       | Undefined _
@@ -149,8 +148,7 @@ let rec fv (exp : exp) : IdSet.t = match exp with
     let field (name, prop) = match prop with
       | Data ({ value=vexp; }, _, _) -> fv vexp
       | Accessor ({ getter=gexp; setter=sexp; }, _, _) -> 
-        IdSet.union (fv gexp) (fv sexp) 
-      | Generic _ -> IdSet.empty in
+        IdSet.union (fv gexp) (fv sexp) in
     IdSetExt.unions (List.append [fv_attrs attrs] (map field fields))
   | SetField (_, o1, e1, e2, args) -> 
       IdSetExt.unions (map fv [o1; e1; e2; args])

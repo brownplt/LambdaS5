@@ -8,30 +8,24 @@ let rec exp e = match e with
   | Null _ -> text "null"
   | Undefined _ -> text "undefined"
   | Num (_,n) -> text (string_of_float n)
-  | String (_,s) -> text s
+  | String (_,s) -> text ("\"" ^ s ^ "\"")
   | True _ -> text "true"
   | False _-> text "false"
   | Id (p, x) -> text x
   | Object (p, avs, props) ->
-      parens (vert [text "object";
-                    attrsv avs;
-		    vert (map prop props)])
+    braces (vert [attrsv avs;
+		  vert (map prop props)])
   | SetField (p, o, f, v, args) ->
-      parens (horz 
-		 [text "update-field";
-		 exp o;
-		 exp f;
-		 exp v])
+    squish [exp o;
+            (brackets (horz [exp f; text "="; exp v; text ","; exp args]))];
   | GetField (p, o, f, args) ->
-      parens (horz 
-		 [text "get-field";
-		 exp o;
-		 exp f;])
+    squish [exp o;
+            (brackets (horz [exp f; text ","; exp args]))];
   | DeleteField (p, o1, f) ->
-      parens (horz
-		 [text "delete-field";
-		 exp o1;
-		 exp f])
+    parens (horz
+	      [text "delete-field";
+	       exp o1;
+	       exp f])
   | GetAttr (p, a, o, f) ->
       parens (horz
 		[text "attr-get";
@@ -90,20 +84,19 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
     | Some e -> [horz [text "#code:"; exp e]] in
   brackets (vert (proto@
                     code@
-                    [horz [text "#class:"; text k]; 
+                    [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
                      horz [text "#extensible"; text (string_of_bool b)]]))
               
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
-    horz [text f; text ":"; brackets (horz [text "#value:"; 
-                                            exp v; text ","; 
-                                            text "#writable:";  
-                                            text (string_of_bool w)])]
+    horz [text f; text ":"; braces (horz [text "#value:"; 
+                                          exp v; text ","; 
+                                          text "#writable:";  
+                                          text (string_of_bool w)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
-    horz [text f; text ":"; brackets (horz [text "#getter:";
-                                            exp g; text ",";
-                                            text "#setter:";
-                                            exp s])]
-  | _ -> failwith "generic printing nyi"
+    horz [text f; text ":"; braces (horz [text "#getter:";
+                                          exp g; text ",";
+                                          text "#setter:";
+                                          exp s])]
 

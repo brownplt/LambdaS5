@@ -26,7 +26,6 @@ and
   propv = 
   | Data of datav * bool * bool
   | Accessor of accessorv * bool * bool
-  | Generic of bool * bool
 and datav = { value : value; writable : bool; }
 and accessorv = { getter : value; setter : value; }
 

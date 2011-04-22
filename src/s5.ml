@@ -4,6 +4,7 @@ open Es5_eval
 open Es5_syntax
 open Es5_parser
 open Es5_pretty
+open Es5_values
 
 module S5 = struct
 
@@ -23,7 +24,8 @@ module S5 = struct
     print_newline ()
 
   let eval () : unit =
-    Es5_eval.eval_expr !srcES5;
+    let v = Es5_eval.eval_expr !srcES5 in
+    printf "%s" (pretty_value v);
     print_newline ()
 
   let desugar_js (path : string) : unit = 

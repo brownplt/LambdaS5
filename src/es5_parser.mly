@@ -165,7 +165,6 @@ prop_attr :
  | attr_name COLON exp { ($1, $3) }
 
 prop_attrs :
- | { Generic (false, false) }
  | WRITABLE BOOL COMMA VALUE exp 
      { Data ({ value = $5; writable = $2 }, true, true) }
  | VALUE exp COMMA WRITABLE BOOL
