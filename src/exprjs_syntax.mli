@@ -22,7 +22,6 @@ type expr =
   | ObjectExpr of pos * (pos * string * prop) list
       (** Object properties are transformed into string literals *)
   | ThisExpr of pos
-  | VarExpr of pos * id (** identifiers bound in scope objects *)
   | IdExpr of pos * id (** let-bound identifiers *)
   | BracketExpr of pos * expr * expr
   | NewExpr of pos * expr * expr list
@@ -39,8 +38,6 @@ type expr =
   | LabelledExpr of pos * id * expr
   | BreakExpr of pos * id * expr
   | ForInExpr of pos * id * expr * expr
-  | VarDeclExpr of pos * id * expr
-      (** We do not transform VarDeclStmts to let-bindings at this stage *)
   | TryCatchExpr of pos * expr * id * expr
   | TryFinallyExpr of pos * expr * expr
   | ThrowExpr of pos * expr

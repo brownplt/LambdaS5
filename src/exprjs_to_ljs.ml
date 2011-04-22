@@ -73,7 +73,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     and svl = exprjs_to_ljs vl in
     S.SetField (p, sobj, spr, svl, S.Null (p)) (* TODO: Args object is null for now *)
   | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
-  | E.VarDeclExpr (p, id, e) -> failwith "error: should have become a let"
   (* TODO: There's a comment in exprjs_syntax re: FuncStmtExpr.  Not sure
    * what it means. *)
   | E.AppExpr (p, e, el) -> let sl = List.map (fun x -> exprjs_to_ljs x) el in
