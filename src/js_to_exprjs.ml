@@ -50,11 +50,14 @@ let rec jse_to_exprjs (e : J.expr) (context : E.expr) : E.expr =
         | J.Set (name, arg, body) -> let ns = prop_to_str name in
           (p, ns, E.Setter (ns, E.FuncExpr (p, [arg], srcElts body context))) in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
+      (*TODO: below handling of J.Func is wrong, fix*)
     | J.Func (p, nm, args, body) -> E.FuncExpr (p, args, srcElts body context)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1 context, jse_to_exprjs e2 context)
     | J.Dot (p, e, nm) ->
       E.BracketExpr (p, jse_to_exprjs e context, E.String (p, nm))
+    | J.Infix (p, iop, l, r) ->
+      E.InfixExpr (p, iop, jse_to_exprjs l context, jse_to_exprjs r context)
     | J.Assign (p, aop, l, r) -> 
       let el = jse_to_exprjs l context
       and er = jse_to_exprjs r context in

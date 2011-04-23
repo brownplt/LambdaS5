@@ -128,7 +128,7 @@ and expr (v : json_type) : expr =
 	failwith "unexpected POSTFIX unary operator"
     | "Binary"
     | "Logical" ->
-      Infix (p, string (get "token" (get "operator" v)),
+      Infix (p, string (get "operator" v),
 	     expr (get "left" v), expr (get "right" v))
     | "Assignment" -> 
       Assign (p, string (get "operator" v),

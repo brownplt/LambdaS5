@@ -52,7 +52,18 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
     and f = exprjs_to_ljs r in
+    let normal = S.GetField (p, o, f, S.Null (p))
+    and lookup = s_lookup f in
+    let result = match l with
+      | E.IdExpr (p, nm) -> if nm <> "%context" then normal else lookup
+      | _ -> normal in
+    result
+      (*
+    let o = exprjs_to_ljs l
+    and f = exprjs_to_ljs r in
     S.GetField (p, o, f, S.Null (p)) (* TODO: Args object is null for now *)
+    *)
+  | E.InfixExpr (p, op, l, r) -> S.Op2 (p, op, exprjs_to_ljs l, exprjs_to_ljs r)
   | E.ObjectExpr (p, pl) ->
     let rec ejsprop_to_sprop pr = match pr with
       | E.Data (e) -> 
@@ -98,3 +109,19 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"
+
+and s_lookup prop =
+  let p = dummy_pos in
+    S.Rec (p, "lookup",
+    S.Lambda (p, ["k"; "obj";], 
+      S.If (p, 
+        S.Op2 (p, "stx=", S.Id (p, "obj"), S.Undefined (p)),
+        S.Undefined (p),
+        S.Let (p, "f", 
+          S.GetField (p, S.Id (p, "obj"), S.Id (p, "k"), S.Null (p)),
+          S.If (p, S.Op2 (p, "stx=", S.Id (p, "f"), S.Undefined (p)),
+            S.App (p, S.Id (p, "lookup"), 
+              [S.Id (p, "k"); 
+              S.GetField (p, S.Id (p, "obj"), S.String(p, "%parent"), S.Null (p));]),
+            S.Id (p, "f"))))),
+    S.App (p, S.Id (p, "lookup"), [prop; S.Id (p, "%context");]))
