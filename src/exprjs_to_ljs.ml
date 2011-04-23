@@ -76,11 +76,21 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   (* TODO: There's a comment in exprjs_syntax re: FuncStmtExpr.  Not sure
    * what it means. *)
   | E.AppExpr (p, e, el) -> let sl = List.map (fun x -> exprjs_to_ljs x) el in
-    S.App (p, exprjs_to_ljs e, sl)
+    let parent_arg = S.Id (p, "%context") in
+    S.App (p, exprjs_to_ljs e, parent_arg :: sl)
   | E.FuncStmtExpr (p, nm, args, body) ->
-    let rec f = exprjs_to_ljs body
-    and l = S.Lambda (p, args, S.Label (p, "%ret", f)) in
-    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), l, S.Null (p))
+    let arg_to_prop arg = 
+      (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
+    let rec ncontext_aprops = List.map (fun arg -> arg_to_prop arg) args
+    and parent_prop = 
+      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, true, true))
+    and ncontext_props = parent_prop :: ncontext_aprops
+    and ncontext = S.Object (p, S.d_attrs, ncontext_props) in
+    let rec inner_body = exprjs_to_ljs body
+    and inner_let = S.Let (p, "%context", ncontext, inner_body)
+    and inner_lbl = S.Label (p, "%ret", inner_let)
+    and inner_lambda = S.Lambda (p, "%parent" :: args, inner_lbl) in
+    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), inner_lambda, S.Null (p))
   | E.LetExpr (p, nm, vl, body) -> 
     let sv = exprjs_to_ljs vl
     and sb = exprjs_to_ljs body in
