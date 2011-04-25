@@ -58,6 +58,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | E.IdExpr (p, nm) -> if nm <> "%context" then normal else lookup
       | _ -> normal in
     result
+  | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
   | E.InfixExpr (p, op, l, r) -> S.Op2 (p, op, exprjs_to_ljs l, exprjs_to_ljs r)
   | E.ObjectExpr (p, pl) ->
     let rec ejsprop_to_sprop pr = match pr with

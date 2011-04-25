@@ -95,6 +95,7 @@ end
 let print v = match v with
   | String s -> 
       printf "%S\n" s; Undefined
+  | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
 
 let is_extensible obj = match obj with

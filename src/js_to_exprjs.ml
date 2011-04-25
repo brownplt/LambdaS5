@@ -134,3 +134,9 @@ and srcElts (ss : J.srcElt list) (parent : E.expr) : E.expr =
       | [first] -> se_to_e first
       | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts rest parent) in
   E.LetExpr (p, "%context", context, srcElts ss parent)
+
+and toplevel = let p = dummy_pos in
+  let toplevel_print = 
+    E.FuncExpr (p, ["s"], E.PrefixExpr (p, "print", E.IdExpr (p, "s"))) in
+  let toplevel_props = [(p, "print", E.Data (toplevel_print))] in
+  E.ObjectExpr(p, toplevel_props)
