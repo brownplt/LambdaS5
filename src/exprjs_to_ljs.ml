@@ -58,11 +58,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | E.IdExpr (p, nm) -> if nm <> "%context" then normal else lookup
       | _ -> normal in
     result
-      (*
-    let o = exprjs_to_ljs l
-    and f = exprjs_to_ljs r in
-    S.GetField (p, o, f, S.Null (p)) (* TODO: Args object is null for now *)
-    *)
   | E.InfixExpr (p, op, l, r) -> S.Op2 (p, op, exprjs_to_ljs l, exprjs_to_ljs r)
   | E.ObjectExpr (p, pl) ->
     let rec ejsprop_to_sprop pr = match pr with
@@ -89,18 +84,9 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.AppExpr (p, e, el) -> let sl = List.map (fun x -> exprjs_to_ljs x) el in
     let parent_arg = S.Id (p, "%context") in
     S.App (p, exprjs_to_ljs e, parent_arg :: sl)
-  | E.FuncStmtExpr (p, nm, args, body) ->
-    let arg_to_prop arg = 
-      (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
-    let rec ncontext_aprops = List.map (fun arg -> arg_to_prop arg) args
-    and parent_prop = 
-      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, true, true))
-    and ncontext_props = parent_prop :: ncontext_aprops
-    and ncontext = S.Object (p, S.d_attrs, ncontext_props) in
-    let rec inner_body = exprjs_to_ljs body
-    and inner_let = S.Let (p, "%context", ncontext, inner_body)
-    and inner_lbl = S.Label (p, "%ret", inner_let)
-    and inner_lambda = S.Lambda (p, "%parent" :: args, inner_lbl) in
+  | E.FuncExpr (p, args, body) -> get_lambda p args body
+  | E.FuncStmtExpr (p, nm, args, body) -> 
+    let inner_lambda = get_lambda p args body in
     S.SetField (p, S.Id (p, "%context"), S.String (p, nm), inner_lambda, S.Null (p))
   | E.LetExpr (p, nm, vl, body) -> 
     let sv = exprjs_to_ljs vl
@@ -109,6 +95,19 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"
+
+and get_lambda p args body = 
+  let arg_to_prop arg = 
+      (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
+    let rec ncontext_aprops = List.map (fun arg -> arg_to_prop arg) args
+    and parent_prop = 
+      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, true, true))
+    and ncontext_props = parent_prop :: ncontext_aprops
+    and ncontext = S.Object (p, S.d_attrs, ncontext_props) in
+    let rec inner_body = exprjs_to_ljs body
+    and inner_let = S.Let (p, "%context", ncontext, inner_body)
+    and inner_lbl = S.Label (p, "%ret", inner_let) in
+    S.Lambda (p, "%parent" :: args, inner_lbl)
 
 and s_lookup prop =
   let p = dummy_pos in

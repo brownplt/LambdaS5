@@ -124,7 +124,7 @@ and jss_to_exprjs (s : J.stmt) (context : E.expr) : E.expr =
 
 and srcElts (ss : J.srcElt list) (parent : E.expr) : E.expr =
   let rec p = dummy_pos
-  and parent_prop = (p, "parent", E.Data(parent))
+  and parent_prop = (p, "%parent", E.Data(parent))
   and context = E.ObjectExpr (p, [parent_prop])
   and srcElts (ss : J.srcElt list) (parent : E.expr) : E.expr =
     let se_to_e se = match se with
