@@ -1,3 +1,5 @@
+open Printf
+
 type json_type =
     Object of (string * json_type) list
   | Array of json_type list
@@ -22,7 +24,7 @@ let get key v = match v with
     begin try List.assoc key pairs
       with Not_found -> raise (Json_error ("expected a " ^ key ^ "field"))
     end
-  | _ -> raise (Json_error "expected a JSON object")
+  | _ -> raise (Json_error (sprintf "expected a JSON object %s" key))
 
 let list v = match v with
   | Array lst -> lst
