@@ -87,10 +87,14 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     and svl = exprjs_to_ljs vl in
     S.SetField (p, sobj, spr, svl, S.Null (p)) (* TODO: Args object is null for now *)
   | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
-  | E.AppExpr (p, e, el) -> let sl = List.map (fun x -> exprjs_to_ljs x) el
-    and fobj = exprjs_to_ljs e in
-    let fscope = S.GetField (p, fobj, S.String (p, "%scope"), S.Null (p)) in
-    S.App (p, fobj, fscope :: sl)
+  | E.AppExpr (p, e, el) -> 
+    let sl = List.map (fun x -> exprjs_to_ljs x) el
+    and f = exprjs_to_ljs e in
+    let fscope = match f with
+      | S.Object (p, at, pl) -> 
+        S.GetField (p, f, S.String (p, "%scope"), S.Null (p))
+      | _ -> S.Id (p, "%context") in
+    S.App (p, f, fscope :: sl)
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.FuncStmtExpr (p, nm, args, body) -> 
     (* TODO: null Args object *)
@@ -108,8 +112,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
 and get_fobj p args body context = 
   let call = get_lambda p args body in
   let fobj_attrs = 
-    { S.code = Some (call); S.proto = None; S.klass = "Function"; S.extensible =
-      true; }
+    { S.code = Some (call); S.proto = Some (S.Null (p)); S.klass = "Function"; 
+    S.extensible = true; }
   and scope_prop =
     ("%scope", S.Data ({ S.value = context; S.writable = false; }, false,
     false)) in
