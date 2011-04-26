@@ -87,15 +87,15 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     and svl = exprjs_to_ljs vl in
     S.SetField (p, sobj, spr, svl, S.Null (p)) (* TODO: Args object is null for now *)
   | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
-  (* TODO: There's a comment in exprjs_syntax re: FuncStmtExpr.  Not sure
-   * what it means. *)
-  | E.AppExpr (p, e, el) -> let sl = List.map (fun x -> exprjs_to_ljs x) el in
-    let parent_arg = S.Id (p, "%context") in
-    S.App (p, exprjs_to_ljs e, parent_arg :: sl)
-  | E.FuncExpr (p, args, body) -> get_lambda p args body
+  | E.AppExpr (p, e, el) -> let sl = List.map (fun x -> exprjs_to_ljs x) el
+    and fobj = exprjs_to_ljs e in
+    let fscope = S.GetField (p, fobj, S.String (p, "%scope"), S.Null (p)) in
+    S.App (p, fobj, fscope :: sl)
+  | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.FuncStmtExpr (p, nm, args, body) -> 
-    let inner_lambda = get_lambda p args body in
-    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), inner_lambda, S.Null (p))
+    (* TODO: null Args object *)
+    let fobj = get_fobj p args body (S.Id (p, "%context")) in
+    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), fobj, S.Null (p))
   | E.LetExpr (p, nm, vl, body) -> 
     let sv = exprjs_to_ljs vl
     and sb = exprjs_to_ljs body in
@@ -104,12 +104,26 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"
 
+(* 13.2 *)
+and get_fobj p args body context = 
+  let call = get_lambda p args body in
+  let fobj_attrs = 
+    { S.code = Some (call); S.proto = None; S.klass = "Function"; S.extensible =
+      true; }
+  and scope_prop =
+    ("%scope", S.Data ({ S.value = context; S.writable = false; }, false,
+    false)) in
+  S.Object (p, fobj_attrs, [scope_prop])
+
+(* 13.2.1 *)
 and get_lambda p args body = 
+  (* TODO: binding for "this" in new context *)
   let arg_to_prop arg = 
       (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
     let rec ncontext_aprops = List.map (fun arg -> arg_to_prop arg) args
     and parent_prop = 
-      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, true, true))
+      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, 
+      true, true))
     and ncontext_props = parent_prop :: ncontext_aprops
     and ncontext = S.Object (p, S.d_attrs, ncontext_props) in
     let rec inner_body = exprjs_to_ljs body
