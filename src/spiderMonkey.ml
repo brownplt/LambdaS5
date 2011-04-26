@@ -71,11 +71,19 @@ let rec stmt (v : json_type) : stmt =
 		    maybe block (get "block" v))
     | "While" -> While (p, expr (get "test" v), stmt (get "body" v))
     | "DoWhile" -> DoWhile (p, stmt (get "body" v), expr (get "test" v))
-    | "For" -> failwith "NYI"
-(*      let init = get "init" v in
-      begin match string (get "type" init) with
-	| "VariableDeclaration" -> 
-	  ForInVar (p, varDecls init, *)
+    | "For" -> 
+      let init = get "init" v
+      and test = get "test" v
+      and update = get "update" v
+      and body = get "body" v in
+      let init_typ = get "type" init in
+      let result = match (string init_typ) with
+        | "VariableDeclaration" -> failwith "ForVar NYI"
+        | _ -> let i = Some (expr init)
+          and t = Some (expr test)
+          and u = Some (expr update) in
+          For (p, i, t, u, stmt body) in
+      result
     | "ForIn" -> failwith "NYI"
     | "Debugger" -> Debugger p
     | _ -> failwith (sprintf "unexpected %s statement" typ)
