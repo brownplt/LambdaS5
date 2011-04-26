@@ -46,7 +46,7 @@ let dec_lit =
 
 let num_lit = dec_lit | hex_lit
 
-let ident = ['a'-'z' 'A'-'Z' '$' '_']['a'-'z' 'A'-'Z' '0'-'9' '$' '_' '-']*
+let ident = ['a'-'z' 'A'-'Z' '$' '_' '%']['a'-'z' 'A'-'Z' '0'-'9' '$' '_' '-']*
 
 let digit = ['0'-'9']
 

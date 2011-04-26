@@ -12,11 +12,6 @@ let str p s = String (p, s)
 let num_c p d = Num (p, d)
 let int_c p d = Num (p, float_of_int d)
 
-(* All free variables "x" in the environment are renamed to "[[x]]" *)
-let rename_env exp : exp  =
-  let ren v exp = rename v ("[[" ^ v ^ "]]") exp in
-  IdSet.fold ren (fv exp) exp
-
 (* Macros for expanding arguments objects and function objects (a
 little bit of desugaring)*)
 
@@ -192,8 +187,8 @@ ids :
  | ID COMMA ids { $1 :: $3 }
 
 func :
- | FUNC LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
-   { Lambda (($startpos, $endpos), $3, $7) }
+ | FUNC LPAREN ids RPAREN LBRACE seq_exp RBRACE
+   { Lambda (($startpos, $endpos), $3, $6) }
 
 atom :
  | const { $1 }
@@ -204,10 +199,10 @@ atom :
    { $2 }
  | LPAREN seq_exp RPAREN { $2 }
  | func { $1 }
- | FUNCTION LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
+ | FUNCTION LPAREN ids RPAREN LBRACE seq_exp RBRACE
      {
        let ids = $3 in
-       let body = $7 in
+       let body = $6 in
        let p = ($startpos, $endpos) in
        String (p, "no functions yet")
 (*	 func_object p ids (func_expr_lambda p ids body) *)
@@ -285,9 +280,9 @@ env :
      { fun x -> x }
  | LET LLBRACK ID RRBRACK EQUALS seq_exp env
      { fun x -> 
-         Let (($startpos, $endpos), "[[" ^ $3 ^ "]]", rename_env $6, $7 x) }
+         Let (($startpos, $endpos), $3, $6, $7 x) }
  | LBRACE seq_exp RBRACE env
-     { fun x -> Seq (($startpos, $endpos), rename_env $2, $4 x) }
+     { fun x -> Seq (($startpos, $endpos), $2, $4 x) }
 
 prog :
  | seq_exp EOF { $1 }

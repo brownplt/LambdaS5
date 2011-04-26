@@ -13,6 +13,7 @@ module S5 = struct
   open SpiderMonkey
   open Js_to_exprjs
   open Exprjs_to_ljs
+  open Exprjs_syntax
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
@@ -32,10 +33,14 @@ module S5 = struct
     printf "%s" (pretty_value v);
     print_newline ()
 
+  let env (path : string) : unit =
+    let envFunc = Es5.parse_es5_env (open_in path) path in
+    srcES5 := envFunc !srcES5
+
   let desugar_js (path : string) : unit = 
     let ast = parse_spidermonkey (open_in path) path in
     let open Exprjs_syntax in
-    let exprjsd = srcElts ast toplevel in
+    let exprjsd = srcElts ast (Exprjs_syntax.IdExpr (dummy_pos, "%scope")) in
     let desugard = exprjs_to_ljs exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
     (*
@@ -57,6 +62,8 @@ module S5 = struct
          "<exprjs|s5|both> pretty-print s5/exprjs code");
         ("-eval", Arg.Unit eval,
         "evaluate code");
+        ("-env", Arg.String env,
+         "wrap the program in an environment")
       ]
       load_s5
       "Usage: s5 <action> <path> ...";;
