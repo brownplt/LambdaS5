@@ -47,15 +47,26 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
         | _ -> failwith "getter/setter nyi" in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
-      (*TODO: below handling of J.Func is wrong, fix*)
+    | J.Paren (p, el) ->
+      let rec unroll = function
+        | [] -> E.Undefined (p)
+        | [f] -> jse_to_exprjs f
+        | f :: rest -> E.SeqExpr (p, jse_to_exprjs f, unroll rest) in
+      unroll el
     | J.Func (p, nm, args, body) -> let parent = E.IdExpr (p, "%context") in
       E.FuncExpr (p, args, srcElts body parent)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | J.Dot (p, e, nm) ->
       E.BracketExpr (p, jse_to_exprjs e, E.String (p, nm))
+    | J.New (p, c, al) -> let argl = map (fun a -> jse_to_exprjs a) al in
+      E.NewExpr (p, jse_to_exprjs c, argl)
+    | J.Prefix (p, pop, r) -> E.PrefixExpr (p, pop, jse_to_exprjs r)
+    | J.UnaryAssign (p, aop, r) -> E.PrefixExpr (p, aop, jse_to_exprjs r)
     | J.Infix (p, iop, l, r) ->
       E.InfixExpr (p, iop, jse_to_exprjs l, jse_to_exprjs r)
+    | J.Cond (p, e1, e2, e3) ->  
+      E.IfExpr (p, jse_to_exprjs e1, jse_to_exprjs e2, jse_to_exprjs e3)
     | J.Assign (p, aop, l, r) -> 
       let el = jse_to_exprjs l
       and er = jse_to_exprjs r in
@@ -69,9 +80,13 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | "=" -> E.AssignExpr (p, target, property, er)
         | _ -> failwith "only assign op implemented is =" in
       e_asgn
+    | J.List (p, el) -> let rec unroll = function
+      | [] -> E.Undefined (p)
+      | [f] -> jse_to_exprjs f
+      | f :: rest -> E.SeqExpr (p, jse_to_exprjs f, unroll rest) in
+      unroll el
     | J.Call (p, e, el) -> let xl = List.map (fun x -> jse_to_exprjs x) el in 
       E.AppExpr (p, jse_to_exprjs e, xl)
-    | e -> failwith "unimplemented expression type"
 
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
@@ -92,19 +107,43 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | [f] -> vdj_to_vde f
       | f :: rest -> E.SeqExpr(p, vdj_to_vde f, unroll rest) in
     unroll vdl
+  | J.Empty (p) -> E.Undefined (p)
   | J.Expr (p, e) -> jse_to_exprjs e
-  | J.Labeled (p, id, s) -> E.LabelledExpr (p, id, jss_to_exprjs s)
-  | J.Continue (p, id) -> let lbl = match id with
-    | None -> "loopstart" | Some s -> s in
-    E.BreakExpr (p, lbl, E.Undefined (p))
-  | J.Break (p, id) -> let lbl = match id with
-    | None -> "loopend" | Some s -> s in 
-    E.BreakExpr (p, lbl, E.Undefined (p))
-  | J.Return (p, e) -> let rval = match e with
+  | J.If (p, e1, s2, s3) -> let alt = match s3 with
     | None -> E.Undefined (p)
-    | Some x -> jse_to_exprjs x in
-    E.BreakExpr (p, "%ret", rval)
+    | Some s -> jss_to_exprjs s in
+    E.IfExpr (p, jse_to_exprjs e1, jss_to_exprjs s2, alt)
+  | J.DoWhile (p, b, t) ->
+    let rec body = jss_to_exprjs b
+    and we = E.WhileExpr (p, jse_to_exprjs t, body) in
+    E.SeqExpr (p, body, we)
+  | J.While (p, t, b) -> E.WhileExpr (p, jse_to_exprjs t, jss_to_exprjs b)
   | J.For (p, e1, e2, e3, body) -> 
+    let rec init1 a = match a with
+      | None -> E.Undefined (p)
+      | Some a -> jse_to_exprjs a
+    and init2 b = match b with
+      | None -> E.True (p)
+      | Some b -> jse_to_exprjs b in
+    let context = E.IdExpr (p, "%context") in
+    let first = E.AssignExpr (p, context, E.String (p, "%init"), E.True (p))
+    and exit = E.AssignExpr (p, context, E.String (p, "%test"), E.False (p))
+    and init_bdy = 
+      E.SeqExpr (p, init1 e1, 
+        E.AssignExpr (p, context, E.String (p, "%test"), init2 e2)) in
+    let init = E.IfExpr (p, E.IdExpr (p, "%init"), init_bdy, E.Undefined (p))
+    and exit_pt = E.LabelledExpr (p, "%exit", exit)
+    and init_asgn = E.AssignExpr (p, context, E.String (p, "%init"), E.False (p))
+    and tst_asgn = E.AssignExpr (p, context, E.String (p, "%test"), init2 e2) in
+    let while_sq = 
+      E.SeqExpr (p, jss_to_exprjs body,
+        E.SeqExpr (p, init1 e3,
+          E.SeqExpr (p, init_asgn, tst_asgn))) in
+    let while_bdy = E.LabelledExpr (p, "%start", while_sq) in
+    E.SeqExpr (p, first,
+      E.SeqExpr (p, exit_pt, 
+        E.SeqExpr (p, init, E.WhileExpr (p, E.IdExpr (p, "%test"), while_bdy))))
+    (*
     let rec init1 a = match a with 
       | None -> E.Undefined (p)
       | Some a -> jse_to_exprjs a
@@ -118,6 +157,18 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     E.SeqExpr (p, init1 e1,
       E.SeqExpr (p, innerwhile,
         E.LabelledExpr (p, "loopend", E.Undefined (p))))
+        *)
+  | J.Labeled (p, id, s) -> E.LabelledExpr (p, id, jss_to_exprjs s)
+  | J.Continue (p, id) -> let lbl = match id with
+    | None -> "loopstart" | Some s -> s in
+    E.BreakExpr (p, lbl, E.Undefined (p))
+  | J.Break (p, id) -> let lbl = match id with
+    | None -> "loopend" | Some s -> s in 
+    E.BreakExpr (p, lbl, E.Undefined (p))
+  | J.Return (p, e) -> let rval = match e with
+    | None -> E.Undefined (p)
+    | Some x -> jse_to_exprjs x in
+    E.BreakExpr (p, "%ret", rval)
   | _ -> failwith "unimplemented statement type"
 
 and srcElts (ss : J.srcElt list) (parent : E.expr) : E.expr =
