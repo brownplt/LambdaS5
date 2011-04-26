@@ -25,11 +25,13 @@ type exp =
   | False of pos
   | Id of pos * id
   | Object of pos * attrs * (string * prop) list
+      (* GetAttr (pos, property, object, field name) *)
   | GetAttr of pos * pattr * exp * exp
+      (* SetAttr (pos, property, object, field name, new value) *)
   | SetAttr of pos * pattr * exp * exp * exp
   | GetField of pos * exp * exp * exp (*pos, left, right, args object *)
-  | SetField of pos * exp * exp * exp * exp
-  | DeleteField of pos * exp * exp
+  | SetField of pos * exp * exp * exp * exp (* pos, obj, field, new val, args *)
+  | DeleteField of pos * exp * exp (* pos, obj, field *)
   | SetBang of pos * id * exp
   | Op1 of pos * string * exp
   | Op2 of pos * string * exp * exp
