@@ -48,18 +48,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.Undefined (p) -> S.Undefined (p)
   | E.Null (p) -> S.Null (p)
   | E.String (p, s) -> S.String (p, s)
-  | E.IdExpr (p, nm) -> S.Id (p, nm)
-  | E.BracketExpr (p, l, r) -> 
-    let o = exprjs_to_ljs l
-    and f = exprjs_to_ljs r in
-    let normal = S.GetField (p, o, f, S.Null (p))
-    and lookup = s_lookup f in
-    let result = match l with
-      | E.IdExpr (p, nm) -> if nm <> "%context" then normal else lookup
-      | _ -> normal in
-    result
-  | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
-  | E.InfixExpr (p, op, l, r) -> S.Op2 (p, op, exprjs_to_ljs l, exprjs_to_ljs r)
   | E.ObjectExpr (p, pl) ->
     let rec ejsprop_to_sprop pr = match pr with
       | E.Data (e) -> 
@@ -74,6 +62,25 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | [] -> []
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
     S.Object (p, S.d_attrs, form_props pl)
+  | E.IdExpr (p, nm) -> S.Id (p, nm)
+  | E.BracketExpr (p, l, r) -> 
+    let o = exprjs_to_ljs l
+    and f = exprjs_to_ljs r in
+    let normal = S.GetField (p, o, f, S.Null (p))
+    and lookup = s_lookup f in
+    let result = match l with
+      | E.IdExpr (p, nm) -> if nm <> "%context" then normal else lookup
+      | _ -> normal in
+    result
+  | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
+  | E.InfixExpr (p, op, l, r) -> let op = match op with
+    | "===" -> "abs="
+    | "==" -> "stx="
+    | _ -> op in
+    S.Op2 (p, op, exprjs_to_ljs l, exprjs_to_ljs r)
+  | E.IfExpr (p, e1, e2, e3) -> let e1 = exprjs_to_ljs e1
+    and e2 = exprjs_to_ljs e2
+    and e3 = exprjs_to_ljs e3 in S.If (p, e1, e2, e3)
   | E.AssignExpr (p, obj, pr, vl) -> 
     let sobj = exprjs_to_ljs obj
     and spr = exprjs_to_ljs pr
