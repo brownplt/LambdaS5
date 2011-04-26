@@ -72,19 +72,32 @@ let rec stmt (v : json_type) : stmt =
     | "While" -> While (p, expr (get "test" v), stmt (get "body" v))
     | "DoWhile" -> DoWhile (p, stmt (get "body" v), expr (get "test" v))
     | "For" -> 
-      let init = get "init" v
-      and test = get "test" v
-      and update = get "update" v
-      and body = get "body" v in
-      let init_typ = get "type" init in
-      let result = match (string init_typ) with
-        | "VariableDeclaration" -> failwith "ForVar NYI"
-        | _ -> let i = Some (expr init)
-          and t = Some (expr test)
-          and u = Some (expr update) in
-          For (p, i, t, u, stmt body) in
-      result
-    | "ForIn" -> failwith "NYI"
+      let init = get "init" v in
+      let test = maybe expr (get "test" v) in
+      let update = maybe expr (get "update" v) in
+      let body = stmt (get "body" v) in
+      begin match init with
+        | Json_type.Null -> For (p, None, test, update, body)
+        | _ ->
+          begin match string (get "type" init) with
+	    | "VariableDeclaration" -> 
+	      ForVar (p, map varDecl (list (get "declarations" init)), 
+                      test, update, body)
+            | _ -> For (p, Some (expr init), test, update, body)
+          end
+      end
+    | "ForIn" -> 
+      let left = get "left" v in
+      let right = expr (get "right" v) in
+      let body = stmt (get "body" v) in
+      (* TODO: What is each? *)
+      let each = bool (get "each" v) in
+      begin match string (get "type" left) with
+        | "VariableDeclaration" -> 
+          ForInVar (p, List.nth (map varDecl (list (get "declarations" left))) 0, 
+                    right, body)
+        | _ -> ForIn (p, expr left, right, body)
+      end
     | "Debugger" -> Debugger p
     | _ -> failwith (sprintf "unexpected %s statement" typ)
 
@@ -141,10 +154,11 @@ and expr (v : json_type) : expr =
     | "Assignment" -> 
       Assign (p, string (get "operator" v),
 	      expr (get "left" v), expr (get "right" v))
+    (* "UpdateOperator" disagrees with docs---operator is just a string *)
     | "Update" ->
       let op = 
 	(if bool (get "prefix" v) then "prefix:" else "postfix:") ^
-	  string (get "token" (get "operator" v)) in
+	  string (get "operator" v) in
       UnaryAssign (p, op, expr (get "argument" v))
     | "Conditional" ->
       Cond (p, expr (get "test" v), expr (get "consequent" v),
