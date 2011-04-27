@@ -54,7 +54,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let add_accessor pr sofar = match pr with
       | (_, _, E.Getter (nm, exp)) ->
         let gval = 
-          get_accessor_fobj p [] exp (S.Id (p, "%context")) in
+          get_fobj p [] exp (S.Id (p, "%context")) in
         let a = { S.getter = gval; S.setter = S.Undefined (p); } in
         (nm, S.Accessor (a, true, true)) :: sofar
       | (_, _, E.Setter (nm, exp)) -> failwith "setters nyi"
@@ -148,7 +148,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"
 
-(* 13.2 *)
 and get_fobj p args body context = 
   let call = get_lambda p args body in
   let fobj_attrs = 
@@ -159,9 +158,7 @@ and get_fobj p args body context =
     false)) in
   S.Object (p, fobj_attrs, [scope_prop])
 
-(* 13.2.1 *)
 and get_lambda p args body = 
-  (* TODO: binding for "this" in new context *)
   let arg_to_prop arg = 
       (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
     let rec ncontext_aprops = List.map (fun arg -> arg_to_prop arg) args
@@ -175,6 +172,7 @@ and get_lambda p args body =
     and inner_lbl = S.Label (p, "%ret", inner_let) in
     S.Lambda (p, "%parent" :: args, inner_lbl)
 
+    (*
 and get_accessor_fobj p args body context = 
   let call = get_accessor_lambda p args body in
   let fobj_attrs = 
@@ -197,7 +195,8 @@ and get_accessor_lambda p args body =
     and ncontext = S.Object (p, S.d_attrs, ncontext_props) in
     let rec inner_body = exprjs_to_ljs body
     and inner_lbl = S.Label (p, "%ret", inner_body) in
-    S.Lambda (p, "%parent" :: args, inner_lbl)
+    S.Lambda (p, "%this" :: ("%parent" :: args), inner_lbl)
+    *)
 
 and s_lookup prop =
   let p = dummy_pos in

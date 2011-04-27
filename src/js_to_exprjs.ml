@@ -47,7 +47,7 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
         | J.Get (nm, sel) ->
           let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
-          (p, name, E.Getter (name, srcElts sel parent))
+          (p, name, E.Getter (name, srcElts_inner sel parent))
         | _ -> failwith "getter/setter nyi" in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
     | J.Paren (p, el) ->
@@ -177,16 +177,16 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
 and srcElts (ss : J.srcElt list) (parent : E.expr) : E.expr =
   let rec p = dummy_pos
   and parent_prop = (p, "%parent", E.Data(parent))
-  and context = E.ObjectExpr (p, [parent_prop])
-  and srcElts (ss : J.srcElt list) (parent : E.expr) : E.expr =
-    let se_to_e se = match se with
-      | J.Stmt (s) -> jss_to_exprjs s
-      | J.FuncDecl (nm, args, body) ->
-        E.FuncStmtExpr (p, nm, args, srcElts body context) in
-     match ss with
-      | [] -> E.Undefined (p)
-      | [first] -> se_to_e first
-      | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts rest parent) in
-  E.LetExpr (p, "%context", context, srcElts ss parent)
+  and context = E.ObjectExpr (p, [parent_prop]) in
+  E.LetExpr (p, "%context", context, srcElts_inner ss context)
 
-
+and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
+  let p = dummy_pos in
+  let se_to_e se = match se with
+    | J.Stmt (s) -> jss_to_exprjs s
+    | J.FuncDecl (nm, args, body) ->
+      E.FuncStmtExpr (p, nm, args, srcElts body context) in
+  match ss with
+    | [] -> E.Undefined (p)
+    | [first] -> se_to_e first
+    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts_inner rest context) 
