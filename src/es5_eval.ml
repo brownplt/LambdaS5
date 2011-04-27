@@ -33,7 +33,8 @@ let rec get_field p obj1 obj2 field args = match obj1 with
 	   match IdMap.find field props with
              | Data ({ value = v; }, _, _) -> v
              | Accessor ({ getter = g; }, _, _) ->
-	       apply g [obj2; args]
+	       (*apply g [obj2; args]*)
+         apply g [obj2]
         (* Not_found means prototype lookup is necessary *)
 	 with Not_found ->
 	   get_field p pvalue obj2 field args

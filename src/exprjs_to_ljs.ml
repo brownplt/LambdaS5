@@ -102,6 +102,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
     let data_result = form_props data_props in
     S.Object (p, S.d_attrs, List.append reduced_assoc data_result)
+  | E.ThisExpr (p) -> failwith "ThisExpr nyi"
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
@@ -129,12 +130,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
   | E.AppExpr (p, e, el) -> 
     let sl = List.map (fun x -> exprjs_to_ljs x) el
-    and f = exprjs_to_ljs e in
-    let fscope = match f with
-      | S.Object (p, at, pl) -> 
-        S.GetField (p, f, S.String (p, "%scope"), S.Null (p))
-      | _ -> S.Id (p, "%context") in
-    S.App (p, f, fscope :: sl)
+    and f = exprjs_to_ljs e in 
+    S.App (p, f, S.Id (p, "%this") :: sl)
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.FuncStmtExpr (p, nm, args, body) -> 
     (* TODO: null Args object *)
@@ -156,8 +153,10 @@ and get_fobj p args body context =
   and scope_prop =
     ("%scope", S.Data ({ S.value = context; S.writable = false; }, false,
     false)) in
-  S.Object (p, fobj_attrs, [scope_prop])
+  S.Let (p, "%parent", context,
+    S.Object (p, fobj_attrs, [scope_prop]))
 
+(* Function body's internal lambda takes (this, arg1, arg2, ...) *)
 and get_lambda p args body = 
   let arg_to_prop arg = 
       (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
@@ -170,7 +169,7 @@ and get_lambda p args body =
     let rec inner_body = exprjs_to_ljs body
     and inner_let = S.Let (p, "%context", ncontext, inner_body)
     and inner_lbl = S.Label (p, "%ret", inner_let) in
-    S.Lambda (p, "%parent" :: args, inner_lbl)
+    S.Lambda (p, "%this" :: args, inner_lbl)
 
     (*
 and get_accessor_fobj p args body context = 
