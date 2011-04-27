@@ -38,7 +38,7 @@ let rec get_field p obj1 obj2 field args = match obj1 with
 	   match IdMap.find field props with
              | Data ({ value = v; }, _, _) -> v
              | Accessor ({ getter = g; }, _, _) ->
-	       apply_obj g obj2 (apply args [g])
+	       apply_obj g obj2 args
         (* Not_found means prototype lookup is necessary *)
 	 with Not_found ->
 	   get_field p pvalue obj2 field args
@@ -100,7 +100,7 @@ let rec update_field obj1 obj2 field newval args = match obj1 with
 	      end
             | Accessor ({ setter = setterv; }, enum, config) ->
 	      (* 8.12.5, step 5 *)
-	      apply_obj setterv obj2 (apply args [setterv])
+	      apply_obj setterv obj2 args
             | _ -> Fail "Field not writable!"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
