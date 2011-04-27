@@ -17,6 +17,11 @@ let rec interp_error pos message =
 
 let rec apply func args = match func with
   | Closure c -> c args
+  | ObjCell c -> begin match !c with
+      | ({ code = Some cvalue }, _) ->
+        apply cvalue args
+      | _ -> Fail "Applied an object without a code attribute"
+  end
   | _ -> failwith ("[interp] Applied non-function, was actually " ^ 
 		     pretty_value func)
 
@@ -330,18 +335,8 @@ let rec eval exp env = match exp with
 	else eval e env
   | S.App (p, func, args) -> 
       let func_value = eval func env in
-      let args_values = map (fun e -> eval e env) args in begin
-	match func_value, args_values with
-	  | ObjCell c, args -> begin match !c with
-              | ({ code = Some cvalue }, _) ->
-                apply cvalue args
-              | _ -> Fail "Applied an object without a code attribute"
-          end
-	  | Closure c, _ -> apply func_value args_values
-	  | ObjCell o, _ ->
-	      failwith ("[interp] Need to provide this and args for a call to a function object at " ^ string_of_position p)
-	  | _, _ -> failwith ("[interp] Inapplicable value: " ^ pretty_value func_value ^ ", applied to " ^ pretty_value_list args_values ^ ", at " ^ string_of_position p)
-	end
+      let args_values = map (fun e -> eval e env) args in
+        apply func_value args_values
   | S.Seq (p, e1, e2) -> 
       eval e1 env;
       eval e2 env
