@@ -45,6 +45,9 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       and m_to_pr m = match m with
         | J.Field (name, e) -> 
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
+        | J.Get (nm, sel) ->
+          let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
+          (p, name, E.Getter (name, srcElts sel parent))
         | _ -> failwith "getter/setter nyi" in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
     | J.Paren (p, el) ->

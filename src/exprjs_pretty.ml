@@ -52,4 +52,5 @@ let rec exp e = match e with
 
 and prop p = match p with
 | (_, nm, Data (expr)) -> brackets (horz [text nm; text "="; exp expr;])
-| _ -> failwith "getters/setters nyi"
+| (_, nm, Getter (s, expr)) -> brackets (horz [text "get"; text nm; text "="; exp expr;])
+| (_, nm, Setter (s, expr)) -> brackets (horz [text "set"; text nm; text "="; exp expr;])

@@ -49,6 +49,45 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.Null (p) -> S.Null (p)
   | E.String (p, s) -> S.String (p, s)
   | E.ObjectExpr (p, pl) ->
+    (* Given a tuple, if it's a getter/setter, create a name-accessor pair and add to
+     * sofar *)
+    let add_accessor pr sofar = match pr with
+      | (_, _, E.Getter (nm, exp)) ->
+        let a = { S.getter = exprjs_to_ljs exp; S.setter = S.Undefined (p); } in
+        (nm, S.Accessor (a, true, true)) :: sofar
+      | (_, _, E.Setter (nm, exp)) ->
+        let a = { S.getter = S.Undefined (p); S.setter = exprjs_to_ljs exp; } in
+        (nm, S.Accessor (a, true, true)) :: sofar
+      | _ -> sofar in
+    (* Given a list of tuples, produce a list of name, accessor pairs *)
+    let rec accessors tl sofar = match tl with
+      | [] -> sofar
+      | t :: rest -> accessors rest (add_accessor t sofar) in
+    (* Get only those pairs with name = nm *)
+    let tuples tl nm = List.filter (fun (n, _) -> n = nm) tl in
+    (* Given a list of name-accessor pairs, reduce them to one *)
+    let rec reduce al result = match al with
+      | [] -> result
+      | (nm, S.Accessor (a, wr, cfg)) :: rest ->
+        let result_a = match result with
+          | S.Accessor (aa, _, _) -> aa in
+        let next = match a with
+          | { S.getter = S.Undefined _; S.setter = s; } ->
+            S.Accessor ({ S.getter = result_a.S.getter; S.setter = s; }, wr, cfg)
+          | { S.getter = g; S.setter = S.Undefined _; } ->
+            S.Accessor ({ S.getter = g; S.setter = result_a.S.setter; }, wr, cfg)
+          | _ -> S.Accessor (a, wr, cfg) in
+        reduce rest next in
+    let dup_pairs = accessors pl [] in
+    let name_lst = remove_dupes (map (fun (n, _) -> n) dup_pairs) in
+    let name_assoc = map (fun n -> (n, tuples dup_pairs n)) name_lst in
+    let dummy_prop = 
+      S.Accessor (
+        { S.getter = S.Undefined (p); S.setter = S.Undefined (p); }, true, true) in
+    let reduced_assoc = map (fun (n, al) -> (n, reduce al dummy_prop)) name_assoc in
+    let data_props = 
+      List.filter (fun p -> let result = 
+        match p with (_, _, E.Data _) -> true | _ -> false in result) pl in
     let rec ejsprop_to_sprop pr = match pr with
       | E.Data (e) -> 
           let rec v = exprjs_to_ljs e
@@ -61,7 +100,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     and form_props props = match props with
       | [] -> []
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
-    S.Object (p, S.d_attrs, form_props pl)
+    let data_result = form_props data_props in
+    S.Object (p, S.d_attrs, List.append reduced_assoc data_result)
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
@@ -150,3 +190,11 @@ and s_lookup prop =
               S.GetField (p, S.Id (p, "obj"), S.String(p, "%parent"), S.Null (p));]),
             S.Id (p, "f"))))),
     S.App (p, S.Id (p, "lookup"), [prop; S.Id (p, "%context");]))
+
+and remove_dupes lst =
+  let rec helper l seen result = match l with
+    | [] -> result
+    | first :: rest ->
+      let next = if (List.mem first seen) then result else (first :: result) in
+      helper rest (first :: seen) next in
+  helper lst [] []
