@@ -20,16 +20,6 @@ let rec apply func args = match func with
   | _ -> failwith ("[interp] Applied non-function, was actually " ^ 
 		     pretty_value func)
 
-(* args is the "arguments" object *)
-let rec apply_obj o this args = match o with
-  | ObjCell c -> begin match !c with
-      | ({ code = Some cvalue }, _) ->
-	  apply cvalue [this; args]
-      | _ -> Fail "Applying inapplicable object!"
-  end
-  | _ -> Fail "Applying non-object!"
-	  
-
 let rec get_field p obj1 obj2 field args = match obj1 with
   | Null -> Undefined (* nothing found *)
   | ObjCell c -> begin match !c with
@@ -38,7 +28,7 @@ let rec get_field p obj1 obj2 field args = match obj1 with
 	   match IdMap.find field props with
              | Data ({ value = v; }, _, _) -> v
              | Accessor ({ getter = g; }, _, _) ->
-	       apply_obj g obj2 args
+	       apply g [obj2; args]
         (* Not_found means prototype lookup is necessary *)
 	 with Not_found ->
 	   get_field p pvalue obj2 field args
@@ -100,7 +90,7 @@ let rec update_field obj1 obj2 field newval args = match obj1 with
 	      end
             | Accessor ({ setter = setterv; }, enum, config) ->
 	      (* 8.12.5, step 5 *)
-	      apply_obj setterv obj2 args
+	      apply setterv [obj2; args]
             | _ -> Fail "Field not writable!"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
@@ -342,8 +332,11 @@ let rec eval exp env = match exp with
       let func_value = eval func env in
       let args_values = map (fun e -> eval e env) args in begin
 	match func_value, args_values with
-	  | ObjCell o, [this; args] -> 
-	      apply_obj func_value this args
+	  | ObjCell c, args -> begin match !c with
+              | ({ code = Some cvalue }, _) ->
+                apply cvalue args
+              | _ -> Fail "Applied an object without a code attribute"
+          end
 	  | Closure c, _ -> apply func_value args_values
 	  | ObjCell o, _ ->
 	      failwith ("[interp] Need to provide this and args for a call to a function object at " ^ string_of_position p)
