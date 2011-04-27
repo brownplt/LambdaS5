@@ -53,11 +53,11 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
      * sofar *)
     let add_accessor pr sofar = match pr with
       | (_, _, E.Getter (nm, exp)) ->
-        let a = { S.getter = exprjs_to_ljs exp; S.setter = S.Undefined (p); } in
+        let gval = 
+          get_accessor_fobj p [] exp (S.Id (p, "%context")) in
+        let a = { S.getter = gval; S.setter = S.Undefined (p); } in
         (nm, S.Accessor (a, true, true)) :: sofar
-      | (_, _, E.Setter (nm, exp)) ->
-        let a = { S.getter = S.Undefined (p); S.setter = exprjs_to_ljs exp; } in
-        (nm, S.Accessor (a, true, true)) :: sofar
+      | (_, _, E.Setter (nm, exp)) -> failwith "setters nyi"
       | _ -> sofar in
     (* Given a list of tuples, produce a list of name, accessor pairs *)
     let rec accessors tl sofar = match tl with
@@ -173,6 +173,30 @@ and get_lambda p args body =
     let rec inner_body = exprjs_to_ljs body
     and inner_let = S.Let (p, "%context", ncontext, inner_body)
     and inner_lbl = S.Label (p, "%ret", inner_let) in
+    S.Lambda (p, "%parent" :: args, inner_lbl)
+
+and get_accessor_fobj p args body context = 
+  let call = get_accessor_lambda p args body in
+  let fobj_attrs = 
+    { S.code = Some (call); S.proto = Some (S.Null (p)); S.klass = "Function"; 
+    S.extensible = true; }
+  and scope_prop =
+    ("%scope", S.Data ({ S.value = context; S.writable = false; }, false,
+    false)) in
+  S.Object (p, fobj_attrs, [scope_prop])
+
+and get_accessor_lambda p args body = 
+  (* TODO: binding for "this" in new context *)
+  let arg_to_prop arg = 
+      (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
+    let rec ncontext_aprops = List.map (fun arg -> arg_to_prop arg) args
+    and parent_prop = 
+      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, 
+      true, true))
+    and ncontext_props = parent_prop :: ncontext_aprops
+    and ncontext = S.Object (p, S.d_attrs, ncontext_props) in
+    let rec inner_body = exprjs_to_ljs body
+    and inner_lbl = S.Label (p, "%ret", inner_body) in
     S.Lambda (p, "%parent" :: args, inner_lbl)
 
 and s_lookup prop =
