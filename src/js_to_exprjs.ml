@@ -4,31 +4,10 @@ module J = Js_syntax
 open Prelude
 open Js_print
 
-(*
- *and expr =
-  | This of pos
-  | Id of pos * id
-  | Lit of pos * lit
-  | Array of pos * expr list
-  | Object of pos * mem list
-  | Paren of pos * expr list
-  | Func of pos * id option * id list * srcElt list
-  | Bracket of pos * expr * expr
-  | Dot of pos * expr * id
-  | New of pos * expr * expr list
-  | Prefix of pos * prefixOp  * expr
-  | UnaryAssign of pos * unaryAssignOp * expr
-  | Infix of pos * infixOp * expr * expr
-  | Cond of pos * expr * expr * expr
-  | Assign of pos * assignOp * expr * expr
-  | List of pos * expr list
-  | Call of pos * expr * expr list
-  *)
-
 let rec jse_to_exprjs (e : J.expr) : E.expr =
   match e with
     | J.This (p) -> E.ThisExpr (p)
-    | J.Id (p, i) -> (*E.IdExpr(p, i)*)
+    | J.Id (p, i) ->
       E.BracketExpr(p, E.IdExpr (p, "%context"), E.String (p, i))
     | J.Lit (p, l) -> 
       let result = match l with 
@@ -146,21 +125,6 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     E.SeqExpr (p, first,
       E.SeqExpr (p, exit_pt, 
         E.SeqExpr (p, init, E.WhileExpr (p, E.IdExpr (p, "%test"), while_bdy))))
-    (*
-    let rec init1 a = match a with 
-      | None -> E.Undefined (p)
-      | Some a -> jse_to_exprjs a
-    and init2 b = match b with
-      | None -> E.True (p)
-      | Some b -> jse_to_exprjs b in
-    let innerwhile = 
-      E.WhileExpr (p, init2 e2, 
-        E.SeqExpr (p, E.LabelledExpr (p, "loopstart", jss_to_exprjs body), 
-        init1 e3)) in
-    E.SeqExpr (p, init1 e1,
-      E.SeqExpr (p, innerwhile,
-        E.LabelledExpr (p, "loopend", E.Undefined (p))))
-        *)
   | J.Labeled (p, id, s) -> E.LabelledExpr (p, id, jss_to_exprjs s)
   | J.Continue (p, id) -> let lbl = match id with
     | None -> "loopstart" | Some s -> s in
