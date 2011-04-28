@@ -106,7 +106,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
-    and f = exprjs_to_ljs r in
+    and f = S.Op1 (p, "prim->str", exprjs_to_ljs r) in
     let normal = S.GetField (p, o, f, S.Null (p))
     and lookup = s_lookup f in
     let result = match l with
@@ -131,7 +131,16 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.AppExpr (p, e, el) -> 
     let sl = List.map (fun x -> exprjs_to_ljs x) el
     and f = exprjs_to_ljs e in 
-    S.App (p, f, S.Id (p, "%this") :: sl)
+    let n_args = List.length sl in
+    let indices = Prelude.iota n_args in
+    let combined = List.combine indices sl in
+    let records =
+      List.map (fun (n, arg) -> (n, {S.value = arg; S.writable = true})) combined in
+    let props = 
+      List.map 
+        (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
+    let args_obj = S.Object (p, S.d_attrs, props) in
+    S.App (p, f, [S.Id (p, "%this"); args_obj])
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.FuncStmtExpr (p, nm, args, body) -> 
     (* TODO: null Args object *)
@@ -149,15 +158,52 @@ and get_fobj p args body context =
   let call = get_lambda p args body in
   let fobj_attrs = 
     { S.code = Some (call); S.proto = Some (S.Null (p)); S.klass = "Function"; 
-    S.extensible = true; }
-  and scope_prop =
-    ("%scope", S.Data ({ S.value = context; S.writable = false; }, false,
-    false)) in
+    S.extensible = true; } in
+  let param_len = List.length args in
+  let indices = Prelude.iota param_len in
+  let combined = List.combine indices args in
+  let rcds =
+    List.map (fun (n, prm) -> (n, {S.value = S.String (p, prm); S.writable =
+      true;})) combined in
+  let props =
+    List.map (fun (n, rcd) -> (string_of_int n, S.Data (rcd, false, false)))
+    rcds in
+  let param_obj = S.Object (p, S.d_attrs, props) in
   S.Let (p, "%parent", context,
-    S.Object (p, fobj_attrs, [scope_prop]))
+    S.Let (p, "%params", param_obj,
+      S.Object (p, fobj_attrs, [])))
 
-(* Function body's internal lambda takes (this, arg1, arg2, ...) *)
 and get_lambda p args body = 
+  let desugared = exprjs_to_ljs body in
+  let final = 
+    S.Seq (p,
+      S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
+      "%args"), S.Null (p)), desugared) in
+  let parent_prop = 
+      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, 
+      true, true)) in
+  let ncontext = S.Object (p, S.d_attrs, [parent_prop]) in
+  let param_len = List.length args in
+  let indices = Prelude.iota param_len in
+  let combined = List.combine indices args in
+  let seq_chain = get_chain p combined final in
+  S.Lambda (p, ["%this"; "%args"],
+    S.Label (p, "%ret",
+      S.Let (p, "%context", ncontext, seq_chain)))
+
+and prm_to_setfield p n prm =
+  S.SetField (p, S.Id (p, "%context"), 
+  S.GetField (p, S.Id (p, "%params"), S.String (p, string_of_int n), S.Null (p)),
+  S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), S.Null (p)),
+  S.Null (p))
+
+and get_chain p params final = match params with
+  | [] -> final
+  | (n, first) :: rest ->
+    let a = prm_to_setfield p n (List.hd params) 
+    and b = get_chain p (List.tl params) final in
+    S.Seq (p, a, b)
+(*
   let arg_to_prop arg = 
       (arg, S.Data ({ S.value = S.Id (p, arg); S.writable = true; }, true, true)) in
     let rec ncontext_aprops = List.map (fun arg -> arg_to_prop arg) args
@@ -170,6 +216,7 @@ and get_lambda p args body =
     and inner_let = S.Let (p, "%context", ncontext, inner_body)
     and inner_lbl = S.Label (p, "%ret", inner_let) in
     S.Lambda (p, "%this" :: args, inner_lbl)
+*)
 
     (*
 and get_accessor_fobj p args body context = 

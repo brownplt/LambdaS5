@@ -186,7 +186,7 @@ and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
   let se_to_e se = match se with
     | J.Stmt (s) -> jss_to_exprjs s
     | J.FuncDecl (nm, args, body) ->
-      E.FuncStmtExpr (p, nm, args, srcElts body context) in
+      E.FuncStmtExpr (p, nm, args, srcElts_inner body context) in
   match ss with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
