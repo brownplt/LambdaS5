@@ -70,12 +70,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let o = exprjs_to_ljs l
     and f = S.Op1 (p, "prim->str", exprjs_to_ljs r) in
     let argsobj = S.Object (p, S.d_attrs, []) in
-    let normal = S.GetField (p, o, f, argsobj)
-    and lookup = s_lookup f in
-    let result = match l with
-      | E.IdExpr (p, nm) -> if nm <> "%context" then normal else lookup
-      | _ -> normal in
-    result
+    S.GetField (p, o, f, argsobj)
   | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
   | E.InfixExpr (p, op, l, r) -> let op = match op with
     | "===" -> "abs="
@@ -116,7 +111,17 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.LetExpr (p, nm, vl, body) -> 
     let sv = exprjs_to_ljs vl
     and sb = exprjs_to_ljs body in
-    S.Let (p, nm, sv, sb)
+    let result_obj = match nm with
+      | "%context" -> let orig_props = match sv with
+        | S.Object (_, _, pl) -> pl
+        | _ -> failwith "let bound %context to a non-object" in
+        let c_attrs = { S.code = None;
+                        S.proto = Some (S.Id (p, "%context"));
+                        S.klass = "Object";
+                        S.extensible = true; } in
+        S.Object (p, c_attrs, orig_props)
+      | _ -> sv in
+    S.Let (p, nm, result_obj, sb)
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"
@@ -146,10 +151,11 @@ and get_lambda p args body =
     S.Seq (p,
       S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
       "%args"), S.Null (p)), desugared) in
-  let parent_prop = 
-      ("%parent", S.Data ({ S.value = S.Id (p, "%parent"); S.writable = false; }, 
-      true, true)) in
-  let ncontext = S.Object (p, S.d_attrs, [parent_prop]) in
+  let c_attrs = { S.code = None; 
+    S.proto = Some (S.Id (p, "%parent"));
+    S.klass = "Object";
+    S.extensible = true; } in
+  let ncontext = S.Object (p, c_attrs, []) in
   let param_len = List.length args in
   let indices = Prelude.iota param_len in
   let combined = List.combine indices args in
@@ -171,23 +177,6 @@ and get_chain p params final = match params with
     let a = prm_to_setfield p n (List.hd params) 
     and b = get_chain p (List.tl params) final in
     S.Seq (p, a, b)
-
-and s_lookup prop =
-  let p = dummy_pos in
-  let argsobj = S.Object (p, S.d_attrs, []) in
-    S.Rec (p, "lookup",
-    S.Lambda (p, ["k"; "obj";], 
-      S.If (p, 
-        S.Op2 (p, "stx=", S.Id (p, "obj"), S.Undefined (p)),
-        S.Undefined (p),
-        S.Let (p, "f", 
-          S.GetField (p, S.Id (p, "obj"), S.Id (p, "k"), argsobj),
-          S.If (p, S.Op2 (p, "stx=", S.Id (p, "f"), S.Undefined (p)),
-            S.App (p, S.Id (p, "lookup"), 
-              [S.Id (p, "k"); 
-              S.GetField (p, S.Id (p, "obj"), S.String(p, "%parent"), argsobj);]),
-            S.Id (p, "f"))))),
-    S.App (p, S.Id (p, "lookup"), [prop; S.Id (p, "%context");]))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
