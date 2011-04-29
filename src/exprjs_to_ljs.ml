@@ -83,8 +83,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.AssignExpr (p, obj, pr, vl) -> 
     let sobj = exprjs_to_ljs obj
     and spr = exprjs_to_ljs pr
-    and svl = exprjs_to_ljs vl
-    and aobj = S.Object (p, S.d_attrs, []) in
+    and svl = exprjs_to_ljs vl in
+    let arecd = { S.value = svl; S.writable = true; } in
+    let aprop = S.Data (arecd, true, true) in
+    let aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
     S.SetField (p, sobj, spr, svl, aobj)
   | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
   | E.AppExpr (p, e, el) -> 
@@ -160,9 +162,13 @@ and get_lambda p args body =
   let indices = Prelude.iota param_len in
   let combined = List.combine indices args in
   let seq_chain = get_chain p combined final in
+  let fvs = IdSet.elements (S.fv desugared) in
+  let ffun = fun s -> (s <> "arguments") && ((String.get s 0) <> '%') in
+  let filtered = List.filter ffun fvs in
+  let fv_chain = get_fv_chain p filtered seq_chain in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, seq_chain)))
+      S.Let (p, "%context", ncontext, fv_chain)))
 
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in
@@ -171,11 +177,25 @@ and prm_to_setfield p n prm =
   S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj),
   S.Null (p))
 
+and fv_to_setfield p v = 
+  let arec = { S.value = S.Undefined (p); S.writable = true; } in
+  let aprop = S.Data (arec, true, true) in
+  let argsobj = S.Object (p, S.d_attrs, [(v, aprop)]) in
+  S.SetField (p, S.Id (p, "%context"), S.String (p, v), S.Undefined (p),
+  argsobj)
+
 and get_chain p params final = match params with
   | [] -> final
   | (n, first) :: rest ->
     let a = prm_to_setfield p n (List.hd params) 
     and b = get_chain p (List.tl params) final in
+    S.Seq (p, a, b)
+
+and get_fv_chain p fvs final = match fvs with
+  | [] -> final
+  | first :: rest ->
+    let a = fv_to_setfield p first
+    and b = get_fv_chain p rest final in
     S.Seq (p, a, b)
 
 and remove_dupes lst =
