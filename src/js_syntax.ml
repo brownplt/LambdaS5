@@ -86,3 +86,41 @@ and srcElt =
   | FuncDecl of id * id list * srcElt list
 
 type program = srcElt list
+
+let rec fv (s : stmt) : Prelude.IdSet.t = let open Prelude in
+  let mf vd = match vd with VarDecl (nm, _) -> IdSet.singleton nm
+  and c_to_fv c = match c with
+    | Case (_, _, ss) -> fv ss
+    | Default (_, ss) -> fv ss in
+  match s with
+  | Continue _
+  | Break _
+  | Throw _
+  | Debugger _
+  | Return _ -> IdSet.empty
+  | Block (_, b) -> IdSetExt.unions (map fv b)
+  | Var (_, vdl) ->
+    IdSetExt.unions (map mf vdl)
+  | Empty _ -> IdSet.empty
+  | If (_, _, s1, s2) -> let init2 ss = match ss with
+    | None -> IdSet.empty
+    | Some x -> fv x in
+    IdSetExt.unions [fv s1; init2 s2]
+  | DoWhile (_, bdy, _) -> fv bdy
+  | While (_, _, bdy) -> fv bdy
+  | For (_, _, _, _, bdy) -> fv bdy
+  | ForVar (_, vdl, _, _, bdy) -> IdSetExt.unions ((fv bdy) :: (map mf vdl))
+  | ForIn (_, _, _, bdy) -> fv bdy
+  | ForInVar (_, vd, _, bdy) -> IdSet.union (mf vd) (fv bdy)
+  | Labeled (_, _, ss) -> fv ss
+  | With (_, _, bdy) -> fv bdy
+  | Switch (_, _, cl) -> IdSetExt.unions (map c_to_fv cl)
+  | Try (_, b, c, f) -> 
+    let init_b = IdSetExt.unions (map fv b)
+    and init_c = let result = match c with
+      | None -> IdSet.empty
+      | Some (nm, bl) -> IdSetExt.unions (map fv bl) in result
+    and init_f = let result = match f with
+      | None -> IdSet.empty
+      | Some x -> IdSetExt.unions (map fv x) in result in
+    IdSetExt.unions [init_b; init_c; init_f]

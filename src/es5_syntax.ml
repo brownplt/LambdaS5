@@ -153,6 +153,8 @@ let rec fv (exp : exp) : IdSet.t = match exp with
         IdSet.union (fv gexp) (fv sexp) in
     IdSetExt.unions (List.append [fv_attrs attrs] (map field fields))
   | SetField (_, o1, e1, e2, args) -> 
+    IdSetExt.unions (map fv [o1; e1; e2; args])
+      (*
       let toadd = match o1 with
         | Id (_, "%context") ->
           let i = match e1 with
@@ -160,6 +162,7 @@ let rec fv (exp : exp) : IdSet.t = match exp with
             | _ -> IdSet.empty in i
         | _ -> IdSet.empty in
       IdSetExt.unions (toadd :: (map fv [o1; e1; e2; args]))
+      *)
   | GetField (_, o1, e, args) ->
       IdSetExt.unions (map fv [o1; e; args])
   | DeleteField (_, o, e) -> IdSet.union (fv o) (fv e)

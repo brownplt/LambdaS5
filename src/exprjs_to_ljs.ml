@@ -110,7 +110,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let aprops = [("0", aprop)] in
     let argsobj = S.Object (p, S.d_attrs, aprops) in
     S.SetField (p, S.Id (p, "%context"), S.String (p, nm), fobj, argsobj)
-  | E.LetExpr (p, nm, vl, body) -> 
+  | E.LetExpr (p, nm, vl, body) -> normal_let e
+      (*
     let sv = exprjs_to_ljs vl
     and sb = exprjs_to_ljs body in
     let result_obj = match nm with
@@ -124,6 +125,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         S.Object (p, c_attrs, orig_props)
       | _ -> sv in
     S.Let (p, nm, result_obj, sb)
+    *)
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"
@@ -205,3 +207,19 @@ and remove_dupes lst =
       let next = if (List.mem first seen) then result else (first :: result) in
       helper rest (first :: seen) next in
   helper lst [] []
+
+and normal_let exp = match exp with
+  | E.LetExpr (p, nm, vl, body) -> 
+    let sv = exprjs_to_ljs vl
+    and sb = exprjs_to_ljs body in
+    let result_obj = match nm with
+      | "%context" -> let orig_props = match sv with
+        | S.Object (_, _, pl) -> pl
+        | _ -> failwith "let bound %context to a non-object" in
+        let c_attrs = { S.code = None;
+                        S.proto = Some (S.Id (p, "%context"));
+                        S.klass = "Object";
+                        S.extensible = true; } in
+        S.Object (p, c_attrs, orig_props)
+      | _ -> sv in
+    S.Let (p, nm, result_obj, sb)

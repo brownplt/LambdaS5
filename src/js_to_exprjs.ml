@@ -7,7 +7,7 @@ open Js_print
 let rec jse_to_exprjs (e : J.expr) : E.expr =
   match e with
     | J.This (p) -> E.ThisExpr (p)
-    | J.Id (p, i) ->
+    | J.Id (p, i) -> 
       E.BracketExpr(p, E.IdExpr (p, "%context"), E.String (p, i))
     | J.Lit (p, l) -> 
       let result = match l with 
@@ -27,7 +27,7 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Get (nm, sel) ->
           let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
           (p, name, E.Getter (name, srcElts_inner sel parent))
-        | _ -> failwith "getter/setter nyi" in
+        | _ -> failwith "setter nyi" in
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
     | J.Paren (p, el) ->
       let rec unroll = function
@@ -80,10 +80,19 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     unroll sl
   | J.Var (p, vdl) -> 
     let rec vdj_to_vde v = match v with
+      | J.VarDecl (id, e) -> let init_val = match e with
+        | None -> E.Undefined (p)
+        | Some x -> jse_to_exprjs x in
+        (* (let %id undefined (assign "id" %context init_val)) *)
+        E.LetExpr (p, "%%" ^ id, E.Undefined (p),
+          E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val))
+      (*
+    let rec vdj_to_vde v = match v with
       | J.VarDecl (id, e) -> match e with
-        | None -> E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), E.Undefined (p)) 
+        | None -> E.AssignExpr (p, E.IdExpr (p, "%context"), E.IdExpr (p, id), E.Undefined (p)) 
         | Some x -> let r = jse_to_exprjs x in 
-          E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), r)
+          E.AssignExpr (p, E.IdExpr (p, "%context"), E.IdExpr (p, id), r)
+          *)
     and unroll vl = match vl with
       | [] -> E.Undefined (p)
       | [f] -> vdj_to_vde f

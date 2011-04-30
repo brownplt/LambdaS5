@@ -17,10 +17,10 @@ let rec exp e = match e with
 		  vert (map prop props)])
   | SetField (p, o, f, v, args) ->
     squish [exp o;
-            (brackets (horz [exp f; text "="; exp v; text ","; exp args]))];
+            (brackets (horz [exp f; text "="; exp v; text ","; ]))];
   | GetField (p, o, f, args) ->
     squish [exp o;
-            (brackets (horz [exp f; text ","; exp args]))];
+            (brackets (horz [exp f; text ","; ]))];
   | DeleteField (p, o1, f) ->
     parens (horz
 	      [text "delete-field";
