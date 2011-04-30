@@ -36,7 +36,13 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | f :: rest -> E.SeqExpr (p, jse_to_exprjs f, unroll rest) in
       unroll el
     | J.Func (p, nm, args, body) -> let parent = E.IdExpr (p, "%context") in
-      E.FuncExpr (p, args, srcElts body parent)
+      let free_vars = IdSet.elements (J.fv_sel body) in
+      let rec fvl_to_letchain fvl final = match fvl with
+        | [] -> final
+        | first :: rest -> let newnm = "%%" ^ first in
+          E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
+      let last = srcElts body parent in
+      E.FuncExpr (p, args, fvl_to_letchain free_vars last)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | J.Dot (p, e, nm) ->
@@ -83,16 +89,7 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | J.VarDecl (id, e) -> let init_val = match e with
         | None -> E.Undefined (p)
         | Some x -> jse_to_exprjs x in
-        (* (let %id undefined (assign "id" %context init_val)) *)
-        E.LetExpr (p, "%%" ^ id, E.Undefined (p),
-          E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val))
-      (*
-    let rec vdj_to_vde v = match v with
-      | J.VarDecl (id, e) -> match e with
-        | None -> E.AssignExpr (p, E.IdExpr (p, "%context"), E.IdExpr (p, id), E.Undefined (p)) 
-        | Some x -> let r = jse_to_exprjs x in 
-          E.AssignExpr (p, E.IdExpr (p, "%context"), E.IdExpr (p, id), r)
-          *)
+      E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val)
     and unroll vl = match vl with
       | [] -> E.Undefined (p)
       | [f] -> vdj_to_vde f
@@ -158,7 +155,13 @@ and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
   let se_to_e se = match se with
     | J.Stmt (s) -> jss_to_exprjs s
     | J.FuncDecl (nm, args, body) ->
-      E.FuncStmtExpr (p, nm, args, srcElts_inner body context) in
+      let free_vars = IdSet.elements (J.fv_sel body) in
+      let rec fvl_to_letchain fvl final = match fvl with
+        | [] -> final
+        | first :: rest -> let newnm = "%%" ^ first in
+          E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
+      let last = srcElts_inner body context in
+      E.FuncStmtExpr (p, nm, args, fvl_to_letchain free_vars last) in
   match ss with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first

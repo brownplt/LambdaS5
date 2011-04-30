@@ -150,7 +150,41 @@ and get_fobj p args body context =
       S.Object (p, fobj_attrs, [])))
 
 and get_lambda p args body = 
-  let desugared = exprjs_to_ljs body in
+  (* getter = function () {return %context["%y"];} *)
+  let getter nm = 
+    S.Lambda (p, ["this"; "args"], 
+    S.Label (p, "%ret",
+    S.Break (p, "%ret",
+    S.GetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), S.Null (p)))))
+  (* setter = function(newY) {%context["%y"] = newy;} *)
+  and setter nm =
+    let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), S.Null (p)) in
+    S.Lambda (p, ["this"; "args"],
+    S.Label (p, "%ret",
+    S.Break (p, "%ret",
+    S.SetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), 
+      newval, S.Null (p))))) in
+  (* Strip the lets from the top of the function body, and get a tuple containig
+   * the name of all those ids (declared with var keyword) and the actual
+   * function body *)
+  let rec strip_lets e nms = match e with
+    | E.LetExpr (p, nm, vl, rst) ->
+      let l = (String.length nm) - 2 in
+      let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
+    | _ -> (nms, e) in
+  (* For each name, create a data/accessor property *)
+  let rec get_prop_pairs nms prs = match nms with
+    | [] -> prs
+    | nm :: rest ->
+      let data_name = "%" ^ nm in
+      let drc = { S.value = S.Undefined (p); S.writable = true; } in
+      let d = S.Data (drc, true, true) in
+      let arc = { S.getter = getter nm; S.setter = setter nm; } in
+      let a = S.Accessor (arc, true, true) in
+      get_prop_pairs rest ((data_name, d) :: ((nm, a) :: prs)) in
+  let (nl, real_body) = strip_lets body [] in
+  let prop_pairs = get_prop_pairs nl [] in
+  let desugared = exprjs_to_ljs real_body in
   let final = 
     S.Seq (p,
       S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
@@ -159,18 +193,14 @@ and get_lambda p args body =
     S.proto = Some (S.Id (p, "%parent"));
     S.klass = "Object";
     S.extensible = true; } in
-  let ncontext = S.Object (p, c_attrs, []) in
+  let ncontext = S.Object (p, c_attrs, prop_pairs) in
   let param_len = List.length args in
   let indices = Prelude.iota param_len in
   let combined = List.combine indices args in
   let seq_chain = get_chain p combined final in
-  let fvs = IdSet.elements (S.fv desugared) in
-  let ffun = fun s -> (s <> "arguments") && ((String.get s 0) <> '%') in
-  let filtered = List.filter ffun fvs in
-  let fv_chain = get_fv_chain p filtered seq_chain in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, fv_chain)))
+      S.Let (p, "%context", ncontext, seq_chain)))
 
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in

@@ -97,6 +97,7 @@ let rec fv (s : stmt) : Prelude.IdSet.t = let open Prelude in
   | Break _
   | Throw _
   | Debugger _
+  | Expr _
   | Return _ -> IdSet.empty
   | Block (_, b) -> IdSetExt.unions (map fv b)
   | Var (_, vdl) ->
@@ -124,3 +125,12 @@ let rec fv (s : stmt) : Prelude.IdSet.t = let open Prelude in
       | None -> IdSet.empty
       | Some x -> IdSetExt.unions (map fv x) in result in
     IdSetExt.unions [init_b; init_c; init_f]
+
+(* Free vars in a program, without descending into nested functions *)
+let rec fv_sel (sel : srcElt list) : Prelude.IdSet.t = let open Prelude in
+  match sel with
+  | [] -> IdSet.empty
+  | first :: rest -> let fv_f = match first with
+    | Stmt s -> fv s
+    | FuncDecl _ -> IdSet.empty in
+    IdSet.union fv_f (fv_sel rest)
