@@ -81,6 +81,8 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
     | J.Call (p, e, el) -> let xl = List.map (fun x -> jse_to_exprjs x) el in 
       E.AppExpr (p, jse_to_exprjs e, xl)
 
+and block p b = jss_to_exprjs (J.Block (p, b))
+
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
   | J.Block (p, sl) ->
@@ -147,6 +149,19 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     | None -> E.Undefined (p)
     | Some x -> jse_to_exprjs x in
     E.BreakExpr (p, "%ret", rval)
+  | J.Try (p, body, catch, finally) -> 
+    begin match catch, finally with
+      | None, None -> failwith "Should not happen!  No catch AND no finally"
+      | None, Some finally -> 
+        E.TryFinallyExpr (p, block p body, block p finally)
+      | Some (param, blck), None ->
+        E.TryCatchExpr (p, block p body, param, block p blck)
+      | Some (param, catch), Some finally ->
+        E.TryFinallyExpr (p, 
+                          E.TryCatchExpr (p, block p body, param, block p catch),
+                          block p finally)
+    end 
+  | J.Throw (p, e) -> E.ThrowExpr (p, jse_to_exprjs e)
   | _ -> failwith "unimplemented statement type"
 
 and srcElts ss parent =

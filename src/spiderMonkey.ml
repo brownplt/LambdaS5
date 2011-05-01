@@ -179,7 +179,16 @@ and expr (v : json_type) : expr =
 
 and case (v : json_type) : case = failwith "case NYI"
 
-and catch (v : json_type) : catch = failwith "catch NYI"
+and catch (v : json_type) : catch = 
+    if is_array v then failwith "Multiple catches are spidermonky-only"
+    else
+      if is_null v then None
+      else
+        let param = match string (get "type" (get "param" v)) with
+          | "Identifier" -> string (get "name" (get "param" v))
+          | s -> (printf "param was %s" s; s)
+          | _ -> failwith "Param wasn't a string" in
+        let body = block (get "body" v) in Some (param, body)
 
 and block (v : json_type) : block = match is_array v with
   | true -> map stmt (list v)
