@@ -131,7 +131,15 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     S.Let (p, nm, result_obj, sb)
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
-  | _ -> failwith "unimplemented exprjs type"
+  | E.WhileExpr _ -> failwith "While NYI"
+  | E.ThrowExpr _ -> failwith "Throw NYI"
+  | E.NewExpr _ -> failwith "New NYI"
+  | E.TryFinallyExpr _ -> failwith "TryFinally NYI"
+  | E.TryCatchExpr _ -> failwith "TryCatch NYI"
+  | E.ArrayExpr _ -> failwith "ArrayLit NYI"
+  | E.LabelledExpr _ -> failwith "Labelled NYI"
+  | E.ForInExpr _ -> failwith "ForIn NYI"
+  | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
 and get_fobj p args body context = 
   let call = get_lambda p args body in
