@@ -5,12 +5,18 @@ NOCOMMENTS=`mktemp`
 cat test262/test/harness/sta.js >> $JSFILE
 cat S5_harness_before.js >> $JSFILE
 cat $1 >> $JSFILE
+echo "print('done');" >> $JSFILE
 
-grep -Ev $'\r' $JSFILE | grep -Ev '\/\/*' > $NOCOMMENTS
+grep -Ev '//' $JSFILE > $NOCOMMENTS
 
-#for some reason 
+cat $JSFILE > out1.txt
+
+cat $NOCOMMENTS > out.txt
+
 
 JSONFILE=`mktemp`
 ../../bin/js -e "print(JSON.stringify(Reflect.parse(read('$NOCOMMENTS'),{loc:true}),{},2))" > $JSONFILE
 
-ocamlrun ../../src/s5.d.byte -desugar $JSONFILE -env ../../envs/es5.env
+cat $JSONFILE > out2.txt
+
+ocamlrun ../../src/s5.d.byte -desugar $JSONFILE -env ../../envs/es5.env -eval

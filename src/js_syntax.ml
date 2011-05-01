@@ -16,6 +16,7 @@ type lit =
   | Bool of bool
   | Num of float
   | Str of string
+  | Regexp of string
            
 type propName =
   | PropId of string

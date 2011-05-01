@@ -1,4 +1,6 @@
 open Printf
+open Format
+open FormatExt
 
 type json_type =
     Object of (string * json_type) list
@@ -22,7 +24,10 @@ let string v = match v with
 let get key v = match v with
   | Object pairs -> 
     begin try List.assoc key pairs
-      with Not_found -> raise (Json_error ("expected a " ^ key ^ "field"))
+      with Not_found -> 
+        raise (Json_error ("expected a " ^ key ^ " field in " ^
+                              (FormatExt.to_string (fun i -> (braces (horz (List.map text i)))) (List.map fst pairs))))
+        
     end
   | _ -> raise (Json_error (sprintf "expected a JSON object %s" key))
 

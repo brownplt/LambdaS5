@@ -21,6 +21,7 @@ let literal (v : json_type) : lit = match string (get "type" v) with
       | Float f -> Num f
       | Int n -> Num (float_of_int n)
       | String s -> Str s
+      | Json_type.Object [] -> Regexp "Regexp NYI"
       | _ -> failwith "unexpected literal (RegExp?)"
   end
   | typ -> failwith (sprintf "expected Literal, got %s as type" typ)
@@ -59,7 +60,7 @@ let rec stmt (v : json_type) : stmt =
 	  stmt (get "consequent" v), 
 	  maybe stmt (get "alternate" v))
     | "Labeled" -> Labeled (p, identifier (get "label" v), stmt (get "body" v))
-    | "Break" -> Break (p, maybe identifier (get "identifier" v))
+    | "Break" -> Break (p, maybe identifier (get "label" v))
     | "Continue" -> Continue (p, maybe identifier (get "identifier" v))
     | "With" -> With (p, expr (get "object" v), stmt (get "body" v))
     | "Switch" ->
