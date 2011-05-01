@@ -21,8 +21,8 @@ let literal (v : json_type) : lit = match string (get "type" v) with
       | Float f -> Num f
       | Int n -> Num (float_of_int n)
       | String s -> Str s
-      | Json_type.Object [] -> Regexp "Regexp NYI"
-      | _ -> failwith "unexpected literal (RegExp?)"
+      | Json_type.Object [("re_lit", String re_val)] -> Regexp re_val
+      | _ -> failwith "unexpected literal"
   end
   | typ -> failwith (sprintf "expected Literal, got %s as type" typ)
 

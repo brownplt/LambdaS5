@@ -15,7 +15,7 @@ cat $NOCOMMENTS > out.txt
 
 
 JSONFILE=`mktemp`
-../../bin/js -e "print(JSON.stringify(Reflect.parse(read('$NOCOMMENTS'),{loc:true}),{},2))" > $JSONFILE
+../../bin/js -e "print(JSON.stringify(Reflect.parse(read('$NOCOMMENTS'),{loc:true}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" > $JSONFILE
 
 cat $JSONFILE > out2.txt
 
