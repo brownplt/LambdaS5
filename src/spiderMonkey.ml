@@ -143,7 +143,7 @@ and expr (v : json_type) : expr =
     | "Sequence" -> List (p, map expr (list (get "expressions" v)))
     | "Unary" -> 
       if bool (get "prefix" v) then
-	Prefix (p, string (get "token" (get "operator" v)),
+	Prefix (p, string (get "operator" v),
 		expr (get "argument" v))
       else
 	failwith "unexpected POSTFIX unary operator"
