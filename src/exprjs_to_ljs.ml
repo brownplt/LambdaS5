@@ -10,6 +10,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.Undefined (p) -> S.Undefined (p)
   | E.Null (p) -> S.Null (p)
   | E.String (p, s) -> S.String (p, s)
+  | E.ArrayExpr (p, el) -> failwith "unimplemented exprjs type: Array"
   | E.ObjectExpr (p, pl) ->
     (* Given a tuple, if it's a getter/setter, create a name-accessor pair and add to
      * sofar *)
@@ -69,7 +70,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
     let data_result = form_props data_props in
     S.Object (p, S.d_attrs, List.append reduced_assoc data_result)
-  | E.ThisExpr (p) -> failwith "ThisExpr nyi"
+  | E.ThisExpr (p) -> failwith "unimplemented exprjs type: This"
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
@@ -77,11 +78,15 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let argsobj = S.Object (p, S.d_attrs, []) in
     S.GetField (p, o, f, argsobj)
   | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
-  | E.InfixExpr (p, op, l, r) -> let op = match op with
-    | "===" -> "abs="
-    | "==" -> "stx="
-    | _ -> op in
-    S.Op2 (p, op, exprjs_to_ljs l, exprjs_to_ljs r)
+  | E.InfixExpr (p, op, l, r) ->
+    let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r in
+    let result = match op with
+      | "&&" -> S.If (p, sl, sr, sl)
+      | "||" -> S.If (p, sl, sl, sr)
+      | _ -> let op = match op with
+        | "===" -> "abs="
+        | "==" -> "stx="
+        | _ -> op in S.Op2 (p, op, sl, sr) in result
   | E.IfExpr (p, e1, e2, e3) -> let e1 = exprjs_to_ljs e1
     and e2 = exprjs_to_ljs e2
     and e3 = exprjs_to_ljs e3 in S.If (p, e1, e2, e3)
@@ -93,7 +98,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let aprop = S.Data (arecd, true, true) in
     let aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
     S.SetField (p, sobj, spr, svl, aobj)
-  | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
   | E.AppExpr (p, e, el) -> 
     let sl = List.map (fun x -> exprjs_to_ljs x) el
     and f = exprjs_to_ljs e in 
@@ -108,13 +112,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let args_obj = S.Object (p, S.d_attrs, props) in
     S.App (p, f, [S.Id (p, "%this"); args_obj])
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
-  | E.FuncStmtExpr (p, nm, args, body) -> 
-    let fobj = get_fobj p args body (S.Id (p, "%context")) in
-    let arcrd = { S.value = fobj; S.writable = true; } in
-    let aprop = S.Data (arcrd, true, true) in
-    let aprops = [("0", aprop)] in
-    let argsobj = S.Object (p, S.d_attrs, aprops) in
-    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), fobj, argsobj)
   | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
     and sb = exprjs_to_ljs body in
@@ -129,9 +126,32 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         S.Object (p, c_attrs, orig_props)
       | _ -> sv in
     S.Let (p, nm, result_obj, sb)
+  | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
+  | E.WhileExpr (p, tst, bdy) ->
+    let t = exprjs_to_ljs tst and b = exprjs_to_ljs bdy in get_while t b
+    (*
+    S.Label (p, "%wbegin",
+      S.If (p, t, 
+        S.Seq (p, b, S.Break (p, "%wbegin", S.Undefined (p))),
+        S.Undefined (p)))
+        *)
+  | E.LabelledExpr (p, lbl, exp) -> S.Label (p, lbl, exprjs_to_ljs exp)
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
-  | _ -> failwith "unimplemented exprjs type"
+  | E.ForInExpr (p, nm, vl, bdy) -> 
+    failwith "unimplemented exprjs type: ForInExpr"
+  | E.TryCatchExpr (p, e1, nm, e2) -> 
+    failwith "unimplemented exprjs type: TryCatchExpr"
+  | E.TryFinallyExpr (p, e1, e2) ->
+    failwith "unimplemented exprjs type: TryFinallyExpr"
+  | E.ThrowExpr (p, exp) -> failwith "unimplemented exprjs type: ThrowExpr"
+  | E.FuncStmtExpr (p, nm, args, body) -> 
+    let fobj = get_fobj p args body (S.Id (p, "%context")) in
+    let arcrd = { S.value = fobj; S.writable = true; } in
+    let aprop = S.Data (arcrd, true, true) in
+    let aprops = [("0", aprop)] in
+    let argsobj = S.Object (p, S.d_attrs, aprops) in
+    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), fobj, argsobj)
 
 and get_fobj p args body context = 
   let call = get_lambda p args body in
@@ -243,3 +263,16 @@ and remove_dupes lst =
       let next = if (List.mem first seen) then result else (first :: result) in
       helper rest (first :: seen) next in
   helper lst [] []
+
+and get_while tst bdy =
+  let p = dummy_pos in
+  let tst = S.Lambda (p, [], tst)
+  and bdy = S.Lambda (p, [], bdy) in
+  S.Rec (p, "%while",
+    S.Lambda (p, ["%tst"; "%bdy"],
+      S.Let (p, "%result", S.App (p, tst, []),
+        S.If (p, S.Id (p, "%result"),
+          S.Seq (p, S.App (p, S.Id (p, "%bdy"), []), 
+          S.App (p, S.Id (p, "%while"), [S.Id (p, "%tst"); S.Id (p, "%bdy")])),
+          S.Undefined (p)))),
+    S.App (p, S.Id (p, "%while"), [tst; bdy]))

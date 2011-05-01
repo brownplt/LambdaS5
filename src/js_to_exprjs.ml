@@ -66,12 +66,22 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       let target = match el with
         | E.BracketExpr (p, ll, rr) -> ll
         | _ -> E.IdExpr (p, "%context")
-      and property = match el with
+      and left = match el with
         | E.BracketExpr (p, ll, rr) -> rr
         | _ -> el in
       let e_asgn = match aop with
-        | "=" -> E.AssignExpr (p, target, property, er)
-        | _ -> failwith "only assign op implemented is =" in
+        | "=" -> E.AssignExpr (p, target, left, er)
+        | "*=" -> 
+          E.AssignExpr (p, target, left, E.InfixExpr (p, "*", left, er))
+        | "/=" -> 
+          E.AssignExpr (p, target, left, E.InfixExpr (p, "/", left, er))
+        | "%=" -> 
+          E.AssignExpr (p, target, left, E.InfixExpr (p, "%", left, er))
+        | "+=" ->
+          E.AssignExpr (p, target, left, E.InfixExpr (p, "+", left, er))
+        | "-=" -> 
+          E.AssignExpr (p, target, left, E.InfixExpr (p, "-", left, er))
+        | _ -> failwith "unimplemented assign op" in
       e_asgn
     | J.List (p, el) -> let rec unroll = function
       | [] -> E.Undefined (p)
@@ -110,7 +120,19 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     let rec body = jss_to_exprjs b
     and we = E.WhileExpr (p, jse_to_exprjs t, body) in
     E.SeqExpr (p, body, we)
-  | J.While (p, t, b) -> E.WhileExpr (p, jse_to_exprjs t, jss_to_exprjs b)
+  | J.While (p, t, b) -> (*E.WhileExpr (p, jse_to_exprjs t, jss_to_exprjs b)*)
+    let rec context = E.IdExpr (p, "%context")
+    and init_nbroke =
+      E.AssignExpr (p, context, E.String (p, "%unbroken"), E.True (p))
+    and nbroke_lookup =
+      E.BracketExpr (p, context, E.String (p, "%unbroken"))
+    and desugared = jss_to_exprjs b in
+    E.SeqExpr (p, init_nbroke,
+      E.WhileExpr (p,
+        E.InfixExpr (p, "&&", jse_to_exprjs t, nbroke_lookup), desugared))
+    (*
+    E.WhileExpr (p, E.InfixExpr (p, "&&", jse_to_exprjs t, nbroke_lookup),
+      jss_to_exprjs b)*)
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with
       | None -> E.Undefined (p)
@@ -119,30 +141,26 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | None -> E.True (p)
       | Some b -> jse_to_exprjs b in
     let context = E.IdExpr (p, "%context") in
-    let first = E.AssignExpr (p, context, E.String (p, "%init"), E.True (p))
-    and exit = E.AssignExpr (p, context, E.String (p, "%test"), E.False (p))
-    and init_bdy = 
-      E.SeqExpr (p, init1 e1, 
-        E.AssignExpr (p, context, E.String (p, "%test"), init2 e2)) in
-    let init = E.IfExpr (p, E.IdExpr (p, "%init"), init_bdy, E.Undefined (p))
-    and exit_pt = E.LabelledExpr (p, "%exit", exit)
-    and init_asgn = E.AssignExpr (p, context, E.String (p, "%init"), E.False (p))
-    and tst_asgn = E.AssignExpr (p, context, E.String (p, "%test"), init2 e2) in
-    let while_sq = 
-      E.SeqExpr (p, jss_to_exprjs body,
-        E.SeqExpr (p, init1 e3,
-          E.SeqExpr (p, init_asgn, tst_asgn))) in
-    let while_bdy = E.LabelledExpr (p, "%start", while_sq) in
-    E.SeqExpr (p, first,
-      E.SeqExpr (p, exit_pt, 
-        E.SeqExpr (p, init, E.WhileExpr (p, E.IdExpr (p, "%test"), while_bdy))))
+    let nbroke_lookup =
+      E.BracketExpr (p, context, E.String (p, "%unbroken"))
+    and init_nbroke = 
+      E.AssignExpr (p, context, E.String (p, "%unbroken"), E.True (p)) in
+    let test =
+      E.InfixExpr (p, "&&", init2 e2, nbroke_lookup) in
+    E.SeqExpr (p, init1 e1,
+    E.SeqExpr (p, init_nbroke,
+    E.LabelledExpr (p, "%before",
+    E.WhileExpr (p, test, E.SeqExpr (p, jss_to_exprjs body, init1 e3)))))
   | J.Labeled (p, id, s) -> E.LabelledExpr (p, id, jss_to_exprjs s)
   | J.Continue (p, id) -> let lbl = match id with
     | None -> "loopstart" | Some s -> s in
     E.BreakExpr (p, lbl, E.Undefined (p))
-  | J.Break (p, id) -> let lbl = match id with
-    | None -> "loopend" | Some s -> s in 
-    E.BreakExpr (p, lbl, E.Undefined (p))
+  | J.Break (p, id) ->
+    let lbl = match id with
+    | None -> "%before" | Some s -> s in 
+    let context = E.IdExpr (p, "%context") in
+    E.SeqExpr (p, E.AssignExpr (p, context, E.String (p, "%unbroken"), E.False (p)),
+      E.BreakExpr (p, lbl, E.Undefined (p)))
   | J.Return (p, e) -> let rval = match e with
     | None -> E.Undefined (p)
     | Some x -> jse_to_exprjs x in
