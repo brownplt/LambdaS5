@@ -165,8 +165,8 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
                           block p finally)
     end 
   | J.Throw (p, e) -> E.ThrowExpr (p, jse_to_exprjs e)
-  | J.With _ -> failwith "S5 only handles strict mode---with not allowed"
   | J.Switch _ -> failwith "J.Switch NYI"
+  | J.With _ -> failwith "S5 only handles strict mode---with not allowed"
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 
 and srcElts ss parent =

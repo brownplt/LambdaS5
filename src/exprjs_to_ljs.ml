@@ -132,10 +132,22 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
   | E.WhileExpr _ -> failwith "While NYI"
-  | E.ThrowExpr _ -> failwith "Throw NYI"
+  | E.ThrowExpr (p, e) -> S.Throw (p, exprjs_to_ljs e)
   | E.NewExpr _ -> failwith "New NYI"
-  | E.TryFinallyExpr _ -> failwith "TryFinally NYI"
-  | E.TryCatchExpr _ -> failwith "TryCatch NYI"
+  | E.TryFinallyExpr (p, body, finally) -> 
+    S.TryFinally (p, exprjs_to_ljs body, exprjs_to_ljs finally)
+  | E.TryCatchExpr (p, body, ident, catch) -> 
+    let new_ctxt = 
+      S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, "%parent")) },
+                [(ident, 
+                  S.Data ({ S.value = S.Id (p, ident); S.writable = true }, 
+                         false, false) );])
+    in
+    S.TryCatch (p, exprjs_to_ljs body, 
+                S.Lambda(p, [ident], 
+                         S.Let (p, "%parent", S.Id (p, "%context") ,
+                                S.Let (p, "%context", new_ctxt, 
+                                       exprjs_to_ljs catch))))
   | E.ArrayExpr _ -> failwith "ArrayLit NYI"
   | E.LabelledExpr _ -> failwith "Labelled NYI"
   | E.ForInExpr _ -> failwith "ForIn NYI"
