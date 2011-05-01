@@ -25,11 +25,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         let sval = get_fobj p [param_name] sfunc (S.Id (p, "%context")) in
         let a = { S.getter = S.Undefined (p); S.setter = sval; } in
         (nm, S.Accessor (a, true, true)) :: sofar
-          (*
-        let sval = get_fobj p ["%setterparam"] exp (S.Id (p, "%context")) in
-        let a = { S.getter = S.Undefined (p); S.setter = sval; } in
-        (nm, S.Accessor (a, true, true)) :: sofar
-    *)
       | _ -> sofar in
     (* Given a list of tuples, produce a list of name, accessor pairs *)
     let rec accessors tl sofar = match tl with
@@ -120,8 +115,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let aprops = [("0", aprop)] in
     let argsobj = S.Object (p, S.d_attrs, aprops) in
     S.SetField (p, S.Id (p, "%context"), S.String (p, nm), fobj, argsobj)
-  | E.LetExpr (p, nm, vl, body) -> normal_let e
-      (*
+  | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
     and sb = exprjs_to_ljs body in
     let result_obj = match nm with
@@ -135,7 +129,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         S.Object (p, c_attrs, orig_props)
       | _ -> sv in
     S.Let (p, nm, result_obj, sb)
-    *)
   | E.BreakExpr (p, id, e) ->
     S.Break (p, id, exprjs_to_ljs e)
   | _ -> failwith "unimplemented exprjs type"
@@ -160,13 +153,11 @@ and get_fobj p args body context =
       S.Object (p, fobj_attrs, [])))
 
 and get_lambda p args body = 
-  (* getter = function () {return %context["%y"];} *)
   let getter nm = 
     S.Lambda (p, ["this"; "args"], 
     S.Label (p, "%ret",
     S.Break (p, "%ret",
     S.GetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), S.Null (p)))))
-  (* setter = function(newY) {%context["%y"] = newy;} *)
   and setter nm =
     let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), S.Null (p)) in
     S.Lambda (p, ["this"; "args"],
@@ -252,19 +243,3 @@ and remove_dupes lst =
       let next = if (List.mem first seen) then result else (first :: result) in
       helper rest (first :: seen) next in
   helper lst [] []
-
-and normal_let exp = match exp with
-  | E.LetExpr (p, nm, vl, body) -> 
-    let sv = exprjs_to_ljs vl
-    and sb = exprjs_to_ljs body in
-    let result_obj = match nm with
-      | "%context" -> let orig_props = match sv with
-        | S.Object (_, _, pl) -> pl
-        | _ -> failwith "let bound %context to a non-object" in
-        let c_attrs = { S.code = None;
-                        S.proto = Some (S.Id (p, "%context"));
-                        S.klass = "Object";
-                        S.extensible = true; } in
-        S.Object (p, c_attrs, orig_props)
-      | _ -> sv in
-    S.Let (p, nm, result_obj, sb)

@@ -34,12 +34,3 @@ and prop =
   | Data of expr
   | Getter of id * expr
   | Setter of id * expr
-
-(******************************************************************************)
-(*module S = JavaScript_syntax
-
-let rec expr (e : S.expr) = match e with
-  | _ -> failwith "No JS -> exprjs defined yet"
-  *)
-
-    
