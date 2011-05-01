@@ -15,11 +15,21 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
      * sofar *)
     let add_accessor pr sofar = match pr with
       | (_, _, E.Getter (nm, exp)) ->
-        let gval = 
-          get_fobj p [] exp (S.Id (p, "%context")) in
+        let gval = get_fobj p [] exp (S.Id (p, "%context")) in
         let a = { S.getter = gval; S.setter = S.Undefined (p); } in
         (nm, S.Accessor (a, true, true)) :: sofar
-      | (_, _, E.Setter (nm, exp)) -> failwith "setters nyi"
+      | (_, _, E.Setter (nm, exp)) ->
+        let (param_name, sfunc) = match exp with
+          | E.LetExpr (_, nm, _, body) -> (nm, body)
+          | _ -> failwith "setter desugaring error: expected LetExpr here" in
+        let sval = get_fobj p [param_name] sfunc (S.Id (p, "%context")) in
+        let a = { S.getter = S.Undefined (p); S.setter = sval; } in
+        (nm, S.Accessor (a, true, true)) :: sofar
+          (*
+        let sval = get_fobj p ["%setterparam"] exp (S.Id (p, "%context")) in
+        let a = { S.getter = S.Undefined (p); S.setter = sval; } in
+        (nm, S.Accessor (a, true, true)) :: sofar
+    *)
       | _ -> sofar in
     (* Given a list of tuples, produce a list of name, accessor pairs *)
     let rec accessors tl sofar = match tl with
@@ -169,8 +179,13 @@ and get_lambda p args body =
    * function body *)
   let rec strip_lets e nms = match e with
     | E.LetExpr (p, nm, vl, rst) ->
-      let l = (String.length nm) - 2 in
-      let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
+      let prefix = String.sub nm 0 2 in
+      if prefix = "%%" then
+        let l = (String.length nm) - 2 in
+        let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
+      else
+        let (final_nms, final_e) = strip_lets rst nms in
+        (final_nms, E.LetExpr (p, nm, vl, final_e))
     | _ -> (nms, e) in
   (* For each name, create a data/accessor property *)
   let rec get_prop_pairs nms prs = match nms with

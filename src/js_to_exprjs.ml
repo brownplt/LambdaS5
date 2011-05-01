@@ -27,7 +27,15 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Get (nm, sel) ->
           let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
           (p, name, E.Getter (name, srcElts_inner sel parent))
-        | _ -> failwith "setter nyi" in
+        | J.Set (nm, argnm, sel) -> (* TODO: does the arg name matter? *)
+          let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
+          let let_body = srcElts_inner sel parent in
+          let inner_let = (* will be stripped off in next stage *)
+            E.LetExpr (p, argnm, E.Undefined (p), let_body) in
+          (p, name, E.Setter (name, inner_let)) in
+          (*let es = E.Setter (name, srcElts_inner sel parent) in*)
+          (*(p, name, E.LetExpr (p, "%setterparam", E.String(p, argnm), es))
+           * in*)
       E.ObjectExpr(p, List.map m_to_pr mem_lst)
     | J.Paren (p, el) ->
       let rec unroll = function
