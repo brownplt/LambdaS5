@@ -10,7 +10,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.Undefined (p) -> S.Undefined (p)
   | E.Null (p) -> S.Null (p)
   | E.String (p, s) -> S.String (p, s)
-  | E.ArrayExpr (p, el) -> failwith "unimplemented exprjs type: Array"
+  | E.ArrayExpr _ -> failwith "ArrayLit NYI"
   | E.ObjectExpr (p, pl) ->
     (* Given a tuple, if it's a getter/setter, create a name-accessor pair and add to
      * sofar *)
@@ -70,13 +70,14 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
     let data_result = form_props data_props in
     S.Object (p, S.d_attrs, List.append reduced_assoc data_result)
-  | E.ThisExpr (p) -> failwith "unimplemented exprjs type: This"
+  | E.ThisExpr (p) -> failwith "This NYI"
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
     and f = S.Op1 (p, "prim->str", exprjs_to_ljs r) in
     let argsobj = S.Object (p, S.d_attrs, []) in
     S.GetField (p, o, f, argsobj)
+  | E.NewExpr _ -> failwith "New NYI"
   | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
   | E.InfixExpr (p, op, l, r) ->
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r in
@@ -129,22 +130,21 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.SeqExpr (p, e1, e2) -> S.Seq (p, exprjs_to_ljs e1, exprjs_to_ljs e2)
   | E.WhileExpr (p, tst, bdy) ->
     let t = exprjs_to_ljs tst and b = exprjs_to_ljs bdy in get_while t b
-    (*
-    S.Label (p, "%wbegin",
-      S.If (p, t, 
-        S.Seq (p, b, S.Break (p, "%wbegin", S.Undefined (p))),
-        S.Undefined (p)))
-        *)
   | E.LabelledExpr (p, lbl, exp) -> S.Label (p, lbl, exprjs_to_ljs exp)
-  | E.BreakExpr (p, id, e) ->
-    S.Break (p, id, exprjs_to_ljs e)
-  | E.ForInExpr (p, nm, vl, bdy) -> 
-    failwith "unimplemented exprjs type: ForInExpr"
-  | E.TryCatchExpr (p, e1, nm, e2) -> 
-    failwith "unimplemented exprjs type: TryCatchExpr"
-  | E.TryFinallyExpr (p, e1, e2) ->
-    failwith "unimplemented exprjs type: TryFinallyExpr"
-  | E.ThrowExpr (p, exp) -> failwith "unimplemented exprjs type: ThrowExpr"
+  | E.BreakExpr (p, id, e) -> S.Break (p, id, exprjs_to_ljs e)
+  | E.ForInExpr (p, nm, vl, bdy) -> failwith "ForIn NYI"
+  | E.TryCatchExpr (p, body, ident, catch) -> 
+    let new_ctxt = 
+      S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, "%parent")) },
+                [(ident, 
+                  S.Data ({ S.value = S.Id (p, ident); S.writable = true }, 
+                         false, false) );])
+    in
+    S.TryCatch (p, exprjs_to_ljs body, 
+                S.Lambda(p, [ident], 
+                         S.Let (p, "%parent", S.Id (p, "%context") ,
+                                S.Let (p, "%context", new_ctxt, 
+                                       exprjs_to_ljs catch))))
   | E.FuncStmtExpr (p, nm, args, body) -> 
     let fobj = get_fobj p args body (S.Id (p, "%context")) in
     let arcrd = { S.value = fobj; S.writable = true; } in
@@ -152,6 +152,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let aprops = [("0", aprop)] in
     let argsobj = S.Object (p, S.d_attrs, aprops) in
     S.SetField (p, S.Id (p, "%context"), S.String (p, nm), fobj, argsobj)
+  | E.TryFinallyExpr (p, body, finally) -> 
+    S.TryFinally (p, exprjs_to_ljs body, exprjs_to_ljs finally)
+  | E.ThrowExpr (p, e) -> S.Throw (p, exprjs_to_ljs e)
+  | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
 and get_fobj p args body context = 
   let call = get_lambda p args body in

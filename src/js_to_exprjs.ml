@@ -91,6 +91,8 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
     | J.Call (p, e, el) -> let xl = List.map (fun x -> jse_to_exprjs x) el in 
       E.AppExpr (p, jse_to_exprjs e, xl)
 
+and block p b = jss_to_exprjs (J.Block (p, b))
+
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
   | J.Block (p, sl) ->
@@ -133,6 +135,9 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     (*
     E.WhileExpr (p, E.InfixExpr (p, "&&", jse_to_exprjs t, nbroke_lookup),
       jss_to_exprjs b)*)
+  | J.ForInVar _ -> failwith "ForInVar NYI"
+  | J.ForIn _ -> failwith "ForIn NYI"
+  | J.ForVar _ -> failwith "ForVar NYI"
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with
       | None -> E.Undefined (p)
@@ -165,7 +170,22 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     | None -> E.Undefined (p)
     | Some x -> jse_to_exprjs x in
     E.BreakExpr (p, "%ret", rval)
-  | _ -> failwith "unimplemented statement type"
+  | J.Try (p, body, catch, finally) -> 
+    begin match catch, finally with
+      | None, None -> failwith "Should not happen!  No catch AND no finally"
+      | None, Some finally -> 
+        E.TryFinallyExpr (p, block p body, block p finally)
+      | Some (param, blck), None ->
+        E.TryCatchExpr (p, block p body, param, block p blck)
+      | Some (param, catch), Some finally ->
+        E.TryFinallyExpr (p, 
+                          E.TryCatchExpr (p, block p body, param, block p catch),
+                          block p finally)
+    end 
+  | J.Throw (p, e) -> E.ThrowExpr (p, jse_to_exprjs e)
+  | J.Switch _ -> failwith "J.Switch NYI"
+  | J.With _ -> failwith "S5 only handles strict mode---with not allowed"
+  | J.Debugger _ -> failwith "Debugger statements not implemented"
 
 and srcElts ss parent =
   let p = dummy_pos in
