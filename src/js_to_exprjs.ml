@@ -113,6 +113,9 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     and we = E.WhileExpr (p, jse_to_exprjs t, body) in
     E.SeqExpr (p, body, we)
   | J.While (p, t, b) -> E.WhileExpr (p, jse_to_exprjs t, jss_to_exprjs b)
+  | J.ForInVar _ -> failwith "ForInVar NYI"
+  | J.ForIn _ -> failwith "ForIn NYI"
+  | J.ForVar _ -> failwith "ForVar NYI"
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with
       | None -> E.Undefined (p)
@@ -162,7 +165,9 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
                           block p finally)
     end 
   | J.Throw (p, e) -> E.ThrowExpr (p, jse_to_exprjs e)
-  | _ -> failwith "unimplemented statement type"
+  | J.With _ -> failwith "S5 only handles strict mode---with not allowed"
+  | J.Switch _ -> failwith "J.Switch NYI"
+  | J.Debugger _ -> failwith "Debugger statements not implemented"
 
 and srcElts ss parent =
   let p = dummy_pos in
