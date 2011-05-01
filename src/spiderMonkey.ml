@@ -68,7 +68,7 @@ let rec stmt (v : json_type) : stmt =
     | "Throw" -> Throw (p, expr (get "argument" v))
     | "Try" -> Try (p, block (get "block" v),
 		    catch (get "handler" v),
-		    maybe block (get "block" v))
+		    maybe block (get "finalizer" v))
     | "While" -> While (p, expr (get "test" v), stmt (get "body" v))
     | "DoWhile" -> DoWhile (p, stmt (get "body" v), expr (get "test" v))
     | "For" -> 
