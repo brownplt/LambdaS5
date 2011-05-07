@@ -133,7 +133,9 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
   | J.ForInVar (p, vd, exp, bdy) ->
     let nm = match vd with J.VarDecl (nm, _) -> nm in
     E.ForInExpr (p, nm, jse_to_exprjs exp, jss_to_exprjs bdy)
-  | J.ForIn _ -> failwith "ForIn NYI"
+  | J.ForIn (p, e1, e2, bdy) ->
+    let nm = match e1 with J.Id (_, i) -> i | _ -> failwith "what" in
+    E.ForInExpr (p, nm, jse_to_exprjs e2, jss_to_exprjs bdy)
   | J.ForVar (p, vdl, e2, e3, bdy) ->
     let rec unroll = function
       | [] -> E.Undefined (p)

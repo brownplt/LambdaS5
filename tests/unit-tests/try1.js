@@ -4,7 +4,7 @@ function foo() {
     }
     catch(e) {
         if(e === 5) {
-            print("Passed");
+            print("passed");
         }
     }
 }

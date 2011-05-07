@@ -1,2 +1,5 @@
 var o = {x:5};
-o.x;
+var result = o.x;
+if (result === 5) {
+   print("passed");
+}

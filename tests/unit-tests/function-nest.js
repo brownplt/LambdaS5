@@ -5,5 +5,5 @@ function foo(x) {
 }
 
 if(foo(22) === 22) {
-    print("Passed");
+    print("passed");
 }

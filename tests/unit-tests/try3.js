@@ -7,7 +7,7 @@ function foo() {
         x = 22
     }
     if (x === 10) {
-        print ("Passed");
+        print ("passed");
     }
 }
 foo();
