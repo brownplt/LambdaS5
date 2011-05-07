@@ -95,6 +95,12 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
 
 and block p b = jss_to_exprjs (J.Block (p, b))
 
+and vdj_to_vde v p = match v with
+  | J.VarDecl (id, e) -> let init_val = match e with
+    | None -> E.Undefined (p)
+    | Some x -> jse_to_exprjs x in
+  E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val)
+
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
   | J.Block (p, sl) ->
@@ -104,15 +110,10 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | f :: rest -> E.SeqExpr (p, jss_to_exprjs f, unroll rest) in
     unroll sl
   | J.Var (p, vdl) -> 
-    let rec vdj_to_vde v = match v with
-      | J.VarDecl (id, e) -> let init_val = match e with
-        | None -> E.Undefined (p)
-        | Some x -> jse_to_exprjs x in
-      E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val)
-    and unroll vl = match vl with
+    let rec unroll vl = match vl with
       | [] -> E.Undefined (p)
-      | [f] -> vdj_to_vde f
-      | f :: rest -> E.SeqExpr(p, vdj_to_vde f, unroll rest) in
+      | [f] -> vdj_to_vde f p
+      | f :: rest -> E.SeqExpr(p, vdj_to_vde f p, unroll rest) in
     unroll vdl
   | J.Empty (p) -> E.Undefined (p)
   | J.Expr (p, e) -> jse_to_exprjs e
@@ -129,9 +130,26 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     and desugared = jss_to_exprjs b in
     E.LabelledExpr (p, "%before",
       E.WhileExpr (p, jse_to_exprjs t, desugared))
-  | J.ForInVar (p, vd, exp, bdy) -> failwith "ForInVar NYI"
+  | J.ForInVar (p, vd, exp, bdy) ->
+    let nm = match vd with J.VarDecl (nm, _) -> nm in
+    E.ForInExpr (p, nm, jse_to_exprjs exp, jss_to_exprjs bdy)
   | J.ForIn _ -> failwith "ForIn NYI"
-  | J.ForVar _ -> failwith "ForVar NYI"
+  | J.ForVar (p, vdl, e2, e3, bdy) ->
+    let rec unroll = function
+      | [] -> E.Undefined (p)
+      | [f] -> vdj_to_vde f p
+      | f :: rest -> E.SeqExpr (p, vdj_to_vde f p, unroll rest) in
+    let rec init3 a = match a with
+      | None -> E.Undefined (p)
+      | Some a -> jse_to_exprjs a
+    and init2 b = match b with
+      | None -> E.True (p)
+      | Some b -> jse_to_exprjs b in
+    let inner_seq = 
+      E.SeqExpr (p, jss_to_exprjs bdy, init3 e3) in
+    E.SeqExpr (p, unroll vdl,
+      E.LabelledExpr (p, "%before",
+        E.WhileExpr (p, init2 e2, inner_seq)))
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with
       | None -> E.Undefined (p)
@@ -194,3 +212,5 @@ and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
     | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts_inner rest context) 
+
+

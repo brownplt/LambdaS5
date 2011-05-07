@@ -40,7 +40,8 @@ let rec exp e = match e with
     parens (horz [text "lbl"; text lbl; exp expr;])
   | BreakExpr (_, lbl, expr) -> 
     parens (horz [text "brk"; text lbl; exp expr;])
-  | ForInExpr (_, nm, vl, bdy) -> failwith "nyi"
+  | ForInExpr (_, nm, vl, bdy) ->
+    parens (vert [horz [text "forin"; text nm; exp vl]; exp bdy])
   | TryCatchExpr (_, b1, nm, b2) ->
     parens (vert [text "tryc"; exp b1; text nm; exp b2;])
   | TryFinallyExpr (_, b1, b2) ->

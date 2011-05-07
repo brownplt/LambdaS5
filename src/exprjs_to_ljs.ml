@@ -132,7 +132,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let t = exprjs_to_ljs tst and b = exprjs_to_ljs bdy in get_while t b
   | E.LabelledExpr (p, lbl, exp) -> S.Label (p, lbl, exprjs_to_ljs exp)
   | E.BreakExpr (p, id, e) -> S.Break (p, id, exprjs_to_ljs e)
-  | E.ForInExpr (p, nm, vl, bdy) -> failwith "ForIn NYI"
+  | E.ForInExpr (p, nm, vl, bdy) ->
+    get_forin p nm (exprjs_to_ljs vl) (exprjs_to_ljs bdy)
   | E.TryCatchExpr (p, body, ident, catch) -> 
     let new_ctxt = 
       S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, "%parent")) },
@@ -280,3 +281,47 @@ and get_while tst bdy =
           S.App (p, S.Id (p, "%while"), [S.Id (p, "%tst"); S.Id (p, "%bdy")])),
           S.Undefined (p)))),
     S.App (p, S.Id (p, "%while"), [tst; bdy]))
+
+and prop_itr = 
+  let p = dummy_pos in
+  let tst =
+    S.Op2 (p, "has-own-property?", 
+      S.Id (p, "%obj"), 
+      S.Op1 (p, "prim->str", S.Id (p, "%index")))
+  and cns = 
+    S.Let (p, "%rval",
+    S.GetField (p, S.Id (p, "%obj"), S.Op1 (p, "prim->str", S.Id (p, "%index")),
+    S.Null (p)),
+    S.Seq (p,
+    S.SetBang (p, "%index", S.Op2 (p, "+", S.Id (p ,"%index"), S.Num (p, 1.))),
+    S.Id (p, "%rval"))) in
+    (*
+    S.Seq (p, 
+    S.SetBang (p, "%index", S.Op2 (p, "+", S.Id (p ,"%index"), S.Num (p, 1.))),
+    S.GetField (p, S.Id (p, "%obj"), S.Op1 (p, "prim->str", S.Id (p, "%index")),
+    S.Null (p))) in (* TODO: null args obj here!! *)
+  *)
+  S.Lambda (p, ["%obj"],
+    S.Let (p, "%index", S.Num (p, 0.),
+      S.Lambda (p, [],
+        S.If (p, tst, cns, S.Undefined (p)))))
+
+and get_forin p nm robj bdy = (* TODO: null args object below!! *)
+  let context = S.Id (p, "%context")
+  and nms = S.String (p, nm) in
+  let tst =
+    S.Op1 (p, "!", 
+    S.Op2 (p, "stx=", 
+      S.GetField (p, context, nms, S.Null (p)), 
+      S.Undefined (p)))
+  and wbdy = 
+    S.Seq (p, bdy, 
+    S.SetField (p, context, nms, 
+      S.App (p, S.Id (p, "%prop_itr"), []), S.Null (p))) in
+  S.Rec (p, "%get_itr", prop_itr,
+  S.Let (p, "%pnameobj", S.Op1 (p, "property-names", robj),
+  S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
+  S.Seq (p, 
+    S.SetField (p, context, nms, S.App (p, S.Id (p, "%prop_itr"), []), S.Null (p)),
+    get_while tst wbdy))))
+
