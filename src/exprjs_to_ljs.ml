@@ -10,7 +10,15 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.Undefined (p) -> S.Undefined (p)
   | E.Null (p) -> S.Null (p)
   | E.String (p, s) -> S.String (p, s)
-  | E.ArrayExpr _ -> failwith "ArrayLit NYI"
+  | E.ArrayExpr (p, el) ->
+    let rec e_to_p e n =
+      (string_of_int n, S.Data ({ S.value = e; S.writable = true; }, true,
+      true))
+    and el_to_pl l n = match l with
+      | [] -> []
+      | first :: rest -> (e_to_p first n) :: el_to_pl rest (n + 1) in
+    let desugared = List.map exprjs_to_ljs el in
+    S.Object (p, S.d_attrs, el_to_pl desugared 0)
   | E.ObjectExpr (p, pl) ->
     (* Given a tuple, if it's a getter/setter, create a name-accessor pair and add to
      * sofar *)
