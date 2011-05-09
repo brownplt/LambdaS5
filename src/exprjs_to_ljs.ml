@@ -11,14 +11,28 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.Null (p) -> S.Null (p)
   | E.String (p, s) -> S.String (p, s)
   | E.ArrayExpr (p, el) ->
-    let rec e_to_p e n =
-      (string_of_int n, S.Data ({ S.value = e; S.writable = true; }, true,
-      true))
+    let rec e_to_p e n = (
+      string_of_int n, 
+      S.Data ({ S.value = e; S.writable = true; }, true, true))
     and el_to_pl l n = match l with
       | [] -> []
       | first :: rest -> (e_to_p first n) :: el_to_pl rest (n + 1) in
-    let desugared = List.map exprjs_to_ljs el in
-    S.Object (p, S.d_attrs, el_to_pl desugared 0)
+    let desugared = List.map exprjs_to_ljs el
+    and a_attrs = {
+        S.code = None;
+        S.proto = 
+          Some (S.GetField (p, S.Id (p, "%context"), S.String (p, "Array"),
+          S.Null (p))); (* TODO: null args obj *)
+        S.klass = "Array";
+        S.extensible = true; } in
+    let exp_props = el_to_pl desugared 0 in
+    let lfloat = float_of_int (List.length exp_props) in
+    let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
+      S.Data (
+        { S.value = S.Num (p, lfloat); S.writable = true; },
+        false,
+        false) in
+    S.Object (p, a_attrs, ("length", l_prop) :: exp_props)
   | E.ObjectExpr (p, pl) ->
     (* Given a tuple, if it's a getter/setter, create a name-accessor pair and add to
      * sofar *)
@@ -119,7 +133,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       List.map 
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
     let args_obj = S.Object (p, S.d_attrs, props) in
-    S.App (p, f, [S.Id (p, "%this"); args_obj])
+    let this = match f with
+      | S.GetField (p, l, r, args) -> l
+      | _ -> S.Id (p, "%this") in
+    S.App (p, f, [this; args_obj])
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
