@@ -91,7 +91,13 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | [] -> []
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
     let data_result = form_props data_props in
-    S.Object (p, S.d_attrs, List.append reduced_assoc data_result)
+    let o_attrs = {
+      S.code = None;
+      S.proto = Some (S.GetField (p, S.Id (p, "%context"), S.String (p, "Object"),
+      S.Null (p)));
+      S.klass = "Object";
+      S.extensible = true; } in
+    S.Object (p, o_attrs, List.append reduced_assoc data_result)
   | E.ThisExpr (p) -> failwith "This NYI"
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
@@ -185,8 +191,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
 
 and get_fobj p args body context = 
   let call = get_lambda p args body in
+  let fproto = 
+    S.GetField (p, S.Id (p, "%context"), S.String(p, "Function"), S.Null (p)) in
   let fobj_attrs = 
-    { S.code = Some (call); S.proto = Some (S.Null (p)); S.klass = "Function"; 
+    { S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
     S.extensible = true; } in
   let param_len = List.length args in
   let indices = Prelude.iota param_len in
