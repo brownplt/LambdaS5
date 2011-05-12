@@ -53,7 +53,7 @@ let rec exp e = match e with
 		    exp t;
 		    exp e;])
   | App (p, f, args) ->
-      parens (horz (exp f :: map exp args))
+      parens (horz ((text "app") :: (exp f :: map exp args)))
   | Seq (p, e1, e2) ->
       parens (vert [text "begin"; exp e1; exp e2])
   | Let (p, x, e, body) ->
