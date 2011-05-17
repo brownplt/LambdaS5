@@ -161,11 +161,11 @@ prop_attr :
 
 prop_attrs :
  | WRITABLE BOOL COMMA VALUE exp 
-     { Data ({ value = $5; writable = $2 }, true, true) }
+     { Data ({ value = $5; writable = $2 }, false, true) }
  | VALUE exp COMMA WRITABLE BOOL
-     { Data ({ value = $2; writable = $5 }, true, true) }
+     { Data ({ value = $2; writable = $5 }, false, true) }
  | GETTER exp COMMA SETTER exp 
-     { Accessor ({ getter = $2; setter = $5 }, true, true) }
+     { Accessor ({ getter = $2; setter = $5 }, false, true) }
 
 prop :
  | STRING COLON LBRACE prop_attrs RBRACE { ($1, $4) }
