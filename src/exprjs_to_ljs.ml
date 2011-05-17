@@ -27,9 +27,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let desugared = List.map exprjs_to_ljs el
     and a_attrs = {
         S.code = None;
-        S.proto = 
-          Some (S.GetField (p, S.Id (p, "%context"), S.String (p, "Array"),
-          S.Null (p))); (* TODO: null args obj *)
+        S.proto = Some (S.Id (p, "%ArrayProto")); 
         S.klass = "Array";
         S.extensible = true; } in
     let exp_props = el_to_pl desugared 0 in
@@ -100,8 +98,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let data_result = form_props data_props in
     let o_attrs = {
       S.code = None;
-      S.proto = Some (S.GetField (p, S.Id (p, "%context"), S.String (p, "Object"),
-      S.Null (p)));
+      S.proto = Some (S.Id (p, "%ObjectProto"));
       S.klass = "Object";
       S.extensible = true; } in
     S.Object (p, o_attrs, List.append reduced_assoc data_result)
@@ -175,9 +172,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
     let a_attrs = {
         S.code = None;
-        S.proto = 
-          Some (S.GetField (p, S.Id (p, "%context"), S.String (p, "Array"),
-          S.Null (p))); (* TODO: null args obj *)
+        S.proto = Some (S.Id (p, "%ArrayProto"));
         S.klass = "Array";
         S.extensible = true; } in
     let lfloat = float_of_int (List.length props) in
@@ -239,8 +234,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
 
 and get_fobj p args body context = 
   let call = get_lambda p args body in
-  let fproto = 
-    S.GetField (p, S.Id (p, "%context"), S.String(p, "Function"), S.Null (p)) in
+  let fproto = S.Id (p, "%FunctionProto") in
   let fobj_attrs = 
     { S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
     S.extensible = true; } in
