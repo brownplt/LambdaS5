@@ -113,12 +113,25 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let argsobj = S.Object (p, S.d_attrs, []) in
     S.GetField (p, o, f, argsobj)
   | E.NewExpr _ -> failwith "New NYI"
-  | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
+  | E.PrefixExpr (p, op, exp) -> let result = match op with
+    | "postfix:++" ->
+      let lhs = match exp with
+        | E.BracketExpr (_, E.IdExpr (_, "%context"), E.String (_, nm)) ->
+          S.String (p, nm)
+        | _ -> failwith "postfix ++ not yet fully implemented"
+      and sexp = exprjs_to_ljs exp in
+      let bop = S.Op2 (p, "+", sexp, S.Num (p, 1.)) in
+      let rec arecd = { S.value = bop; S.writable = true; }
+      and aprop = S.Data (arecd, true, true)
+      and aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
+      S.SetField (p, S.Id (p, "%context"), lhs, bop, aobj)
+    | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r in
     let result = match op with
       | "&&" -> S.If (p, sl, sr, sl)
       | "||" -> S.If (p, sl, sl, sr)
+      | "!==" -> S.Op1 (p, "!", S.Op2 (p, "stx=", sl, sr))
       | _ -> let op = match op with
         | "===" -> "abs="
         | "==" -> "stx="
@@ -145,7 +158,20 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let props = 
       List.map 
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
-    let args_obj = S.Object (p, S.d_attrs, props) in
+    let a_attrs = {
+        S.code = None;
+        S.proto = 
+          Some (S.GetField (p, S.Id (p, "%context"), S.String (p, "Array"),
+          S.Null (p))); (* TODO: null args obj *)
+        S.klass = "Array";
+        S.extensible = true; } in
+    let lfloat = float_of_int (List.length props) in
+    let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
+      S.Data (
+        { S.value = S.Num (p, lfloat); S.writable = true; },
+        false,
+        false) in
+    let args_obj = S.Object (p, a_attrs, ("length", l_prop) :: props) in
     let this = match f with
       | S.GetField (p, l, r, args) -> l
       | _ -> S.Id (p, "%this") in
