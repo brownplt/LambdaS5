@@ -127,9 +127,15 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       S.SetField (p, S.Id (p, "%context"), lhs, bop, aobj)
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
-    let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r in
+    let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r
+    and this = S.Id (p, "%this") in
     let result = match op with
-      | "&&" -> S.If (p, sl, sr, sl)
+      | "&&" -> (*S.If (p, sl, sr, sl)*)
+        S.Let (p, "%l-evaled", sl,
+          S.If (p, 
+            S.App (p, S.Id (p, "%ToBoolean"), [S.Id (p, "%l-evaled")]),
+            sr, 
+            S.Id (p, "%l-evaled")))
       | "||" -> S.If (p, sl, sl, sr)
       | "!==" -> S.Op1 (p, "!", S.Op2 (p, "stx=", sl, sr))
       | _ -> let op = match op with
