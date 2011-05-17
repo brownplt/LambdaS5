@@ -13,6 +13,8 @@ let parse_es5 cin name =
            failwith (sprintf "lexical error at %s"
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+      | Failure "utf8_of_point not implemented" ->
+        failwith "Parser doesn't do some UTF8 encoding crap"
       | Es5_parser.Error ->
            failwith (sprintf "parse error at %s; unexpected token %s"
                        (string_of_position 

@@ -225,6 +225,8 @@ let parse_spidermonkey (cin : in_channel) (name : string) : Js_syntax.program =
            failwith (sprintf "lexical error at %s"
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+      | Failure "utf8_of_point not implemented" ->
+        failwith "Parser doesn't do some UTF8 encoding crap"
       | Json_parser.Error ->
            failwith (sprintf "parse error at %s; unexpected token %s"
                        (string_of_position 
