@@ -106,7 +106,19 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let argsobj = S.Object (p, S.d_attrs, []) in
     S.GetField (p, o, f, argsobj)
   | E.NewExpr _ -> failwith "New NYI"
-  | E.PrefixExpr (p, op, exp) -> S.Op1 (p, op, exprjs_to_ljs exp)
+  | E.PrefixExpr (p, op, exp) -> let result = match op with
+    | "postfix:++" ->
+      let lhs = match exp with
+        | E.BracketExpr (_, E.IdExpr (_, "%context"), E.String (_, nm)) ->
+          S.String (p, nm)
+        | _ -> failwith "postfix ++ not yet fully implemented"
+      and sexp = exprjs_to_ljs exp in
+      let bop = S.Op2 (p, "+", sexp, S.Num (p, 1.)) in
+      let rec arecd = { S.value = bop; S.writable = true; }
+      and aprop = S.Data (arecd, true, true)
+      and aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
+      S.SetField (p, S.Id (p, "%context"), lhs, bop, aobj)
+    | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r in
     let result = match op with
