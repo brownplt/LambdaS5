@@ -12,18 +12,19 @@ let unbool b = match b with
   | False -> false
   | _ -> failwith "tried to unbool a non-bool"
 
-let rec interp_error pos message =
+let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
-let rec apply func args = match func with
+let rec apply p func args = match func with
   | Closure c -> c args
   | ObjCell c -> begin match !c with
       | ({ code = Some cvalue }, _) ->
-        apply cvalue args
+        apply p cvalue args
       | _ -> Fail "Applied an object without a code attribute"
   end
-  | _ -> failwith ("[interp] Applied non-function, was actually " ^ 
-		     pretty_value func)
+  | _ -> failwith (interp_error p 
+                     ("Applied non-function, was actually " ^ 
+		         pretty_value func))
 
 let rec get_field p obj1 obj2 field args = match obj1 with
   | Null -> Undefined (* nothing found *)
@@ -33,7 +34,7 @@ let rec get_field p obj1 obj2 field args = match obj1 with
 	   match IdMap.find field props with
              | Data ({ value = v; }, _, _) -> v
              | Accessor ({ getter = g; }, _, _) ->
-	       apply g [obj2; args]
+	       apply p g [obj2; args]
          (*apply g [obj2]*)
         (* Not_found means prototype lookup is necessary *)
 	 with Not_found ->
@@ -72,14 +73,14 @@ let rec not_writable prop = match prop with
 
 (* EUpdateField *)
 (* ES5 8.12.4, 8.12.5 *)
-let rec update_field obj1 obj2 field newval args = match obj1 with
+let rec update_field p obj1 obj2 field newval args = match obj1 with
     (* 8.12.4, step 4 *)
   | Null -> add_field obj2 field newval
   | ObjCell c -> begin match !c with
       | { proto = pvalue; } as attrs, props ->
         if (not (IdMap.mem field props)) then
 	  (* EUpdateField-Proto *)
-	  update_field pvalue obj2 field newval args
+	  update_field p pvalue obj2 field newval args
         else
 	  match (IdMap.find field props) with
             | Data ({ writable = true; }, enum, config) ->
@@ -96,7 +97,7 @@ let rec update_field obj1 obj2 field newval args = match obj1 with
 	      end
             | Accessor ({ setter = setterv; }, enum, config) ->
 	      (* 8.12.5, step 5 *)
-	      apply setterv [obj2; args]
+	      apply p setterv [obj2; args]
             | _ -> Fail "Field not writable!"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
@@ -270,7 +271,7 @@ let rec eval exp env = match exp with
       let args_value = eval args env in begin
 	match (obj_value, f_value) with
 	  | (ObjCell o, String s) ->
-	      update_field obj_value 
+	      update_field p obj_value 
 		obj_value 
 		s
 		v_value
@@ -337,7 +338,7 @@ let rec eval exp env = match exp with
   | S.App (p, func, args) -> 
       let func_value = eval func env in
       let args_values = map (fun e -> eval e env) args in
-        apply func_value args_values
+        apply p func_value args_values
   | S.Seq (p, e1, e2) -> 
       eval e1 env;
       eval e2 env
@@ -361,7 +362,7 @@ let rec eval exp env = match exp with
   | S.TryCatch (p, body, catch) -> begin
       try
 	eval body env
-      with Throw v -> apply (eval catch env) [v]
+      with Throw v -> apply p (eval catch env) [v]
     end
   | S.TryFinally (p, body, fin) -> begin
       try
