@@ -8,6 +8,12 @@ function testRun(id, path, description, codeString, preconditionString, result, 
         currentTest.error = error;
         currentTest.code = codeString;
         currentTest.pre = preconditionString;
+        if(result === 'pass') {
+            print("HARNESS: Passed");
+        }
+        else {
+            print("HARNESS: Failed");
+        }
     }
 
 ES5Harness = {};
@@ -21,4 +27,4 @@ ES5Harness.registerTest = function(test) {
         var retVal = /^s/i.test(test.id) ? (res === true || typeof res === 'undefined' ? 'pass' : 'fail') : (res === true ? 'pass' : 'fail');
         testRun(test.id, test.path, test.description, test.test.toString(), typeof test.precondition !== 'undefined' ? test.precondition.toString() : '', retVal, error);
     }
-}
+};
