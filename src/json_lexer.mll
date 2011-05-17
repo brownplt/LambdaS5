@@ -30,9 +30,14 @@
       if big_int_mode then STRING s
       else raise (Json_error (s ^ " is too large for OCaml's type int"))
 
+
+  (*HACK*)
+  let utf8_of_point i = "SYNTAX ERROR\"IF NOT\" IN A COMMENT"
+
+(*
   let utf8_of_point i = failwith "utf8_of_point not implemented"
  (*   Netconversion.ustring_of_uchar `Enc_utf8 i *)
-
+*)
   let custom_error descr lexbuf =
     raise (Json_error 
 	     (sprintf "%s:\n%s"
