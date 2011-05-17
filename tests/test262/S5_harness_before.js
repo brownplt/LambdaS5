@@ -1,5 +1,6 @@
 /* Called from the child window after the test has run. */
 function testRun(id, path, description, codeString, preconditionString, result, error) {
+        currentTest = {id : id};
         currentTest.id = id;
         currentTest.path = path;
         currentTest.description = description;
