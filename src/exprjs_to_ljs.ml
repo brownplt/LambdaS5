@@ -112,6 +112,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let result = match op with
       | "&&" -> S.If (p, sl, sr, sl)
       | "||" -> S.If (p, sl, sl, sr)
+      | "!==" -> S.Op1 (p, "!", S.Op2 (p, "stx=", sl, sr))
       | _ -> let op = match op with
         | "===" -> "abs="
         | "==" -> "stx="
