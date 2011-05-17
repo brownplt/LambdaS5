@@ -165,7 +165,7 @@ and expr (v : json_type) : expr =
       Cond (p, expr (get "test" v), expr (get "consequent" v),
 	    expr (get "alternate" v))
     | "New" ->
-      New (p, expr (get "constructor" v),
+      New (p, expr (get "callee" v),
 	   let args = get "arguments" v in
 	   if is_null args then []
 	   else map expr (list args))
