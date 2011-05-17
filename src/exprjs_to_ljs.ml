@@ -351,7 +351,7 @@ and get_while tst bdy =
 and prop_itr = 
   let p = dummy_pos in
   let tst =
-    S.Op2 (p, "has-own-property?", 
+    S.Op2 (p, "hasOwnProperty", 
       S.Id (p, "%obj"), 
       S.Op1 (p, "prim->str", S.Id (p, "%index")))
   and cns = 

@@ -327,8 +327,8 @@ let op2 op = match op with
   | ">=" -> arith_ge
   | "stx=" -> stx_eq
   | "abs=" -> abs_eq
-  | "has-property?" -> has_property
-  | "has-own-property?" -> has_own_property
+  | "hasProperty" -> has_property
+  | "hasOwnProperty" -> has_own_property
   | "string+" -> string_plus
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
