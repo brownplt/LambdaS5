@@ -130,13 +130,18 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r
     and this = S.Id (p, "%this") in
     let result = match op with
-      | "&&" -> (*S.If (p, sl, sr, sl)*)
+      | "&&" ->
         S.Let (p, "%l-evaled", sl,
           S.If (p, 
             S.App (p, S.Id (p, "%ToBoolean"), [S.Id (p, "%l-evaled")]),
             sr, 
             S.Id (p, "%l-evaled")))
-      | "||" -> S.If (p, sl, sl, sr)
+      | "||" ->
+        S.Let (p, "%l-evaled", sl,
+          S.If (p,
+            S.App (p, S.Id (p, "%ToBoolean"), [S.Id (p, "%l-evaled")]),
+            S.Id (p, "%l-evaled"),
+            sr))
       | "!==" -> S.Op1 (p, "!", S.Op2 (p, "stx=", sl, sr))
       | _ -> let op = match op with
         | "===" -> "abs="
@@ -144,7 +149,11 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         | _ -> op in S.Op2 (p, op, sl, sr) in result
   | E.IfExpr (p, e1, e2, e3) -> let e1 = exprjs_to_ljs e1
     and e2 = exprjs_to_ljs e2
-    and e3 = exprjs_to_ljs e3 in S.If (p, e1, e2, e3)
+    and e3 = exprjs_to_ljs e3 in 
+    S.If (p, 
+      S.App (p, S.Id (p, "%ToBoolean"), [e1]),
+      e2, 
+      e3)
   | E.AssignExpr (p, obj, pr, vl) -> 
     let sobj = exprjs_to_ljs obj
     and spr = exprjs_to_ljs pr
