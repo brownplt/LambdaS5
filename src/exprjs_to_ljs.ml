@@ -138,7 +138,20 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let props = 
       List.map 
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
-    let args_obj = S.Object (p, S.d_attrs, props) in
+    let a_attrs = {
+        S.code = None;
+        S.proto = 
+          Some (S.GetField (p, S.Id (p, "%context"), S.String (p, "Array"),
+          S.Null (p))); (* TODO: null args obj *)
+        S.klass = "Array";
+        S.extensible = true; } in
+    let lfloat = float_of_int (List.length props) in
+    let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
+      S.Data (
+        { S.value = S.Num (p, lfloat); S.writable = true; },
+        false,
+        false) in
+    let args_obj = S.Object (p, a_attrs, ("length", l_prop) :: props) in
     let this = match f with
       | S.GetField (p, l, r, args) -> l
       | _ -> S.Id (p, "%this") in
