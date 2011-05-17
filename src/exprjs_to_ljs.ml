@@ -185,6 +185,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
             S.Id (p, "%l-evaled"),
             sr))
       | "!==" -> S.Op1 (p, "!", S.Op2 (p, "stx=", sl, sr))
+      | "+" -> S.App (p, S.Id (p, "%PrimAdd"), [sl; sr])
       | _ -> let op = match op with
         | "===" -> "abs="
         | "==" -> "stx="
