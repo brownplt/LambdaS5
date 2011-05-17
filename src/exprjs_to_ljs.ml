@@ -273,10 +273,11 @@ and get_fobj p args body context =
   let props =
     List.map (fun (n, rcd) -> (string_of_int n, S.Data (rcd, false, false)))
     rcds in
+  let proto_prop = S.Data ({ S.value = S.Id (p, "%ObjectProto"); S.writable = true}, false, true) in
   let param_obj = S.Object (p, S.d_attrs, props) in
   S.Let (p, "%parent", context,
     S.Let (p, "%params", param_obj,
-      S.Object (p, fobj_attrs, [])))
+      S.Object (p, fobj_attrs, [("prototype", proto_prop)])))
 
 and get_lambda p args body = 
   let getter nm = 
