@@ -74,15 +74,20 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       let e_asgn = match aop with
         | "=" -> E.AssignExpr (p, target, left, er)
         | "*=" -> 
-          E.AssignExpr (p, target, left, E.InfixExpr (p, "*", left, er))
+          E.AssignExpr (p, target, left, 
+            E.InfixExpr (p, "*", E.BracketExpr (p, target, left), er))
         | "/=" -> 
-          E.AssignExpr (p, target, left, E.InfixExpr (p, "/", left, er))
+          E.AssignExpr (p, target, left, 
+            E.InfixExpr (p, "/", E.BracketExpr (p, target, left), er))
         | "%=" -> 
-          E.AssignExpr (p, target, left, E.InfixExpr (p, "%", left, er))
+          E.AssignExpr (p, target, left, 
+            E.InfixExpr (p, "%", E.BracketExpr (p, target, left), er))
         | "+=" ->
-          E.AssignExpr (p, target, left, E.InfixExpr (p, "+", left, er))
+          E.AssignExpr (p, target, left, 
+            E.InfixExpr (p, "+", E.BracketExpr (p, target, left), er))
         | "-=" -> 
-          E.AssignExpr (p, target, left, E.InfixExpr (p, "-", left, er))
+          E.AssignExpr (p, target, left, 
+            E.InfixExpr (p, "-", E.BracketExpr (p, target, left), er))
         | _ -> failwith "unimplemented assign op" in
       e_asgn
     | J.List (p, el) -> let rec unroll = function
