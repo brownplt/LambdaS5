@@ -85,7 +85,7 @@ rule token = parse
    | "null" { NULL }
    | "func" { FUNC }
    | "let" { LET }
-   | "fix" { FIX }
+   | "rec" { REC }
    | "delete" { DELETE }
    | "[" { LBRACK }
    | "]" { RBRACK }
