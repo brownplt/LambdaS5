@@ -15,7 +15,7 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Bool (b) -> if b then E.True (p) else E.False (p)
         | J.Num (n) -> E.Num (p, n)
         | J.Str (s) -> E.String (p, s) 
-        | J.Regexp (s) -> E.ObjectExpr (p, [(p, "%lit", E.Data (E.String (p, s)))])
+        | J.Regexp (s) -> E.RegExpr (p, s)
       in result
     | J.Array (p, el) -> 
       E.ArrayExpr (p, List.map (fun x -> jse_to_exprjs x) el)

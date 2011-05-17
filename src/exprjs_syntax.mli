@@ -19,6 +19,7 @@ type expr =
   | Null of pos
   | String of pos * string
   | ArrayExpr of pos * expr list
+  | RegExpr of pos * string
   | ObjectExpr of pos * (pos * string * prop) list
       (** Object properties are transformed into string literals *)
   | ThisExpr of pos
