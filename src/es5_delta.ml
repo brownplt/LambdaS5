@@ -226,8 +226,9 @@ let op1 op = match op with
 
 let arith i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
-  | _ -> raise (Throw (str ("arithmetic operator got non-numbers, " ^
-                              "perhaps something wasn't desugared fully?")))
+  | v1, v2 -> raise (Throw (str ("arithmetic operator got non-numbers: " ^
+                                 (pretty_value v1) ^ ", " ^ (pretty_value v2) ^
+                                   "perhaps something wasn't desugared fully?")))
 
 let arith_sum = arith (+) (+.)
 
