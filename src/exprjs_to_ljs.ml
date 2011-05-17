@@ -3,6 +3,34 @@ open Prelude
 module E = Exprjs_syntax
 module S = Es5_syntax
 
+let idx = ref 0
+
+let mk_id str = 
+  idx := !idx + 1;
+  "%" ^ str ^ (string_of_int !idx)
+
+let make_args_obj p args =
+    let n_args = List.length args in
+    let indices = Prelude.iota n_args in
+    let combined = List.combine indices args in
+    let records =
+      List.map (fun (n, arg) -> (n, {S.value = arg; S.writable = true})) combined in
+    let props = 
+      List.map 
+        (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
+    let a_attrs = {
+        S.code = None;
+        S.proto = Some (S.Id (p, "%ArrayProto"));
+        S.klass = "Array";
+        S.extensible = true; } in
+    let lfloat = float_of_int (List.length props) in
+    let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
+      S.Data (
+        { S.value = S.Num (p, lfloat); S.writable = true; },
+        false,
+        false) in
+    S.Object (p, a_attrs, ("length", l_prop) :: props)
+
 let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.True (p) -> S.True (p)
   | E.False (p) -> S.False (p)
@@ -102,14 +130,31 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       S.klass = "Object";
       S.extensible = true; } in
     S.Object (p, o_attrs, List.append reduced_assoc data_result)
-  | E.ThisExpr (p) -> failwith "This NYI"
+  | E.ThisExpr (p) -> S.Id (p, "%this")
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
     and f = S.Op1 (p, "prim->str", exprjs_to_ljs r) in
     let argsobj = S.Object (p, S.d_attrs, []) in
     S.GetField (p, o, f, argsobj)
-  | E.NewExpr _ -> failwith "New NYI"
+  | E.NewExpr (p, econstr, eargs) -> 
+    let constr_id = mk_id "constr" in
+    let pr_id = mk_id "cproto" in
+    let newobj = mk_id "newobj" in
+    let constr_result = mk_id "constr_ret" in
+    let getterargs = S.Object (p, S.d_attrs, []) in
+    let constrargs = make_args_obj p (map exprjs_to_ljs eargs) in
+    S.Let (p, constr_id, exprjs_to_ljs econstr,
+           S.Let (p, pr_id, S.GetField (p, S.Id (p, constr_id), 
+                                        S.String (p, "prototype"), getterargs),
+                  S.Let (p, newobj, 
+                         S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
+                         S.Let (p, constr_result,
+                                S.App (p, S.Id (p, constr_id), [S.Id (p, newobj); constrargs]),
+                                S.If (p, S.Op2 (p, "stx=", S.String (p, "object"), 
+                                                S.Op1 (p, "typeof", S.Id (p, constr_result))),
+                                      S.Id (p, constr_result),
+                                      S.Id (p, newobj))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" ->
       let lhs = match exp with
@@ -162,29 +207,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.AppExpr (p, e, el) -> 
     let sl = List.map (fun x -> exprjs_to_ljs x) el
     and f = exprjs_to_ljs e in 
-    let n_args = List.length sl in
-    let indices = Prelude.iota n_args in
-    let combined = List.combine indices sl in
-    let records =
-      List.map (fun (n, arg) -> (n, {S.value = arg; S.writable = true})) combined in
-    let props = 
-      List.map 
-        (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
-    let a_attrs = {
-        S.code = None;
-        S.proto = Some (S.Id (p, "%ArrayProto"));
-        S.klass = "Array";
-        S.extensible = true; } in
-    let lfloat = float_of_int (List.length props) in
-    let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
-      S.Data (
-        { S.value = S.Num (p, lfloat); S.writable = true; },
-        false,
-        false) in
-    let args_obj = S.Object (p, a_attrs, ("length", l_prop) :: props) in
     let this = match f with
       | S.GetField (p, l, r, args) -> l
       | _ -> S.Id (p, "%this") in
+    let args_obj = make_args_obj p sl in
     S.App (p, f, [this; args_obj])
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.LetExpr (p, nm, vl, body) ->
