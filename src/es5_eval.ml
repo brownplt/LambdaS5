@@ -326,8 +326,7 @@ let rec eval exp env = match exp with
       let obj_val = eval obj env in
       let f_val = eval field env in
       let v_val = eval newval env in
-(*	set_attr attr obj_val f_val v_val *)
-      failwith "set_attr nyi"
+      set_attr attr obj_val f_val v_val 
   | S.Op1 (p, op, e) ->
       let e_val = eval e env in op1 op e_val
   | S.Op2 (p, op, e1, e2) -> 
