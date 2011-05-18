@@ -147,8 +147,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.ThisExpr (p) -> S.Id (p, "%this")
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
-    let o = exprjs_to_ljs l
-    and f = S.Op1 (p, "prim->str", exprjs_to_ljs r) in
+    let o = S.App (p, S.Id (p, "%ToObject"), [exprjs_to_ljs l]) in
+    let f = S.App (p, S.Id (p, "%ToString"), [exprjs_to_ljs r]) in
     make_get_field p o f
   | E.NewExpr (p, econstr, eargs) -> 
     let constr_id = mk_id "constr" in
@@ -208,8 +208,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | "!==" -> S.Op1 (p, "!", S.Op2 (p, "stx=", sl, sr))
       | "+" -> S.App (p, S.Id (p, "%PrimAdd"), [sl; sr])
       | _ -> let op = match op with
-        | "===" -> "abs="
-        | "==" -> "stx="
+        | "==" -> "abs="
+        | "===" -> "stx="
         | _ -> op in S.Op2 (p, op, sl, sr) in result
   | E.IfExpr (p, e1, e2, e3) -> let e1 = exprjs_to_ljs e1
     and e2 = exprjs_to_ljs e2
@@ -307,12 +307,23 @@ and get_fobj p args body context =
   let props =
     List.map (fun (n, rcd) -> (string_of_int n, S.Data (rcd, false, false)))
     rcds in
-  let proto_prop = S.Data ({ S.value = S.Id (p, "%ObjectProto"); S.writable = true}, false, true) in
   let param_obj = S.Object (p, S.d_attrs, props) in
-  S.Let (p, "%parent", context,
-    S.Let (p, "%params", param_obj,
-      S.Object (p, fobj_attrs, [("prototype", proto_prop)])))
-
+  let proto_id = mk_id "prototype" in
+  let proto_obj = 
+    S.Object (p, {S.d_attrs with S.proto = Some (S.Id (p, "%ObjectProto"))}, 
+              [("constructor", S.Data ({ S.value = S.Undefined p;
+                                         S.writable = true}, 
+                                       false, false))]) in
+  let proto_prop = S.Data ({ S.value = S.Id (p, proto_id); S.writable = true}, 
+                           false, true) in
+  let func_id = mk_id "thisfunc" in
+  S.Let (p, proto_id, proto_obj,
+         S.Let (p, "%parent", context,
+                S.Let (p, "%params", param_obj,
+                       S.Let (p, func_id, S.Object (p, fobj_attrs, [("prototype", proto_prop)]),
+                              S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
+                                     S.Id (p, func_id))))))
+           
 and get_lambda p args body = 
   let getter nm = 
     S.Lambda (p, ["this"; "args"], 
