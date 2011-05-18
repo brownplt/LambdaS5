@@ -50,14 +50,10 @@ function testDir {
     for file in $(find $1 -name "*.js"); do
         singleTest $file
     done
-    for dir in $(find $1 -type d); do
-            testDir $dir
-    done
-
 }
 
-testDir $IETESTS
 testDir $SPUTNIKTESTS
+testDir $IETESTS
 
 echo "total tests: $TOTAL"
 echo "parse errs: $EVALERRS"
