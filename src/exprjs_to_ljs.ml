@@ -260,6 +260,19 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.ThrowExpr (p, e) -> S.Throw (p, exprjs_to_ljs e)
   | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
+and a_attrs = {
+      S.code = None;
+      S.proto = Some (S.Id (dummy_pos, "%ArrayProto"));
+      S.klass = "Array";
+      S.extensible = true; }
+
+and noargs_obj = S.Object (dummy_pos, a_attrs, [])
+
+and onearg_obj a = 
+  let r = { S.value = a; S.writable = true; } in
+  let p = S.Data (r, true, true) in
+  S.Object (dummy_pos, a_attrs, [("0", p)])
+
 and get_fobj p args body context = 
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
@@ -286,14 +299,15 @@ and get_lambda p args body =
     S.Lambda (p, ["this"; "args"], 
     S.Label (p, "%ret",
     S.Break (p, "%ret",
-    S.GetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), S.Null (p)))))
+    S.GetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), noargs_obj))))
   and setter nm =
-    let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), S.Null (p)) in
+    let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), noargs_obj) in
+    let setterao = onearg_obj newval in
     S.Lambda (p, ["this"; "args"],
     S.Label (p, "%ret",
     S.Break (p, "%ret",
     S.SetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), 
-      newval, S.Null (p))))) in
+      newval, setterao)))) in
   (* Strip the lets from the top of the function body, and get a tuple containig
    * the name of all those ids (declared with var keyword) and the actual
    * function body *)
@@ -323,7 +337,7 @@ and get_lambda p args body =
   let final = 
     S.Seq (p,
       S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
-      "%args"), S.Null (p)), desugared) in
+      "%args"), onearg_obj (S.Id (p, "%args"))), desugared) in
   let c_attrs = { S.code = None; 
     S.proto = Some (S.Id (p, "%parent"));
     S.klass = "Object";
@@ -339,10 +353,11 @@ and get_lambda p args body =
 
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in
+  let update = 
+    S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj) in
   S.SetField (p, S.Id (p, "%context"), 
   S.GetField (p, S.Id (p, "%params"), S.String (p, string_of_int n), argsobj),
-  S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj),
-  S.Null (p))
+    update, onearg_obj update)
 
 and fv_to_setfield p v = 
   let arec = { S.value = S.Undefined (p); S.writable = true; } in
