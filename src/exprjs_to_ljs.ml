@@ -167,6 +167,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       and aprop = S.Data (arecd, true, true)
       and aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
       S.SetField (p, S.Id (p, "%context"), lhs, bop, aobj)
+    | "typeof" -> S.Op1 (p, "surface-typeof", exprjs_to_ljs exp)
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r

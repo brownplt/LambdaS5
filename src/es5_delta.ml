@@ -31,6 +31,7 @@ end
 
 let surface_typeof v = begin match v with
   | Closure _ -> raise (Throw (str "surface_typeof got lambda"))
+  | Null -> str "object"
   | _ -> typeof v
 end
   
