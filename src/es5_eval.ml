@@ -241,11 +241,15 @@ let rec eval exp env = match exp with
     end
   | S.Object (p, attrs, props) -> 
     let attrsv = match attrs with
-      | { S.proto = protoexp;
+      | { S.primval = vexp;
+          S.proto = protoexp;
           S.code = codexp;
           S.extensible = ext;
           S.klass = kls; } ->
-        { proto = (match protoexp with 
+        { primval = (match vexp with
+          | Some vexp -> Some (eval vexp env)
+          | None -> None);
+          proto = (match protoexp with 
           | Some pexp -> eval pexp env 
           | None -> Undefined);
           code = (match codexp with

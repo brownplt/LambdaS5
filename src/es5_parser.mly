@@ -28,6 +28,7 @@ let args_obj p arg_list callee =
       (p, {proto = Some (Id (p, "Object_prototype"));
            klass = "Arguments";
            extensible = false;
+           primval = None;
            code = None},
        (("length", Data ({value = int_c p (List.length arg_list);
 		         writable = true; },
@@ -143,6 +144,7 @@ const :
 
 oattrsv :
  | { d_attrs }
+ | VALUE COLON exp COMMA oattrsv { { $5 with primval = Some $3 } }
  | EXTENSIBLE COLON BOOL COMMA oattrsv { { $5 with extensible = $3 } }
  | PROTO COLON exp COMMA oattrsv { { $5 with proto = Some $3 } }
  | CODE COLON exp COMMA oattrsv { {$5 with code = Some $3 } }

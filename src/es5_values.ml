@@ -21,7 +21,8 @@ and
   attrsv = { code : value option;
              proto : value;
              extensible : bool;
-             klass : string; }
+             klass : string;
+             primval : value option; }
 and
   propv = 
   | Data of datav * bool * bool
@@ -29,7 +30,8 @@ and
 and datav = { value : value; writable : bool; }
 and accessorv = { getter : value; setter : value; }
 
-let d_attrsv = { code = None; 
+let d_attrsv = { primval = None;
+                 code = None; 
                  proto = Undefined; 
                  extensible = false; 
                  klass = "LambdaJS internal"; }

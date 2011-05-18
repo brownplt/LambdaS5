@@ -29,6 +29,7 @@ let make_args_obj p args =
       List.map 
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
     let a_attrs = {
+      S.primval = None;
         S.code = None;
         S.proto = Some (S.Id (p, "%ArrayProto"));
         S.klass = "Array";
@@ -49,7 +50,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.Null (p) -> S.Null (p)
   | E.String (p, s) -> S.String (p, s)
   | E.RegExpr (p, s) -> 
-    let re_attrs = { S.code = None;
+    let re_attrs = { S.primval = None;
+                     S.code = None;
                      S.proto = Some (S.Id (p, "%RegexpProto"));
                      S.klass = "Regexp"; (* correct? *)
                      S.extensible = true; } in
@@ -64,6 +66,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | first :: rest -> (e_to_p first n) :: el_to_pl rest (n + 1) in
     let desugared = List.map exprjs_to_ljs el
     and a_attrs = {
+      S.primval = None;
         S.code = None;
         S.proto = Some (S.Id (p, "%ArrayProto")); 
         S.klass = "Array";
@@ -135,6 +138,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | first :: rest -> (tuple_to_prop first) :: form_props rest in
     let data_result = form_props data_props in
     let o_attrs = {
+      S.primval = None;
       S.code = None;
       S.proto = Some (S.Id (p, "%ObjectProto"));
       S.klass = "Object";
@@ -235,7 +239,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | "%context" -> let orig_props = match sv with
         | S.Object (_, _, pl) -> pl
         | _ -> failwith "let bound %context to a non-object" in
-        let c_attrs = { S.code = None;
+        let c_attrs = { S.primval = None;
+                        S.code = None;
                         S.proto = Some (S.Id (p, "%context"));
                         S.klass = "Object";
                         S.extensible = true; } in
@@ -274,6 +279,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
 and a_attrs = {
+  S.primval = None;
       S.code = None;
       S.proto = Some (S.Id (dummy_pos, "%ArrayProto"));
       S.klass = "Array";
@@ -290,7 +296,7 @@ and get_fobj p args body context =
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
   let fobj_attrs = 
-    { S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
+    { S.primval = None; S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
     S.extensible = true; } in
   let param_len = List.length args in
   let indices = Prelude.iota param_len in
@@ -351,7 +357,9 @@ and get_lambda p args body =
     S.Seq (p,
       S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
       "%args"), onearg_obj (S.Id (p, "%args"))), desugared) in
-  let c_attrs = { S.code = None; 
+  let c_attrs = { 
+    S.primval = None;
+    S.code = None; 
     S.proto = Some (S.Id (p, "%parent"));
     S.klass = "Object";
     S.extensible = true; } in
@@ -457,4 +465,3 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
   S.Seq (p, 
     S.SetField (p, context, nms, S.App (p, S.Id (p, "%prop_itr"), []), S.Null (p)),
     get_while tst wbdy))))
-
