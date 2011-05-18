@@ -213,11 +213,10 @@ and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
         | [] -> final
         | first :: rest -> let newnm = "%%" ^ first in
           E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
-      let last = srcElts_inner body context in
+      let reordered = J.reorder_sel body in
+      let last = srcElts_inner reordered context in
       E.FuncStmtExpr (p, nm, args, fvl_to_letchain free_vars last) in
   match ss with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
     | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts_inner rest context) 
-
-

@@ -135,3 +135,19 @@ let rec fv_sel (sel : srcElt list) : Prelude.IdSet.t = let open Prelude in
     | Stmt s -> fv s
     | FuncDecl _ -> IdSet.empty in
     IdSet.union fv_f (fv_sel rest)
+
+let rec getfd_single fd = match fd with
+  | Stmt _ -> []
+  | FuncDecl (_, _, sel) -> fd :: (getfd_lst sel)
+
+and getfd_lst sel = match sel with
+  | [] -> []
+  | first :: rest -> List.append (getfd_single first) (getfd_lst rest)
+
+and removefd_lst sel = match sel with
+  | [] -> []
+  | first :: rest -> let next = match first with
+    | Stmt _ -> first :: (removefd_lst rest)
+    | _ -> removefd_lst rest in next
+
+and reorder_sel sel = List.append (getfd_lst sel) (removefd_lst sel)
