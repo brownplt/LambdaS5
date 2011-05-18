@@ -188,6 +188,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         | _ -> failwith "[exprjs_to_ljs] postfix:++ on a non-lookup LHS"
       end
     | "typeof" -> S.Op1 (p, "surface-typeof", exprjs_to_ljs exp)
+    | "delete" -> let result = match exp with
+      | E.BracketExpr (pp, obj, fld) -> 
+        S.DeleteField (pp, exprjs_to_ljs obj, exprjs_to_ljs fld)
+      | _ -> failwith "[exprjs_to_ljs] delete error" in result
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r
@@ -387,10 +391,12 @@ and get_lambda p args body =
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in
   let update = 
-    S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj) in
-  S.SetField (p, S.Id (p, "%context"), 
-  S.GetField (p, S.Id (p, "%params"), S.String (p, string_of_int n), argsobj),
-    update, onearg_obj update)
+    S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj)
+  and field = 
+    S.GetField (p, S.Id (p, "%params"), S.String (p, string_of_int n), argsobj) in
+  (*S.Seq (p, *)
+  S.SetField (p, S.Id (p, "%context"), field, update, onearg_obj update)(*,
+  S.SetAttr (p, S.Config, S.Id (p, "%context"), field, S.False (p)))*)
 
 and fv_to_setfield p v = 
   let arec = { S.value = S.Undefined (p); S.writable = true; } in
