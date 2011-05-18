@@ -4,6 +4,7 @@ JSFILE=`mktemp`
 NOCOMMENTS=`mktemp`
 cat test262/test/harness/sta.js >> $JSFILE
 cat S5_harness_before.js >> $JSFILE
+cat test262/test/harness/sputnikLib.js >> $JSFILE
 cat $1 >> $JSFILE
 echo "print('done');" >> $JSFILE
 
@@ -22,6 +23,10 @@ cat $JSONFILE > out2.txt
 RESULT=`mktemp`
 
 ocamlrun ../../src/s5.d.byte -desugar $JSONFILE -env ../../envs/es5.env -eval &> $RESULT
+
+rm -f $JSONFILE
+rm -f $NOCOMMENTS
+rm -f $JSFILE
 
 cat $RESULT
 
