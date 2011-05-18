@@ -315,8 +315,12 @@ let rec eval exp env = match exp with
                 with Not_found -> False
               end
             end
-	  | _ -> failwith ("[interp] DeleteField didn't get an object and string at " ^
-			     string_of_position p)
+	  | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
+			   ^ string_of_position p 
+			   ^ ". Instead, it got " 
+			   ^ pretty_value obj_val
+			   ^ " and " 
+			   ^ pretty_value f_val)
 	end
   | S.GetAttr (p, attr, obj, field) ->
       let obj_val = eval obj env in
