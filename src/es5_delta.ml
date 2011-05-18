@@ -31,6 +31,7 @@ end
 
 let surface_typeof v = begin match v with
   | Closure _ -> raise (Throw (str "surface_typeof got lambda"))
+  | Null -> str "object"
   | _ -> typeof v
 end
   
@@ -203,6 +204,8 @@ let nnot e = match e with
   | String s -> if s = "" then True else False
   | ObjCell _ -> False
 
+let void v = Undefined
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -222,6 +225,7 @@ let op1 op = match op with
   | "to-int32" -> to_int32
   | "fail?" -> fail
   | "!" -> nnot
+  | "void" -> void
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with

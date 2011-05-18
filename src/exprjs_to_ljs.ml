@@ -9,6 +9,16 @@ let mk_id str =
   idx := !idx + 1;
   "%" ^ str ^ (string_of_int !idx)
 
+let make_get_field p obj fld =
+  let argsobj = S.Object (p, S.d_attrs, []) in
+  S.GetField (p, obj, fld, argsobj)
+  
+let make_set_field p obj fld value =
+  let arecd = { S.value = value; S.writable = true; } in
+  let aprop = S.Data (arecd, true, true) in
+  let aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
+  S.SetField (p, obj, fld, value, aobj)
+
 let make_args_obj p args =
     let n_args = List.length args in
     let indices = Prelude.iota n_args in
@@ -135,8 +145,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.BracketExpr (p, l, r) -> 
     let o = exprjs_to_ljs l
     and f = S.Op1 (p, "prim->str", exprjs_to_ljs r) in
-    let argsobj = S.Object (p, S.d_attrs, []) in
-    S.GetField (p, o, f, argsobj)
+    make_get_field p o f
   | E.NewExpr (p, econstr, eargs) -> 
     let constr_id = mk_id "constr" in
     let pr_id = mk_id "cproto" in
@@ -157,16 +166,24 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                                       S.Id (p, newobj))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" ->
-      let lhs = match exp with
-        | E.BracketExpr (_, E.IdExpr (_, "%context"), E.String (_, nm)) ->
-          S.String (p, nm)
-        | _ -> failwith "postfix ++ not yet fully implemented"
-      and sexp = exprjs_to_ljs exp in
-      let bop = S.Op2 (p, "+", sexp, S.Num (p, 1.)) in
-      let rec arecd = { S.value = bop; S.writable = true; }
-      and aprop = S.Data (arecd, true, true)
-      and aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
-      S.SetField (p, S.Id (p, "%context"), lhs, bop, aobj)
+      begin match exp with
+        | E.BracketExpr (po, objexpr, fldexpr) ->
+          let obj_id = mk_id "obj" in
+          let fld_id = mk_id "fld" in
+          let result = mk_id "postfix_result" in
+          S.Let (p, obj_id, exprjs_to_ljs objexpr,
+                 S.Let (p, fld_id, exprjs_to_ljs fldexpr,
+                        S.Let (p, result, 
+                               make_get_field p (S.Id (po, obj_id)) (S.Id (po, fld_id)),
+                               S.Seq (p,
+                                      make_set_field p (S.Id (p, obj_id)) (S.Id (p, fld_id))
+                                        (S.App (p, S.Id (p, "%PrimAdd"),
+                                                [S.Id (p, result);
+                                                 S.Num (p, 1.0)])),
+                                      S.Id (p, result)))))
+        | _ -> failwith "[exprjs_to_ljs] postfix:++ on a non-lookup LHS"
+      end
+    | "typeof" -> S.Op1 (p, "surface-typeof", exprjs_to_ljs exp)
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r
@@ -201,10 +218,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let sobj = exprjs_to_ljs obj
     and spr = exprjs_to_ljs pr
     and svl = exprjs_to_ljs vl in
-    let arecd = { S.value = svl; S.writable = true; } in
-    let aprop = S.Data (arecd, true, true) in
-    let aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
-    S.SetField (p, sobj, spr, svl, aobj)
+    make_set_field p sobj spr svl
   | E.AppExpr (p, e, el) -> 
     let sl = List.map (fun x -> exprjs_to_ljs x) el
     and f = exprjs_to_ljs e in 
@@ -346,9 +360,10 @@ and get_lambda p args body =
   let indices = Prelude.iota param_len in
   let combined = List.combine indices args in
   let seq_chain = get_chain p combined final in
+  let seq_chain' = S.Seq (p, seq_chain, S.Undefined p) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, seq_chain)))
+      S.Let (p, "%context", ncontext, seq_chain')))
 
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in
