@@ -1,4 +1,4 @@
-﻿
+
 // Copyright 2009 the Sputnik authors.  All rights reserved.
 // This code is governed by the BSD license found in the LICENSE file.
 
@@ -464,82 +464,3 @@ function ConstructDate(year, month, date, hours, minutes, seconds, ms){
 
 
 
-/**** Python code for initialize the above constants
-// We may want to replicate the following in JavaScript.
-// However, using JS date operations to generate parameters that are then used to 
-// test those some date operations seems unsound.  However, it isn't clear if there
-//is a good interoperable alternative.   
-
-# Copyright 2009 the Sputnik authors.  All rights reserved.
-# This code is governed by the BSD license found in the LICENSE file.
-
-def GetDaylightSavingsTimes():
-  # Is the given floating-point time in DST?
-  def IsDst(t):
-    return time.localtime(t)[-1]
-  # Binary search to find an interval between the two times no greater than
-  # delta where DST switches, returning the midpoint.
-  def FindBetween(start, end, delta):
-    while end - start > delta:
-      middle = (end + start) / 2
-      if IsDst(middle) == IsDst(start):
-        start = middle
-      else:
-        end = middle
-    return (start + end) / 2
-  now = time.time()
-  one_month = (30 * 24 * 60 * 60)
-  # First find a date with different daylight savings.  To avoid corner cases
-  # we try four months before and after today.
-  after = now + 4 * one_month
-  before = now - 4 * one_month
-  if IsDst(now) == IsDst(before) and IsDst(now) == IsDst(after):
-    logger.warning("Was unable to determine DST info.")
-    return None
-  # Determine when the change occurs between now and the date we just found
-  # in a different DST.
-  if IsDst(now) != IsDst(before):
-    first = FindBetween(before, now, 1)
-  else:
-    first = FindBetween(now, after, 1)
-  # Determine when the change occurs between three and nine months from the
-  # first.
-  second = FindBetween(first + 3 * one_month, first + 9 * one_month, 1)
-  # Find out which switch is into and which if out of DST
-  if IsDst(first - 1) and not IsDst(first + 1):
-    start = second
-    end = first
-  else:
-    start = first
-    end = second
-  return (start, end)
-
-
-def GetDaylightSavingsAttribs():
-  times = GetDaylightSavingsTimes()
-  if not times:
-    return None
-  (start, end) = times
-  def DstMonth(t):
-    return time.localtime(t)[1] - 1
-  def DstHour(t):
-    return time.localtime(t - 1)[3] + 1
-  def DstSunday(t):
-    if time.localtime(t)[2] > 15:
-      return "'last'"
-    else:
-      return "'first'"
-  def DstMinutes(t):
-    return (time.localtime(t - 1)[4] + 1) % 60
-  attribs = { }
-  attribs['start_month'] = DstMonth(start)
-  attribs['end_month'] = DstMonth(end)
-  attribs['start_sunday'] = DstSunday(start)
-  attribs['end_sunday'] = DstSunday(end)
-  attribs['start_hour'] = DstHour(start)
-  attribs['end_hour'] = DstHour(end)
-  attribs['start_minutes'] = DstMinutes(start)
-  attribs['end_minutes'] = DstMinutes(end)
-  return attribs
-
-*********/
