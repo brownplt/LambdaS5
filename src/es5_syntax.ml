@@ -58,14 +58,16 @@ and prop =
   | Data of data * bool * bool
   | Accessor of accessor * bool * bool
 and attrs =
-    { code : exp option;
+    { primval : exp option;
+      code : exp option;
       proto : exp option;
       klass : string;
       extensible : bool; }
 
 (* Some useful defaults for these things, to avoid typing too much *)
 let d_attrs = 
-  { code = None;
+  { primval = None;
+    code = None;
     proto = Some (Null dummy_pos);
     klass = "Object";
     extensible = true; }
@@ -84,8 +86,8 @@ let rename (x : id) (y : id) (exp : exp) : exp =
   let rec ren exp = 
     let ren_opt o = match o with Some exp -> Some (ren exp) | None -> None in
     let rec ren_attrs 
-        { code = cexp; proto = pexp; klass = str; extensible = b; } =
-      { code = ren_opt cexp; proto = ren_opt pexp; klass = str; extensible = b; }
+        { primval = vexp; code = cexp; proto = pexp; klass = str; extensible = b; } =
+      { primval = vexp; code = ren_opt cexp; proto = ren_opt pexp; klass = str; extensible = b; }
     in
     let rec ren_attr (a : prop) = match a with
       | Data ({ value=exp; writable=b }, c, e) -> 
