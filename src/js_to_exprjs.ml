@@ -49,7 +49,25 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | first :: rest -> let newnm = "%%" ^ first in
           E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
       let last = srcElts body parent in
-      E.FuncExpr (p, args, fvl_to_letchain free_vars last)
+      let funcbody = match nm with
+        | Some s -> (*E.LetExpr (p, s, E.FuncExpr (p, args, last), last)*)
+          E.SeqExpr (p, 
+          E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, s), E.FuncExpr (p,
+          args, last)), last)
+        | None -> last in
+      E.FuncExpr (p, args, fvl_to_letchain free_vars funcbody)
+      (*(E.FuncExpr (p, args, fvl_to_letchain free_vars last)*)
+      (*
+      let funcbody = fvl_to_letchain free_vars last in
+      let inner_let = match nm with
+        | Some s ->
+          E.LetExpr (p, 
+            s, 
+            E.FuncExpr (p, args, funcbody), 
+            funcbody)
+        | None -> funcbody in
+      E.FuncExpr (p, args, inner_let)
+      *)
     | J.Bracket (p, e1, e2) -> 
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | J.Dot (p, e, nm) ->

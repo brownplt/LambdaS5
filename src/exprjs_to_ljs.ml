@@ -348,7 +348,7 @@ and get_lambda p args body =
    * function body *)
   let rec strip_lets e nms = match e with
     | E.LetExpr (p, nm, vl, rst) ->
-      let prefix = String.sub nm 0 2 in
+      let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
       if prefix = "%%" then
         let l = (String.length nm) - 2 in
         let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
