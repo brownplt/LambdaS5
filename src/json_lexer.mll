@@ -24,11 +24,11 @@
       | 'A'..'F' -> int_of_char c - int_of_char 'A' + 10
       | _ -> assert false
 
-  let make_int big_int_mode s =
-    try INT (int_of_string s)
+  let make_int big_int_mode s = FLOAT (float_of_string s)
+(*    try INT (int_of_string s)
     with _ -> 
       if big_int_mode then STRING s
-      else raise (Json_error (s ^ " is too large for OCaml's type int"))
+      else raise (Json_error (s ^ " is too large for OCaml's type int"))*)
 
 
   (*HACK*)
