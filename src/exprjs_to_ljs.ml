@@ -195,8 +195,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | _ -> S.False (p) in result
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
-    let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r
-    and this = S.Id (p, "%this") in
+    let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r in
     let result = match op with
       | "&&" ->
         S.Let (p, "%l-evaled", sl,
@@ -214,6 +213,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | "!=" -> S.Op1 (p, "!", S.App (p, S.Id (p, "%EqEq"), [sl; sr]))
       | "==" -> S.App (p, S.Id (p, "%EqEq"), [sl; sr])
       | "+" -> S.App (p, S.Id (p, "%PrimAdd"), [sl; sr])
+      | "-" -> S.App (p, S.Id (p, "%PrimSub"), [sl; sr])
+      | "instanceof" -> S.App (p, S.Id (p, "%instanceof"), [sl; sr])
       | _ -> let op = match op with
         | "===" -> "stx="
         | _ -> op in S.Op2 (p, op, sl, sr) in result
