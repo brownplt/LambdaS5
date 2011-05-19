@@ -17,7 +17,7 @@ let bool b = match b with
 let unbool b = match b with
   | True -> true
   | False -> false
-  | _ -> failwith "tried to unbool a non-bool"
+  | _ -> failwith ("tried to unbool a non-bool" ^ (pretty_value b))
 
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
@@ -157,7 +157,13 @@ let rec set_attr attr obj field newval = match obj, field with
                 Data ({ value = newval; writable = false; }, false, false)
               | S.Writable ->
                 Data ({ value = Undefined; writable = unbool newval },
-                      false, false) in
+                      false, false) 
+              | S.Enum ->
+                Data ({ value = Undefined; writable = false },
+                      unbool newval, true) 
+              | S.Config ->
+                Data ({ value = Undefined; writable = false },
+                      true, unbool newval) in
             c := (attrsv, IdMap.add f_str newprop props);
             true
           else
@@ -170,6 +176,8 @@ let rec set_attr attr obj field newval = match obj, field with
             (* S.Writable true -> false when configurable is false *)
             | Data ({ writable = true } as d, enum, config), S.Writable, new_w -> 
               Data ({ d with writable = unbool new_w }, enum, config)
+            | Data (d, enum, true), S.Writable, new_w ->
+              Data ({ d with writable = unbool new_w }, enum, true)
             (* Updating values only checks writable *)
             | Data ({ writable = true } as d, enum, config), S.Value, v ->
               Data ({ d with value = v }, enum, config)
@@ -193,10 +201,14 @@ let rec set_attr attr obj field newval = match obj, field with
               Data (d, unbool new_enum, true)
             | Data (d, enum, true), S.Config, new_config ->
               Data (d, enum, unbool new_config)
+            | Data (d, enum, false), S.Config, False -> 
+              Data (d, enum, false)
             | Accessor (a, enum, true), S.Config, new_config ->
               Accessor (a, enum, unbool new_config)
             | Accessor (a, enum, true), S.Enum, new_enum ->
               Accessor (a, unbool new_enum, true)
+            | Accessor (a, enum, false), S.Config, False ->
+              Accessor (a, enum, false)
             | _ -> failwith "[interp] bad property set"
 	in begin
             c := (attrsv, IdMap.add f_str newprop props);
