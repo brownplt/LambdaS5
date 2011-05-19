@@ -14,10 +14,12 @@ let make_get_field p obj fld =
   S.GetField (p, obj, fld, argsobj)
   
 let make_set_field p obj fld value =
-  let arecd = { S.value = value; S.writable = true; } in
+  let val_id = mk_id "val" in
+  let arecd = { S.value = S.Id (p, val_id); S.writable = true; } in
   let aprop = S.Data (arecd, true, true) in
   let aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
-  S.SetField (p, obj, fld, value, aobj)
+  S.Let (p, val_id, value,
+         S.SetField (p, obj, fld, S.Id (p, val_id), aobj))
 
 let make_args_obj p args =
     let n_args = List.length args in
@@ -231,13 +233,20 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     and svl = exprjs_to_ljs vl in
     make_set_field p sobj spr svl
   | E.AppExpr (p, e, el) -> 
-    let sl = List.map (fun x -> exprjs_to_ljs x) el
-    and f = exprjs_to_ljs e in 
-    let this = match f with
-      | S.GetField (p, l, r, args) -> l
-      | _ -> S.Id (p, "%this") in
+    let sl = List.map (fun x -> exprjs_to_ljs x) el in
     let args_obj = make_args_obj p sl in
-    S.App (p, f, [this; args_obj])
+    let obj_id = mk_id "obj" in
+    begin match e with
+      | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
+        S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
+      | E.BracketExpr (_, obj, fld) ->
+        let flde = exprjs_to_ljs fld in
+        S.Let (p, obj_id, exprjs_to_ljs obj, 
+               S.App (p, make_get_field p (S.Id (p, obj_id))
+                 (S.App (p, S.Id (p, "%ToString"), [flde])),
+                      [S.Id (p, obj_id); args_obj]))
+      | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
+    end
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
@@ -477,11 +486,10 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
       S.Undefined (p)))
   and wbdy = 
     S.Seq (p, bdy, 
-    S.SetField (p, context, nms, 
-      S.App (p, S.Id (p, "%prop_itr"), []), S.Null (p))) in
+           make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), []))) in
   S.Rec (p, "%get_itr", prop_itr,
   S.Let (p, "%pnameobj", S.Op1 (p, "property-names", robj),
   S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
   S.Seq (p, 
-    S.SetField (p, context, nms, S.App (p, S.Id (p, "%prop_itr"), []), S.Null (p)),
-    get_while tst wbdy))))
+         make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])),
+         get_while tst wbdy))))
