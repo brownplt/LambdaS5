@@ -70,6 +70,7 @@ let prim_to_num v = num begin match v with
   | True -> 1.0
   | False -> 0.0
   | Num x -> x
+  | String "" -> 0.0
   | String s -> begin try float_of_string s
     with Failure _ -> nan end
   | _ -> raise (Throw (str "prim_to_str"))
