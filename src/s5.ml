@@ -18,9 +18,16 @@ module S5 = struct
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
 
+  let jsonPath = ref ""
+
   let load_s5 (path : string) : unit =
     srcES5 := Es5_syntax.Seq (dummy_pos, !srcES5,
 		              Es5.parse_es5 (open_in path) path)
+
+  let set_json (path : string) : unit =
+    jsonPath := path
+
+  let get_json () = !jsonPath
 
   let print_s5 (choice : string) : unit =
     match choice with 
@@ -29,7 +36,7 @@ module S5 = struct
     | _ -> failwith "bad option string"
 
   let eval () : unit =
-    let v = Es5_eval.eval_expr !srcES5 in
+    let v = Es5_eval.eval_expr !srcES5 !jsonPath in
     printf "%s" (pretty_value v);
     print_newline ()
 
@@ -39,7 +46,6 @@ module S5 = struct
 
   let desugar_js (path : string) : unit = 
     let ast = parse_spidermonkey (open_in path) path in
-    let open Exprjs_syntax in
     let exprjsd = srcElts ast (Exprjs_syntax.IdExpr (dummy_pos, "%context")) in
     let desugard = exprjs_to_ljs exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
@@ -63,7 +69,9 @@ module S5 = struct
         ("-eval", Arg.Unit eval,
         "evaluate code");
         ("-env", Arg.String env,
-         "wrap the program in an environment")
+         "wrap the program in an environment");
+        ("-json", Arg.String set_json,
+         "the path to a script that converts js to json")
       ]
       load_s5
       "Usage: s5 <action> <path> ...";;
