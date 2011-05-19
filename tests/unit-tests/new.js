@@ -4,5 +4,5 @@ function foo() {
 
 var o = new foo();
 if(o.x === 5) {
-  print("Passed");
+  print("passed");
 }
