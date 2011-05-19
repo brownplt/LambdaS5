@@ -217,7 +217,9 @@ and fun_obj value = match value with
   | _ -> false
 	  
 
-let rec eval exp env = match exp with
+let rec eval jsonPath exp env = 
+  let eval = eval jsonPath in
+  match exp with
   | S.Undefined _ -> Undefined
   | S.Null _ -> Null
   | S.String (_, s) -> String s
@@ -396,18 +398,21 @@ let rec eval exp env = match exp with
 		       eval e (List.fold_right2 set_arg args xs env))
   | S.Eval (p, e) ->
     match eval e env with
-      | String s -> eval_op s env
+      | String s -> eval_op s env jsonPath
       | _ -> failwith "[interp] eval didn't get a string"
 
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 
-and eval_op str env = 
+and eval_op str env jsonPath = 
   let outchan = open_out "/tmp/curr_eval.js" in
   printf "evalling: %s\n" str;
   output_string outchan str;
   close_out outchan;
-  system "../src/desugar.sh /tmp/curr_eval.js > /tmp/curr_eval.json";
+  let cmdstring = 
+    (sprintf "%s /tmp/curr_eval.js > /tmp/curr_eval.json" jsonPath) in
+  printf "%s\n" cmdstring;
+  system cmdstring;
   let ast = 
     parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
   let exprjsd = 
@@ -416,15 +421,15 @@ and eval_op str env =
   if (IdMap.mem "%global" env) then
     (printf("found global\n");
      Es5_pretty.exp desugard std_formatter; print_newline ();
-     eval desugard env (* TODO: which env? *))
+     eval jsonPath desugard env (* TODO: which env? *))
   else
     (printf("no global!");
      failwith "no global")
       
 
 
-let rec eval_expr expr = try 
-  eval expr IdMap.empty
+let rec eval_expr expr jsonPath = try 
+  eval jsonPath expr IdMap.empty
 with
   | Throw v ->
       let err_msg = 
