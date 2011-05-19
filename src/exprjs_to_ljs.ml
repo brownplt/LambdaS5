@@ -396,9 +396,9 @@ and prm_to_setfield p n prm =
     S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj)
   and field = 
     S.GetField (p, S.Id (p, "%params"), S.String (p, string_of_int n), argsobj) in
-  (*S.Seq (p, *)
-  S.SetField (p, S.Id (p, "%context"), field, update, onearg_obj update)(*,
-  S.SetAttr (p, S.Config, S.Id (p, "%context"), field, S.False (p)))*)
+  S.Seq (p, 
+  S.SetField (p, S.Id (p, "%context"), field, update, onearg_obj update),
+  S.SetAttr (p, S.Config, S.Id (p, "%context"), field, S.False (p)))
 
 and fv_to_setfield p v = 
   let arec = { S.value = S.Undefined (p); S.writable = true; } in
