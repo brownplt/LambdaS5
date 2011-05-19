@@ -86,14 +86,14 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | (_, _, E.Getter (nm, exp)) ->
         let gval = get_fobj p [] exp (S.Id (p, "%context")) in
         let a = { S.getter = gval; S.setter = S.Undefined (p); } in
-        (nm, S.Accessor (a, true, true)) :: sofar
+        (nm, S.Accessor (a, false, false)) :: sofar
       | (_, _, E.Setter (nm, exp)) ->
         let (param_name, sfunc) = match exp with
           | E.LetExpr (_, nm, _, body) -> (nm, body)
           | _ -> failwith "setter desugaring error: expected LetExpr here" in
         let sval = get_fobj p [param_name] sfunc (S.Id (p, "%context")) in
         let a = { S.getter = S.Undefined (p); S.setter = sval; } in
-        (nm, S.Accessor (a, true, true)) :: sofar
+        (nm, S.Accessor (a, false, false)) :: sofar
       | _ -> sofar in
     (* Given a list of tuples, produce a list of name, accessor pairs *)
     let rec accessors tl sofar = match tl with
@@ -310,7 +310,7 @@ and get_fobj p args body context =
     List.map (fun (n, prm) -> (n, {S.value = S.String (p, prm); S.writable =
       true;})) combined in
   let props =
-    List.map (fun (n, rcd) -> (string_of_int n, S.Data (rcd, false, false)))
+    List.map (fun (n, rcd) -> (string_of_int n, S.Data (rcd, true, true)))
     rcds in
   let param_obj = S.Object (p, S.d_attrs, props) in
   let proto_id = mk_id "prototype" in
@@ -364,7 +364,7 @@ and get_lambda p args body =
       let drc = { S.value = S.Undefined (p); S.writable = true; } in
       let d = S.Data (drc, true, true) in
       let arc = { S.getter = getter nm; S.setter = setter nm; } in
-      let a = S.Accessor (arc, true, true) in
+      let a = S.Accessor (arc, false, false) in
       get_prop_pairs rest ((data_name, d) :: ((nm, a) :: prs)) in
   let (nl, real_body) = strip_lets body [] in
   let prop_pairs = get_prop_pairs nl [] in

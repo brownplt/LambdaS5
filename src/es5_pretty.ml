@@ -93,7 +93,9 @@ and prop (f, prop) = match prop with
     horz [text f; text ":"; braces (horz [text "#value:"; 
                                           exp v; text ","; 
                                           text "#writable:";  
-                                          text (string_of_bool w)])]
+                                          text (string_of_bool w);
+                                          text "#configurable:";
+                                          text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text f; text ":"; braces (horz [text "#getter:";
                                           exp g; text ",";
