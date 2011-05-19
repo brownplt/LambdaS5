@@ -33,8 +33,8 @@ let make_args_obj p args =
     let a_attrs = {
       S.primval = None;
         S.code = None;
-        S.proto = Some (S.Id (p, "%ArrayProto"));
-        S.klass = "Array";
+        S.proto = Some (S.Id (p, "%ObjectProto"));
+        S.klass = "Arguments";
         S.extensible = true; } in
     let lfloat = float_of_int (List.length props) in
     let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
@@ -42,7 +42,12 @@ let make_args_obj p args =
         { S.value = S.Num (p, lfloat); S.writable = true; },
         false,
         false) in
-    S.Object (p, a_attrs, ("length", l_prop) :: props)
+    let calleep = S.Accessor ({S.setter = S.Id (p, "%ThrowTypeError");
+                               S.getter = S.Id (p, "%ThrowTypeError")},
+                              false, false) in
+    S.Object (p, a_attrs, [("length", l_prop); 
+                           ("callee", calleep);
+                           ("caller", calleep);]@ props)
 
 let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.True (p) -> S.True (p)
