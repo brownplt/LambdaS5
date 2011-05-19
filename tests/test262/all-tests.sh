@@ -16,8 +16,8 @@ TOTAL=0
 
 function singleTest {
     echo "total tests: $TOTAL"
-    echo "parse errs: $EVALERRS"
-    echo "eval errs: $PARSERRS"
+    echo "parse errs: $PARSERRS"
+    echo "eval errs: $EVALERRS"
     echo "prog errs: $PROGERRS"
     echo "failed: $TESTERRS"
     echo "unknown: $UNKNOWN"
@@ -43,9 +43,6 @@ function singleTest {
 }
 
 function testDir {
-    echo "total tests: $TOTAL"
-    echo "parse errs: $EVALERRS"
-    echo "eval errs: $PARSERRS"
     echo $1
     for file in $(find $1 -name "*.js"); do
         singleTest $file
@@ -56,8 +53,8 @@ testDir $SPUTNIKTESTS
 testDir $IETESTS
 
 echo "total tests: $TOTAL"
-echo "parse errs: $EVALERRS"
-echo "eval errs: $PARSERRS"
+echo "parse errs: $PARSERRS"
+echo "eval errs: $EVALERRS"
 echo "prog errs: $PROGERRS"
 echo "failed: $TESTERRS"
 echo "unknown: $UNKNOWN"

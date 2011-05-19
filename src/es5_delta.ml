@@ -125,6 +125,12 @@ let get_proto obj = match obj with
   end
   | _ -> raise (Throw (str "get-proto"))
 
+let get_primval obj = match obj with
+  | ObjCell o -> begin match !o with
+      | ({ primval = Some v; }, _) -> v
+  end
+  | _ -> raise (Throw (str "get-primval"))
+
 
 (* All the enumerable property names of an object *)
 let rec get_property_names obj = match obj with
@@ -222,6 +228,7 @@ let op1 op = match op with
   | "prevent-extensions" -> prevent_extensions
   | "print" -> print
   | "get-proto" -> get_proto
+  | "get-primval" -> get_primval
   | "property-names" -> get_property_names
   | "own-property-names" -> get_own_property_names
   | "object-to-string" -> object_to_string

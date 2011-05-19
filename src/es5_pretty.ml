@@ -76,6 +76,8 @@ let rec exp e = match e with
       parens (vert [horz [text "lambda";
 			  parens (horz (map text xs))];
 		    exp e])
+  | Eval (p, s) -> 
+      parens (horz [text "eval"; exp s])
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = match p with None -> [] 

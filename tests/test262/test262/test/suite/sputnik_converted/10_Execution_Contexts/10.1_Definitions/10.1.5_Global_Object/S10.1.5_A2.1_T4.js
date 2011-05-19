@@ -22,7 +22,9 @@ description: "Global execution context - Other Properties",
 
 test: function testcase() {
    //CHECK#1
+
 for (var x in this) {
+    print(x);
   if ( x === 'Math' ) {
     $ERROR("#1: 'Math' have attribute DontEnum");
   }

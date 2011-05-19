@@ -399,7 +399,7 @@ let rec eval jsonPath exp env =
   | S.Eval (p, e) ->
     match eval e env with
       | String s -> eval_op s env jsonPath
-      | _ -> failwith "[interp] eval didn't get a string"
+      | v -> v
 
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
