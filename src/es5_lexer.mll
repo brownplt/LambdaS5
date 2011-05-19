@@ -107,6 +107,7 @@ rule token = parse
    | "catch" { CATCH }
    | "finally" { FINALLY }
    | "throw" { THROW }
+   | "@eval" { EVAL }
    | "[[" { LLBRACK }
    | "]]" { RRBRACK }
    | "===" { EQEQEQUALS }
