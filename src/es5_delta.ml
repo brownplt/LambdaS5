@@ -27,6 +27,9 @@ let typeof v = str begin match v with
       | _ -> "object"
   end
   | Closure _ -> "lambda"
+  | VarCell _ -> failwith "[delta] typeof got a variable"
+  | Fail s -> 
+    failwith (sprintf "[delta] typeof got a fail: %s" s)
 end
 
 let surface_typeof v = begin match v with
