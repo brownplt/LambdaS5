@@ -238,3 +238,7 @@ and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
     | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts_inner rest context) 
+
+let js_to_exprjs = srcElts_inner
+  
+  

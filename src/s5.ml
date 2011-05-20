@@ -46,7 +46,7 @@ module S5 = struct
 
   let desugar_js (path : string) : unit = 
     let ast = parse_spidermonkey (open_in path) path in
-    let exprjsd = srcElts ast (Exprjs_syntax.IdExpr (dummy_pos, "%context")) in
+    let exprjsd = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
     let desugard = exprjs_to_ljs exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
     (*
