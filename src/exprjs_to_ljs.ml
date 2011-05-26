@@ -174,7 +174,11 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                                 S.If (p, S.Op2 (p, "stx=", S.String (p, "object"), 
                                                 S.Op1 (p, "typeof", S.Id (p, constr_result))),
                                       S.Id (p, constr_result),
-                                      S.Id (p, newobj))))))
+                                      (*S.Id (p, newobj))))))*)
+                                      S.If (p, S.Op2 (p, "stx=", S.String (p,
+                                      "function"), S.Op1 (p, "typeof", S.Id (p,
+                                      constr_result))), S.Id (p, constr_result),
+                                      S.Id (p, newobj)))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" ->
       begin match exp with
