@@ -76,7 +76,7 @@ let prim_to_num v = num begin match v with
   | String "" -> 0.0
   | String s -> begin try float_of_string s
     with Failure _ -> nan end
-  | _ -> raise (Throw (str "prim_to_str"))
+  | _ -> raise (Throw (str "prim_to_num"))
 end
   
 let prim_to_bool v = bool begin match v with
