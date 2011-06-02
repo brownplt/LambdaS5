@@ -302,7 +302,8 @@ let rec eval jsonPath exp env =
 		v_value
 		args_value
 	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-			   ^ string_of_position p)
+			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
+                             ", " ^ (pretty_value f_value))
 	end
   | S.GetField (p, obj, f, args) ->
       let obj_value = eval obj env in
