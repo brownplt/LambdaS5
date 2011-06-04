@@ -251,9 +251,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | E.BracketExpr (_, obj, fld) ->
         let flde = exprjs_to_ljs fld in
         S.Let (p, obj_id, exprjs_to_ljs obj, 
-               S.App (p, make_get_field p (S.Id (p, obj_id))
+               S.App (p, make_get_field p (S.App (p, S.Id (p, "%ToObject"), [S.Id
+               (p, obj_id)]))
                  (S.App (p, S.Id (p, "%ToString"), [flde])),
-                      [S.Id (p, obj_id); args_obj]))
+                 [S.App (p, S.Id (p, "%ToObject"), [S.Id (p, obj_id)]); args_obj]))
       | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
     end
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
@@ -474,12 +475,6 @@ and prop_itr =
     S.Seq (p,
     S.SetBang (p, "%index", S.Op2 (p, "+", S.Id (p ,"%index"), S.Num (p, 1.))),
     S.Id (p, "%rval"))) in
-    (*
-    S.Seq (p, 
-    S.SetBang (p, "%index", S.Op2 (p, "+", S.Id (p ,"%index"), S.Num (p, 1.))),
-    S.GetField (p, S.Id (p, "%obj"), S.Op1 (p, "prim->str", S.Id (p, "%index")),
-    S.Null (p))) in (* TODO: null args obj here!! *)
-  *)
   S.Lambda (p, ["%obj"],
     S.Let (p, "%index", S.Num (p, 0.),
       S.Lambda (p, [],
