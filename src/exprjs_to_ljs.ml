@@ -237,9 +237,9 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       e2, 
       e3)
   | E.AssignExpr (p, obj, pr, vl) -> 
-    let sobj = exprjs_to_ljs obj
-    and spr = exprjs_to_ljs pr
-    and svl = exprjs_to_ljs vl in
+    let sobj = S.App (p, S.Id (p, "%ToObject"), [exprjs_to_ljs obj]) in
+    let spr = S.App (p, S.Id (p, "%ToString"), [exprjs_to_ljs pr]) in
+    let svl = exprjs_to_ljs vl in
     make_set_field p sobj spr svl
   | E.AppExpr (p, e, el) -> 
     let sl = List.map (fun x -> exprjs_to_ljs x) el in

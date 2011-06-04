@@ -63,7 +63,7 @@ let prim_to_str v = str begin match v with
   | Num n -> float_str n
   | True -> "true"
   | False -> "false"
-  | _ -> raise (Throw (str "prim_to_str"))
+  | _ -> raise (Throw (str "prim_to_num"))
 end
 
 (* Section 9.3, excluding objects *)
@@ -99,7 +99,7 @@ end
 
 let print v = match v with
   | String s -> 
-      printf "%S\n" s; Undefined
+      printf "%S\n%!" s; Undefined
   | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
 
