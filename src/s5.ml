@@ -49,13 +49,6 @@ module S5 = struct
     let exprjsd = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
     let desugard = exprjs_to_ljs exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
-    (*
-  let desugar_js (path : string) : unit =
-    let ast = parse_spidermonkey (open_in path) path in
-    let exprjsd = srcElts ast (ObjectExpr (dummy_pos, [])) in
-    let desugard = exprjs_to_ljs exprjsd in
-    srcES5 := desugard
-    *)
 
   let main () : unit =
     Arg.parse
@@ -75,10 +68,6 @@ module S5 = struct
       ]
       load_s5
       "Usage: s5 <action> <path> ...";;
-(*
-    let rec ast = parse_spidermonkey stdin "stdin" in
-    let desugared = srcElts ast in
-    printf "Hello, world\n";
-*)
+
 end;;
 S5.main ()

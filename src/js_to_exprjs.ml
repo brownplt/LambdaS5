@@ -234,7 +234,8 @@ and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
       let reordered = J.reorder_sel body in
       let last = srcElts_inner reordered context in
       E.FuncStmtExpr (p, nm, args, fvl_to_letchain free_vars last) in
-  match ss with
+  let reordered = J.reorder_sel ss in
+  match reordered with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
     | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts_inner rest context) 
