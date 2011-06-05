@@ -165,7 +165,7 @@ prop_attrs :
  | WRITABLE BOOL COMMA VALUE exp 
      { Data ({ value = $5; writable = $2 }, false, true) }
  | VALUE exp COMMA WRITABLE BOOL
-     { Data ({ value = $2; writable = $5 }, false, true) }
+     { Data ({ value = $2; writable = $5 }, false, false) }
  | GETTER exp COMMA SETTER exp 
      { Accessor ({ getter = $2; setter = $5 }, false, true) }
 
