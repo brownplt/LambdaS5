@@ -245,7 +245,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let sl = List.map (fun x -> exprjs_to_ljs x) el in
     let args_obj = make_args_obj p sl in
     let obj_id = mk_id "obj" in
-    begin match e with
+    (*begin match e with*)
+    let app = match e with
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
         S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
       | E.BracketExpr (_, obj, fld) ->
@@ -255,8 +256,9 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                (p, obj_id)]))
                  (S.App (p, S.Id (p, "%ToString"), [flde])),
                  [S.App (p, S.Id (p, "%ToObject"), [S.Id (p, obj_id)]); args_obj]))
-      | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
-    end
+      | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj]) in
+    appexpr_check (exprjs_to_ljs e) app p
+    (*end*)
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
@@ -497,3 +499,15 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
   S.Seq (p, 
          make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])),
          get_while tst wbdy))))
+
+and appexpr_check f app p = 
+  let ftype = mk_id "ftype" in
+  let test1 = 
+    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "object")))
+  and test2 =
+    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function")))
+  and error = S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null(p); S.Null(p)]) in
+  S.Let (p, ftype, S.Op1 (p, "typeof", f),
+   S.If (p, test1,
+    S.If (p, test2, error, app),
+    app))
