@@ -1,4 +1,4 @@
 #!/bin/sh
 DIR=`dirname $0`
-CMD=$DIR/js-1.8.5-Linux-`arch`
+CMD=$DIR/js-1.8.5-`uname`-`arch`
 $CMD $@
