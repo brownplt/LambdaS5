@@ -245,7 +245,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let sl = List.map (fun x -> exprjs_to_ljs x) el in
     let args_obj = make_args_obj p sl in
     let obj_id = mk_id "obj" in
-    (*begin match e with*)
     let app = match e with
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
         S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
@@ -258,7 +257,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                  [S.App (p, S.Id (p, "%ToObject"), [S.Id (p, obj_id)]); args_obj]))
       | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj]) in
     appexpr_check (exprjs_to_ljs e) app p
-    (*end*)
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
