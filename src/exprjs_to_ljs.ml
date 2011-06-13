@@ -169,6 +169,9 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                                         S.String (p, "prototype"), getterargs),
                   S.Let (p, newobj, 
                          S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
+                         S.If (p, S.Op2 (p, "stx=", S.Null (p), 
+                          S.Op1 (p, "get-code", S.Id (p, constr_id))),
+                          S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]),
                          S.Let (p, constr_result,
                                 S.App (p, S.Id (p, constr_id), [S.Id (p, newobj); constrargs]),
                                 S.If (p, S.Op2 (p, "stx=", S.String (p, "object"), 
@@ -178,7 +181,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                                       S.If (p, S.Op2 (p, "stx=", S.String (p,
                                       "function"), S.Op1 (p, "typeof", S.Id (p,
                                       constr_result))), S.Id (p, constr_result),
-                                      S.Id (p, newobj)))))))
+                                      S.Id (p, newobj))))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" ->
       begin match exp with
@@ -500,12 +503,14 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
 
 and appexpr_check f app p = 
   let ftype = mk_id "ftype" in
-  let test1 = 
+  let not_object = 
     S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "object")))
-  and test2 =
+  and not_function =
     S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function")))
+  and not_callable obj =
+    S.Op2 (p, "stx=", S.Null (p), S.Op1 (p, "get-code", obj))
   and error = S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null(p); S.Null(p)]) in
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
-   S.If (p, test1,
-    S.If (p, test2, error, app),
-    app))
+   S.If (p, not_object,
+    S.If (p, not_function, error, app),
+    S.If (p, not_callable f, error, app)))

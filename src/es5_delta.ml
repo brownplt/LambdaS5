@@ -118,6 +118,12 @@ let prevent_extensions obj = match obj with
 	end
   | _ -> raise (Throw (str "prevent-extensions"))
       
+let get_code obj = match obj with
+  | ObjCell o -> begin match !o with
+    | ({ code = Some v; }, _) -> v
+    | ({ code = None; }, _) -> Null
+  end
+    | _ -> raise (Throw (str "get-code"))
 
 let get_proto obj = match obj with
   | ObjCell o -> begin match !o with 
@@ -235,6 +241,7 @@ let op1 op = match op with
   | "get-proto" -> get_proto
   | "get-primval" -> get_primval
   | "get-class" -> get_class
+  | "get-code" -> get_code
   | "property-names" -> get_property_names
   | "own-property-names" -> get_own_property_names
   | "object-to-string" -> object_to_string
