@@ -408,10 +408,10 @@ and get_lambda p args body =
   let indices = Prelude.iota param_len in
   let combined = List.combine indices args in
   let seq_chain = get_chain p combined final in
-  let seq_chain' = S.Seq (p, seq_chain, S.Undefined p) in
+  let seq_chain_end = S.Seq (p, seq_chain, S.Undefined p) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, seq_chain')))
+      S.Let (p, "%context", ncontext, seq_chain_end)))
 
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in

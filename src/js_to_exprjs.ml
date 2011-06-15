@@ -28,10 +28,10 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
         | J.Get (nm, sel) ->
           let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
-          (p, name, E.Getter (name, srcElts_inner sel parent))
+          (p, name, E.Getter (name, srcElts sel parent))
         | J.Set (nm, argnm, sel) ->
           let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
-          let let_body = srcElts_inner sel parent in
+          let let_body = srcElts sel parent in
           let inner_let = (* will be stripped off in next stage *)
             E.LetExpr (p, argnm, E.Undefined (p), let_body) in
           (p, name, E.Setter (name, inner_let)) in
@@ -215,13 +215,7 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
   | J.With _ -> failwith "S5 only handles strict mode---with not allowed"
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 
-and srcElts ss parent =
-  let p = dummy_pos in
-  let context = E.ObjectExpr (p, []) in
-  E.LetExpr (p, "%context", context,
-    E.LetExpr (p, "%this", E.IdExpr (p, "%context"), srcElts_inner ss context))
-
-and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
+and srcElts (ss : J.srcElt list) (context : E.expr) : E.expr =
   let p = dummy_pos in
   let se_to_e se = match se with
     | J.Stmt (s) -> jss_to_exprjs s
@@ -232,14 +226,12 @@ and srcElts_inner (ss : J.srcElt list) (context : E.expr) : E.expr =
         | first :: rest -> let newnm = "%%" ^ first in
           E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
       let reordered = J.reorder_sel body in
-      let last = srcElts_inner reordered context in
+      let last = srcElts reordered context in
       E.FuncStmtExpr (p, nm, args, fvl_to_letchain free_vars last) in
   let reordered = J.reorder_sel ss in
   match reordered with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
-    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts_inner rest context) 
+    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts rest context) 
 
-let js_to_exprjs = srcElts_inner
-  
-  
+let js_to_exprjs = srcElts
