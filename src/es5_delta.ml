@@ -66,6 +66,55 @@ let prim_to_str v = str begin match v with
   | _ -> raise (Throw (str "prim_to_num"))
 end
 
+let strlen s = match s with
+  | String s -> Num (float_of_int (String.length s))
+  | _ -> raise (Throw (str "strlen"))
+
+let index_of_helper obj =
+  let start = match obj with
+    | ObjCell o -> begin match !o with
+      | (_, props) -> let prop = IdMap.find "0" props in
+      match prop with | Data ({ value = Num d; _ }, _, _) -> int_of_float d
+      end
+    | _ -> raise (Throw (str "index_of_helper"))
+  and searchlen = match obj with
+    | ObjCell o -> begin match !o with
+      | (_, props) -> let prop = IdMap.find "1" props in
+      match prop with | Data ({ value = Num d; _ }, _, _) -> int_of_float d
+      end
+      | _ -> raise (Throw (str "index_of_helper"))
+  and len = match obj with
+    | ObjCell o -> begin match !o with
+      | (_, props) -> let prop = IdMap.find "2" props in
+      match prop with | Data ({ value = Num d; _ }, _, _) -> int_of_float d
+      end
+      | _ -> raise (Throw (str "index_of_helper"))
+  and s = match obj with
+    | ObjCell o -> begin match !o with
+      | (_, props) -> let prop = IdMap.find "3" props in
+      match prop with | Data ({ value = String d; _ }, _, _) -> d
+      end
+      | _ -> raise (Throw (str "index_of_helper"))
+  and searchstr = match obj with
+    | ObjCell o -> begin match !o with
+      | (_, props) -> let prop = IdMap.find "4" props in
+      match prop with | Data ({ value = String d; _ }, _, _) -> d
+      end
+      | _ -> raise (Throw (str "index_of_helper")) in
+  let rec checkall j = 
+    if j == searchlen then true
+    else if (String.get s j) != (String.get searchstr j) then false
+    else checkall (j + 1)
+  and range i j = if i > j then [] else i :: (range (i+1) j) in
+  let results = 
+    List.filter (fun n -> checkall n) (range start (start + (min len searchlen))) in
+  match results with 
+    | [] -> Num (-1.0)
+    | l -> 
+      let result_int = fold_right (fun a b -> if a < b then a else b) l max_int in
+      let result_float = float_of_int result_int in
+      Num result_float
+  
 (* Section 9.3, excluding objects *)
 let prim_to_num v = num begin match v with
   | Undefined -> nan 
@@ -245,6 +294,8 @@ let op1 op = match op with
   | "property-names" -> get_property_names
   | "own-property-names" -> get_own_property_names
   | "object-to-string" -> object_to_string
+  | "strlen" -> strlen
+  | "indexofhelper" -> index_of_helper
   | "is-array" -> is_array
   | "to-int32" -> to_int32
   | "fail?" -> fail
