@@ -60,7 +60,8 @@ let prim_to_str v = str begin match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | String s -> s
-  | Num n -> float_str n
+  | Num n -> let open String in let fs = float_str n in let i = length fs in
+    if get fs (i - 1) == '.' then sub fs 0 (i - 1) else fs
   | True -> "true"
   | False -> "false"
   | _ -> raise (Throw (str "prim_to_num"))
