@@ -184,6 +184,7 @@ let get_proto obj = match obj with
 let get_primval obj = match obj with
   | ObjCell o -> begin match !o with
       | ({ primval = Some v; }, _) -> v
+      | _ -> raise (Throw (str "get-primval on an object with no prim val"))
   end
   | _ -> raise (Throw (str "get-primval"))
 
@@ -277,6 +278,10 @@ let nnot e = match e with
 
 let void v = Undefined
 
+let floor' = function Num d -> num (floor d) | _ -> raise (Throw (str "floor"))
+
+let absolute = function Num d -> num (abs_float d) | _ -> raise (Throw (str "abs"))
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -302,6 +307,8 @@ let op1 op = match op with
   | "fail?" -> fail
   | "!" -> nnot
   | "void" -> void
+  | "floor" -> floor'
+  | "abs" -> absolute
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with
@@ -389,6 +396,37 @@ let has_own_property obj field = match obj, field with
         bool (IdMap.mem s props)
   | _ -> raise (Throw (str "has-own-property?"))
 
+let base n r = let open String in let open Char in let open List in
+  let rec get_digits n l = match n with
+    | 97 -> 'a' :: l
+    | i -> get_digits (n - 1) ((chr i) :: l) in
+  let digits = 
+    ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9'] @ (get_digits 122 []) in
+  let rec get_num_digits num so_far =
+    if (r ** so_far) > num then so_far -. 1.0
+    else get_num_digits num (so_far +. 1.0) in
+  let rec convert b result len = 
+    let lp = r ** len in
+    let index = floor (b /. lp) in
+    let digit = make 1 (nth digits (int_of_float index)) in
+    if len = 0.0 then result ^ digit
+    else convert (b -. (index *. lp)) (result ^ digit)  (len -. 1.0) in
+  let rec shift frac n = if n = 0 then frac else shift (frac *. 10.0) (n - 1) in
+  let (f, integ) = modf n in
+  let shifted = shift f ((String.length (string_of_float f)) - 2) in
+  if (f = 0.0) then
+    let d = get_num_digits n 0.0 in
+    convert n "" d
+  else
+    (* TODO: implement *)
+    "non-base-10 with fractional parts NYI"
+
+let get_base n r = match n, r with
+  | Num x, Num y -> 
+    let result = base (abs_float x) (abs_float y) in
+    str (if x < 0.0 then "-" ^ result else result)
+  | _ -> raise (Throw (str "base got non-numbers"))
+
 let op2 op = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
@@ -410,6 +448,7 @@ let op2 op = match op with
   | "hasProperty" -> has_property
   | "hasOwnProperty" -> has_own_property
   | "string+" -> string_plus
+  | "base" -> get_base
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
 let op3 op = match op with
