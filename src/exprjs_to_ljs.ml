@@ -204,8 +204,15 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     | "typeof" -> S.Op1 (p, "surface-typeof", exprjs_to_ljs exp)
     | "delete" -> let result = match exp with
       | E.BracketExpr (pp, obj, fld) -> 
-        let fld_str = S.Op1 (p, "prim->str", exprjs_to_ljs fld) in
-        S.DeleteField (pp, exprjs_to_ljs obj, fld_str)
+        let fld_str = S.Op1 (p, "prim->str", exprjs_to_ljs fld)
+        and sobj = exprjs_to_ljs obj
+        and del_id = mk_id "del" in
+        S.Let (pp, del_id,
+          S.Lambda (pp, [], S.DeleteField (pp, sobj, fld_str)),
+          S.If (pp, 
+            S.GetAttr (pp, S.Config, sobj, fld_str),
+            S.App (pp, S.Id (pp, del_id), []),
+            S.Undefined (pp)))
       | _ -> S.False (p) in result
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
