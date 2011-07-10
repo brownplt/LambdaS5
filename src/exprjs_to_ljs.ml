@@ -200,6 +200,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     S.Let (p, constr_id, exprjs_to_ljs econstr,
            S.Let (p, pr_id, S.GetField (p, S.Id (p, constr_id), 
                                         S.String (p, "prototype"), getterargs),
+                  S.If (p, S.Op2 (p, "stx=", S.Id (p, pr_id), S.Undefined (p)), 
+                      S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]),
                   S.Let (p, newobj, 
                          S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
                          S.If (p, S.Op2 (p, "stx=", S.Null (p), 
@@ -210,11 +212,10 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                                 S.If (p, S.Op2 (p, "stx=", S.String (p, "object"), 
                                                 S.Op1 (p, "typeof", S.Id (p, constr_result))),
                                       S.Id (p, constr_result),
-                                      (*S.Id (p, newobj))))))*)
                                       S.If (p, S.Op2 (p, "stx=", S.String (p,
                                       "function"), S.Op1 (p, "typeof", S.Id (p,
                                       constr_result))), S.Id (p, constr_result),
-                                      S.Id (p, newobj))))))))
+                                      S.Id (p, newobj)))))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" ->
       begin match exp with
