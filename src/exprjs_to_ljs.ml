@@ -535,12 +535,20 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
   and wbdy = 
     S.Seq (p, bdy, 
            make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), []))) in
-  S.Rec (p, "%get_itr", prop_itr,
-  S.Let (p, "%pnameobj", S.Op1 (p, "property-names", robj),
-  S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
-  S.Seq (p, 
-         make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])),
-         get_while tst wbdy))))
+  let doloop_id = mk_id "do_loop" in
+  S.Let (p, doloop_id,
+    S.Lambda (p, [], 
+      S.Rec (p, "%get_itr", prop_itr,
+      S.Let (p, "%pnameobj", S.Op1 (p, "property-names", robj),
+      S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
+      S.Seq (p, 
+             make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])),
+             get_while tst wbdy))))),
+    S.If (p, S.Op2 (p, "stx=", robj, S.Undefined (p)),
+      S.Undefined (p),
+      S.If (p, S.Op2 (p, "stx=", robj, S.Null (p)),
+        S.Undefined (p),
+        S.App (p, S.Id (p, doloop_id), []))))
 
 and appexpr_check f app p = 
   let ftype = mk_id "ftype" in
