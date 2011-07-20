@@ -22,7 +22,13 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
     | J.Object (p, mem_lst) ->
       let rec prop_to_str prop = match prop with
         (J.PropId s | J.PropStr s) -> s
-        | J.PropNum n -> string_of_float n
+        | J.PropNum n ->
+          let open String in
+          let maybedotted = string_of_float n in
+          let i = length maybedotted in
+          if get maybedotted (i - 1) == '.' 
+            then sub maybedotted 0 (i - 1) 
+            else maybedotted
       and m_to_pr m = match m with
         | J.Field (name, e) -> 
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
