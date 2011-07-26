@@ -39,7 +39,10 @@ let make_array_set p obj fld value =
         S.SetField (p, obj, S.String (p, "length"),
           S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0)), S.Null (p)),
         S.Undefined (p)))),
-    S.Undefined (p))
+    S.If (p, S.Op2 (p, "stx=", fld, S.String (p, "length")),
+      S.App (p, S.Id (p, "%ArrayLengthChange"), [obj; value]),
+      S.Undefined (p)))
+      
 
 let make_set_field p obj fld value =
   let val_id = mk_id "val" in
