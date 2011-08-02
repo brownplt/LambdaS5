@@ -78,24 +78,7 @@ let make_args_obj p args =
     let props = 
       List.map 
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
-    let a_attrs = {
-      S.primval = None;
-        S.code = None;
-        S.proto = Some (S.Id (p, "%ObjectProto"));
-        S.klass = "Arguments";
-        S.extensible = true; } in
-    let lfloat = float_of_int (List.length props) in
-    let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
-      S.Data (
-        { S.value = S.Num (p, lfloat); S.writable = true; },
-        false,
-        false) in
-    let calleep = S.Accessor ({S.setter = S.Id (p, "%ThrowTypeError");
-                               S.getter = S.Id (p, "%ThrowTypeError")},
-                              false, false) in
-    S.Object (p, a_attrs, [("length", l_prop); 
-                           ("callee", calleep);
-                           ("caller", calleep);]@ props)
+    S.App (p, S.Id (p, "%mkArgsObj"), [S.Object (p, S.d_attrs, props)])
 
 let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.True (p) -> S.True (p)
@@ -304,17 +287,26 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
     let sl = List.map (fun x -> exprjs_to_ljs x) el in
     let args_obj = make_args_obj p sl in
     let obj_id = mk_id "obj" in
-    let app = match e with
+    let fun_id = mk_id "fun" in
+    begin match e with
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
-        S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
+        S.Let (p, fun_id, exprjs_to_ljs e,
+          appexpr_check (S.Id (p, fun_id))
+          (S.App (p, S.Id (p, fun_id), [S.Id (p, "%global"); args_obj]))
+          p)
       | E.BracketExpr (_, obj, fld) ->
         let flde = exprjs_to_ljs fld in
         S.Let (p, obj_id, exprjs_to_ljs obj, 
-               S.App (p, make_get_field p (to_object p (S.Id (p, obj_id)))
-                 (to_string p flde),
-                 [to_object p (S.Id (p, obj_id)); args_obj]))
-      | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj]) in
-    appexpr_check (exprjs_to_ljs e) app p
+          S.Let (p, fun_id, make_get_field p (to_object p (S.Id (p, obj_id))) (to_string p flde),
+            appexpr_check (S.Id (p, fun_id))
+            (S.App (p, S.Id (p, fun_id), [to_object p (S.Id (p, obj_id)); args_obj]))
+            p))
+      | _ ->
+        S.Let (p, fun_id, exprjs_to_ljs e,
+          appexpr_check (S.Id (p, fun_id))
+          (S.App (p, S.Id (p, fun_id), [S.Id (p, "%global"); args_obj]))
+          p)
+    end
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
@@ -566,14 +558,9 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
 
 and appexpr_check f app p = 
   let ftype = mk_id "ftype" in
-  let not_object = 
-    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "object")))
-  and not_function =
-    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function")))
-  and not_callable obj =
-    S.Op2 (p, "stx=", S.Null (p), S.Op1 (p, "get-code", obj))
-  and error = S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null(p); S.Null(p)]) in
+  let not_function =
+    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function"))) in
+  let error = S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null(p); S.Null(p)]) in
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
-   S.If (p, not_object,
-    S.If (p, not_function, error, app),
-    S.If (p, not_callable f, error, app)))
+    S.If (p, not_function, error, app))
+    
