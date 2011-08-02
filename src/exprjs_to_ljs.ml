@@ -18,6 +18,11 @@ let to_string p v =
     | S.String (p, s) -> S.String (p, s)
     | _ -> S.App (p, S.Id (p, "%ToString"), [v])
 
+let to_object p v =
+  match v with
+    | S.Id (p, "%context") -> v
+    | _ -> S.App (p, S.Id (p, "%ToObject"), [v])
+
 (* 15.4: A property name P (in the form of a String value) is an array index if and
  * only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to
  * 2^32−1 *)
@@ -43,9 +48,12 @@ let make_array_set p obj fld value =
           S.SetField (p, obj, S.String (p, "length"),
             S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0)), S.Null (p)),
           S.Undefined (p)))),
-    S.If (p, S.Op2 (p, "stx=", fld, S.String (p, "length")),
-      S.App (p, S.Id (p, "%ArrayLengthChange"), [obj; value]),
-      S.Undefined (p)))
+    match fld with
+      | S.String (_, s) when s != "length" -> S.Undefined (p)
+      | _ -> 
+        S.If (p, S.Op2 (p, "stx=", fld, S.String (p, "length")),
+          S.App (p, S.Id (p, "%ArrayLengthChange"), [obj; value]),
+          S.Undefined (p)))
       
 
 let make_set_field p obj fld value =
@@ -194,7 +202,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.ThisExpr (p) -> S.Id (p, "%this")
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
-    let o = S.App (p, S.Id (p, "%ToObject"), [exprjs_to_ljs l]) in
+    let o = to_object p (exprjs_to_ljs l) in
     let f = to_string p (exprjs_to_ljs r) in
     make_get_field p o f
   | E.NewExpr (p, econstr, eargs) -> 
@@ -288,7 +296,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       e2, 
       e3)
   | E.AssignExpr (p, obj, pr, vl) -> 
-    let sobj = S.App (p, S.Id (p, "%ToObject"), [exprjs_to_ljs obj]) in
+    let sobj = to_object p (exprjs_to_ljs obj) in
     let spr = to_string p (exprjs_to_ljs pr) in
     let svl = exprjs_to_ljs vl in
     make_set_field p sobj spr svl
@@ -302,10 +310,9 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | E.BracketExpr (_, obj, fld) ->
         let flde = exprjs_to_ljs fld in
         S.Let (p, obj_id, exprjs_to_ljs obj, 
-               S.App (p, make_get_field p (S.App (p, S.Id (p, "%ToObject"), [S.Id
-               (p, obj_id)]))
+               S.App (p, make_get_field p (to_object p (S.Id (p, obj_id)))
                  (to_string p flde),
-                 [S.App (p, S.Id (p, "%ToObject"), [S.Id (p, obj_id)]); args_obj]))
+                 [to_object p (S.Id (p, obj_id)); args_obj]))
       | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj]) in
     appexpr_check (exprjs_to_ljs e) app p
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
