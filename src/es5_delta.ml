@@ -355,6 +355,10 @@ let string_plus v1 v2 = match v1, v2 with
       String (s1 ^ s2)
   | _ -> raise (Throw (str "string concatenation"))
 
+let string_lessthan v1 v2 = match v1, v2 with
+  | String s1, String s2 -> bool (s1 < s2)
+  | _ -> raise (Throw (str "string less than"))
+
 let stx_eq v1 v2 = bool begin match v1, v2 with
   | Num x1, Num x2 -> x1 = x2
   | String x1, String x2 -> x1 = x2
@@ -448,6 +452,7 @@ let op2 op = match op with
   | "hasProperty" -> has_property
   | "hasOwnProperty" -> has_own_property
   | "string+" -> string_plus
+  | "string<" -> string_lessthan
   | "base" -> get_base
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
