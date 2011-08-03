@@ -13,6 +13,16 @@ let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
   S.GetField (p, obj, fld, argsobj)
 
+let to_string p v =
+  match v with
+    | S.String (p, s) -> S.String (p, s)
+    | _ -> S.App (p, S.Id (p, "%ToString"), [v])
+
+let to_object p v =
+  match v with
+    | S.Id (p, "%context") -> v
+    | _ -> S.App (p, S.Id (p, "%ToObject"), [v])
+
 (* 15.4: A property name P (in the form of a String value) is an array index if and
  * only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to
  * 2^32−1 *)
@@ -22,26 +32,28 @@ let is_array_index p =
   let fld = S.Id (p, fld_id) in
   S.Lambda (p, [fld_id],
     S.Let (p, uint_id, S.App (p, S.Id (p, "%ToUint32"), [fld]),
-    S.If (p, S.Op2 (p, "stx=", fld, 
-      S.App (p, S.Id (p, "%ToString"), [S.Id (p, uint_id)])),
-      S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, uint_id), S.Num (p, 4294967295.0))),
-      S.False (p))))
+      S.If (p, S.Op2 (p, "stx=", fld, to_string p (S.Id (p, uint_id))),
+        S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, uint_id), S.Num (p, 4294967295.0))),
+        S.False (p))))
 
 let make_array_set p obj fld value =
   let l_id = mk_id "old_len"
   and uint_id = mk_id "uint" in
   S.If (p, S.App (p, is_array_index p, [fld]),
     S.Let (p, uint_id, S.App (p, S.Id (p, "%ToUint32"), [fld]),
-    S.Let (p, l_id, make_get_field p obj (S.String (p, "length")),
-      S.If (p, 
-        S.Op2 (p, "<", S.Id (p, l_id),
-          S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0))),
-        S.SetField (p, obj, S.String (p, "length"),
-          S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0)), S.Null (p)),
-        S.Undefined (p)))),
-    S.If (p, S.Op2 (p, "stx=", fld, S.String (p, "length")),
-      S.App (p, S.Id (p, "%ArrayLengthChange"), [obj; value]),
-      S.Undefined (p)))
+      S.Let (p, l_id, make_get_field p obj (S.String (p, "length")),
+        S.If (p, 
+          S.Op2 (p, "<", S.Id (p, l_id),
+            S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0))),
+          S.SetField (p, obj, S.String (p, "length"),
+            S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0)), S.Null (p)),
+          S.Undefined (p)))),
+    match fld with
+      | S.String (_, s) when s != "length" -> S.Undefined (p)
+      | _ -> 
+        S.If (p, S.Op2 (p, "stx=", fld, S.String (p, "length")),
+          S.App (p, S.Id (p, "%ArrayLengthChange"), [obj; value]),
+          S.Undefined (p)))
       
 
 let make_set_field p obj fld value =
@@ -54,7 +66,7 @@ let make_set_field p obj fld value =
     S.Let (p, class_id, S.Op1 (p, "get-class", obj),
       S.Seq (p, 
         S.If (p, S.Op2 (p, "stx=", S.Id (p, class_id), S.String (p, "Array")),
-          make_array_set p obj fld value, S.Undefined (p)),
+          make_array_set p obj fld (S.Id (p, val_id)), S.Undefined (p)),
         S.SetField (p, obj, fld, S.Id (p, val_id), aobj))))
 
 let make_args_obj p args =
@@ -66,24 +78,7 @@ let make_args_obj p args =
     let props = 
       List.map 
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
-    let a_attrs = {
-      S.primval = None;
-        S.code = None;
-        S.proto = Some (S.Id (p, "%ObjectProto"));
-        S.klass = "Arguments";
-        S.extensible = true; } in
-    let lfloat = float_of_int (List.length props) in
-    let l_prop = (* TODO: is array length prop writ/enum/configurable? *)
-      S.Data (
-        { S.value = S.Num (p, lfloat); S.writable = true; },
-        false,
-        false) in
-    let calleep = S.Accessor ({S.setter = S.Id (p, "%ThrowTypeError");
-                               S.getter = S.Id (p, "%ThrowTypeError")},
-                              false, false) in
-    S.Object (p, a_attrs, [("length", l_prop); 
-                           ("callee", calleep);
-                           ("caller", calleep);]@ props)
+    S.App (p, S.Id (p, "%mkArgsObj"), [S.Object (p, S.d_attrs, props)])
 
 let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.True (p) -> S.True (p)
@@ -190,8 +185,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.ThisExpr (p) -> S.Id (p, "%this")
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
-    let o = S.App (p, S.Id (p, "%ToObject"), [exprjs_to_ljs l]) in
-    let f = S.App (p, S.Id (p, "%ToString"), [exprjs_to_ljs r]) in
+    let o = to_object p (exprjs_to_ljs l) in
+    let f = to_string p (exprjs_to_ljs r) in
     make_get_field p o f
   | E.NewExpr (p, econstr, eargs) -> 
     let constr_id = mk_id "constr" in
@@ -284,26 +279,34 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       e2, 
       e3)
   | E.AssignExpr (p, obj, pr, vl) -> 
-    let sobj = S.App (p, S.Id (p, "%ToObject"), [exprjs_to_ljs obj]) in
-    let spr = S.App (p, S.Id (p, "%ToString"), [exprjs_to_ljs pr]) in
+    let sobj = to_object p (exprjs_to_ljs obj) in
+    let spr = to_string p (exprjs_to_ljs pr) in
     let svl = exprjs_to_ljs vl in
     make_set_field p sobj spr svl
   | E.AppExpr (p, e, el) -> 
     let sl = List.map (fun x -> exprjs_to_ljs x) el in
     let args_obj = make_args_obj p sl in
     let obj_id = mk_id "obj" in
-    let app = match e with
+    let fun_id = mk_id "fun" in
+    begin match e with
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
-        S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj])
+        S.Let (p, fun_id, exprjs_to_ljs e,
+          appexpr_check (S.Id (p, fun_id))
+          (S.App (p, S.Id (p, fun_id), [S.Id (p, "%global"); args_obj]))
+          p)
       | E.BracketExpr (_, obj, fld) ->
         let flde = exprjs_to_ljs fld in
         S.Let (p, obj_id, exprjs_to_ljs obj, 
-               S.App (p, make_get_field p (S.App (p, S.Id (p, "%ToObject"), [S.Id
-               (p, obj_id)]))
-                 (S.App (p, S.Id (p, "%ToString"), [flde])),
-                 [S.App (p, S.Id (p, "%ToObject"), [S.Id (p, obj_id)]); args_obj]))
-      | _ -> S.App (p, exprjs_to_ljs e, [S.Id (p, "%global"); args_obj]) in
-    appexpr_check (exprjs_to_ljs e) app p
+          S.Let (p, fun_id, make_get_field p (to_object p (S.Id (p, obj_id))) (to_string p flde),
+            appexpr_check (S.Id (p, fun_id))
+            (S.App (p, S.Id (p, fun_id), [to_object p (S.Id (p, obj_id)); args_obj]))
+            p))
+      | _ ->
+        S.Let (p, fun_id, exprjs_to_ljs e,
+          appexpr_check (S.Id (p, fun_id))
+          (S.App (p, S.Id (p, fun_id), [S.Id (p, "%global"); args_obj]))
+          p)
+    end
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
   | E.LetExpr (p, nm, vl, body) ->
     let sv = exprjs_to_ljs vl
@@ -402,14 +405,14 @@ and get_lambda p args body =
     S.Lambda (p, ["this"; "args"], 
     S.Label (p, "%ret",
     S.Break (p, "%ret",
-    S.GetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), noargs_obj))))
+    S.GetField (p, S.Id (p, "this"), S.String (p, "%" ^ nm), noargs_obj))))
   and setter nm =
     let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), noargs_obj) in
     let setterao = onearg_obj newval in
     S.Lambda (p, ["this"; "args"],
     S.Label (p, "%ret",
     S.Break (p, "%ret",
-    S.SetField (p, S.Id (p, "%context"), S.String (p, "%" ^ nm), 
+    S.SetField (p, S.Id (p, "this"), S.String (p, "%" ^ nm), 
       newval, setterao)))) in
   (* Strip the lets from the top of the function body, and get a tuple containig
    * the name of all those ids (declared with var keyword) and the actual
@@ -555,14 +558,9 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
 
 and appexpr_check f app p = 
   let ftype = mk_id "ftype" in
-  let not_object = 
-    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "object")))
-  and not_function =
-    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function")))
-  and not_callable obj =
-    S.Op2 (p, "stx=", S.Null (p), S.Op1 (p, "get-code", obj))
-  and error = S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null(p); S.Null(p)]) in
+  let not_function =
+    S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function"))) in
+  let error = S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null(p); S.Null(p)]) in
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
-   S.If (p, not_object,
-    S.If (p, not_function, error, app),
-    S.If (p, not_callable f, error, app)))
+    S.If (p, not_function, error, app))
+    
