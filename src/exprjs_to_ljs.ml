@@ -26,48 +26,8 @@ let to_object p v =
 (* 15.4: A property name P (in the form of a String value) is an array index if and
  * only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to
  * 2^32−1 *)
-let is_array_index p =
-  let uint_id = mk_id "uint"
-  and fld_id = mk_id "field" in
-  let fld = S.Id (p, fld_id) in
-  S.Lambda (p, [fld_id],
-    S.Let (p, uint_id, S.App (p, S.Id (p, "%ToUint32"), [fld]),
-      S.If (p, S.Op2 (p, "stx=", fld, to_string p (S.Id (p, uint_id))),
-        S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, uint_id), S.Num (p, 4294967295.0))),
-        S.False (p))))
-
-let make_array_set p obj fld value =
-  let l_id = mk_id "old_len"
-  and uint_id = mk_id "uint" in
-  S.If (p, S.App (p, is_array_index p, [fld]),
-    S.Let (p, uint_id, S.App (p, S.Id (p, "%ToUint32"), [fld]),
-      S.Let (p, l_id, make_get_field p obj (S.String (p, "length")),
-        S.If (p, 
-          S.Op2 (p, "<", S.Id (p, l_id),
-            S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0))),
-          S.SetField (p, obj, S.String (p, "length"),
-            S.Op2 (p, "+", S.Id (p, uint_id), S.Num (p, 1.0)), S.Null (p)),
-          S.Undefined (p)))),
-    match fld with
-      | S.String (_, s) when s != "length" -> S.Undefined (p)
-      | _ -> 
-        S.If (p, S.Op2 (p, "stx=", fld, S.String (p, "length")),
-          S.App (p, S.Id (p, "%ArrayLengthChange"), [obj; value]),
-          S.Undefined (p)))
-      
-
 let make_set_field p obj fld value =
-  let val_id = mk_id "val" in
-  let arecd = { S.value = S.Id (p, val_id); S.writable = true; } in
-  let aprop = S.Data (arecd, true, true) in
-  let aobj = S.Object (p, S.d_attrs, [("0", aprop)]) in
-  let class_id = mk_id "class" in
-  S.Let (p, val_id, value,
-    S.Let (p, class_id, S.Op1 (p, "get-class", obj),
-      S.Seq (p, 
-        S.If (p, S.Op2 (p, "stx=", S.Id (p, class_id), S.String (p, "Array")),
-          make_array_set p obj fld (S.Id (p, val_id)), S.Undefined (p)),
-        S.SetField (p, obj, fld, S.Id (p, val_id), aobj))))
+  S.App (p, S.Id (p, "%set-property"), [obj; fld; value])
 
 let make_args_obj p args =
     let n_args = List.length args in

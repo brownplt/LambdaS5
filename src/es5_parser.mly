@@ -235,7 +235,11 @@ exp :
        Let (p, "$newVal", $5,
 	     SetField (p, $1, $3, 
 		       Id (p, "$newVal"), 
-		       args_thunk p [Id (p, "$newVal")])) }
+		       Object (p, d_attrs,
+            [("0", Data ({ value = Id (p, "$newVal");
+                          writable = true },
+              true, true))])))
+    }
  | exp LBRACK seq_exp RBRACK
    { let p = ($startpos, $endpos) in
      GetField (p, $1,  $3, args_thunk p []) }
