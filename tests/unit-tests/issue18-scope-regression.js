@@ -22,5 +22,5 @@ s += c2();
 s += c2();
 
 if(s === '123123') {
-  print("Passed.");
+  print("passed");
 }
