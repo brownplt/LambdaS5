@@ -9,5 +9,8 @@ function foo() {
     if (x === 22) {
         print ("passed");
     }
+    else if (x === 10) {
+      print ("missed catch block");
+    }
 }
 foo();

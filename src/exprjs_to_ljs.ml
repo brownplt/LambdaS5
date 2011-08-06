@@ -363,17 +363,15 @@ and get_fobj p args body context =
 and get_lambda p args body = 
   let getter nm = 
     S.Lambda (p, ["this"; "args"], 
-    S.Label (p, "%ret",
-    S.Break (p, "%ret",
-    S.GetField (p, S.Id (p, "this"), S.String (p, "%" ^ nm), noargs_obj))))
+      S.Label (p, "%ret",
+        S.Break (p, "%ret", S.Id (p, "%" ^ nm))))
   and setter nm =
     let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), noargs_obj) in
     let setterao = onearg_obj newval in
     S.Lambda (p, ["this"; "args"],
     S.Label (p, "%ret",
     S.Break (p, "%ret",
-    S.SetField (p, S.Id (p, "this"), S.String (p, "%" ^ nm), 
-      newval, setterao)))) in
+    S.SetBang (p, "%" ^ nm, newval)))) in
   (* Strip the lets from the top of the function body, and get a tuple containig
    * the name of all those ids (declared with var keyword) and the actual
    * function body *)
@@ -391,12 +389,13 @@ and get_lambda p args body =
   let rec get_prop_pairs nms prs = match nms with
     | [] -> prs
     | nm :: rest ->
-      let data_name = "%" ^ nm in
-      let drc = { S.value = S.Undefined (p); S.writable = true; } in
-      let d = S.Data (drc, true, true) in
       let arc = { S.getter = getter nm; S.setter = setter nm; } in
       let a = S.Accessor (arc, false, false) in
-      get_prop_pairs rest ((data_name, d) :: ((nm, a) :: prs)) in
+      get_prop_pairs rest ((nm, a) :: prs) in
+  let rec get_prop_lets nms e = match nms with
+    | [] -> e
+    | nm :: rest ->
+      get_prop_lets rest (S.Let (p, "%" ^ nm, S.Undefined p, e)) in
   let (nl, real_body) = strip_lets body [] in
   let prop_pairs = get_prop_pairs nl [] in
   let desugared = exprjs_to_ljs real_body in
@@ -418,7 +417,7 @@ and get_lambda p args body =
   let seq_chain_end = S.Seq (p, seq_chain, S.Undefined p) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, seq_chain_end)))
+      get_prop_lets nl (S.Let (p, "%context", ncontext, seq_chain_end))))
 
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in
