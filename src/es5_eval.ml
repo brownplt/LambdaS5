@@ -417,14 +417,19 @@ let rec eval jsonPath exp env =
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 
+(* This function is exactly as ridiculous as you think it is.  We read,
+   parse, desugar, and evaluate the string, storing it to temp files along
+   the way.  We make no claims about encoding issues that may arise from
+   the filesystem.  Thankfully, JavaScript is single-threaded, so using
+   only a single file works out. 
+
+   TODO(joe): I have no idea what happens on windows. *)
 and eval_op str env jsonPath = 
   let outchan = open_out "/tmp/curr_eval.js" in
-  printf "evalling: %s\n" str;
   output_string outchan str;
   close_out outchan;
   let cmdstring = 
     (sprintf "%s /tmp/curr_eval.js > /tmp/curr_eval.json" jsonPath) in
-  printf "%s\n" cmdstring;
   system cmdstring;
   let ast = 
     parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
@@ -432,14 +437,10 @@ and eval_op str env jsonPath =
     js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global")) in
   let desugard = exprjs_to_ljs exprjsd in
   if (IdMap.mem "%global" env) then
-    (printf("found global\n");
-     Es5_pretty.exp desugard std_formatter; print_newline ();
+    (Es5_pretty.exp desugard std_formatter; print_newline ();
      eval jsonPath desugard env (* TODO: which env? *))
   else
-    (printf("no global!");
-     failwith "no global")
-      
-
+    (failwith "no global")
 
 let rec eval_expr expr jsonPath = try 
   eval jsonPath expr IdMap.empty
