@@ -55,13 +55,24 @@ let float_str n =
       then string_of_int (int_of_float n) 
       else string_of_float n
 
-
 let prim_to_str v = str begin match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | String s -> s
-  | Num n -> let open String in let fs = float_str n in let i = length fs in
-    if get fs (i - 1) == '.' then sub fs 0 (i - 1) else fs
+  | Num n -> let open String in let fs = float_str n in let fslen = length fs in
+    if get fs (fslen - 1) = '.' then sub fs 0 (fslen - 1) else
+      (* This is because we don't want leading zeroes in the "-e" part.
+       * For example, OCaml says 1.2345e-07, but ES5 wants 1.2345e-7 *)
+      if contains fs '-'
+        then let indx = index fs '-' in 
+          let prefix = sub fs 0 (indx + 1) in
+          let suffix = sub fs (indx + 1) (fslen - (length prefix)) in
+          let slen = length suffix in
+          let fixed = if slen > 1 && (get suffix 0 = '0') 
+            then sub suffix 1 (slen - 1)
+            else suffix in
+          prefix ^ fixed 
+        else fs
   | True -> "true"
   | False -> "false"
   | _ -> raise (Throw (str "prim_to_num"))
