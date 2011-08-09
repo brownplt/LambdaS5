@@ -293,6 +293,10 @@ let floor' = function Num d -> num (floor d) | _ -> raise (Throw (str "floor"))
 
 let absolute = function Num d -> num (abs_float d) | _ -> raise (Throw (str "abs"))
 
+let ascii c = match c with
+  | Num d -> str (String.make 1 (Char.chr (int_of_float d)))
+  | _ -> raise (Throw (str "ascii"))
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -320,6 +324,7 @@ let op1 op = match op with
   | "void" -> void
   | "floor" -> floor'
   | "abs" -> absolute
+  | "ascii" -> ascii
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with
