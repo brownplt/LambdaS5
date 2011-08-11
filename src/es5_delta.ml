@@ -297,6 +297,10 @@ let ascii c = match c with
   | Num d -> str (String.make 1 (Char.chr (int_of_float d)))
   | _ -> raise (Throw (str "ascii"))
 
+let prim_strlen = function
+  | String s -> Num (float_of_int (String.length s))
+  | _ -> raise (Throw (str "prim_strlen"))
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -325,6 +329,7 @@ let op1 op = match op with
   | "floor" -> floor'
   | "abs" -> absolute
   | "ascii" -> ascii
+  | "strlen" -> prim_strlen
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with
@@ -447,6 +452,12 @@ let get_base n r = match n, r with
     str (if x < 0.0 then "-" ^ result else result)
   | _ -> raise (Throw (str "base got non-numbers"))
 
+let char_at a b  = match a, b with
+  | String s, Num n ->
+    let open String in
+    String (make 1 (get s (int_of_float n)))
+  | _ -> raise (Throw (str "char_at didn't get a string and a number"))
+
 let op2 op = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
@@ -470,6 +481,7 @@ let op2 op = match op with
   | "string+" -> string_plus
   | "string<" -> string_lessthan
   | "base" -> get_base
+  | "char-at" -> char_at
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
 let op3 op = match op with
