@@ -293,9 +293,13 @@ let floor' = function Num d -> num (floor d) | _ -> raise (Throw (str "floor"))
 
 let absolute = function Num d -> num (abs_float d) | _ -> raise (Throw (str "abs"))
 
-let ascii c = match c with
+let ascii_ntoc n = match n with
   | Num d -> str (String.make 1 (Char.chr (int_of_float d)))
-  | _ -> raise (Throw (str "ascii"))
+  | _ -> raise (Throw (str "ascii_ntoc"))
+
+let ascii_cton c = match c with
+  | String s -> Num (float_of_int (Char.code (String.get s 0)))
+  | _ -> raise (Throw (str "ascii_cton"))
 
 let prim_strlen = function
   | String s -> Num (float_of_int (String.length s))
@@ -328,7 +332,8 @@ let op1 op = match op with
   | "void" -> void
   | "floor" -> floor'
   | "abs" -> absolute
-  | "ascii" -> ascii
+  | "ascii_ntoc" -> ascii_ntoc
+  | "ascii_cton" -> ascii_cton
   | "strlen" -> prim_strlen
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
