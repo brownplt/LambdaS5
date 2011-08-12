@@ -108,8 +108,6 @@ rule token = parse
    | "finally" { FINALLY }
    | "throw" { THROW }
    | "@eval" { EVAL }
-   | "[[" { LLBRACK }
-   | "]]" { RRBRACK }
    | "===" { EQEQEQUALS }
    | "!==" { BANGEQEQUALS }
    | "typeof" { TYPEOF }
