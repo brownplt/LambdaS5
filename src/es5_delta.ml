@@ -113,19 +113,17 @@ let index_of_helper obj =
       match prop with | Data ({ value = String d; _ }, _, _) -> d
       end
       | _ -> raise (Throw (str "index_of_helper")) in
-  let rec checkall j = 
-    if j == searchlen then true
-    else if (String.get s j) != (String.get searchstr j) then false
-    else checkall (j + 1)
-  and range i j = if i > j then [] else i :: (range (i+1) j) in
-  let results = 
-    List.filter (fun n -> checkall n) (range start (start + (min len searchlen))) in
-  match results with 
-    | [] -> Num (-1.0)
-    | l -> 
-      let result_int = fold_right (fun a b -> if a < b then a else b) l max_int in
-      let result_float = float_of_int result_int in
-      Num result_float
+  let check_k k = 
+    let rec check_j j = 
+      if j = searchlen then true
+      else if (String.get s (k + j)) <> (String.get searchstr j) then false
+      else check_j (j + 1) in
+    (k + searchlen <= len) && (check_j 0) in
+  let rec find_k curr = 
+    if (curr + searchlen) > len then Num (-1.0)
+    else if check_k curr then Num (float_of_int curr)
+    else find_k (curr + 1) in
+  find_k start
   
 (* Section 9.3, excluding objects *)
 let prim_to_num v = num begin match v with
@@ -301,10 +299,6 @@ let ascii_cton c = match c with
   | String s -> Num (float_of_int (Char.code (String.get s 0)))
   | _ -> raise (Throw (str "ascii_cton"))
 
-let prim_strlen = function
-  | String s -> Num (float_of_int (String.length s))
-  | _ -> raise (Throw (str "prim_strlen"))
-
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -334,7 +328,6 @@ let op1 op = match op with
   | "abs" -> absolute
   | "ascii_ntoc" -> ascii_ntoc
   | "ascii_cton" -> ascii_cton
-  | "strlen" -> prim_strlen
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with
