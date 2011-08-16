@@ -109,7 +109,7 @@ let rec func_expr_lambda p ids body =
 %token <Prelude.id> ID
 %token UNDEFINED NULL FUNC LET DELETE LBRACE RBRACE LPAREN RPAREN LBRACK
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
-  LABEL BREAK TRY CATCH FINALLY THROW LLBRACK RRBRACK EQEQEQUALS TYPEOF
+  LABEL BREAK TRY CATCH FINALLY THROW EQEQEQUALS TYPEOF
   AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION REC WRITABLE GETTER SETTER
   CONFIG VALUE ENUM LT GT PROTO CODE EXTENSIBLE CLASS EVAL
 
@@ -166,6 +166,8 @@ prop_attrs :
      { Data ({ value = $5; writable = $2 }, false, true) }
  | VALUE exp COMMA WRITABLE BOOL
      { Data ({ value = $2; writable = $5 }, false, false) }
+ | VALUE exp COMMA WRITABLE BOOL COMMA CONFIG BOOL
+     { Data ({ value = $2; writable = $5 }, $8, false) }
  | GETTER exp COMMA SETTER exp 
      { Accessor ({ getter = $2; setter = $5 }, false, true) }
 
@@ -240,9 +242,15 @@ exp :
                           writable = true },
               true, true))])))
     }
+ | exp LBRACK seq_exp EQUALS seq_exp COMMA seq_exp RBRACK
+   { SetField (($startpos, $endpos), $1, $3, $5, $7) }
  | exp LBRACK seq_exp RBRACK
    { let p = ($startpos, $endpos) in
-     GetField (p, $1,  $3, args_thunk p []) }
+     GetField (p, $1,  $3,
+		       Object (p, d_attrs,
+            [])) }
+ | exp LBRACK seq_exp COMMA seq_exp RBRACK
+   { GetField (($startpos, $endpos), $1,  $3, $5) }
  | exp LBRACK DELETE seq_exp RBRACK
      { DeleteField (($startpos, $endpos), $1, $4) }
  | exp LBRACK seq_exp LT attr_name GT RBRACK
@@ -288,7 +296,7 @@ seq_exp :
 env :
  | EOF
      { fun x -> x }
- | LET LLBRACK ID RRBRACK EQUALS seq_exp env
+ | LET LBRACK ID RBRACK EQUALS seq_exp env
      { fun x -> 
          Let (($startpos, $endpos), $3, $6, $7 x) }
  | LBRACE seq_exp RBRACE env

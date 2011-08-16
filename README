@@ -1,3 +1,2 @@
-Testing scripts expect the ES5 Conformance Suite to be in /es5conform:
+Semantics for ECMAScript 5.0
 
-svn co https://ES5conform.svn.codeplex.com/svn es5conform

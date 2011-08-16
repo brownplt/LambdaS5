@@ -3,6 +3,6 @@ function foo(x) {
     return x;
 }
 
-if(foo(22) === 22) {
+if(foo(22) === 12) {
     print("passed");
 }

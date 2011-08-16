@@ -12,9 +12,9 @@ let string_of_attr attr = match attr with
   | Value -> "#value"
   | Getter -> "#getter"
   | Setter -> "#setter"
-  | Config -> "#config"
+  | Config -> "#configurable"
   | Writable -> "#writable"
-  | Enum -> "#enum"
+  | Enum -> "#enumerable"
 
 type exp =
   | Null of pos
