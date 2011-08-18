@@ -412,6 +412,11 @@ let char_at a b  = match a, b with
     String (make 1 (get s (int_of_float n)))
   | _ -> raise (Throw (str "char_at didn't get a string and a number"))
 
+let locale_compare a b = match a, b with
+  | String r, String s ->
+    Num (float_of_int (String.compare r s))
+  | _ -> raise (Throw (str "locale_compare didn't get 2 strings"))
+
 let op2 op = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
@@ -436,6 +441,7 @@ let op2 op = match op with
   | "string<" -> string_lessthan
   | "base" -> get_base
   | "char-at" -> char_at
+  | "locale-compare" -> locale_compare
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
 let op3 op = match op with
