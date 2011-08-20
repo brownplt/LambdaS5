@@ -204,7 +204,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
           S.If (pp, 
             S.GetAttr (pp, S.Config, sobj, fld_str),
             S.App (pp, S.Id (pp, del_id), []),
-            S.Undefined (pp)))
+            S.False (pp)))
       | _ -> S.False (p) in result
     | "-" -> S.App(p, S.Id (p, "%UnaryNeg"), [exprjs_to_ljs exp])
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
