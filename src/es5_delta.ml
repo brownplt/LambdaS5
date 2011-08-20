@@ -50,6 +50,7 @@ let float_str n =
   if n == nan then "NaN"
   else
     if n == infinity then "Infinity"
+    else if n == neg_infinity then "-Infinity"
     else
       if float_of_int (int_of_float n) = n
       then string_of_int (int_of_float n) 
@@ -256,6 +257,10 @@ let ascii_cton c = match c with
   | String s -> Num (float_of_int (Char.code (String.get s 0)))
   | _ -> raise (Throw (str "ascii_cton"))
 
+let to_lower = function
+  | String s -> String (String.lowercase s)
+  | _ -> raise (Throw (str "to_lower"))
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -284,6 +289,7 @@ let op1 op = match op with
   | "abs" -> absolute
   | "ascii_ntoc" -> ascii_ntoc
   | "ascii_cton" -> ascii_cton
+  | "to-lower" -> to_lower
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with

@@ -76,7 +76,7 @@ rule token = parse
    | num_lit as x { parse_num_lit x }
    | "NaN" { NUM nan }
    | "+inf" { NUM infinity }
-   | "-inf" { NUM infinity }
+   | "-inf" { NUM neg_infinity }
    | "{" { LBRACE }
    | "}" { RBRACE }
    | '(' { LPAREN }
