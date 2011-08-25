@@ -22,7 +22,7 @@ cat $JSONFILE > out2.txt
 
 RESULT=`mktemp`
 
-ocamlrun ../../src/s5.d.byte -desugar $JSONFILE -env ../../envs/es5.env \
+ocamlrun-3.12.1 ../../src/s5.d.byte -desugar $JSONFILE -env ../../envs/es5.env \
     -json ../../src/desugar.sh -eval &> $RESULT
 
 rm -f $JSONFILE
