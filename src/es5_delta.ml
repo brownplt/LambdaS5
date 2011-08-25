@@ -247,7 +247,11 @@ let void v = Undefined
 
 let floor' = function Num d -> num (floor d) | _ -> raise (Throw (str "floor"))
 
+let ceil' = function Num d -> num (ceil d) | _ -> raise (Throw (str "ceil"))
+
 let absolute = function Num d -> num (abs_float d) | _ -> raise (Throw (str "abs"))
+
+let log' = function Num d -> num (log d ) | _ -> raise (Throw (str "log"))
 
 let ascii_ntoc n = match n with
   | Num d -> str (String.make 1 (Char.chr (int_of_float d)))
@@ -290,7 +294,9 @@ let op1 op = match op with
   | "!" -> nnot
   | "void" -> void
   | "floor" -> floor'
+  | "ceil" -> ceil'
   | "abs" -> absolute
+  | "log" -> log'
   | "ascii_ntoc" -> ascii_ntoc
   | "ascii_cton" -> ascii_cton
   | "to-lower" -> to_lower
