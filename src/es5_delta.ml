@@ -434,6 +434,10 @@ let locale_compare a b = match a, b with
     Num (float_of_int (String.compare r s))
   | _ -> raise (Throw (str "locale_compare didn't get 2 strings"))
 
+let pow a b = match a, b with
+  | Num base, Num exp -> Num (base ** exp)
+  | _ -> raise (Throw (str "pow didn't get 2 numbers"))
+
 let op2 op = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
@@ -459,6 +463,7 @@ let op2 op = match op with
   | "base" -> get_base
   | "char-at" -> char_at
   | "locale-compare" -> locale_compare
+  | "pow" -> pow
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
 let op3 op = match op with
