@@ -11,6 +11,7 @@ PARSERRS=0
 PROGERRS=0
 TESTERRS=0
 UNKNOWN=0
+WITH=0
 TESTWIN=0
 TOTAL=0
 
@@ -21,12 +22,15 @@ function singleTest {
     echo "prog errs: $PROGERRS"
     echo "failed: $TESTERRS"
     echo "unknown: $UNKNOWN"
+    echo "withL $WITH" 
     echo "test: $TESTWIN"
     echo $1
-    $BASEDIR/single-test.sh $1
+    $BASEDIR/run-timeout.sh $1
     RESULT=$?
     echo $RESULT
-    if [ $RESULT -eq 5 ]; then
+    if [ $RESULT -eq 6 ]; then
+        WITH=$(($WITH+1))
+    elif [ $RESULT -eq 5 ]; then
         UNKNOWN=$(($UNKNOWN+1))
     elif [ $RESULT -eq 4 ]; then
         TESTERRS=$(($TESTERRS+1))

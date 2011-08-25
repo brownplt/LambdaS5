@@ -51,6 +51,11 @@ if grep -q "Json_type.Json_error" $RESULT; then
     exit 2
 fi
 
+if grep -1 "with not allowed"; then
+  rm -f $RESULT
+  exit 6
+fi
+
 if grep -1 "Failure" $RESULT; then
     rm -f $RESULT
     exit 1
