@@ -438,6 +438,24 @@ let pow a b = match a, b with
   | Num base, Num exp -> Num (base ** exp)
   | _ -> raise (Throw (str "pow didn't get 2 numbers"))
 
+let to_fixed a b = match a, b with
+  | Num x, Num f -> let open String in
+    let s = string_of_float x
+    and fint = int_of_float f in
+    if fint = 0 
+      then String (string_of_int (int_of_float x)) 
+      else let dot_index = index s '.'
+      and len = length s in
+      let prefix_chars = dot_index in
+      let decimal_chars = len - (prefix_chars + 1) in
+      if decimal_chars = fint then String s
+      else if decimal_chars > fint
+        then let fixed_s = sub s 0 (fint - prefix_chars) in
+        String (fixed_s)
+      else let suffix = make (fint - decimal_chars) '0' in
+        String (s ^ suffix)
+  | _ -> raise (Throw (str "to-fixed didn't get 2 numbers"))
+
 let op2 op = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
@@ -464,6 +482,7 @@ let op2 op = match op with
   | "char-at" -> char_at
   | "locale-compare" -> locale_compare
   | "pow" -> pow
+  | "to-fixed" -> to_fixed
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
 let op3 op = match op with
