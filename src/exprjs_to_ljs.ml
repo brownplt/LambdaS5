@@ -23,6 +23,11 @@ let to_object p v =
     | S.Id (p, "%context") -> v
     | _ -> S.App (p, S.Id (p, "%ToObject"), [v])
 
+let prop_accessor_check p v =
+  match v with
+    | S.Id (p, "%context") -> v
+    | _ -> S.App (p, S.Id (p, "%PropAccessorCheck"), [v])
+
 (* 15.4: A property name P (in the form of a String value) is an array index if and
  * only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to
  * 2^32−1 *)
@@ -145,7 +150,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.ThisExpr (p) -> S.Id (p, "%this")
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
-    let o = to_object p (exprjs_to_ljs l) in
+    (*let o = to_object p (exprjs_to_ljs l) in*)
+    let o = prop_accessor_check p (exprjs_to_ljs l) in
     let f = to_string p (exprjs_to_ljs r) in
     make_get_field p o f
   | E.NewExpr (p, econstr, eargs) -> 
