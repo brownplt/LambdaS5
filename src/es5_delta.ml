@@ -207,7 +207,13 @@ let get_own_property_names obj = match obj with
       let props = 
 	List.fold_right2 add_name namelist (iota (List.length namelist)) IdMap.empty
       in
-	ObjCell (ref (d_attrsv, props))
+        let d = (float_of_int (List.length namelist)) in
+        let final_props = 
+          IdMap.add "length" 
+            (Data ({ value = Num d; writable = false; }, false, false))
+            props 
+        in
+	ObjCell (ref (d_attrsv, final_props))
   | _ -> raise (Throw (str "own-property-names"))
 
 (* Implement this here because there's no need to expose the class
