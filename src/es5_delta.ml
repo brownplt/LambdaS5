@@ -456,6 +456,17 @@ let to_fixed a b = match a, b with
         String (s ^ suffix)
   | _ -> raise (Throw (str "to-fixed didn't get 2 numbers"))
 
+let is_accessor a b = match a, b with
+  | ObjCell o, String s ->
+    let (attrs, props) = !o in
+    if IdMap.mem s props
+    then let prop = IdMap.find s props in
+      match prop with
+        | Data _ -> False
+        | Accessor _ -> True
+    else raise (Throw (str ("isAccessor: " ^ s ^ " isn't a prop name of the obj")))
+  | _ -> raise (Throw (str "isAccessor"))
+
 let op2 op = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
@@ -483,6 +494,7 @@ let op2 op = match op with
   | "locale-compare" -> locale_compare
   | "pow" -> pow
   | "to-fixed" -> to_fixed
+  | "isAccessor" -> is_accessor
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 
 let op3 op = match op with
