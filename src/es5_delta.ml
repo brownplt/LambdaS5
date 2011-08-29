@@ -462,7 +462,7 @@ let to_fixed a b = match a, b with
         String (s ^ suffix)
   | _ -> raise (Throw (str "to-fixed didn't get 2 numbers"))
 
-let is_accessor a b = match a, b with
+let rec is_accessor a b = match a, b with
   | ObjCell o, String s ->
     let (attrs, props) = !o in
     if IdMap.mem s props
@@ -470,7 +470,11 @@ let is_accessor a b = match a, b with
       match prop with
         | Data _ -> False
         | Accessor _ -> True
-    else raise (Throw (str ("isAccessor: " ^ s ^ " isn't a prop name of the obj")))
+    else let pr = match attrs with 
+      | { proto = p } -> p
+      | _ -> raise (Throw (str "isAccessor: no proto?")) in
+      is_accessor pr b
+  | Null, String s -> raise (Throw (str "isAccessor topped out"))
   | _ -> raise (Throw (str "isAccessor"))
 
 let op2 op = match op with
