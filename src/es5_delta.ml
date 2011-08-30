@@ -130,7 +130,7 @@ let is_extensible obj = match obj with
 let prevent_extensions obj = match obj with
   | ObjCell o -> 
       let (attrs, props) = !o in begin
-	  o := ({attrs with extensible = true}, props);
+	  o := ({attrs with extensible = false}, props);
 	  obj
 	end
   | _ -> raise (Throw (str "prevent-extensions"))
