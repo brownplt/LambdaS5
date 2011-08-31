@@ -11,7 +11,10 @@ let mk_id str =
 
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
-  S.GetField (p, obj, fld, argsobj)
+  match obj with
+    | S.Id (p, "%context") ->
+      S.App (p, S.Id (p, "%EnvLookup"), [obj; fld])
+    | _ -> S.GetField (p, obj, fld, argsobj)
 
 let to_string p v =
   match v with
@@ -150,7 +153,6 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
   | E.ThisExpr (p) -> S.Id (p, "%this")
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
-    (*let o = to_object p (exprjs_to_ljs l) in*)
     let o = prop_accessor_check p (exprjs_to_ljs l) in
     let f = to_string p (exprjs_to_ljs r) in
     make_get_field p o f
