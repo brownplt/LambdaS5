@@ -375,17 +375,17 @@ and get_fobj p args body context =
                                      S.Id (p, func_id))))))
            
 and get_lambda p args body = 
-  let getter nm = 
+  let getter uid = 
     S.Lambda (p, ["this"; "args"], 
       S.Label (p, "%ret",
-        S.Break (p, "%ret", S.Id (p, "%" ^ nm))))
-  and setter nm =
+        S.Break (p, "%ret", S.Id (p, uid))))
+  and setter uid =
     let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), noargs_obj) in
     let setterao = onearg_obj newval in
     S.Lambda (p, ["this"; "args"],
     S.Label (p, "%ret",
     S.Break (p, "%ret",
-    S.SetBang (p, "%" ^ nm, newval)))) in
+    S.SetBang (p, uid, newval)))) in
   (* Strip the lets from the top of the function body, and get a tuple containig
    * the name of all those ids (declared with var keyword) and the actual
    * function body *)
@@ -400,18 +400,19 @@ and get_lambda p args body =
         (final_nms, E.LetExpr (p, nm, vl, final_e))
     | _ -> (nms, e) in
   (* For each name, create a data/accessor property *)
-  let rec get_prop_pairs nms prs = match nms with
-    | [] -> prs
-    | nm :: rest ->
-      let arc = { S.getter = getter nm; S.setter = setter nm; } in
+  let rec get_prop_pairs nms uids prs = match nms, uids with
+    | [], [] -> prs
+    | nm :: rest, uid :: uid_rest ->
+      let arc = { S.getter = getter uid; S.setter = setter uid; } in
       let a = S.Accessor (arc, false, false) in
-      get_prop_pairs rest ((nm, a) :: prs) in
+      get_prop_pairs rest uid_rest ((nm, a) :: prs) in
   let rec get_prop_lets nms e = match nms with
     | [] -> e
     | nm :: rest ->
-      get_prop_lets rest (S.Let (p, "%" ^ nm, S.Undefined p, e)) in
+      get_prop_lets rest (S.Let (p, nm, S.Undefined p, e)) in
   let (nl, real_body) = strip_lets body [] in
-  let prop_pairs = get_prop_pairs nl [] in
+  let uids = List.map (fun nm -> mk_id nm) nl in
+  let prop_pairs = get_prop_pairs nl uids [] in
   let desugared = exprjs_to_ljs real_body in
   let final = 
     S.Seq (p,
@@ -431,7 +432,7 @@ and get_lambda p args body =
   let seq_chain_end = S.Seq (p, seq_chain, S.Undefined p) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      get_prop_lets nl (S.Let (p, "%context", ncontext, seq_chain_end))))
+      get_prop_lets uids (S.Let (p, "%context", ncontext, seq_chain_end))))
 
 and prm_to_setfield p n prm =
   let argsobj = S.Object (p, S.d_attrs, []) in
