@@ -210,7 +210,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
         let fld_str = S.Op1 (p, "prim->str", exprjs_to_ljs fld)
         and sobj = exprjs_to_ljs obj in
         let null = S.Null (pp) in
-        match sobj with
+        begin match sobj with
           | S.Id (_, "%context") ->
             let null = S.Null (p) in
             S.App (pp, S.Id (pp, "%ThrowSyntaxError"), [null; null])
@@ -219,7 +219,8 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
               S.GetAttr (pp, S.Config, sobj, fld_str),
               S.DeleteField (pp, sobj, fld_str),
               S.App (p, S.Id (p, "%ThrowTypeError"), [null; null]))
-      | _ -> S.False (p) in result
+        end
+      | _ -> S.True (p) in result
     | "-" -> S.App(p, S.Id (p, "%UnaryNeg"), [exprjs_to_ljs exp])
     | "+" -> S.App (p, S.Id (p, "%UnaryPlus"), [exprjs_to_ljs exp])
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
