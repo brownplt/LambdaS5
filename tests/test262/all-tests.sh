@@ -22,7 +22,7 @@ function singleTest {
     echo "prog errs: $PROGERRS"
     echo "failed: $TESTERRS"
     echo "unknown: $UNKNOWN"
-    echo "withL $WITH" 
+    echo "with: $WITH" 
     echo "test: $TESTWIN"
     echo $1
     $BASEDIR/run-timeout.sh $1

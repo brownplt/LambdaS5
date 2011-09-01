@@ -1,7 +1,7 @@
 #!/bin/bash
 
-JSFILE=`mktemp`
-NOCOMMENTS=`mktemp`
+JSFILE=`mktemp js.XXXXXXXX`
+NOCOMMENTS=`mktemp stripped.XXXXXXX`
 cat test262/test/harness/sta.js >> $JSFILE
 cat S5_harness_before.js >> $JSFILE
 cat test262/test/harness/sputnikLib.js >> $JSFILE
@@ -15,12 +15,12 @@ cat $JSFILE > out1.txt
 cat $NOCOMMENTS > out.txt
 
 
-JSONFILE=`mktemp`
+JSONFILE=`mktemp json.XXXXXXX`
 ../../bin/js -e "print(JSON.stringify(Reflect.parse(read('$NOCOMMENTS'),{loc:true}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" > $JSONFILE
 
 cat $JSONFILE > out2.txt
 
-RESULT=`mktemp`
+RESULT=`mktemp result.XXXXXXXX`
 
 ocamlrun-3.12.1 ../../src/s5.d.byte -desugar $JSONFILE -env ../../envs/es5.env \
     -json ../../src/desugar.sh -eval &> $RESULT
@@ -51,7 +51,7 @@ if grep -q "Json_type.Json_error" $RESULT; then
     exit 2
 fi
 
-if grep -1 "with not allowed"; then
+if grep -1 "with not allowed" $RESULT; then
   rm -f $RESULT
   exit 6
 fi
