@@ -35,7 +35,10 @@ let prop_accessor_check p v =
  * only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to
  * 2^32−1 *)
 let make_set_field p obj fld value =
-  S.App (p, S.Id (p, "%set-property"), [obj; fld; value])
+  match obj with
+  | S.Id (p, "%context") -> 
+    S.App (p, S.Id (p, "%EnvCheckAssign"), [obj; fld; value])
+  | _ -> S.App (p, S.Id (p, "%set-property"), [obj; fld; value])
 
 let make_args_obj p args =
     let n_args = List.length args in
@@ -522,7 +525,10 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
       S.Let (p, "%pnameobj", S.Op1 (p, "property-names", robj),
       S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
       S.Seq (p, 
-             make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])),
+              S.App (p, 
+                S.Id (p, "%set-property"), 
+                [context; nms; S.App (p, S.Id (p, "%prop_itr"), [])]),
+             (*make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])),*)
              get_while tst wbdy))))),
     S.If (p, S.Op2 (p, "stx=", robj, S.Undefined (p)),
       S.Undefined (p),
