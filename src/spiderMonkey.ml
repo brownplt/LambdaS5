@@ -134,7 +134,11 @@ and expr (v : json_type) : expr =
     | "Literal" -> Lit (p, literal v)
     | "Identifier" -> Id (p, string (get "name" v))
     | "This" -> This p
-    | "Array" -> Array (p, map expr (list (get "elements" v)))
+    | "Array" ->
+      let f = function 
+        | Json_type.Null -> Js_syntax.Id (p, "undefined")
+        | e -> expr e in
+      Array (p, map f (list (get "elements" v)))
     | ("Object" | "ObjectExpression") -> Object (p, map mem (list (get "properties" v)))
     | "Function" ->
       Func (p, maybe identifier (get "id" v), 
