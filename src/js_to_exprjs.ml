@@ -120,7 +120,13 @@ and vdj_to_vde v p = match v with
   | J.VarDecl (id, e) -> let init_val = match e with
     | None -> E.Undefined (p)
     | Some x -> jse_to_exprjs x in
-  E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val)
+    let context = E.IdExpr (p, "%context") and fld_str = E.String (p, id) in
+    E.SeqExpr (p, 
+      E.AppExpr (p, 
+        E.IdExpr (p, "%InitVar"),
+        [context; fld_str]),
+      E.AssignExpr (p, context, fld_str, init_val))
+  (*E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val)*)
 
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with

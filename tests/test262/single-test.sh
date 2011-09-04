@@ -2,6 +2,7 @@
 
 JSFILE=`mktemp js.XXXXXXXX`
 NOCOMMENTS=`mktemp stripped.XXXXXXX`
+echo "var currentTest;" >> $JSFILE
 cat test262/test/harness/sta.js >> $JSFILE
 cat S5_harness_before.js >> $JSFILE
 cat test262/test/harness/sputnikLib.js >> $JSFILE

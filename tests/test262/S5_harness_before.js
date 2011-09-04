@@ -16,7 +16,7 @@ function testRun(id, path, description, codeString, preconditionString, result, 
         }
     }
 
-ES5Harness = {};
+var ES5Harness = {};
 ES5Harness.registerTest = function(test) {
     var error;
     if(test.precondition && !test.precondition()) {
