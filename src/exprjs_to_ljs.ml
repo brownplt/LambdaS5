@@ -204,6 +204,14 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                                       S.Id (p, result)))))
         | _ -> failwith "[exprjs_to_ljs] postfix:++ on a non-lookup LHS"
       end
+    | "postfix:--" -> let target = exprjs_to_ljs exp in
+      begin match target with
+        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
+          S.App (p, S.Id (p, "%PostDecrementCheck"), [context; fldexpr])
+        | S.GetField (_, obj, fld, _) ->
+          S.App (p, S.Id (p, "%PostDecrement"), [obj; fld])
+        | _ -> failwith "desugaring error: postfix:--"
+      end
     | "prefix:++" -> let target = exprjs_to_ljs exp in 
       begin match target with
         | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
