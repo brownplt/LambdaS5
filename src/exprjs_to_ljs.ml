@@ -235,10 +235,12 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
             let null = S.Null (p) in
             S.App (pp, S.Id (pp, "%ThrowSyntaxError"), [null; null])
           | _ ->
-            S.If (pp,
-              S.GetAttr (pp, S.Config, sobj, fld_str),
-              S.DeleteField (pp, sobj, fld_str),
-              S.App (p, S.Id (p, "%ThrowTypeError"), [null; null]))
+            S.If (p, S.Op2 (p, "hasProperty", sobj, fld_str),
+              S.If (p,
+                S.GetAttr (pp, S.Config, sobj, fld_str),
+                S.DeleteField (pp, sobj, fld_str),
+                S.App (p, S.Id (p, "%ThrowTypeError"), [null; null])),
+              S.True (p))
         end
       | _ -> S.True (p) in result
     | "-" -> S.App(p, S.Id (p, "%UnaryNeg"), [exprjs_to_ljs exp])
