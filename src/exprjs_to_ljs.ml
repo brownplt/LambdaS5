@@ -192,23 +192,13 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
                                       constr_result))), S.Id (p, constr_result),
                                       S.Id (p, newobj))))))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
-    | "postfix:++" ->
-      begin match exp with
-        | E.BracketExpr (po, objexpr, fldexpr) ->
-          let obj_id = mk_id "obj" in
-          let fld_id = mk_id "fld" in
-          let result = mk_id "postfix_result" in
-          S.Let (p, obj_id, exprjs_to_ljs objexpr,
-                 S.Let (p, fld_id, exprjs_to_ljs fldexpr,
-                        S.Let (p, result, 
-                               make_get_field p (S.Id (po, obj_id)) (S.Id (po, fld_id)),
-                               S.Seq (p,
-                                      make_set_field p (S.Id (p, obj_id)) (S.Id (p, fld_id))
-                                        (S.App (p, S.Id (p, "%PrimAdd"),
-                                                [S.Id (p, result);
-                                                 S.Num (p, 1.0)])),
-                                      S.Id (p, result)))))
-        | _ -> failwith "[exprjs_to_ljs] postfix:++ on a non-lookup LHS"
+    | "postfix:++" -> let target = exprjs_to_ljs exp in
+      begin match target with
+        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
+          S.App (p, S.Id (p, "%PostIncrementCheck"), [context; fldexpr])
+        | S.GetField (_, obj, fld, _) ->
+          S.App (p, S.Id (p, "%PostIncrement"), [obj; fld])
+        | _ -> failwith "desugaring error: postfix:++"
       end
     | "postfix:--" -> let target = exprjs_to_ljs exp in
       begin match target with
