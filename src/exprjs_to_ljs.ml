@@ -224,7 +224,12 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
           S.App (p, S.Id (p, "%PrefixDecrement"), [obj; fld])
         | _ -> failwith "desugaring error: prefix:--"
       end
-    | "typeof" -> S.Op1 (p, "surface-typeof", exprjs_to_ljs exp)
+    | "typeof" -> let target = exprjs_to_ljs exp in
+      begin match target with
+        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
+          S.Op1 (p, "surface-typeof", S.GetField (p, context, fldexpr, noargs_obj))
+        | _ -> S.Op1 (p, "surface-typeof", target)
+      end
     | "delete" -> let result = match exp with
       | E.BracketExpr (pp, obj, fld) -> 
         let fld_str = S.Op1 (p, "prim->str", exprjs_to_ljs fld)
