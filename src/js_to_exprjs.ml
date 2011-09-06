@@ -4,6 +4,8 @@ module J = Js_syntax
 open Prelude
 open Js_print
 
+exception ParseError
+
 let rec jse_to_exprjs (e : J.expr) : E.expr =
   match e with
     | J.This (p) -> E.ThisExpr (p)
@@ -216,7 +218,7 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     end 
   | J.Throw (p, e) -> E.ThrowExpr (p, jse_to_exprjs e)
   | J.Switch _ -> failwith "J.Switch NYI"
-  | J.With _ -> failwith "S5 only handles strict mode---with not allowed"
+  | J.With _ -> raise ParseError
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 
 and srcElts (ss : J.srcElt list) (context : E.expr) : E.expr =

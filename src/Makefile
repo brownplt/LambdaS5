@@ -1,6 +1,6 @@
 .PHONY = clean builddir debug
 
-OCAMLBUILD = ocamlbuild-3.12.1 -build-dir ../obj -lib unix
+OCAMLBUILD = ocamlbuild -build-dir ../obj -lib unix
 
 debug: builddir
 	@rm -f s5.d.byte

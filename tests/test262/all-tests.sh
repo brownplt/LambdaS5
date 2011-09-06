@@ -64,4 +64,3 @@ echo "failed: $TESTERRS"
 echo "unknown: $UNKNOWN"
 echo "test: $TESTWIN"
 
-

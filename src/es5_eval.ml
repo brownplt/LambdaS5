@@ -434,7 +434,10 @@ and eval_op str env jsonPath =
   let ast = 
     parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
   let exprjsd = 
-    js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global")) in
+    try
+      js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
+    with ParseError -> raise (Throw (String "EvalError"))
+    in
   let desugard = exprjs_to_ljs exprjsd in
   if (IdMap.mem "%global" env) then
     (Es5_pretty.exp desugard std_formatter; print_newline ();
