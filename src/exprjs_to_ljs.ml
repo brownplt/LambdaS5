@@ -250,6 +250,7 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | _ -> S.True (p) in result
     | "-" -> S.App(p, S.Id (p, "%UnaryNeg"), [exprjs_to_ljs exp])
     | "+" -> S.App (p, S.Id (p, "%UnaryPlus"), [exprjs_to_ljs exp])
+    | "~" -> S.App (p, S.Id (p, "%BitwiseNot"), [exprjs_to_ljs exp])
     | _ -> S.Op1 (p, op, exprjs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
     let sl = exprjs_to_ljs l and sr = exprjs_to_ljs r in

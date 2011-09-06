@@ -275,6 +275,10 @@ let to_upper = function
   | String s -> String (String.uppercase s)
   | _ -> raise (Throw (str "to_lower"))
 
+let bnot = function
+  | Num d -> Num (float_of_int (lnot (int_of_float d)))
+  | _ -> raise (Throw (str "bnot"))
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -307,6 +311,7 @@ let op1 op = match op with
   | "ascii_cton" -> ascii_cton
   | "to-lower" -> to_lower
   | "to-upper" -> to_upper
+  | "~" -> bnot
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with
