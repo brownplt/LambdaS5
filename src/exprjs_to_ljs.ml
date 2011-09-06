@@ -272,10 +272,11 @@ let rec exprjs_to_ljs (e : E.expr) : S.exp = match e with
       | "==" -> S.App (p, S.Id (p, "%EqEq"), [sl; sr])
       | "+" -> S.App (p, S.Id (p, "%PrimAdd"), [sl; sr])
       | "-" -> S.App (p, S.Id (p, "%PrimSub"), [sl; sr])
+      | "*"
       | "/" -> 
-        let op = 
-          S.Lambda (p, ["a"; "b"], S.Op2 (p, "/", S.Id (p, "a"), S.Id (p, "b"))) in
-        S.App (p, S.Id (p, "%PrimMultOp"), [sl; sr; op])
+        let op_func = 
+          S.Lambda (p, ["a"; "b"], S.Op2 (p, op, S.Id (p, "a"), S.Id (p, "b"))) in
+        S.App (p, S.Id (p, "%PrimMultOp"), [sl; sr; op_func])
       | "instanceof" -> S.App (p, S.Id (p, "%instanceof"), [sl; sr])
       | _ -> let op = match op with
         | "===" -> "stx="
