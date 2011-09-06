@@ -109,7 +109,71 @@ window.addEventListener('load', function(e) {
 </html>
 """
 
-for chapter in sys.argv[1:]:
-  f = open("testresults/" + chapter, "w")
-  f.write(template % testDir("test262/test/suite/ietestcenter/" + chapter)[0])
+def usage():
+  print("""
+    python all-tests.py <ie | sp> <dir1 dir2 ...>
 
+      When run with no arguments, will run all the tests in ietestcenter
+      and in sputnik_converted.
+
+      If the first argument is ie, it will run the directories listed
+      within the ietestcenter tests.  If the first argument is sp, it will
+      run all the sputnik tests.
+  """)
+
+def dirTests(d):
+  for chapter in os.listdir(d):
+    f = open(os.path.join('results', chapter + ".html"), "w")
+    f2 = open("results/" + chapter + ".result", "w")
+    result = testDir(os.path.join(d, chapter))
+    f.write(template % result[0])
+    f2.write("%s %s" % (result[1], result[2]))
+
+def makeFrontPage():
+  html = "<html><head></head><ul>%s</ul><div>Total: %s/%s</div></html>"
+  l = ""
+  totalS = 0
+  totalF = 0
+  for chapter in os.listdir('results'):
+    if chapter[-6:] == 'result':
+      line = file(os.path.join('results', chapter)).readline()
+      if line: [success, fail] = line.split(" ")
+      else: continue
+      l += "<li><a href='%s.html'>%s</a> (%s/%s)</li>" % \
+              (chapter[0:-7], chapter[0:-7], success, int(success)+int(fail))
+      totalS += int(success)
+      totalF += int(fail)
+
+  summary = open(os.path.join('results', 'summary.html'), "w")
+  summary.write(html % (l, totalS, totalS + totalF))
+
+def main(args):
+  spiderMonkeyDir = 'test262/test/suite/sputnik_converted'
+  ieDir = 'test262/test/suite/ietestcenter'
+  try:
+    os.mkdir('results')
+  except:
+    # silent fail, the directory probably already existed
+    pass
+
+  if len(args) == 1:
+    dirTests(spiderMonkeyDir)
+    dirTests(ieDir)
+  else:
+    if (args[1] == "sp"): d = spiderMonkeyDir
+    elif (args[1] == "ie"): d = ieDir
+    elif (args[1] == "regen"): makeFrontPage(); return
+    else:
+      usage()
+      return
+    for chapter in args[2:]:
+      f = open("results/" + chapter + ".html", "w")
+      f2 = open("results/" + chapter + ".result", "w")
+      result = testDir(os.path.join(d, chapter))
+      f.write(template % result[0])
+      f2.write("%s %s" % (result[1], result[2]))
+
+  makeFrontPage()
+  
+
+main(sys.argv)
