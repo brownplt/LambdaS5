@@ -245,7 +245,7 @@ let nnot e = match e with
   | Null -> True
   | True -> False
   | False -> True
-  | Num d -> if d = 0. then True else False
+  | Num d -> if (d = 0.) || (d <> d) then True else False
   | String s -> if s = "" then True else False
   | ObjCell _ -> False
 
