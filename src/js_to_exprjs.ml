@@ -123,12 +123,8 @@ and vdj_to_vde v p = match v with
     | None -> E.Undefined (p)
     | Some x -> jse_to_exprjs x in
     let context = E.IdExpr (p, "%context") and fld_str = E.String (p, id) in
-    E.SeqExpr (p, 
-      E.AppExpr (p, 
-        E.IdExpr (p, "%InitVar"),
-        [context; fld_str]),
-      E.AssignExpr (p, context, fld_str, init_val))
-  (*E.AssignExpr (p, E.IdExpr (p, "%context"), E.String (p, id), init_val)*)
+    E.AssignExpr (p, context, fld_str, init_val)
+  | _ -> failwith ("vdj_to_vde didn't get a J.VarDecl")
 
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
@@ -226,18 +222,22 @@ and srcElts (ss : J.srcElt list) (context : E.expr) : E.expr =
   let se_to_e se = match se with
     | J.Stmt (s) -> jss_to_exprjs s
     | J.FuncDecl (nm, args, body) ->
-      let free_vars = IdSet.elements (J.fv_sel body) in
-      let rec fvl_to_letchain fvl final = match fvl with
-        | [] -> final
-        | first :: rest -> let newnm = "%%" ^ first in
-          E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
-      let reordered = J.reorder_sel body in
-      let last = srcElts reordered context in
-      E.FuncStmtExpr (p, nm, args, fvl_to_letchain free_vars last) in
+      E.FuncStmtExpr (p, nm, args, create_context body context) in
   let reordered = J.reorder_sel ss in
   match reordered with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
     | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts rest context) 
 
-let js_to_exprjs = srcElts
+and create_context (ss : J.srcElt list) (parent : E.expr) : E.expr = 
+  let p = dummy_pos in
+  let rec fvl_to_letchain fvl final = match fvl with
+    | [] -> final
+    | first :: rest -> let newnm = "%%" ^ first in
+      E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
+  let free_vars = IdSet.elements (J.fv_sel ss) in
+  let reordered = J.reorder_sel ss in
+  let last = srcElts reordered parent in
+  fvl_to_letchain free_vars last
+
+let js_to_exprjs = create_context
