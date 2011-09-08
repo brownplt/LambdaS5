@@ -278,7 +278,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
           S.Lambda (p, ["a"; "b"], S.Op2 (p, op, S.Id (p, "a"), S.Id (p, "b"))) in
         S.App (p, S.Id (p, "%PrimMultOp"), [sl; sr; op_func])
       | "instanceof" -> S.App (p, S.Id (p, "%instanceof"), [sl; sr])
-      | "&" -> S.App (p, S.Id (p, "%instanceof"), [sl; sr])
+      | "&" -> S.App (p, S.Id (p, "%BitwiseAnd"), [sl; sr])
       | _ -> let op = match op with
         | "===" -> "stx="
         | _ -> op in S.Op2 (p, op, sl, sr) in result
