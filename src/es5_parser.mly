@@ -208,10 +208,12 @@ env :
  | EOF
      { fun x -> x }
  | LET LBRACK ID RBRACK EQUALS seq_exp env
-     { fun x -> 
-         Let ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $6, $7 x) }
+     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
+         fun x -> 
+           Let (p, $3, $6, $7 x) }
  | LBRACE seq_exp RBRACE env
-     { fun x -> Seq ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4 x) }
+     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4) in
+         fun x -> Seq (p, $2, $4 x) }
 
 prog :
  | seq_exp EOF { $1 }
