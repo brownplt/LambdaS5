@@ -100,7 +100,7 @@ rule token p = parse
 		 else lexer_error "Infinite values are not allowed: " lexbuf }
   | "-Infinity" { if p.allow_nan then FLOAT neg_infinity
 		  else lexer_error "Infinite values are not allowed: " lexbuf }
-  | '"'     { STRING (string [] lexbuf) }
+  | '\"'    { STRING (string [] lexbuf) }
   | int     { make_int p.big_int_mode (lexeme lexbuf) }
   | float   { FLOAT (float_of_string (lexeme lexbuf)) }
   | "\n"    { newline lexbuf; token p lexbuf }
@@ -110,7 +110,7 @@ rule token p = parse
 
 
 and string l = parse
-    '"'         { String.concat "" (List.rev l) }
+    '\"'        { String.concat "" (List.rev l) }
   | '\\'        { let s = escaped_char lexbuf in
 		    string (s :: l) lexbuf }
   | unescaped+  { let s = lexeme lexbuf in
@@ -123,7 +123,7 @@ and string l = parse
 
 
 and escaped_char = parse 
-    '"'
+    '\"'
   | '\\'
   | '/'  { lexeme lexbuf }
   | 'b'  { "\b" }

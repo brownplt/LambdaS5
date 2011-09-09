@@ -295,7 +295,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let svl = ejs_to_ljs vl in
     make_set_field p sobj spr svl
   | E.AppExpr (p, e, el) -> 
-    let sl = List.map (fun x -> ejs_to_ljs x) el in
+    let sl = List.map ejs_to_ljs el in
     let args_obj = make_args_obj p sl in
     let obj_id = mk_id "obj" in
     let fun_id = mk_id "fun" in
@@ -461,7 +461,7 @@ and create_context p body parent =
     S.klass = "Object";
     S.extensible = true; } in
   let (nl, real_body) = strip_lets body [] in
-  let uids = List.map (fun nm -> mk_id nm) nl in
+  let uids = List.map mk_id nl in
   let prop_pairs = get_prop_pairs nl uids [] in
   (uids, real_body, S.Object (p, c_attrs, prop_pairs))
 

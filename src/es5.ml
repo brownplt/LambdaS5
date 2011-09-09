@@ -32,7 +32,7 @@ let parse_es5_env cin name =
            failwith (sprintf "lexical error at %s"
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
-      | _ ->
+      | Parsing.Parse_error ->
            failwith (sprintf "parse error at %s; unexpected token %s"
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p))

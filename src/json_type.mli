@@ -15,6 +15,10 @@ val compare : t -> t -> int
 
 val string : t -> string
 
+val int : t -> int
+
+val float : t -> float
+
 val get : string -> t -> t
 
 val list : t -> t list

@@ -19,7 +19,30 @@ let compare = Pervasives.compare
 
 let string v = match v with
   | String s -> s
-  | _ -> raise (Json_error "expected a JSON string")
+  | Array _ -> raise (Json_error "expected a JSON string, got a JSON array")
+  | Object _ -> raise (Json_error "expected a JSON string, got a JSON object")
+  | Int _ -> raise (Json_error "expected a JSON string, got a JSON int")
+  | Float _ -> raise (Json_error "expected a JSON string, got a JSON float")
+  | Bool _ -> raise (Json_error "expected a JSON string, got a JSON bool")
+  | Null -> raise (Json_error "expected a JSON string, got a JSON null")
+
+let int v = match v with
+  | Int i -> i
+  | Array _ -> raise (Json_error "expected a JSON int, got a JSON array")
+  | Object _ -> raise (Json_error "expected a JSON int, got a JSON object")
+  | String _ -> raise (Json_error "expected a JSON int, got a JSON string")
+  | Float _ -> raise (Json_error "expected a JSON int, got a JSON float")
+  | Bool _ -> raise (Json_error "expected a JSON int, got a JSON bool")
+  | Null -> raise (Json_error "expected a JSON int, got a JSON null")
+
+let float v = match v with
+  | Float f -> f
+  | Array _ -> raise (Json_error "expected a JSON float, got a JSON array")
+  | Object _ -> raise (Json_error "expected a JSON float, got a JSON object")
+  | String _ -> raise (Json_error "expected a JSON float, got a JSON string")
+  | Int _ -> raise (Json_error "expected a JSON float, got a JSON int")
+  | Bool _ -> raise (Json_error "expected a JSON float, got a JSON bool")
+  | Null -> raise (Json_error "expected a JSON float, got a JSON null")
 
 let get key v = match v with
   | Object pairs -> 

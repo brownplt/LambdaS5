@@ -3,7 +3,20 @@ open Prelude
 open Json_type
 open Js_syntax
 
-let mk_pos (v : json_type) : pos = Prelude.dummy_pos (* TODO *)
+let mk_pos (v : json_type) : Prelude.pos = 
+  let jstart = get "start" v in
+  let jend = get "end" v in
+  let fname = match (get "source" v) with
+  | Json_type.String s -> s
+  | Json_type.Null -> "<unknown>" 
+  | _ -> failwith "Expected JSON string or null in mk_pos" in
+  let json_pos_to_prelude_pos pos = {
+    Lexing.pos_fname = fname;
+    Lexing.pos_lnum = int_of_float (float (get "line" pos));
+    Lexing.pos_bol = int_of_float (float (get "column" pos));
+    Lexing.pos_cnum = -1
+  } in
+  (json_pos_to_prelude_pos jstart, json_pos_to_prelude_pos jend)
 
 let maybe (f : json_type -> 'a) (v : json_type) : 'a option =
   match Json_type.is_null v with
@@ -187,10 +200,12 @@ and catch (v : json_type) : catch =
     else
       if is_null v then None
       else
-        let param = match string (get "type" (get "param" v)) with
+        let param = match (get "type" (get "param" v)) with
+	  String s -> begin match s with
           | "Identifier" -> string (get "name" (get "param" v))
-          | s -> (printf "param was %s" s; s)
-          | _ -> failwith "Param wasn't a string" in
+          | param -> (printf "param was %s" param; param)
+	  end
+        | _ -> failwith "Param wasn't a string" in
         let body = block (get "body" v) in Some (param, body)
 
 and block (v : json_type) : block = match is_array v with
@@ -227,7 +242,7 @@ let parse_spidermonkey (cin : in_channel) (name : string) : Js_syntax.program =
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
       | Failure "utf8_of_point not implemented" ->
         failwith "Parser doesn't do some UTF8 encoding crap"
-      | _ ->
+      | Parsing.Parse_error ->
            failwith (sprintf "parse error at %s; unexpected token %s"
                        (string_of_position 
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p))

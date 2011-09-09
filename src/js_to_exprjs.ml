@@ -19,9 +19,9 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Str (s) -> E.String (p, s) 
         | J.Regexp (s) -> E.RegExpr (p, s)
       in result
-    | J.Array (p, el) -> 
-      E.ArrayExpr (p, List.map (fun x -> jse_to_exprjs x) el)
-    | J.Object (p, mem_lst) ->
+  | J.Array (p, el) -> 
+      E.ArrayExpr (p, List.map jse_to_exprjs el)
+  | J.Object (p, mem_lst) ->
       let rec prop_to_str prop = match prop with
         (J.PropId s | J.PropStr s) -> s
         | J.PropNum n ->
@@ -111,9 +111,9 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       | [] -> E.Undefined (p)
       | [f] -> jse_to_exprjs f
       | f :: rest -> E.SeqExpr (p, jse_to_exprjs f, unroll rest) in
-      unroll el
-    | J.Call (p, e, el) -> let xl = List.map (fun x -> jse_to_exprjs x) el in 
-      E.AppExpr (p, jse_to_exprjs e, xl)
+    unroll el
+  | J.Call (p, e, el) -> let xl = List.map jse_to_exprjs el in 
+    E.AppExpr (p, jse_to_exprjs e, xl)
 
 and block p b = jss_to_exprjs (J.Block (p, b))
 
