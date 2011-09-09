@@ -11,9 +11,9 @@ def testFile(f):
                        stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE,
                        cwd=".")
-  start = time.clock()
+  start = time.time()
   while(True):
-    now = time.clock()
+    now = time.time()
     p.poll()
     if (p.returncode is None) and (now - start > timeout_seconds):
       p.kill()
