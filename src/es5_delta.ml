@@ -248,6 +248,7 @@ let nnot e = match e with
   | Num d -> if (d = 0.) || (d <> d) then True else False
   | String s -> if s = "" then True else False
   | ObjCell _ -> False
+  | Closure _ -> False
 
 let void v = Undefined
 
@@ -510,6 +511,3 @@ let op2 op = match op with
   | "to-fixed" -> to_fixed
   | "isAccessor" -> is_accessor
   | _ -> failwith ("no implementation of binary operator: " ^ op)
-
-let op3 op = match op with
-  | _ -> failwith ("no ternary operators yet, so what's this: " ^ op)

@@ -20,87 +20,8 @@ let rec mk_val p v =
 
 let rec mk_field (p, s, e) =
   (p, s, mk_val p e)
-    
-let args_obj p arg_list callee = 
-  let mk_field n v = (string_of_int n, 
-		      mk_val p v) in
-    Object 
-      (p, {proto = Some (Id (p, "Object_prototype"));
-           klass = "Arguments";
-           extensible = false;
-           primval = None;
-           code = None},
-       (("length", Data ({value = int_c p (List.length arg_list);
-		         writable = true; },
-	                 false, true))::
-	("callee", Accessor ({getter = Id (p, "[[ThrowTypeError]]");
-		              setter = Id (p, "[[ThrowTypeError]]"); },
-		             false, false ))::
-	("caller", Accessor ({getter = Id (p, "[[ThrowTypeError]]");
-		              setter = Id (p, "[[ThrowTypeError]]"); },
-                             false, false ))::
-	  (List.map2 mk_field (iota (List.length arg_list)) arg_list)))
-      
 
-(* Used by getters and setters---the function will be known at
-runtime *)
-let args_thunk p arg_list = 
-  Lambda (p, ["func"],
-	  args_obj p arg_list (Id (p, "func")))
-
-
-let rec func_expr_lambda p ids body =
-  let folder id ix e = 
-    Let (p, 
-	  id,
-	  GetField (p, 
-		    Id (p, "arguments"), 
-		    str p (string_of_int ix),
-		    args_thunk p []),
-	  e) in
-  Lambda (p, 
-	  ["this"; "arguments"],
-	  List.fold_right2 folder ids (iota (List.length ids)) body)
-
-(*let rec func_object p ids lambda_exp =
-  Let (p, "$prototype", 
-       Object (p,
-	       [("proto", Id (p, "Object_prototype"));
-		("extensible", true_c p);
-		("class", Const (p, S.CString ("Object")))],
-	       [("constructor", 
-		 [(Value, Const (p, S.CUndefined));
-		  (Writable, true_c p);
-		  (Enum, false_c p);
-		  (Config, true_c p)])]),
-       Let (p, "$funobj", 
-	      Object (p,
-		       [("code", lambda_exp);
-			("proto", Id (p, "Function_prototype"));
-			("extensible", true_c p);
-			("class", str p "Function")],
-		       [("length", 
-			 [(Value, Const (p, S.CNum
-			   (float_of_int
-			      (List.length ids))));
-			  (Writable, false_c p);
-			  (Enum, false_c p);
-			  (Config, false_c p)]);
-			("prototype",
-			 [(Value, Id (p, "$prototype")); 
-			  (Writable, true_c p);
-			  (Config, false_c p);
-			  (Enum, false_c p)])]),
-	     Seq (p, UpdateFieldSurface (p, 
-					   Id (p, "$prototype"),
-					   str p "constructor",
-					   Id (p, "$funobj"),
-					   args_thunk p [EId (p, "$funobj")]),
-		   Id (p, "$funobj"))))
-*)
-
-
- %}
+%}
 
 %token <int> INT
 %token <float> NUM
@@ -201,14 +122,6 @@ atom :
    { $2 }
  | LPAREN seq_exp RPAREN { $2 }
  | func { $1 }
- | FUNCTION LPAREN ids RPAREN LBRACE seq_exp RBRACE
-     {
-       let ids = $3 in
-       let body = $6 in
-       let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
-       String (p, "no functions yet")
-(*	 func_object p ids (func_expr_lambda p ids body) *)
-     }
  | TYPEOF atom
      { Op1 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), "typeof", $2) }
      
