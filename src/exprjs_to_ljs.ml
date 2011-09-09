@@ -303,7 +303,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
         S.Let (p, fun_id, ejs_to_ljs e,
           appexpr_check (S.Id (p, fun_id))
-          (S.App (p, S.Id (p, fun_id), [S.Id (p, "%global"); args_obj]))
+          (S.App (p, S.Id (p, fun_id), [S.Undefined (p); args_obj]))
           p)
       | E.BracketExpr (_, obj, fld) ->
         let flde = ejs_to_ljs fld in
