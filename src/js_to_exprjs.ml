@@ -25,11 +25,10 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       let rec prop_to_str prop = match prop with
         (J.PropId s | J.PropStr s) -> s
         | J.PropNum n ->
-          let open String in
           let maybedotted = string_of_float n in
-          let i = length maybedotted in
-          if get maybedotted (i - 1) == '.' 
-            then sub maybedotted 0 (i - 1) 
+          let i = String.length maybedotted in
+          if String.get maybedotted (i - 1) == '.' 
+            then String.sub maybedotted 0 (i - 1) 
             else maybedotted
       and m_to_pr m = match m with
         | J.Field (name, e) -> 

@@ -42,9 +42,8 @@ let rec stmt (v : json_type) : stmt =
   let typ = 
     let x = string (get "type" v) in
     (* Verify that x is prefixed by Statement, then drop the prefix. *)
-    let open String in
-    if length x > 9 && (sub x (length x - 9) 9 = "Statement") then
-      sub x 0 (length x - 9) 
+    if String.length x > 9 && (String.sub x (String.length x - 9) 9 = "Statement") then
+      String.sub x 0 (String.length x - 9) 
     else
       x (* could be a VariableDeclaration *) in
   match typ with
@@ -125,11 +124,10 @@ and expr (v : json_type) : expr =
   let typ = 
     let x = string (get "type" v) in
     (* Verify that x is prefixed by Expression, then drop the prefix. *)
-    let open String in
-    if length x < 10 || (sub x (length x - 10) 10 <> "Expression") then
+    if String.length x < 10 || (String.sub x (String.length x - 10) 10 <> "Expression") then
       x (* perhaps a Literal, which isn't suffixed with Expression. *)
     else 
-      sub x 0 (length x - 10) in  
+      String.sub x 0 (String.length x - 10) in  
   match typ with
     | "Literal" -> Lit (p, literal v)
     | "Identifier" -> Id (p, string (get "name" v))
@@ -212,28 +210,26 @@ and srcElts (v : json_type) : srcElt list =
     map srcElt (list v)
 
 let program (v : json_type) : srcElt list = 
-  let open Json_type in
-  match string (get "type" v) with
-    | "Program" -> map srcElt (list (get "body" v))
+  match Json_type.string (Json_type.get "type" v) with
+    | "Program" -> map srcElt (Json_type.list (Json_type.get "body" v))
     | typ -> failwith (sprintf "expected Program, got %s" typ)
 
 let parse_spidermonkey (cin : in_channel) (name : string) : Js_syntax.program = 
-  let open Lexing in
-  let lexbuf = from_channel cin in
+  let lexbuf = Lexing.from_channel cin in
   try 
-    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
+    lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = name };
     program
       (Json_parser.main (Json_lexer.token (Json_lexer.make_param ())) lexbuf)
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"
                        (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
       | Failure "utf8_of_point not implemented" ->
         failwith "Parser doesn't do some UTF8 encoding crap"
-      | Json_parser.Error ->
+      | _ ->
            failwith (sprintf "parse error at %s; unexpected token %s"
                        (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
-                       (lexeme lexbuf))
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p))
+                       (Lexing.lexeme lexbuf))
 

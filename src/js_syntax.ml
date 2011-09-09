@@ -2,7 +2,7 @@
     ES5 spec. Unlike the grammar, which specifies multiple kinds of expressions
     and statements to disambigous concrete inputs, the AST collapes these. *)
 
-type pos = Prelude.pos
+open Prelude
 
 type id = string
 
@@ -88,7 +88,7 @@ and srcElt =
 
 type program = srcElt list
 
-let rec fv (s : stmt) : Prelude.IdSet.t = let open Prelude in
+let rec fv (s : stmt) : Prelude.IdSet.t = 
   let mf vd = match vd with VarDecl (nm, _) -> IdSet.singleton nm
   and c_to_fv c = match c with
     | Case (_, _, ss) -> fv ss
@@ -128,7 +128,7 @@ let rec fv (s : stmt) : Prelude.IdSet.t = let open Prelude in
     IdSetExt.unions [init_b; init_c; init_f]
 
 (* Free vars in a program, without descending into nested functions *)
-let rec fv_sel (sel : srcElt list) : Prelude.IdSet.t = let open Prelude in
+let rec fv_sel (sel : srcElt list) : Prelude.IdSet.t = 
   match sel with
   | [] -> IdSet.empty
   | first :: rest -> let fv_f = match first with

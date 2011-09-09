@@ -60,17 +60,17 @@ let prim_to_str v = str begin match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | String s -> s
-  | Num n -> let open String in let fs = float_str n in let fslen = length fs in
-    if get fs (fslen - 1) = '.' then sub fs 0 (fslen - 1) else
+  | Num n -> let fs = float_str n in let fslen = String.length fs in
+    if String.get fs (fslen - 1) = '.' then String.sub fs 0 (fslen - 1) else
       (* This is because we don't want leading zeroes in the "-e" part.
        * For example, OCaml says 1.2345e-07, but ES5 wants 1.2345e-7 *)
-      if contains fs '-'
-        then let indx = index fs '-' in 
-          let prefix = sub fs 0 (indx + 1) in
-          let suffix = sub fs (indx + 1) (fslen - (length prefix)) in
-          let slen = length suffix in
-          let fixed = if slen > 1 && (get suffix 0 = '0') 
-            then sub suffix 1 (slen - 1)
+      if String.contains fs '-'
+        then let indx = String.index fs '-' in 
+          let prefix = String.sub fs 0 (indx + 1) in
+          let suffix = String.sub fs (indx + 1) (fslen - (String.length prefix)) in
+          let slen = String.length suffix in
+          let fixed = if slen > 1 && (String.get suffix 0 = '0') 
+            then String.sub suffix 1 (slen - 1)
             else suffix in
           prefix ^ fixed 
         else fs
@@ -403,10 +403,10 @@ let has_own_property obj field = match obj, field with
         bool (IdMap.mem s props)
   | _ -> raise (Throw (str "has-own-property?"))
 
-let base n r = let open String in let open Char in let open List in
+let base n r = 
   let rec get_digits n l = match n with
     | 97 -> 'a' :: l
-    | i -> get_digits (n - 1) ((chr i) :: l) in
+    | i -> get_digits (n - 1) ((Char.chr i) :: l) in
   let digits = 
     ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9'] @ (get_digits 122 []) in
   let rec get_num_digits num so_far =
@@ -415,7 +415,7 @@ let base n r = let open String in let open Char in let open List in
   let rec convert b result len = 
     let lp = r ** len in
     let index = floor (b /. lp) in
-    let digit = make 1 (nth digits (int_of_float index)) in
+    let digit = String.make 1 (List.nth digits (int_of_float index)) in
     if len = 0.0 then result ^ digit
     else convert (b -. (index *. lp)) (result ^ digit)  (len -. 1.0) in
   let rec shift frac n = if n = 0 then frac else shift (frac *. 10.0) (n - 1) in
@@ -436,8 +436,7 @@ let get_base n r = match n, r with
 
 let char_at a b  = match a, b with
   | String s, Num n ->
-    let open String in
-    String (make 1 (get s (int_of_float n)))
+    String (String.make 1 (String.get s (int_of_float n)))
   | _ -> raise (Throw (str "char_at didn't get a string and a number"))
 
 let locale_compare a b = match a, b with
@@ -450,20 +449,20 @@ let pow a b = match a, b with
   | _ -> raise (Throw (str "pow didn't get 2 numbers"))
 
 let to_fixed a b = match a, b with
-  | Num x, Num f -> let open String in
+  | Num x, Num f -> 
     let s = string_of_float x
     and fint = int_of_float f in
     if fint = 0 
       then String (string_of_int (int_of_float x)) 
-      else let dot_index = index s '.'
-      and len = length s in
+      else let dot_index = String.index s '.'
+      and len = String.length s in
       let prefix_chars = dot_index in
       let decimal_chars = len - (prefix_chars + 1) in
       if decimal_chars = fint then String s
       else if decimal_chars > fint
-        then let fixed_s = sub s 0 (fint - prefix_chars) in
+        then let fixed_s = String.sub s 0 (fint - prefix_chars) in
         String (fixed_s)
-      else let suffix = make (fint - decimal_chars) '0' in
+      else let suffix = String.make (fint - decimal_chars) '0' in
         String (s ^ suffix)
   | _ -> raise (Throw (str "to-fixed didn't get 2 numbers"))
 

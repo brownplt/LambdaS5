@@ -122,8 +122,6 @@ let rec func_expr_lambda p ids body =
 %left EQEQEQUALS BANGEQEQUALS
 %left LBRACK
 
-/* http://stackoverflow.com/questions/1737460/
-   how-to-find-shift-reduce-conflict-in-this-yacc-file */
 
 %type <Es5_syntax.exp> prog
 %type <Es5_syntax.exp -> Es5_syntax.exp> env
@@ -135,12 +133,12 @@ let rec func_expr_lambda p ids body =
 %%
 
 const :
- | NUM { Num (($startpos, $endpos), $1) }
- | INT {  Num (($startpos, $endpos), (float_of_int $1)) }
- | STRING {  String (($startpos, $endpos), $1) }
- | UNDEFINED { Undefined (($startpos, $endpos)) }
- | NULL { Null ($startpos, $endpos) }
- | BOOL { if $1 then True ($startpos, $endpos) else False ($startpos, $endpos) }
+ | NUM { Num ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
+ | INT {  Num ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), (float_of_int $1)) }
+ | STRING {  String ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
+ | UNDEFINED { Undefined ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) }
+ | NULL { Null (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1) }
+ | BOOL { if $1 then True (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1) else False (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1) }
 
 oattrsv :
  | { d_attrs }
@@ -192,13 +190,13 @@ ids :
 
 func :
  | FUNC LPAREN ids RPAREN LBRACE seq_exp RBRACE
-   { Lambda (($startpos, $endpos), $3, $6) }
+   { Lambda ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $6) }
 
 atom :
  | const { $1 }
- | ID { Id (($startpos, $endpos), $1) }
+ | ID { Id ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
  | LBRACE LBRACK oattrsv RBRACK props RBRACE 
-   { Object (($startpos, $endpos), $3, $5 )}
+   { Object ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5 )}
  | LBRACE seq_exp RBRACE
    { $2 }
  | LPAREN seq_exp RPAREN { $2 }
@@ -207,33 +205,33 @@ atom :
      {
        let ids = $3 in
        let body = $6 in
-       let p = ($startpos, $endpos) in
+       let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
        String (p, "no functions yet")
 (*	 func_object p ids (func_expr_lambda p ids body) *)
      }
  | TYPEOF atom
-     { Op1 (($startpos, $endpos), "typeof", $2) }
+     { Op1 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), "typeof", $2) }
      
 exp :
  | atom { $1 }
  | exp LPAREN exps RPAREN 
-   { App (($startpos, $endpos), $1, $3) }
+   { App ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $1, $3) }
  | EVAL LPAREN exp RPAREN
-     { Eval (($startpos, $endpos), $3) }
+     { Eval ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
  | PRIM LPAREN STRING COMMA seq_exp COMMA seq_exp RPAREN
-   { Op2 (($startpos, $endpos), $3, $5, $7) }
+   { Op2 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $5, $7) }
  | PRIM LPAREN STRING COMMA seq_exp RPAREN
-   { Op1 (($startpos, $endpos), $3, $5) }
+   { Op1 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5) }
  | ID COLONEQ exp
-   { SetBang (($startpos, $endpos), $1, $3) }
+   { SetBang ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
  | exp EQEQEQUALS exp
-     { Op2 (($startpos, $endpos), "stx=", $1, $3) }
+     { Op2 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), "stx=", $1, $3) }
  | exp BANGEQEQUALS exp
-     { let p = ($startpos, $endpos) in
+     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) in
          If (p, Op2 (p, "stx=", $1, $3),
              False p, True p) }
  | exp LBRACK seq_exp EQUALS seq_exp RBRACK
-   { let p = ($startpos, $endpos) in
+   { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6) in
        Let (p, "$newVal", $5,
 	     SetField (p, $1, $3, 
 		       Id (p, "$newVal"), 
@@ -243,25 +241,25 @@ exp :
               true, true))])))
     }
  | exp LBRACK seq_exp EQUALS seq_exp COMMA seq_exp RBRACK
-   { SetField (($startpos, $endpos), $1, $3, $5, $7) }
+   { SetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $1, $3, $5, $7) }
  | exp LBRACK seq_exp RBRACK
-   { let p = ($startpos, $endpos) in
+   { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4) in
      GetField (p, $1,  $3,
 		       Object (p, d_attrs,
             [])) }
  | exp LBRACK seq_exp COMMA seq_exp RBRACK
-   { GetField (($startpos, $endpos), $1,  $3, $5) }
+   { GetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $1,  $3, $5) }
  | exp LBRACK DELETE seq_exp RBRACK
-     { DeleteField (($startpos, $endpos), $1, $4) }
+     { DeleteField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $1, $4) }
  | exp LBRACK seq_exp LT attr_name GT RBRACK
-     { GetAttr (($startpos, $endpos), $5, $1, $3) }
+     { GetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $5, $1, $3) }
  | exp LBRACK seq_exp LT attr_name GT EQUALS seq_exp RBRACK
-     { SetAttr (($startpos, $endpos), $5, $1, $3, $8) }
+     { SetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 9), $5, $1, $3, $8) }
  | exp AMPAMP exp
-     { If (($startpos, $endpos), $1, 
-            $3, False ($startpos, $endpos)) }
+     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, 
+            $3, False (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3)) }
  | exp PIPEPIPE exp
-     { let p = ($startpos, $endpos) in
+     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) in
          Let (p, "%or", $1,
                If (p, Id (p, "%or"), Id (p, "%or"), $3)) }
 
@@ -269,38 +267,38 @@ exp :
 cexp :
  | exp { $1 }
  | IF LPAREN seq_exp RPAREN seq_exp ELSE seq_exp
-     { If (($startpos, $endpos), $3, $5, $7) }
+     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
  | IF LPAREN seq_exp RPAREN seq_exp
-     { If (($startpos, $endpos), $3, $5, 
-	    Undefined ($startpos, $endpos)) }
+     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5, 
+	    Undefined (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5)) }
  | LABEL ID COLON seq_exp
-     { Label (($startpos, $endpos), $2, $4) } 
+     { Label ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) } 
  | BREAK ID cexp
-   { Break (($startpos, $endpos), $2, $3) }
+   { Break ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $2, $3) }
  | THROW cexp
-   { Throw (($startpos, $endpos), $2) }
+   { Throw ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), $2) }
  | TRY LBRACE seq_exp RBRACE CATCH LBRACE seq_exp RBRACE
-   { TryCatch (($startpos, $endpos), $3, $7) }
+   { TryCatch ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $7) }
  | TRY LBRACE seq_exp RBRACE FINALLY LBRACE seq_exp RBRACE
-   { TryFinally (($startpos, $endpos), $3, $7) }
+   { TryFinally ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $7) }
 
 seq_exp :
  | cexp { $1 }
  | LET LPAREN ID EQUALS seq_exp RPAREN seq_exp
-   { Let (($startpos, $endpos), $3, $5, $7) }
+   { Let ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
  | REC LPAREN ID EQUALS seq_exp RPAREN seq_exp
-   { Rec (($startpos, $endpos), $3, $5, $7) }
+   { Rec ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
  | cexp SEMI seq_exp
-   { Seq (($startpos, $endpos), $1, $3) }
+   { Seq ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
 
 env :
  | EOF
      { fun x -> x }
  | LET LBRACK ID RBRACK EQUALS seq_exp env
      { fun x -> 
-         Let (($startpos, $endpos), $3, $6, $7 x) }
+         Let ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $6, $7 x) }
  | LBRACE seq_exp RBRACE env
-     { fun x -> Seq (($startpos, $endpos), $2, $4 x) }
+     { fun x -> Seq ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4 x) }
 
 prog :
  | seq_exp EOF { $1 }
