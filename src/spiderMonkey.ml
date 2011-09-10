@@ -73,7 +73,7 @@ let rec stmt (v : json_type) : stmt =
 	  maybe stmt (get "alternate" v))
     | "Labeled" -> Labeled (p, identifier (get "label" v), stmt (get "body" v))
     | "Break" -> Break (p, maybe identifier (get "label" v))
-    | "Continue" -> Continue (p, maybe identifier (get "identifier" v))
+    | "Continue" -> Continue (p, maybe identifier (get "label" v))
     | "With" -> With (p, expr (get "object" v), stmt (get "body" v))
     | "Switch" ->
       Switch (p, expr (get "test" v), map case (list (get "cases" v)))
