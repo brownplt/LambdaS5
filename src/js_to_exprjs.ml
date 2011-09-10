@@ -171,11 +171,11 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     and init2 b = match b with
       | None -> E.True (p)
       | Some b -> jse_to_exprjs b in
-    let inner_seq = 
-      E.SeqExpr (p, jss_to_exprjs bdy, init3 e3) in
+    let inner_let = 
+      E.LetExpr (p, "%%after", init3 e3, jss_to_exprjs bdy) in
     E.SeqExpr (p, unroll vdl,
       E.LabelledExpr (p, "%before",
-        E.WhileExpr (p, init2 e2, inner_seq)))
+        E.WhileExpr (p, init2 e2, inner_let)))
   | J.For (p, e1, e2, e3, body) -> 
     let rec init1 a = match a with
       | None -> E.Undefined (p)
@@ -183,14 +183,14 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     and init2 b = match b with
       | None -> E.True (p)
       | Some b -> jse_to_exprjs b in
-    let inner_seq = 
-      E.SeqExpr (p, jss_to_exprjs body, init1 e3) in
+    let inner_let = 
+      E.LetExpr (p, "%%after", init1 e3, jss_to_exprjs body) in
     E.SeqExpr (p, init1 e1,
       E.LabelledExpr (p, "%before",
-        E.WhileExpr (p, init2 e2, inner_seq)))
+        E.WhileExpr (p, init2 e2, inner_let)))
   | J.Labeled (p, id, s) -> E.LabelledExpr (p, id, jss_to_exprjs s)
   | J.Continue (p, id) -> let lbl = match id with
-    | None -> "loopstart" | Some s -> s in
+    | None -> "%continue" | Some s -> s in
     E.BreakExpr (p, lbl, E.Undefined (p))
   | J.Break (p, id) ->
     let lbl = match id with None -> "%before" | Some s -> s in

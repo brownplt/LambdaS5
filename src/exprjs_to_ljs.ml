@@ -336,7 +336,12 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     S.Let (p, nm, result_obj, sb)
   | E.SeqExpr (p, e1, e2) -> S.Seq (p, ejs_to_ljs e1, ejs_to_ljs e2)
   | E.WhileExpr (p, tst, bdy) ->
-    let t = ejs_to_ljs tst and b = ejs_to_ljs bdy in get_while t b
+    let t = ejs_to_ljs tst in
+    let (b, after) = match bdy with
+      | E.LetExpr (p, "%%after", after, real_bdy) ->
+        (ejs_to_ljs real_bdy, ejs_to_ljs after)
+      | _ -> (ejs_to_ljs bdy, S.Undefined (p)) in
+    get_while t b after
   | E.LabelledExpr (p, lbl, exp) -> S.Label (p, lbl, ejs_to_ljs exp)
   | E.BreakExpr (p, id, e) -> S.Break (p, id, ejs_to_ljs e)
   | E.ForInExpr (p, nm, vl, bdy) ->
@@ -520,18 +525,23 @@ and remove_dupes lst =
       helper rest (first :: seen) next in
   helper lst [] []
 
-and get_while tst bdy =
+and get_while tst bdy after =
   let p = dummy_pos in
   let tst = S.Lambda (p, [], tst)
-  and bdy = S.Lambda (p, [], bdy) in
+  and bdy = S.Lambda (p, [], bdy)
+  and aftr = S.Lambda (p, [], after) in
   S.Rec (p, "%while",
-    S.Lambda (p, ["%tst"; "%bdy"],
-      S.Let (p, "%result", S.App (p, tst, []),
+    S.Lambda (p, ["%tst"; "%bdy"; "%after"],
+      S.Let (p, "%result", S.App (p, S.Id (p, "%tst"), []),
         S.If (p, S.Id (p, "%result"),
-          S.Seq (p, S.App (p, S.Id (p, "%bdy"), []), 
-          S.App (p, S.Id (p, "%while"), [S.Id (p, "%tst"); S.Id (p, "%bdy")])),
+          S.Seq (p, 
+            S.Label (p, "%continue", S.App (p, S.Id (p, "%bdy"), [])),
+            S.Seq (p, 
+              S.App (p, S.Id (p, "%after"), []),
+              S.App (p, S.Id (p, "%while"), 
+                [S.Id (p, "%tst"); S.Id (p, "%bdy"); S.Id (p, "%after")]))),
           S.Undefined (p)))),
-    S.App (p, S.Id (p, "%while"), [tst; bdy]))
+    S.App (p, S.Id (p, "%while"), [tst; bdy; aftr]))
 
 and prop_itr = 
   let p = dummy_pos in
@@ -559,9 +569,8 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
     S.Op2 (p, "stx=", 
       S.GetField (p, context, nms, S.Null (p)), 
       S.Undefined (p)))
-  and wbdy = 
-    S.Seq (p, bdy, 
-           make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), []))) in
+  and after =
+    make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])) in
   let doloop_id = mk_id "do_loop" in
   S.Let (p, doloop_id,
     S.Lambda (p, [], 
@@ -572,7 +581,7 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
               S.App (p, 
                 S.Id (p, "%set-property"), 
                 [context; nms; S.App (p, S.Id (p, "%prop_itr"), [])]),
-             get_while tst wbdy))))),
+             get_while tst bdy after))))),
     S.If (p, S.Op2 (p, "stx=", robj, S.Undefined (p)),
       S.Undefined (p),
       S.If (p, S.Op2 (p, "stx=", robj, S.Null (p)),
