@@ -525,10 +525,49 @@ and remove_dupes lst =
       helper rest (first :: seen) next in
   helper lst [] []
 
-and get_while tst bdy after =
+and get_while tst body after =
   let p = dummy_pos in
+  (* This is to insert the label (if it exists) at 
+   * the correct location in the desugared code *)
+  let real_body = match body with
+    | S.Label (_, nm, 
+        S.Seq (_, init, 
+          S.Label (_, 
+            before, 
+            S.Rec (_, 
+              whilenm, 
+              S.Lambda (_, 
+                args, 
+                S.Let (_, 
+                  resultnm, 
+                  testapp, 
+                  S.If (_, 
+                    result, 
+                    S.Seq (_, 
+                      S.Label (_, clbl, bdyapp),
+                      e2),
+                    e3))),
+              whileapp)))) ->
+      S.Seq (p, init, 
+        S.Label (p, 
+          before, 
+          S.Rec (p, 
+            whilenm, 
+            S.Lambda (p, 
+              args, 
+              S.Let (p, 
+                resultnm, 
+                testapp, 
+                S.If (p, 
+                  result, 
+                  S.Seq (p, 
+                    S.Label (p, nm, bdyapp),
+                    e2),
+                  e3))),
+            whileapp)))
+    | _ -> body in
   let tst = S.Lambda (p, [], tst)
-  and bdy = S.Lambda (p, [], bdy)
+  and bdy = S.Lambda (p, [], real_body)
   and aftr = S.Lambda (p, [], after) in
   S.Rec (p, "%while",
     S.Lambda (p, ["%tst"; "%bdy"; "%after"],
