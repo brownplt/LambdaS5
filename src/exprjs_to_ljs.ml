@@ -571,7 +571,9 @@ and get_while tst body after =
   and aftr = S.Lambda (p, [], after) in
   S.Rec (p, "%while",
     S.Lambda (p, ["%tst"; "%bdy"; "%after"],
-      S.Let (p, "%result", S.App (p, S.Id (p, "%tst"), []),
+      S.Let (p, "%result", 
+        S.App (p, S.Id (p, "%ToBoolean"),
+          [S.App (p, S.Id (p, "%tst"), [])]),
         S.If (p, S.Id (p, "%result"),
           S.Seq (p, 
             S.Label (p, "%continue", S.App (p, S.Id (p, "%bdy"), [])),
