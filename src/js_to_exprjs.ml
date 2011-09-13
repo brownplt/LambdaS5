@@ -156,10 +156,12 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       E.WhileExpr (p, jse_to_exprjs t, desugared))
   | J.ForInVar (p, vd, exp, bdy) ->
     let nm = match vd with J.VarDecl (nm, _) -> nm in
-    E.ForInExpr (p, nm, jse_to_exprjs exp, jss_to_exprjs bdy)
+    E.LabelledExpr (p, "%before",
+      E.ForInExpr (p, nm, jse_to_exprjs exp, jss_to_exprjs bdy))
   | J.ForIn (p, e1, e2, bdy) ->
     let nm = match e1 with J.Id (_, i) -> i | _ -> failwith "what" in
-    E.ForInExpr (p, nm, jse_to_exprjs e2, jss_to_exprjs bdy)
+    E.LabelledExpr (p, "%before",
+      E.ForInExpr (p, nm, jse_to_exprjs e2, jss_to_exprjs bdy))
   | J.ForVar (p, vdl, e2, e3, bdy) ->
     let rec unroll = function
       | [] -> E.Undefined (p)
@@ -212,7 +214,7 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
                           block p finally)
     end 
   | J.Throw (p, e) -> E.ThrowExpr (p, jse_to_exprjs e)
-  | J.Switch _ -> failwith "J.Switch NYI"
+  | J.Switch (p, disc, cl) -> failwith "J.Switch NYI"
   | J.With _ -> raise ParseError
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 

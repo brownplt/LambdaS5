@@ -76,7 +76,7 @@ let rec stmt (v : json_type) : stmt =
     | "Continue" -> Continue (p, maybe identifier (get "label" v))
     | "With" -> With (p, expr (get "object" v), stmt (get "body" v))
     | "Switch" ->
-      Switch (p, expr (get "test" v), map case (list (get "cases" v)))
+      Switch (p, expr (get "discriminant" v), map case (list (get "cases" v)))
     | "Return" -> Return (p, maybe expr (get "argument" v))
     | "Throw" -> Throw (p, expr (get "argument" v))
     | "Try" -> Try (p, block (get "block" v),
@@ -193,7 +193,13 @@ and expr (v : json_type) : expr =
 	Dot (p, expr (get "object" v), identifier (get "property" v))
     | typ -> failwith (sprintf "%s expressions are not in ES5" typ)
 
-and case (v : json_type) : case = failwith "case NYI"
+and case (v : json_type) : case =
+  let p = mk_pos (get "loc" v) in
+  let e = get "test" v in
+  let stmts = Block (p, map stmt (list (get "consequent" v))) in
+  match e with
+    | Json_type.Null -> Default (p, stmts)
+    | _ -> Case (p, expr e, stmts)
 
 and catch (v : json_type) : catch = 
     if is_array v then failwith "Multiple catches are spidermonky-only"
