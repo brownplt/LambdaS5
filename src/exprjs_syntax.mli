@@ -42,6 +42,7 @@ type expr =
   | TryCatchExpr of pos * expr * id * expr
   | TryFinallyExpr of pos * expr * expr
   | ThrowExpr of pos * expr
+  | SwitchExpr of pos * expr * case list
   | FuncStmtExpr of pos * id * id list * expr
       (** We leave function statements in place, so that they can be lifted
           for JavaScript to turned into letrecs for Typed JavaScript. *)
@@ -51,7 +52,11 @@ and prop =
   | Getter of id * expr
   | Setter of id * expr
 
+and case =
+  | Case of pos * expr * expr
+  | Default of pos * expr
   (*
+   *
 val from_javascript : JavaScript_syntax.prog -> expr
 
 val from_javascript_expr : JavaScript_syntax.expr -> expr

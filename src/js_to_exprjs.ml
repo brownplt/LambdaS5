@@ -214,7 +214,11 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
                           block p finally)
     end 
   | J.Throw (p, e) -> E.ThrowExpr (p, jse_to_exprjs e)
-  | J.Switch (p, disc, cl) -> failwith "J.Switch NYI"
+  | J.Switch (p, disc, cl) ->
+    let case = function 
+      | J.Case (p, e, s) -> E.Case (p, jse_to_exprjs e, jss_to_exprjs s)
+      | J.Default (p, s) -> E.Default (p, jss_to_exprjs s) in
+    E.SwitchExpr (p, jse_to_exprjs disc, map case cl)
   | J.With _ -> raise ParseError
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 

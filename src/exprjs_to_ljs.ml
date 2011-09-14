@@ -368,6 +368,132 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
   | E.TryFinallyExpr (p, body, finally) -> 
     S.TryFinally (p, ejs_to_ljs body, ejs_to_ljs finally)
   | E.ThrowExpr (p, e) -> S.Throw (p, ejs_to_ljs e)
+  | E.SwitchExpr (p, d, cl) ->
+
+    let or' a b = 
+      S.If (p, a, S.True (p), b) in
+    let and' a b =
+      S.If (p, a, b, S.False (p)) in
+    let disc_id = mk_id "disc" in
+    let disc = S.Id (p, disc_id) in
+
+    if List.exists (fun c -> match c with E.Default _ -> true | _ -> false) cl
+    then
+
+      let (a_clauses, default , b_clauses ) =
+        let (a_clauses, rest) = take_while (function
+          | E.Default _ -> false
+          | _ -> true) cl in
+        let (default, b_clauses) = match rest with
+          | [] -> None, []
+          | hd::tl -> Some hd, tl in
+        (a_clauses, default, b_clauses) in
+        
+      let rec loop i case = function
+        | [] -> S.Null (p)
+        | [a] -> case i a
+        | a :: rest -> S.Seq (p, case i a, loop (i+1) case rest) in
+
+      let case_to_ljs = function 
+        | E.Case (p, test, body) ->
+          (ejs_to_ljs test, ejs_to_ljs body)
+        | _ -> failwith "no default" in
+
+      let default_to_ljs = function 
+        | Some (E.Default (p, body)) -> ejs_to_ljs body in
+
+      let step5 rest = 
+        let step5iter caseCount (tst, bdy) =
+          S.Seq (p,
+            S.If (p, 
+              (and' (S.Op2 (p, "stx=", S.Id (p, "%found"), S.False (p)))
+                    (S.Op2 (p, "stx=", disc, tst))),
+              S.SetBang (p, "%found", S.True (p)),
+              S.Null (p)),
+            S.If (p, 
+              S.Id (p, "%found"),
+              bdy,
+              S.Null (p))) in
+        S.Let (p, "%found", S.False (p), 
+          S.Seq (p, 
+            loop 0 step5iter (map case_to_ljs a_clauses),
+            rest)) in
+
+      let step6 rest = 
+        S.Let (p, "%foundInB", S.False (p), rest) in
+
+      let step7 rest = 
+        let step7iter caseCount (tst, bdy) =
+          (* This is what we think browsers are doing
+          S.If (p, 
+            (and' (S.Op2 (p, "stx=", S.Id (p, "%foundInB"), S.False (p)))
+                  (S.Op2 (p, "stx=", disc, tst))),
+            S.Seq (p,
+              S.SetBang (p, "%foundInB", S.True (p)),
+              S.Seq (p, 
+                S.SetBang (p, "%casecount", S.Num(p, float_of_int caseCount)),
+                bdy)),
+            S.Null (p)) in
+          *)
+          (* This is what the spec says *)
+          S.If (p,
+            S.Op2 (p, "stx=", S.Id (p, "%foundInB"), S.False (p)),
+            S.Seq (p,
+              S.SetBang (p, "%casecount", S.Num (p, float_of_int caseCount)),
+              S.If (p, 
+                S.Op2 (p, "stx=", disc, tst),
+                S.Seq (p,
+                  S.SetBang (p, "%foundInB", S.True (p)),
+                  bdy),
+                S.Null (p))),
+            S.Null (p)) in
+        S.Let (p, "%casecount", S.Num (p, -1.),
+          S.Seq (p, 
+            S.If (p, 
+              S.Id (p, "%found"), 
+              S.Null (p),
+              loop 0 step7iter (map case_to_ljs b_clauses)),
+            rest)) in
+
+      let step8 rest = 
+        S.Seq (p, 
+          S.If (p, 
+            S.Id (p, "%foundInB"), 
+            S.Null (p),
+            default_to_ljs default),
+          rest) in
+
+      let step9 =
+        let step9iter caseCount (tst, bdy) =
+          S.If (p,
+            S.Op2 (p, "<", S.Id (p, "%casecount"), S.Num (p,
+            float_of_int(caseCount))),
+            bdy,
+            S.Null (p)) in
+        loop 0 step9iter (map case_to_ljs b_clauses) in
+      S.Label (p, "%before",
+        S.Let(p, disc_id, ejs_to_ljs d, step5 (step6 (step7 (step8 step9)))))
+
+    else
+      let case = function
+        | E.Case (p, test, body) ->
+          let stest = ejs_to_ljs test
+          and sbody = ejs_to_ljs body in
+          S.If (p, 
+            (or' (S.Op2 (p, "stx=", disc, stest)) (S.Id (p,"%fallthrough"))),
+            S.Seq (p, 
+              S.SetBang (p, "%fallthrough", S.True (p)),
+              sbody),
+            S.Null (p))
+        | _ -> failwith "desugaring error: found default case" in
+      let rec cl_to_seq = function
+        | [] -> S.Undefined (p)
+        | [c] -> case c
+        | c :: rest -> S.Seq (p, case c, cl_to_seq rest) in
+      S.Label (p, "%before",
+        S.Let (p, "%fallthrough", S.False (p),
+          S.Let (p, disc_id, ejs_to_ljs d,
+            cl_to_seq cl)))
   | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
 and a_attrs = {

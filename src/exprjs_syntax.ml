@@ -29,9 +29,15 @@ type expr =
   | TryCatchExpr of pos * expr * id * expr
   | TryFinallyExpr of pos * expr * expr
   | ThrowExpr of pos * expr
+  | SwitchExpr of pos * expr * case list
   | FuncStmtExpr of pos * id * id list * expr
   | HintExpr of pos * string * expr
+
 and prop =
   | Data of expr
   | Getter of id * expr
   | Setter of id * expr
+
+and case =
+  | Case of pos * expr * expr
+  | Default of pos * expr
