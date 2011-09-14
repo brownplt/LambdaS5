@@ -7,7 +7,7 @@ function foo() {
   }
   return arr;
 }
-a = foo();
+var a = foo();
 if(String(a) === '0,1,3,6,10') {
   print('passed');
 }
