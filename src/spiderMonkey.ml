@@ -112,6 +112,21 @@ let rec stmt (v : json_type) : stmt =
         | _ -> ForIn (p, expr left, right, body)
       end
     | "Debugger" -> Debugger p
+    | "FunctionDeclaration" ->
+      (* 12: Statements
+       * NOTE Several widely used implementations of ECMAScript are known to 
+       * support the use of FunctionDeclaration as a Statement. However there 
+       * are significant and irreconcilable variations among the implementations 
+       * in the semantics applied to such FunctionDeclarations. Because of these 
+       * irreconcilable differences, the use of a FunctionDeclaration as a 
+       * Statement results in code that is not reliably portable among 
+       * implementations. It is recommended that ECMAScript implementations 
+       * either disallow this usage of FunctionDeclaration or issue a warning 
+       * when such a usage is encountered. Future editions of ECMAScript may 
+       * define alternative portable means for declaring functions in a Statement 
+       * context.
+       *)
+      failwith "Function Delcarations not allowed as statements"
     | _ -> failwith (sprintf "unexpected %s statement" typ)
 
 and varDecl (v : json_type) : varDecl = 
