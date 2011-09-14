@@ -318,10 +318,11 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
             appexpr_check (S.Id (p, fun_id))
             (S.App (p, S.Id (p, fun_id), [to_object p (S.Id (p, obj_id)); args_obj]))
             p))
+      | E.FuncExpr _
       | _ ->
         S.Let (p, fun_id, ejs_to_ljs e,
           appexpr_check (S.Id (p, fun_id))
-          (S.App (p, S.Id (p, fun_id), [S.Id (p, "%global"); args_obj]))
+          (S.App (p, S.Id (p, fun_id), [S.Undefined (p); args_obj]))
           p)
     end
   | E.FuncExpr (p, args, body) -> get_fobj p args body (S.Id (p, "%context"))
