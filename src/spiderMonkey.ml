@@ -104,7 +104,7 @@ let rec stmt (v : json_type) : stmt =
       let right = expr (get "right" v) in
       let body = stmt (get "body" v) in
       (* TODO: What is each? *)
-      let each = bool (get "each" v) in
+      (* let each = bool (get "each" v) in *)
       begin match string (get "type" left) with
         | "VariableDeclaration" -> 
           ForInVar (p, List.nth (map varDecl (list (get "declarations" left))) 0, 

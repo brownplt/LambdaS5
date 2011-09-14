@@ -127,14 +127,16 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       | [] -> result
       | (nm, S.Accessor (a, wr, cfg)) :: rest ->
         let result_a = match result with
-          | S.Accessor (aa, _, _) -> aa in
+          | S.Accessor (aa, _, _) -> aa
+          | _ -> failwith "Fatal: non-accessor in exprjs_to_ljs.reduce" in
         let next = match a with
           | { S.getter = S.Undefined _; S.setter = s; } ->
             S.Accessor ({ S.getter = result_a.S.getter; S.setter = s; }, wr, cfg)
           | { S.getter = g; S.setter = S.Undefined _; } ->
             S.Accessor ({ S.getter = g; S.setter = result_a.S.setter; }, wr, cfg)
           | _ -> S.Accessor (a, wr, cfg) in
-        reduce rest next in
+        reduce rest next
+      | _ -> failwith "Fatal: exprjs_to_ljs.reduce given non-accessors" in
     let dup_pairs = accessors pl [] in
     let name_lst = remove_dupes (map (fun (n, _) -> n) dup_pairs) in
     let name_assoc = map (fun n -> (n, tuples dup_pairs n)) name_lst in
@@ -239,7 +241,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       | E.BracketExpr (pp, obj, fld) -> 
         let fld_str = S.Op1 (p, "prim->str", ejs_to_ljs fld)
         and sobj = ejs_to_ljs obj in
-        let null = S.Null (pp) in
+        (* TODO(joe): unused var --- what's it doing here? *)
+        (* let null = S.Null (pp) in *)
         begin match sobj with
           | S.Id (_, "%context") ->
             let null = S.Null (p) in
@@ -407,7 +410,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
         | _ -> failwith "no default" in
 
       let default_to_ljs = function 
-        | Some (E.Default (p, body)) -> ejs_to_ljs body in
+        | Some (E.Default (p, body)) -> ejs_to_ljs body
+        | _ -> failwith "Fatal: default_to_ljs received non-default expr" in
 
       let step5 rest = 
         let step5iter caseCount (tst, bdy) =
@@ -570,7 +574,8 @@ and create_context p args body parent =
           S.Break (p, "%ret", S.Id (p, uid))))
     and setter uid =
       let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), noargs_obj) in
-      let setterao = onearg_obj newval in
+      (* TODO(joe): unused variable: what's it doing here? *)
+      (* let setterao = onearg_obj newval in *)
       S.Lambda (p, ["this"; "args"],
       S.Label (p, "%ret",
       S.Break (p, "%ret",
@@ -580,7 +585,8 @@ and create_context p args body parent =
     | nm :: rest, uid :: uid_rest ->
       let arc = { S.getter = getter uid; S.setter = setter uid; } in
       let a = S.Accessor (arc, false, false) in
-      get_prop_pairs rest uid_rest ((nm, a) :: prs) in
+      get_prop_pairs rest uid_rest ((nm, a) :: prs)
+    | _ -> failwith "Fatal: unmatched id/arg lengths in create_context" in
   let c_attrs = { 
     S.primval = None;
     S.code = None; 

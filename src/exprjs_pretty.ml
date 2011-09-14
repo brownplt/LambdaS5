@@ -50,6 +50,7 @@ let rec exp e = match e with
   | FuncStmtExpr (_, nm, args, bdy) -> let al = map text args in
     parens (vert [text "fstmt"; text nm; horz al; exp bdy;])
   | HintExpr (_, nm, expr) -> parens (horz [text "hint"; text nm; exp expr;])
+  | _ -> failwith "Fatal: exprjs_pretty can't print RegExps and Switches yet"
 
 and prop p = match p with
 | (_, nm, Data (expr)) -> brackets (horz [text nm; text "="; exp expr;])

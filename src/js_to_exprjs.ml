@@ -123,7 +123,6 @@ and vdj_to_vde v p = match v with
     | Some x -> jse_to_exprjs x in
     let context = E.IdExpr (p, "%context") and fld_str = E.String (p, id) in
     E.AssignExpr (p, context, fld_str, init_val)
-  | _ -> failwith ("vdj_to_vde didn't get a J.VarDecl")
 
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with

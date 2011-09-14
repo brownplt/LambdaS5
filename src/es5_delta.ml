@@ -249,6 +249,7 @@ let nnot e = match e with
   | String s -> if s = "" then True else False
   | ObjCell _ -> False
   | Closure _ -> False
+  | _ -> failwith ("Fatal: ! operator on " ^ (pretty_value e))
 
 let void v = Undefined
 
@@ -421,7 +422,8 @@ let base n r =
     else convert (b -. (index *. lp)) (result ^ digit)  (len -. 1.0) in
   let rec shift frac n = if n = 0 then frac else shift (frac *. 10.0) (n - 1) in
   let (f, integ) = modf n in
-  let shifted = shift f ((String.length (string_of_float f)) - 2) in
+  (* TODO(joe): shifted is unused *)
+  (* let shifted = shift f ((String.length (string_of_float f)) - 2) in *)
   if (f = 0.0) then
     let d = get_num_digits n 0.0 in
     convert n "" d
@@ -475,9 +477,7 @@ let rec is_accessor a b = match a, b with
       match prop with
         | Data _ -> False
         | Accessor _ -> True
-    else let pr = match attrs with 
-      | { proto = p } -> p
-      | _ -> raise (Throw (str "isAccessor: no proto?")) in
+    else let pr = match attrs with { proto = p } -> p in
       is_accessor pr b
   | Null, String s -> raise (Throw (str "isAccessor topped out"))
   | _ -> raise (Throw (str "isAccessor"))

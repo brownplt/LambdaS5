@@ -7,6 +7,7 @@ let rec print_lit = function
   | Bool (b) -> print_string (string_of_bool b)
   | Num (n) -> print_string (string_of_float n)
   | Str (s) -> print_string s
+  | Regexp _ -> failwith "Can't print Regexps yet"
 
 and print_propname = function
   | PropId (s) -> print_string s

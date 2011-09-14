@@ -370,7 +370,7 @@ let rec eval jsonPath exp env =
       let args_values = map (fun e -> eval e env) args in
         apply p func_value args_values
   | S.Seq (p, e1, e2) -> 
-      eval e1 env;
+      ignore (eval e1 env);
       eval e2 env
   | S.Let (p, x, e, body) ->
       let e_val = eval e env in
@@ -431,13 +431,13 @@ and eval_op str env jsonPath =
   close_out outchan;
   let cmdstring = 
     (sprintf "%s /tmp/curr_eval.js 1> /tmp/curr_eval.json 2> /tmp/curr_evalerr.json" jsonPath) in
-  system cmdstring;
+  ignore (system cmdstring);
   let inchan = open_in "/tmp/curr_evalerr.json" in
   let buf = String.create (in_channel_length inchan) in
   really_input inchan buf 0 (in_channel_length inchan);
   let json_err = regexp (quote "SyntaxError") in
   begin try
-    search_forward json_err buf 0;
+    ignore (search_forward json_err buf 0);
     raise (Throw (String "EvalError"))
     with Not_found -> ()
   end;
