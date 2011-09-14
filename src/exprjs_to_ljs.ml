@@ -524,15 +524,6 @@ and get_fobj p args body context =
     { S.primval = None; S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
     S.extensible = true; } in
   let param_len = List.length args in
-  let indices = Prelude.iota param_len in
-  let combined = List.combine indices args in
-  let rcds =
-    List.map (fun (n, prm) -> (n, {S.value = S.String (p, prm); S.writable =
-      true;})) combined in
-  let props =
-    List.map (fun (n, rcd) -> (string_of_int n, S.Data (rcd, true, true)))
-    rcds in
-  let param_obj = S.Object (p, S.d_attrs, props) in
   let proto_id = mk_id "prototype" in
   let proto_obj = 
     S.Object (p, {S.d_attrs with S.proto = Some (S.Id (p, "%ObjectProto"))}, 
@@ -546,10 +537,9 @@ and get_fobj p args body context =
   let func_id = mk_id "thisfunc" in
   S.Let (p, proto_id, proto_obj,
          S.Let (p, "%parent", context,
-                S.Let (p, "%params", param_obj,
-                       S.Let (p, func_id, S.Object (p, fobj_attrs, [("prototype", proto_prop); ("length", length_prop)]),
-                              S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
-                                     S.Id (p, func_id))))))
+               S.Let (p, func_id, S.Object (p, fobj_attrs, [("prototype", proto_prop); ("length", length_prop)]),
+                      S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
+                             S.Id (p, func_id)))))
            
 (* The first stage of desugaring creates exprjs let expressions corresponding
  * to JavaScript declared variables.  create_context is used to translate those
@@ -750,5 +740,3 @@ let exprjs_to_ljs (e : E.expr) : S.exp =
   let final = 
     S.Let (p, "%this", S.Id (p, "%context"), desugared) in
   (S.Let (p, "%context", ncontext, final))
-(*  get_prop_lets p uids (S.Let (p, "%context", ncontext, final)) *)
-
