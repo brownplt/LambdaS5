@@ -450,16 +450,17 @@ let rec eval_expr expr jsonPath = try
 with
   | Throw v ->
       let err_msg = 
-	match v with
-	  | ObjCell c ->
-	      let (attrs, props) = !c in
-		begin try
-		  match IdMap.find "message" props with
+        match v with
+          | ObjCell c ->
+              let (attrs, props) = !c in
+                begin try
+                  match IdMap.find "message" props with
                     | Data ({ value = msg_val; }, _, _) ->
-		      (pretty_value msg_val)
+                        (pretty_value msg_val)
                     | _ -> (pretty_value v)
-		  with Not_found -> (pretty_value v)
-		end
-	  | v -> (pretty_value v) in
-      failwith ("Uncaught exception: " ^ err_msg)
+                with Not_found -> (pretty_value v)
+                end
+          | v -> (pretty_value v) in
+        failwith ("Uncaught exception: " ^ err_msg)
   | Break (l, v) -> failwith ("Broke to top of execution, missed label: " ^ l)
+

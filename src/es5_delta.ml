@@ -146,7 +146,7 @@ let get_proto obj = match obj with
   | ObjCell o -> begin match !o with 
       | ({ proto = pvalue; }, _) -> pvalue
   end
-  | _ -> raise (Throw (str "get-proto"))
+  | v -> raise (Throw (str ("get-proto got: " ^ pretty_value v)))
 
 let get_primval obj = match obj with
   | ObjCell o -> begin match !o with

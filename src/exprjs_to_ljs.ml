@@ -9,6 +9,18 @@ let mk_id str =
   idx := !idx + 1;
   "%" ^ str ^ (string_of_int !idx)
 
+let undef_test p v =
+  S.Op2 (p, "stx=", v, S.Undefined p)
+
+let null_test p v =
+  S.Op2 (p, "stx=", v, S.Null p)
+
+let type_test p v typ =
+  S.Op2 (p, "stx=", S.Op1 (p, "typeof", v), S.String (p, typ))
+
+let throw_typ_error p =
+  S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)])
+
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
   match obj with
@@ -166,30 +178,24 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let getterargs = S.Object (p, S.d_attrs, []) in
     let constrargs = make_args_obj p (map ejs_to_ljs eargs) in
     S.Let (p, constr_id, ejs_to_ljs econstr,
-      S.If (p, 
-        S.Op1 (p, "!", 
-          S.Op2 (p, "stx=", 
-            S.Op1 (p, "typeof", S.Id (p, constr_id)),
-            S.String (p, "function"))),
-        S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]),
-           S.Let (p, pr_id, S.GetField (p, S.Id (p, constr_id), 
-                                        S.String (p, "prototype"), getterargs),
-                  S.If (p, S.Op2 (p, "stx=", S.Id (p, pr_id), S.Undefined (p)), 
-                      S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]),
-                  S.Let (p, newobj, 
-                         S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
-                         S.If (p, S.Op2 (p, "stx=", S.Null (p), 
-                          S.Op1 (p, "get-code", S.Id (p, constr_id))),
-                          S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]),
-                         S.Let (p, constr_result,
-                                S.App (p, S.Id (p, constr_id), [S.Id (p, newobj); constrargs]),
-                                S.If (p, S.Op2 (p, "stx=", S.String (p, "object"), 
-                                                S.Op1 (p, "typeof", S.Id (p, constr_result))),
-                                      S.Id (p, constr_result),
-                                      S.If (p, S.Op2 (p, "stx=", S.String (p,
-                                      "function"), S.Op1 (p, "typeof", S.Id (p,
-                                      constr_result))), S.Id (p, constr_result),
-                                      S.Id (p, newobj))))))))))
+      S.If (p, S.Op1 (p, "!", type_test p (S.Id (p, constr_id)) "function"),
+        throw_typ_error p, 
+        S.Let (p, pr_id, S.GetField (p, S.Id (p, constr_id), 
+                           S.String (p, "prototype"), getterargs),
+          S.If (p, undef_test p (S.Id (p, pr_id)),
+            throw_typ_error p,
+            S.Seq (p,
+              S.If (p, S.Op1 (p, "!", type_test p (S.Id (p, pr_id)) "object"),
+                S.SetBang (p, pr_id, S.Id (p, "%ObjectProto")), S.Undefined p),
+            S.Let (p, newobj, S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
+              S.If (p, null_test p (S.Op1 (p, "get-code", S.Id (p, constr_id))),
+                    throw_typ_error p,
+                    S.Let (p, constr_result, S.App (p, S.Id (p, constr_id), [S.Id (p, newobj); constrargs]),
+                      S.If (p, type_test p (S.Id (p, constr_result)) "object",
+                        S.Id (p, constr_result),
+                        S.If (p, type_test p (S.Id (p, constr_result)) "function",
+                          S.Id (p, constr_result),
+                          S.Id (p, newobj)))))))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" -> let target = ejs_to_ljs exp in
       begin match target with
@@ -243,7 +249,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
               S.If (p,
                 S.GetAttr (pp, S.Config, sobj, fld_str),
                 S.DeleteField (pp, sobj, fld_str),
-                S.App (p, S.Id (p, "%ThrowTypeError"), [null; null])),
+                throw_typ_error p),
               S.True (p))
         end
       | _ -> S.True (p) in result
@@ -510,10 +516,10 @@ and onearg_obj a =
   let p = S.Data (r, true, true) in
   S.Object (dummy_pos, a_attrs, [("0", p)])
 
-and get_fobj p args body context = 
+and get_fobj p args body context =
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
-  let fobj_attrs = 
+  let fobj_attrs =
     { S.primval = None; S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
     S.extensible = true; } in
   let param_len = List.length args in
@@ -545,18 +551,13 @@ and get_fobj p args body context =
                                      S.Id (p, func_id))))))
            
 (* The first stage of desugaring creates exprjs let expressions corresponding
- * to JavaScript declared variables.  
- * get_prop_lets and create_context are used to translate those variables into 
- * the final representation (let-bound es5 variables with randomly generated
- * names, that are read/written by context object accessor properties with the
- * "real" name)
+ * to JavaScript declared variables.  create_context is used to translate those
+ * variables into the final representation (let-bound es5 variables with
+ * randomly generated names, that are read/written by context object accessor
+ * properties with the "real" name)
  *)
-and get_prop_lets p nms e = match nms with
-  | [] -> e
-  | nm :: rest ->
-    get_prop_lets p rest (S.Let (p, nm, S.Undefined p, e))
-
-and create_context p body parent =
+(* TODO(joe): overlapping vars and argument names goes here *)
+and create_context p args body parent =
   let rec strip_lets e nms = match e with
     | E.LetExpr (p, nm, vl, rst) ->
       let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
@@ -567,6 +568,10 @@ and create_context p body parent =
         let (final_nms, final_e) = strip_lets rst nms in
         (final_nms, E.LetExpr (p, nm, vl, final_e))
     | _ -> (nms, e)
+  and add_props props e =
+    List.fold_right (fun prop e -> S.Let (p, prop, S.Undefined p, e)) props e
+  and add_arg param index e = S.Let (p, param, S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int index), S.Null p), e)
+  and add_args args' e = List.fold_right2 add_arg args' (Prelude.iota (List.length args')) e
   and get_prop_pairs nms uids prs = 
     let getter uid = 
       S.Lambda (p, ["this"; "args"], 
@@ -593,55 +598,20 @@ and create_context p body parent =
     S.extensible = true; } in
   let (nl, real_body) = strip_lets body [] in
   let uids = List.map mk_id nl in
-  let prop_pairs = get_prop_pairs nl uids [] in
-  (uids, real_body, S.Object (p, c_attrs, prop_pairs))
+  let uids' = List.map mk_id args in
+  let prop_pairs = get_prop_pairs (nl@args) (uids@uids') [] in
+  (uids, real_body, (add_props uids (add_args uids' (S.Object (p, c_attrs, prop_pairs)))))
 
 and get_lambda p args body = 
-  let (uids, real_body, ncontext) = create_context p body (Some (S.Id (p, "%parent"))) in
+  let (uids, real_body, ncontext) = create_context p args body (Some (S.Id (p, "%parent"))) in
   let desugared = ejs_to_ljs real_body in
   let final = 
     S.Seq (p,
       S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
       "%args"), onearg_obj (S.Id (p, "%args"))), desugared) in
-  let param_len = List.length args in
-  let indices = Prelude.iota param_len in
-  let combined = List.combine indices args in
-  let seq_chain = get_chain p combined final in
-  let seq_chain_end = S.Seq (p, seq_chain, S.Undefined p) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      get_prop_lets p uids (S.Let (p, "%context", ncontext, seq_chain_end))))
-
-and prm_to_setfield p n prm =
-  let argsobj = S.Object (p, S.d_attrs, []) in
-  let update = 
-    S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj)
-  and field = 
-    S.GetField (p, S.Id (p, "%params"), S.String (p, string_of_int n), argsobj) in
-  S.Seq (p, 
-  S.SetField (p, S.Id (p, "%context"), field, update, onearg_obj update),
-  S.SetAttr (p, S.Config, S.Id (p, "%context"), field, S.False (p)))
-
-and fv_to_setfield p v = 
-  let arec = { S.value = S.Undefined (p); S.writable = true; } in
-  let aprop = S.Data (arec, true, true) in
-  let argsobj = S.Object (p, S.d_attrs, [(v, aprop)]) in
-  S.SetField (p, S.Id (p, "%context"), S.String (p, v), S.Undefined (p),
-  argsobj)
-
-and get_chain p params final = match params with
-  | [] -> final
-  | (n, first) :: rest ->
-    let a = prm_to_setfield p n (List.hd params) 
-    and b = get_chain p (List.tl params) final in
-    S.Seq (p, a, b)
-
-and get_fv_chain p fvs final = match fvs with
-  | [] -> final
-  | first :: rest ->
-    let a = fv_to_setfield p first
-    and b = get_fv_chain p rest final in
-    S.Seq (p, a, b)
+      S.Let (p, "%context", ncontext, final)))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
@@ -732,10 +702,7 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
   let context = S.Id (p, "%context")
   and nms = S.String (p, nm) in
   let tst =
-    S.Op1 (p, "!", 
-    S.Op2 (p, "stx=", 
-      S.GetField (p, context, nms, S.Null (p)), 
-      S.Undefined (p)))
+    S.Op1 (p, "!", undef_test p (S.GetField (p, context, nms, S.Null (p))))
   and after =
     make_set_field p context nms (S.App (p, S.Id (p, "%prop_itr"), [])) in
   let doloop_id = mk_id "do_loop" in
@@ -749,7 +716,7 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
                 S.Id (p, "%set-property"), 
                 [context; nms; S.App (p, S.Id (p, "%prop_itr"), [])]),
              get_while tst bdy after))))),
-    S.If (p, S.Op2 (p, "stx=", robj, S.Undefined (p)),
+    S.If (p, undef_test p robj,
       S.Undefined (p),
       S.If (p, S.Op2 (p, "stx=", robj, S.Null (p)),
         S.Undefined (p),
@@ -759,14 +726,16 @@ and appexpr_check f app p =
   let ftype = mk_id "ftype" in
   let not_function =
     S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function"))) in
-  let error = S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null(p); S.Null(p)]) in
+  let error = throw_typ_error p in 
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
     S.If (p, not_function, error, app))
     
 let exprjs_to_ljs (e : E.expr) : S.exp =
   let p = dummy_pos in
-  let (uids, real_body, ncontext) = create_context p e (Some (S.Id (p, "%global"))) in
+  let (uids, real_body, ncontext) = create_context p [] e (Some (S.Id (p, "%global"))) in
   let desugared = ejs_to_ljs real_body in
   let final = 
     S.Let (p, "%this", S.Id (p, "%context"), desugared) in
-  get_prop_lets p uids (S.Let (p, "%context", ncontext, final))
+  (S.Let (p, "%context", ncontext, final))
+(*  get_prop_lets p uids (S.Let (p, "%context", ncontext, final)) *)
+
