@@ -9,6 +9,7 @@ open Unix
 open SpiderMonkey
 open Exprjs_to_ljs
 open Js_to_exprjs
+open Str
 
 let bool b = match b with
   | true -> True
@@ -429,9 +430,18 @@ and eval_op str env jsonPath =
   output_string outchan str;
   close_out outchan;
   let cmdstring = 
-    (sprintf "%s /tmp/curr_eval.js > /tmp/curr_eval.json" jsonPath) in
+    (sprintf "%s /tmp/curr_eval.js 1> /tmp/curr_eval.json 2> /tmp/curr_evalerr.json" jsonPath) in
   system cmdstring;
-  let ast = 
+  let inchan = open_in "/tmp/curr_evalerr.json" in
+  let buf = String.create (in_channel_length inchan) in
+  really_input inchan buf 0 (in_channel_length inchan);
+  let json_err = regexp (quote "SyntaxError") in
+  begin try
+    search_forward json_err buf 0;
+    raise (Throw (String "EvalError"))
+    with Not_found -> ()
+  end;
+  let ast =
     parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
   let exprjsd = 
     try
@@ -445,7 +455,7 @@ and eval_op str env jsonPath =
   else
     (failwith "no global")
 
-let rec eval_expr expr jsonPath = try 
+let rec eval_expr expr jsonPath = try
   eval jsonPath expr IdMap.empty
 with
   | Throw v ->
