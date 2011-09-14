@@ -27,7 +27,7 @@ ES5Harness.registerTest = function(test) {
         // We skip this because we don't want to do Regex yet.  COME BACK TO IT!
         //        var retVal = /^s/i.test(test.id) ? (res === true || typeof res === 'undefined' ? 'pass' : 'fail') : (res === true ? 'pass' : 'fail');
         var retVal = (res === true || typeof res === 'undefined' ? 'pass' : 'fail');
-        print("We think" + test.id + " did this: " + retVal +", because res was: " + (String(res)) + ", which was of type " + typeof res);
+        print("We think" + test.id + " did this: " + retVal +", because res was: " + (String(res)) + ", which was of type " + typeof res + ".  Error was" + error);
         testRun(test.id, test.path, test.description, test.test.toString(), typeof test.precondition !== 'undefined' ? test.precondition.toString() : '', retVal, error);
     }
 };
