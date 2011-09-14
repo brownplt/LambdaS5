@@ -184,6 +184,9 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
                            S.String (p, "prototype"), getterargs),
           S.If (p, undef_test p (S.Id (p, pr_id)),
             throw_typ_error p,
+            S.Seq (p,
+              S.If (p, S.Op1 (p, "!", type_test p (S.Id (p, pr_id)) "object"),
+                S.SetBang (p, pr_id, S.Id (p, "%ObjectProto")), S.Undefined p),
             S.Let (p, newobj, S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
               S.If (p, null_test p (S.Op1 (p, "get-code", S.Id (p, constr_id))),
                     throw_typ_error p,
@@ -192,7 +195,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
                         S.Id (p, constr_result),
                         S.If (p, type_test p (S.Id (p, constr_result)) "function",
                           S.Id (p, constr_result),
-                          S.Id (p, newobj))))))))))
+                          S.Id (p, newobj)))))))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" -> let target = ejs_to_ljs exp in
       begin match target with
