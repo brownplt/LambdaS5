@@ -516,10 +516,10 @@ and onearg_obj a =
   let p = S.Data (r, true, true) in
   S.Object (dummy_pos, a_attrs, [("0", p)])
 
-and get_fobj p args body context = 
+and get_fobj p args body context =
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
-  let fobj_attrs = 
+  let fobj_attrs =
     { S.primval = None; S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
     S.extensible = true; } in
   let param_len = List.length args in
@@ -551,18 +551,13 @@ and get_fobj p args body context =
                                      S.Id (p, func_id))))))
            
 (* The first stage of desugaring creates exprjs let expressions corresponding
- * to JavaScript declared variables.  
- * get_prop_lets and create_context are used to translate those variables into 
- * the final representation (let-bound es5 variables with randomly generated
- * names, that are read/written by context object accessor properties with the
- * "real" name)
+ * to JavaScript declared variables.  create_context is used to translate those
+ * variables into the final representation (let-bound es5 variables with
+ * randomly generated names, that are read/written by context object accessor
+ * properties with the "real" name)
  *)
-and get_prop_lets p nms e = match nms with
-  | [] -> e
-  | nm :: rest ->
-    get_prop_lets p rest (S.Let (p, nm, S.Undefined p, e))
-
-and create_context p body parent =
+(* TODO(joe): overlapping vars and argument names goes here *)
+and create_context p args body parent =
   let rec strip_lets e nms = match e with
     | E.LetExpr (p, nm, vl, rst) ->
       let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
@@ -573,6 +568,10 @@ and create_context p body parent =
         let (final_nms, final_e) = strip_lets rst nms in
         (final_nms, E.LetExpr (p, nm, vl, final_e))
     | _ -> (nms, e)
+  and add_props props e =
+    List.fold_right (fun prop e -> S.Let (p, prop, S.Undefined p, e)) props e
+  and add_arg param index e = S.Let (p, param, S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int index), S.Null p), e)
+  and add_args args' e = List.fold_right2 add_arg args' (Prelude.iota (List.length args')) e
   and get_prop_pairs nms uids prs = 
     let getter uid = 
       S.Lambda (p, ["this"; "args"], 
@@ -599,55 +598,20 @@ and create_context p body parent =
     S.extensible = true; } in
   let (nl, real_body) = strip_lets body [] in
   let uids = List.map mk_id nl in
-  let prop_pairs = get_prop_pairs nl uids [] in
-  (uids, real_body, S.Object (p, c_attrs, prop_pairs))
+  let uids' = List.map mk_id args in
+  let prop_pairs = get_prop_pairs (nl@args) (uids@uids') [] in
+  (uids, real_body, (add_props uids (add_args uids' (S.Object (p, c_attrs, prop_pairs)))))
 
 and get_lambda p args body = 
-  let (uids, real_body, ncontext) = create_context p body (Some (S.Id (p, "%parent"))) in
+  let (uids, real_body, ncontext) = create_context p args body (Some (S.Id (p, "%parent"))) in
   let desugared = ejs_to_ljs real_body in
   let final = 
     S.Seq (p,
       S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
       "%args"), onearg_obj (S.Id (p, "%args"))), desugared) in
-  let param_len = List.length args in
-  let indices = Prelude.iota param_len in
-  let combined = List.combine indices args in
-  let seq_chain = get_chain p combined final in
-  let seq_chain_end = S.Seq (p, seq_chain, S.Undefined p) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      get_prop_lets p uids (S.Let (p, "%context", ncontext, seq_chain_end))))
-
-and prm_to_setfield p n prm =
-  let argsobj = S.Object (p, S.d_attrs, []) in
-  let update = 
-    S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int n), argsobj)
-  and field = 
-    S.GetField (p, S.Id (p, "%params"), S.String (p, string_of_int n), argsobj) in
-  S.Seq (p, 
-  S.SetField (p, S.Id (p, "%context"), field, update, onearg_obj update),
-  S.SetAttr (p, S.Config, S.Id (p, "%context"), field, S.False (p)))
-
-and fv_to_setfield p v = 
-  let arec = { S.value = S.Undefined (p); S.writable = true; } in
-  let aprop = S.Data (arec, true, true) in
-  let argsobj = S.Object (p, S.d_attrs, [(v, aprop)]) in
-  S.SetField (p, S.Id (p, "%context"), S.String (p, v), S.Undefined (p),
-  argsobj)
-
-and get_chain p params final = match params with
-  | [] -> final
-  | (n, first) :: rest ->
-    let a = prm_to_setfield p n (List.hd params) 
-    and b = get_chain p (List.tl params) final in
-    S.Seq (p, a, b)
-
-and get_fv_chain p fvs final = match fvs with
-  | [] -> final
-  | first :: rest ->
-    let a = fv_to_setfield p first
-    and b = get_fv_chain p rest final in
-    S.Seq (p, a, b)
+      S.Let (p, "%context", ncontext, final)))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
@@ -768,8 +732,10 @@ and appexpr_check f app p =
     
 let exprjs_to_ljs (e : E.expr) : S.exp =
   let p = dummy_pos in
-  let (uids, real_body, ncontext) = create_context p e (Some (S.Id (p, "%global"))) in
+  let (uids, real_body, ncontext) = create_context p [] e (Some (S.Id (p, "%global"))) in
   let desugared = ejs_to_ljs real_body in
   let final = 
     S.Let (p, "%this", S.Id (p, "%context"), desugared) in
-  get_prop_lets p uids (S.Let (p, "%context", ncontext, final))
+  (S.Let (p, "%context", ncontext, final))
+(*  get_prop_lets p uids (S.Let (p, "%context", ncontext, final)) *)
+
