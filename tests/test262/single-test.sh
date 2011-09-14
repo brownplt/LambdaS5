@@ -19,7 +19,17 @@ cat $NOCOMMENTS > out.txt
 
 
 JSONFILE=`mktemp json.XXXXXXX`
-../../bin/js -e "print(JSON.stringify(Reflect.parse(read('$NOCOMMENTS'),{loc:true}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" > $JSONFILE
+JSONERR=`mktemp err.XXXXXXX`
+../../bin/js -e "print(JSON.stringify(Reflect.parse(read('$NOCOMMENTS'),{loc:true}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" > $JSONFILE 2> $JSONERR
+
+# Count these as success --- they didn't pass the parser
+if grep -q "SyntaxError" $JSONERR; then
+  rm -f $JSONFILE
+  rm -f $NOCOMMENTS
+  rm -f $JSFILE
+  rm -f $JSONERR
+  exit 0
+fi
 
 cat $JSONFILE > out2.txt
 
@@ -28,6 +38,7 @@ RESULT=`mktemp result.XXXXXXXX`
 ocamlrun ../../src/s5.d.byte -desugar $JSONFILE -env ../../envs/es5.env \
     -json ./desugar.sh -eval &> $RESULT
 
+rm -f $JSONERR
 rm -f $JSONFILE
 rm -f $NOCOMMENTS
 rm -f $JSFILE

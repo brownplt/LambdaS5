@@ -24,8 +24,6 @@ def testFile(f):
       else:
         return ("<li class='failed'>%s (Failed)</li>" % str(f), 0, 1)
 
-  raise Exception("BLOWNUP")
-
 def testDir(d):
   files = os.listdir(str(d))
   inner = ""
