@@ -607,11 +607,15 @@ and get_lambda p args body =
   let desugared = ejs_to_ljs real_body in
   let final = 
     S.Seq (p,
-      S.SetField (p, S.Id (p, "%context"), S.String (p, "arguments"), S.Id (p,
-      "%args"), onearg_obj (S.Id (p, "%args"))), desugared) in
+      S.SetField (p, 
+        S.Id (p, "%context"), 
+        S.String (p, "arguments"), 
+        S.Id (p, "%args"), 
+        onearg_obj (S.Id (p, "%args"))), 
+      desugared) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, final)))
+      S.Let (p, "%context", ncontext, S.Seq (p, final, S.Undefined (p)))))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
