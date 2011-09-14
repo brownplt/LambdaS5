@@ -666,7 +666,15 @@ and get_while tst body after =
                   e3))),
             whileapp)))
     | _ -> body in
-  let tst = S.Lambda (p, [], tst)
+  let test = match tst with
+    | S.Label (_, "%%dowhile", real_test) ->
+      let ft_id = mk_id "firsttest" in
+      S.Let (p, ft_id, S.True (p),
+        S.Lambda (p, [],
+          S.If (p, S.Id (p, ft_id),
+            S.Seq (p, S.SetBang (p, ft_id, S.False (p)), S.True (p)),
+            real_test)))
+    | _ -> S.Lambda (p, [], tst)
   and bdy = S.Lambda (p, [], real_body)
   and aftr = S.Lambda (p, [], after) in
   S.Rec (p, "%while",
@@ -682,7 +690,7 @@ and get_while tst body after =
               S.App (p, S.Id (p, "%while"), 
                 [S.Id (p, "%tst"); S.Id (p, "%bdy"); S.Id (p, "%after")]))),
           S.Undefined (p)))),
-    S.App (p, S.Id (p, "%while"), [tst; bdy; aftr]))
+    S.App (p, S.Id (p, "%while"), [test; bdy; aftr]))
 
 and prop_itr = 
   let p = dummy_pos in

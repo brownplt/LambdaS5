@@ -146,12 +146,14 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     | Some s -> jss_to_exprjs s in
     E.IfExpr (p, jse_to_exprjs e1, jss_to_exprjs s2, alt)
   | J.DoWhile (p, b, t) ->
-    let rec body = jss_to_exprjs b
-    and we = E.WhileExpr (p, jse_to_exprjs t, body) in
-    E.SeqExpr (p, body, we)
+    let body = jss_to_exprjs b in
+    let test = jse_to_exprjs t in
+    E.LabelledExpr (p, "%before",
+      E.WhileExpr (p,
+        E.LabelledExpr (p, "%%dowhile", test),
+        body))
   | J.While (p, t, b) ->
-    let rec context = E.IdExpr (p, "%context")
-    and desugared = jss_to_exprjs b in
+    let desugared = jss_to_exprjs b in
     E.LabelledExpr (p, "%before",
       E.WhileExpr (p, jse_to_exprjs t, desugared))
   | J.ForInVar (p, vd, exp, bdy) ->
