@@ -11,7 +11,7 @@ cat test262/test/harness/sputnikLib.js >> $JSFILE
 cat $1 >> $JSFILE
 echo "print('done');" >> $JSFILE
 
-grep -Ev '//' $JSFILE > $NOCOMMENTS
+grep -Ev '^//' $JSFILE > $NOCOMMENTS
 
 cat $JSFILE > out1.txt
 
