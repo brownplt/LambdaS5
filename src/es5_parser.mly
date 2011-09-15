@@ -21,6 +21,67 @@ let rec mk_val p v =
 let rec mk_field (p, s, e) =
   (p, s, mk_val p e)
 
+let with_pos exp pos = match exp with
+  | Null _ -> Null pos
+  | Undefined _ -> Undefined pos
+  | String (_, str) -> String (pos, str)
+  | Num (_, num) -> Num (pos, num)
+  | True _ -> True pos
+  | False _ -> False pos
+  | Id (_, id) -> Id (pos, id)
+  | Object (_, attrs, props) -> Object (pos, attrs, props)
+  | GetAttr (_, pattr, obj, field) -> GetAttr (pos, pattr, obj, field)
+  | SetAttr (_, prop, obj, field, value) -> SetAttr (pos, prop, obj, field, value)
+  | GetField (_, left, right, args) -> GetField (pos, left, right, args)
+  | SetField (_, obj, field, value, args) -> SetField (pos, obj, field, value, args)
+  | DeleteField (_, obj, field) -> DeleteField (pos, obj, field)
+  | SetBang (_, id, exp) -> SetBang (pos, id, exp)
+  | Op1 (_, op, exp) -> Op1 (pos, op, exp)
+  | Op2 (_, op, left, right) -> Op2 (pos, op, left, right)
+  | If (_, test, trueBlock, falseBlock) -> If (pos, test, trueBlock, falseBlock)
+  | App (_, func, args) -> App (pos, func, args)
+  | Seq (_, left, right) -> Seq (pos, left, right)
+  | Let (_, id, value, body) -> Let (pos, id, value, body)
+  | Rec (_, id, value, body) -> Rec (pos, id, value, body)
+  | Label (_, id, exp) -> Label (pos, id, exp)
+  | Break (_, id, exp) -> Break (pos, id, exp)
+  | TryCatch (_, tryBlock, catchBlock) -> TryCatch (pos, tryBlock, catchBlock)
+  | TryFinally (_, tryBlock, finallyBlock) -> TryFinally (pos, tryBlock, finallyBlock)
+  | Throw (_, value) -> Throw (pos, value)
+  | Lambda (_, ids, body) -> Lambda (pos, ids, body)
+  | Eval (_, exp) -> Eval (pos, exp)
+
+let pos_of exp = match exp with
+  | Null pos -> pos
+  | Undefined pos -> pos
+  | String (pos, _) -> pos
+  | Num (pos, _) -> pos
+  | True pos -> pos
+  | False pos -> pos
+  | Id (pos, _) -> pos
+  | Object (pos, _, _) -> pos
+  | GetAttr (pos, _, _, _) -> pos
+  | SetAttr (pos, _, _, _, _) -> pos
+  | GetField (pos, _, _, _) -> pos
+  | SetField (pos, _, _, _, _) -> pos
+  | DeleteField (pos, _, _) -> pos
+  | SetBang (pos, _, _) -> pos
+  | Op1 (pos, _, _) -> pos
+  | Op2 (pos, _, _, _) -> pos
+  | If (pos, _, _, _) -> pos
+  | App (pos, _, _) -> pos
+  | Seq (pos, _, _) -> pos
+  | Let (pos, _, _, _) -> pos
+  | Rec (pos, _, _, _) -> pos
+  | Label (pos, _, _) -> pos
+  | Break (pos, _, _) -> pos
+  | TryCatch (pos, _, _) -> pos
+  | TryFinally (pos, _, _) -> pos
+  | Throw (pos, _) -> pos
+  | Lambda (pos, _, _) -> pos
+  | Eval (pos, _) -> pos
+
+
 %}
 
 %token <int> INT
@@ -37,12 +98,12 @@ let rec mk_field (p, s, e) =
 
 %token EOF
 %left COLONEQ
-%left LPAREN
 %left PIPEPIPE
 %left AMPAMP
 %left EQEQEQUALS BANGEQEQUALS
 %left LBRACK
-
+%left ELSE
+%left LPAREN
 
 %type <Es5_syntax.exp> prog
 %type <Es5_syntax.exp -> Es5_syntax.exp> env
@@ -77,9 +138,6 @@ attr_name :
  | GETTER { Getter }
  | ENUM { Enum }
 
-prop_attr :
- | attr_name COLON exp { ($1, $3) }
-
 prop_attrs :
  | WRITABLE BOOL COMMA VALUE exp 
      { Data ({ value = $5; writable = $2 }, false, true) }
@@ -101,8 +159,8 @@ props :
 
 exps :
  | { [] }
- | seq_exp { [$1] }
- | seq_exp COMMA exps { $1 :: $3 }
+ | unbraced_seq_exp { [$1] }
+ | unbraced_seq_exp COMMA exps { $1 :: $3 }
 
 ids :
  | { [] }
@@ -110,17 +168,17 @@ ids :
  | ID COMMA ids { $1 :: $3 }
 
 func :
- | FUNC LPAREN ids RPAREN LBRACE seq_exp RBRACE
-   { Lambda ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $6) }
+ | FUNC LPAREN ids RPAREN braced_seq_exp
+   { Lambda ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5) }
 
 atom :
  | const { $1 }
  | ID { Id ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
  | LBRACE LBRACK oattrsv RBRACK props RBRACE 
    { Object ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5 )}
- | LBRACE seq_exp RBRACE
-   { $2 }
- | LPAREN seq_exp RPAREN { $2 }
+ | braced_seq_exp
+   { $1 }
+ | LPAREN unbraced_seq_exp RPAREN { $2 }
  | func { $1 }
  | TYPEOF atom
      { Op1 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), "typeof", $2) }
@@ -131,9 +189,9 @@ exp :
    { App ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $1, $3) }
  | EVAL LPAREN exp RPAREN
      { Eval ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
- | PRIM LPAREN STRING COMMA seq_exp COMMA seq_exp RPAREN
+ | PRIM LPAREN STRING COMMA unbraced_seq_exp COMMA unbraced_seq_exp RPAREN
    { Op2 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $5, $7) }
- | PRIM LPAREN STRING COMMA seq_exp RPAREN
+ | PRIM LPAREN STRING COMMA unbraced_seq_exp RPAREN
    { Op1 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5) }
  | ID COLONEQ exp
    { SetBang ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
@@ -143,7 +201,7 @@ exp :
      { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) in
          If (p, Op2 (p, "stx=", $1, $3),
              False p, True p) }
- | exp LBRACK seq_exp EQUALS seq_exp RBRACK
+ | exp LBRACK unbraced_seq_exp EQUALS unbraced_seq_exp RBRACK
    { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6) in
        Let (p, "$newVal", $5,
 	     SetField (p, $1, $3, 
@@ -153,20 +211,20 @@ exp :
                           writable = true },
               true, true))])))
     }
- | exp LBRACK seq_exp EQUALS seq_exp COMMA seq_exp RBRACK
+ | exp LBRACK unbraced_seq_exp EQUALS unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
    { SetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $1, $3, $5, $7) }
- | exp LBRACK seq_exp RBRACK
+ | exp LBRACK unbraced_seq_exp RBRACK
    { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4) in
      GetField (p, $1,  $3,
 		       Object (p, d_attrs,
             [])) }
- | exp LBRACK seq_exp COMMA seq_exp RBRACK
+ | exp LBRACK unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
    { GetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $1,  $3, $5) }
- | exp LBRACK DELETE seq_exp RBRACK
+ | exp LBRACK DELETE unbraced_seq_exp RBRACK
      { DeleteField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $1, $4) }
- | exp LBRACK seq_exp LT attr_name GT RBRACK
+ | exp LBRACK unbraced_seq_exp LT attr_name GT RBRACK
      { GetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $5, $1, $3) }
- | exp LBRACK seq_exp LT attr_name GT EQUALS seq_exp RBRACK
+ | exp LBRACK unbraced_seq_exp LT attr_name GT EQUALS unbraced_seq_exp RBRACK
      { SetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 9), $5, $1, $3, $8) }
  | exp AMPAMP exp
      { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, 
@@ -179,42 +237,52 @@ exp :
 
 cexp :
  | exp { $1 }
- | IF LPAREN seq_exp RPAREN seq_exp ELSE seq_exp
-     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
- | IF LPAREN seq_exp RPAREN seq_exp
-     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5, 
-	    Undefined (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5)) }
- | LABEL ID COLON seq_exp
+ | ifexp { $1 }
+ | LABEL ID COLON braced_seq_exp
      { Label ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) } 
  | BREAK ID cexp
    { Break ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $2, $3) }
  | THROW cexp
    { Throw ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), $2) }
- | TRY LBRACE seq_exp RBRACE CATCH LBRACE seq_exp RBRACE
-   { TryCatch ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $7) }
- | TRY LBRACE seq_exp RBRACE FINALLY LBRACE seq_exp RBRACE
-   { TryFinally ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $7) }
+ | TRY braced_seq_exp CATCH braced_seq_exp
+   { TryCatch ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) }
+ | TRY braced_seq_exp FINALLY braced_seq_exp
+   { TryFinally ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) }
 
-seq_exp :
+ifexp :
+ | IF LPAREN unbraced_seq_exp RPAREN braced_seq_exp ELSE ifexp
+     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
+ | IF LPAREN unbraced_seq_exp RPAREN braced_seq_exp ELSE braced_seq_exp
+     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
+ | IF LPAREN unbraced_seq_exp RPAREN braced_seq_exp
+     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5, 
+	    Undefined (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5)) }
+
+braced_seq_exp :
+ | LBRACE unbraced_seq_exp RBRACE { with_pos $2 (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) }
+
+unbraced_seq_exp :
+ | unbraced_seq_item SEMI unbraced_seq_exp { Seq ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
+ | unbraced_seq_item { $1 }
+
+unbraced_seq_item :
  | cexp { $1 }
- | LET LPAREN ID EQUALS seq_exp RPAREN seq_exp
+ | LET LPAREN ID EQUALS unbraced_seq_exp RPAREN unbraced_seq_item
    { Let ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
- | REC LPAREN ID EQUALS seq_exp RPAREN seq_exp
+ | REC LPAREN ID EQUALS unbraced_seq_exp RPAREN unbraced_seq_item
    { Rec ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
- | cexp SEMI seq_exp
-   { Seq ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
 
 env :
  | EOF
      { fun x -> x }
- | LET LBRACK ID RBRACK EQUALS seq_exp env
+ | LET LBRACK ID RBRACK EQUALS unbraced_seq_exp env
      { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
          fun x -> 
            Let (p, $3, $6, $7 x) }
- | LBRACE seq_exp RBRACE env
-     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4) in
-         fun x -> Seq (p, $2, $4 x) }
+ | braced_seq_exp env
+     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2) in
+         fun x -> Seq (p, $1, $2 x) }
 
 prog :
- | seq_exp EOF { $1 }
+ | unbraced_seq_exp EOF { $1 }
 %%

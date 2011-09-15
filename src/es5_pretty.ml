@@ -42,19 +42,21 @@ let rec exp e = match e with
     horz [text "if"; vert [parens (horz [exp c]);
                            braces (exp t);
                            text "else";
-                           braces (exp e)]]
+			   (match e with
+			   | If _ -> (exp e)
+			   | _ -> braces (exp e))]]
   | App (p, f, args) ->
     squish [exp f; parens (vert (vert_intersperse (text ",") (map exp args)))]
   | Seq (p, e1, e2) ->
     vert [squish [exp e1; text ";"]; exp e2]
   | Let (p, x, e, body) ->
     horz [text "let"; vert [parens (horz [text x; text "="; exp e]);
-                            exp body]]
+                            opt_braces body]]
   | Rec (p, x, e, body) -> 
     horz [text "rec"; vert [parens (horz [text x; text "="; exp e]);
-                            exp body]]
+                            opt_braces body]]
   | Label (p, l, e) ->
-    vert [horz [text "label"; text l; text ":"]; exp e]
+    vert [horz [text "label"; text l; text ":"]; braces (exp e)]
   | Break (p, l, e) ->
     horz [text "break"; text l; exp e]
   | TryCatch (p, body, catch) ->
@@ -68,6 +70,10 @@ let rec exp e = match e with
           braces (exp e)]
   | Eval (p, s) -> 
       squish [text "@eval"; parens (exp s)]
+
+and opt_braces expr = match expr with
+  | Seq _ -> braces (exp expr)
+  | _ -> exp expr
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = match p with None -> [] 
