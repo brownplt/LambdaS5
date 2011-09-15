@@ -17,12 +17,18 @@ def testFile(f):
     p.poll()
     if (p.returncode is None) and (now - start > timeout_seconds):
       p.kill()
-      return ("<li class='failed'>%s (Terminated)</li>" % str(f), 0, 1)
+      return ("<li class='failed'><a href='%s'>%s</a> (Terminated)</li>" % (str(f), str(f)), 0, 1)
     elif (not p.returncode is None):
       if p.returncode == 0:
-        return ("<li class='passed'>%s</li>" % str(f), 1, 0)
+        return ("<li class='passed'><a href='%s'>%s</a></li>" % (str(f), str(f)), 1, 0)
       else:
-        return ("<li class='failed'>%s (Failed)</li>" % str(f), 0, 1)
+        (stdout, stderr) = p.communicate(None)
+        return ("<li class='failed'><div><a href='%s'>%s</a> (Failed)</div> \
+                  <div>Stdout:</div> \
+                  <p>%s</p> \
+                  <div>Stderr:</div> \
+                  <p>%s</p> \
+                </li>" % (str(f), str(f), stdout, stderr), 0, 1)
 
 def testDir(d):
   files = os.listdir(str(d))
@@ -172,6 +178,5 @@ def main(args):
       f2.write("%s %s" % (result[1], result[2]))
 
   makeFrontPage()
-  
 
 main(sys.argv)
