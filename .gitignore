@@ -7,6 +7,7 @@ src/s5.d.byte
 tests/*.swp
 tests/unit-tests/*.swp
 src/*.swp
+tests/test262/test262/
 
 build/
 *~

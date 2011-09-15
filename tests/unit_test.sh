@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ $# -eq 1 ]; then
    ../bin/js ../tests/json_print.js $1 >> $1.ast
-   ocamlrun ../src/s5.d.byte -desugar ../tests/$1.ast -print es5 \
+   ocamlrun ../obj/s5.d.byte -desugar ../tests/$1.ast -print es5 \
        -env ../envs/es5.env -json ../src/desugar.sh -eval
    rm $1.ast
 else
