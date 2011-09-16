@@ -281,6 +281,10 @@ let bnot = function
   | Num d -> Num (float_of_int (lnot (int_of_float d)))
   | _ -> raise (Throw (str "bnot"))
 
+let sine = function
+  | Num d -> Num (sin d)
+  | _ -> raise (Throw (str "sin"))
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -314,6 +318,7 @@ let op1 op = match op with
   | "to-lower" -> to_lower
   | "to-upper" -> to_upper
   | "~" -> bnot
+  | "sin" -> sine
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith i_op f_op v1 v2 = match v1, v2 with
