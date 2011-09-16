@@ -391,16 +391,16 @@ let rec eval jsonPath exp env =
       raise (Break (l, eval e env))
   | S.TryCatch (p, body, catch) -> begin
       try
-	eval body env
+        eval body env
       with Throw v -> apply p (eval catch env) [v]
     end
   | S.TryFinally (p, body, fin) -> begin
       try
-	ignore (eval body env)
+        ignore (eval body env)
       with
-	| Throw v -> ignore (eval fin env); raise (Throw v)
-	| Break (l, v) -> ignore (eval fin env); raise (Break (l, v))
-    end;
+        | Throw v -> ignore (eval fin env); raise (Throw v)
+        | Break (l, v) -> ignore (eval fin env); raise (Break (l, v))
+      end;
       eval fin env
   | S.Throw (p, e) -> raise (Throw (eval e env))
   | S.Lambda (p, xs, e) -> 
