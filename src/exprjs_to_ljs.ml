@@ -522,6 +522,9 @@ and onearg_obj a =
   S.Object (dummy_pos, a_attrs, [("0", p)])
 
 and get_fobj p args body context =
+  let uargs = remove_dupes args in
+  if uargs <> args then
+    S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]) else
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
   let fobj_attrs =
@@ -620,7 +623,7 @@ and remove_dupes lst =
     | first :: rest ->
       let next = if (List.mem first seen) then result else (first :: result) in
       helper rest (first :: seen) next in
-  helper lst [] []
+  List.rev (helper lst [] [])
 
 and get_while tst body after =
   let p = dummy_pos in
