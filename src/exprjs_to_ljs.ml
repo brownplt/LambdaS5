@@ -18,6 +18,9 @@ let null_test p v =
 let type_test p v typ =
   S.Op2 (p, "stx=", S.Op1 (p, "typeof", v), S.String (p, typ))
 
+let is_object_type p o =
+  S.If (p, type_test p o "object", S.True (p), type_test p o "function")
+
 let throw_typ_error p =
   S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)])
 
@@ -187,17 +190,15 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
           S.If (p, undef_test p (S.Id (p, pr_id)),
             throw_typ_error p,
             S.Seq (p,
-              S.If (p, S.Op1 (p, "!", type_test p (S.Id (p, pr_id)) "object"),
+              S.If (p, S.Op1 (p, "!", is_object_type p (S.Id (p, pr_id))),
                 S.SetBang (p, pr_id, S.Id (p, "%ObjectProto")), S.Undefined p),
             S.Let (p, newobj, S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
               S.If (p, null_test p (S.Op1 (p, "get-code", S.Id (p, constr_id))),
                     throw_typ_error p,
                     S.Let (p, constr_result, S.App (p, S.Id (p, constr_id), [S.Id (p, newobj); constrargs]),
-                      S.If (p, type_test p (S.Id (p, constr_result)) "object",
-                        S.Id (p, constr_result),
-                        S.If (p, type_test p (S.Id (p, constr_result)) "function",
-                          S.Id (p, constr_result),
-                          S.Id (p, newobj)))))))))))
+                    S.If (p, is_object_type p (S.Id (p, constr_result)),
+                      S.Id (p, constr_result),
+                      S.Id (p, newobj))))))))))
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" -> let target = ejs_to_ljs exp in
       begin match target with
@@ -522,8 +523,10 @@ and onearg_obj a =
   S.Object (dummy_pos, a_attrs, [("0", p)])
 
 and get_fobj p args body context =
+  let contains_illegals = 
+    List.exists (fun nm -> (nm = "arguments") || (nm = "eval")) args in
   let uargs = remove_dupes args in
-  if uargs <> args then
+  if (uargs <> args) || contains_illegals then
     S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]) else
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
