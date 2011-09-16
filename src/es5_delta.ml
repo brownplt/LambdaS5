@@ -321,23 +321,23 @@ let op1 op = match op with
   | "sin" -> sine
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
-let arith i_op f_op v1 v2 = match v1, v2 with
+let arith s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
-  | v1, v2 -> raise (Throw (str ("arithmetic operator got non-numbers: " ^
+  | v1, v2 -> raise (Throw (str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
                                  (pretty_value v1) ^ ", " ^ (pretty_value v2) ^
                                    "perhaps something wasn't desugared fully?")))
 
-let arith_sum = arith (+) (+.)
+let arith_sum = arith "+" (+) (+.)
 
-let arith_sub = arith (-) (-.)
+let arith_sub = arith "-" (-) (-.)
 
 (* OCaml syntax failure! Operator section syntax lexes as a comment. *)
-let arith_mul = arith (fun m n -> m * n) (fun x y -> x *. y)
+let arith_mul = arith "*" (fun m n -> m * n) (fun x y -> x *. y)
 
-let arith_div x y = try arith (/) (/.) x y
+let arith_div x y = try arith "/" (/) (/.) x y
 with Division_by_zero -> Num infinity
 
-let arith_mod x y = try arith (mod) mod_float x y
+let arith_mod x y = try arith "mod" (mod) mod_float x y
 with Division_by_zero -> Num nan
 
 let arith_lt x y = bool (x < y)
