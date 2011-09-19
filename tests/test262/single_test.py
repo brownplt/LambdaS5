@@ -34,12 +34,9 @@ print('done');
 
 def parse(js):
   (jsfile, jsfilename) = tempfile.mkstemp()
-  (parsefile, parsefilename) = tempfile.mkstemp()
   jsfile = os.fdopen(jsfile, 'w')
-  parsefile = os.fdopen(parsefile, 'w')
   parsejs = "print(JSON.stringify(Reflect.parse(read('%s'),{loc:true}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" % jsfilename
   jsfile.write(js)
-  parsefile.write(parsejs)
   jsfile.flush()
   jsfile.close()
 
@@ -51,7 +48,9 @@ def parse(js):
 
   (out, err) = runner.communicate()
 
-  if err.find("SyntaxError") != -1:
+  os.remove(jsfilename)
+
+  if err.find("SyntaxError") != -1 or err.find("ReferenceError") != -1:
     return 'ParseError'
 
   if out != "":
@@ -83,25 +82,28 @@ def run(json):
 
   start = time.time()
 
-  while(True):
-    now = time.time()
-    p.poll()
-    if (p.returncode is None) and (now - start > timeout_seconds):
-      p.kill()
-      p.terminate()
-      return ("Timeout", None, None)
-    elif (not p.returncode is None):
-      (out, err) = p.communicate()
-      if (out.find(passed) != -1):
-        return ("Success", out, err)
-      elif (out.find(failed) != -1):
-        return ("HarnessFailure", out, err)
-      elif (out.find(jsonerr) != -1):
-        return ("JsonError", out, err)
-      elif (out.find(ocamlfailure) != -1):
-        return ("Exception", out, err)
-      else:
-        return ("OtherFailure", out, err)
+  try:
+    while(True):
+      now = time.time()
+      p.poll()
+      if (p.returncode is None) and (now - start > timeout_seconds):
+        p.kill()
+        p.terminate()
+        return ("Timeout", None, None)
+      elif (not p.returncode is None):
+        (out, err) = p.communicate()
+        if (out.find(passed) != -1):
+          return ("Success", out, err)
+        elif (out.find(failed) != -1):
+          return ("HarnessFailure", out, err)
+        elif (out.find(jsonerr) != -1):
+          return ("JsonError", out, err)
+        elif (out.find(ocamlfailure) != -1):
+          return ("Exception", out, err)
+        else:
+          return ("OtherFailure", out, err)
+  finally:
+    os.remove(jsonfilename)
 
 if __name__ == '__main__':
   print(run(parse(buildHarnessed(open(sys.argv[1]))))[1])

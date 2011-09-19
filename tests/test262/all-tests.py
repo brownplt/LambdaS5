@@ -124,7 +124,7 @@ def usage():
 def dirTests(d):
   for chapter in os.listdir(d):
     f = open(os.path.join(result_dir, chapter + ".html"), "w")
-    f2 = open(result_dir + chapter + ".result", "w")
+    f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
     result = testDir(os.path.join(d, chapter))
     f.write(template % result[0])
     f2.write("%s %s" % (result[1], result[2]))
@@ -134,8 +134,8 @@ def makeFrontPage():
   l = ""
   totalS = 0
   totalF = 0
-  for chapter in os.listdir(result_dir):
-    if chapter[-6:] == result_dir:
+  for chapter in sorted(os.listdir(result_dir)):
+    if chapter[-6:] == 'result':
       line = file(os.path.join(result_dir, chapter)).readline()
       if line: [success, fail] = line.split(" ")
       else: continue
