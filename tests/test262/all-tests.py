@@ -123,7 +123,7 @@ def usage():
 
 def dirTests(d):
   for chapter in os.listdir(d):
-    f = open(os.path.join('results', chapter + ".html"), "w")
+    f = open(os.path.join(result_dir, chapter + ".html"), "w")
     f2 = open(result_dir + chapter + ".result", "w")
     result = testDir(os.path.join(d, chapter))
     f.write(template % result[0])
@@ -144,7 +144,7 @@ def makeFrontPage():
       totalS += int(success)
       totalF += int(fail)
 
-  summary = open(os.path.join('results', 'summary.html'), "w")
+  summary = open(os.path.join(result_dir, 'summary.html'), "w")
   summary.write(html % (l, totalS, totalS + totalF))
 
 def main(args):
