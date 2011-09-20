@@ -285,6 +285,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       | "+" -> S.App (p, S.Id (p, "%PrimAdd"), [sl; sr])
       | "-" -> S.App (p, S.Id (p, "%PrimSub"), [sl; sr])
       | ">>" -> S.App (p, S.Id (p, "%SignedRightShift"), [sl; sr])
+      | ">>>" -> S.App (p, S.Id (p, "%UnsignedRightShift"), [sl; sr])
       | "&" | "^" | "|" -> 
         S.App (p, S.Id (p, "%BitwiseInfix"), [sl; sr; op_func])
       | "*" | "%" | "/" -> 
