@@ -79,7 +79,7 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       E.InfixExpr (p, iop, jse_to_exprjs l, jse_to_exprjs r)
     | J.Cond (p, e1, e2, e3) ->  
       E.IfExpr (p, jse_to_exprjs e1, jse_to_exprjs e2, jse_to_exprjs e3)
-    | J.Assign (p, aop, l, r) -> 
+    | J.Assign (p, aop, l, r) ->
       let el = jse_to_exprjs l
       and er = jse_to_exprjs r in
       let target = match el with
@@ -88,25 +88,12 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       and left = match el with
         | E.BracketExpr (p, ll, rr) -> rr
         | _ -> el in
-      let e_asgn = match aop with
+      begin match aop with
         | "=" -> E.AssignExpr (p, target, left, er)
-        | "*=" -> 
-          E.AssignExpr (p, target, left, 
-            E.InfixExpr (p, "*", E.BracketExpr (p, target, left), er))
-        | "/=" -> 
-          E.AssignExpr (p, target, left, 
-            E.InfixExpr (p, "/", E.BracketExpr (p, target, left), er))
-        | "%=" -> 
-          E.AssignExpr (p, target, left, 
-            E.InfixExpr (p, "%", E.BracketExpr (p, target, left), er))
-        | "+=" ->
-          E.AssignExpr (p, target, left, 
-            E.InfixExpr (p, "+", E.BracketExpr (p, target, left), er))
-        | "-=" -> 
-          E.AssignExpr (p, target, left, 
-            E.InfixExpr (p, "-", E.BracketExpr (p, target, left), er))
-        | _ -> failwith "unimplemented assign op" in
-      e_asgn
+        | _ -> let iop = String.sub aop 0 ((String.length aop) - 1) in
+          E.AssignExpr (p, target, left,
+            E.InfixExpr (p, iop, E.BracketExpr (p, target, left), er))
+      end
     | J.List (p, el) -> let rec unroll = function
       | [] -> E.Undefined (p)
       | [f] -> jse_to_exprjs f
