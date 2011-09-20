@@ -76,3 +76,26 @@
 (test--> →s5 shadow-after-apply2 shadow-after-apply3)
 (test--> →s5 shadow-after-apply3 shadow-after-apply4)
 
+
+(define obj-get
+  (term ([] [] [] (get-field (object []
+                                     [("x" [(value 5) (writable #f) (config #f) (enum #f)])])
+                   "x" null))))
+
+(define obj-get-after-obj
+  (term ([(ref_new ([]
+                    [("x" [(value 5) (writable #f) (config #f) (enum #f)])]))]
+        [] []
+        (get-field ref_new "x" null))))
+
+(define obj-get-after-get
+  (term ([(ref_new ([]
+                    [("x" [(value 5) (writable #f) (config #f) (enum #f)])]))]
+        [] []
+        5)))
+
+
+(test--> →s5 obj-get obj-get-after-obj)
+(test--> →s5 obj-get-after-obj obj-get-after-get)
+
+

@@ -2,6 +2,11 @@
 (require redex)
 (provide s5 →s5)
 
+
+(define (unique xs)
+  (foldr (λ (seen next) (if (member next seen) #f (cons next seen)))
+         '() xs))
+
 ;; This should be easy to match up with es5_values.ml and es5_syntax.ml
 (define-language s5
   ;; variable store
@@ -19,19 +24,20 @@
   (data-e ((value e) (writable bool) (config e) (enum e)))
 
   (attr get set data writable config enum)
+  (obj-attr code primval proto extensible klass)
 
   (property accessor data)
   (property-e accessor-e data-e)
 
-  (obj-attrs [(code val)
-              (primval val)
-              (proto val)
-              (extensible bool)
-              (klass string)])
+  (obj-attrs [(obj-attr_!_ val) ...])
+  (obj-attrs-e [(obj-attr_!_ e) ...])
+
   (obj (obj-attrs [(string property) ...]))
 
   (prim number string #t #f undefined null)
-  (val prim (Γ : (λ (x ...) e)) ref)
+  (val prim
+       (Γ : (λ (x_!_ ...) e))
+       ref)
 
   (op1 typeof surface-typeof primitive? prim->str prim->num
        prim->num prim->bool is-callable is-extensible
@@ -47,13 +53,9 @@
 
   (e prim
      x
-     (λ (x ...) e)
-     (object [(code e)
-              (primval e)
-              (proto e)
-              (extensible bool)
-              (klass string)]
-             [property-e ...])
+     (λ (x_!_ ...) e)
+     (object obj-attrs-e
+             [(string property-e) ...])
      (get-attr attr e e)
      (set-attr attr e e e)
 
@@ -89,13 +91,13 @@
       (string (accessor-e (get val) (set F) (config bool) (enum bool))))
 
    (F-attrs hole
-      [(code F) (primval e) (proto e) (extensible bool) (klass string)]
-      [(code val) (primval F) (proto e) (extensible bool) (klass string)]
-      [(code val) (primval val) (proto F) (extensible bool) (klass string)])
+      [(obj-attr val) ... (obj-attr F) (obj-attr e) ...])
 
    (F hole
-      (object F-attrs [property-e ...])
-      (object obj-attrs [property ... F-property property-e ...])
+      (object F-attrs [(string property-e ...)])
+      (object obj-attrs [(string property) ...
+                         F-property
+                         (string property-e) ...])
 
       (get-attr attr F e)
       (get-attr attr val F)
@@ -142,13 +144,13 @@
       (string (accessor-e (get val) (set G) (config bool) (enum bool))))
 
    (G-attrs hole
-      [(code G) (primval e) (proto e) (extensible bool) (klass string)]
-      [(code val) (primval G) (proto e) (extensible bool) (klass string)]
-      [(code val) (primval val) (proto G) (extensible bool) (klass string)])
+      [(obj-attr val) ... (obj-attr G) (obj-attr e) ...])
 
    (G hole
-      (object G-attrs [property-e ...])
-      (object obj-attrs [property ... G-property property-e ...])
+      (object G-attrs [(string property-e) ...])
+      (object obj-attrs [(string property) ...
+                         G-property
+                         (string property-e) ...])
 
       (get-attr attr G e)
       (get-attr attr val G)
@@ -197,13 +199,13 @@
       (string (accessor-e (get val) (set E) (config bool) (enum bool))))
 
    (E-attrs hole
-      [(code E) (primval e) (proto e) (extensible bool) (klass string)]
-      [(code val) (primval E) (proto e) (extensible bool) (klass string)]
-      [(code val) (primval val) (proto E) (extensible bool) (klass string)])
+      [(obj-attr val) ... (obj-attr E) (obj-attr e) ...])
 
    (E hole
-      (object E-attrs [property-e ...])
-      (object obj-attrs [property ... E-property property-e ...])
+      (object E-attrs [(string property-e) ...])
+      (object obj-attrs [(string property) ...
+                         E-property
+                         (string property-e) ...])
 
       (get-attr attr E e)
       (get-attr attr val E)
@@ -267,7 +269,6 @@
           (in-hole E e))
         "E-Rec")
 
-
    (--> (σ [(loc_1 val_1) ...] Γ
          (in-hole E (([(y loc_3) ...] : (λ (x ...) e)) val_2 ...)))
         (σ [(loc_1 val_1) ... (loc val_2) ...]
@@ -305,26 +306,45 @@
 
    ;; Objects
    ;; -------
-   (--> ([(ref obj) ...] Σ Γ (in-hole E (object obj-attrs [property ...])))
-        ([(ref_new (obj-attrs [property ...])) (ref obj) ...] Σ Γ
+   (--> ([(ref obj) ...] Σ Γ (in-hole E (object obj-attrs [(string property) ...])))
+        ([(ref_new (obj-attrs [(string property) ...])) (ref obj) ...] Σ Γ
          (in-hole E ref_new))
         (fresh ref_new))
 
    (--> ([(ref_first obj_first) ... 
           (ref (obj-attrs [(string_first property_first) ...
-                (string [(data val) (writable bool) (config bool) (enum bool)])
+                (string [(value val) (writable bool) (config bool) (enum bool)])
                 (string_rest property_rest) ...]))
-          (ref_rest obj_rest)]
+          (ref_rest obj_rest) ...]
          Σ Γ
          (in-hole E (get-field ref string val_args)))
         ([(ref_first obj_first) ... 
           (ref (obj-attrs [(string_first property_first) ...
-                (string [(data val) (writable bool) (config bool) (enum bool)])
+                (string [(value val) (writable bool) (config bool) (enum bool)])
                 (string_rest property_rest) ...]))
-          (ref_rest obj_rest)]
-        Σ Γ
-        (in-hole E val))
+          (ref_rest obj_rest) ...]
+         Σ Γ
+         (in-hole E val))
         "E-GetField-Found")
+
+    (--> ([(ref_first obj_first) ... 
+           (ref ([(obj-attr_1 val_1) ...
+                  (proto ref_proto)
+                  (obj-attr_2 val_2) ...]
+                 [(string_first property_first) ...]))
+           (ref_rest obj_rest) ...]
+         Σ Γ
+         (in-hole E (get-field ref string val_args)))
+        ([(ref_first obj_first) ... 
+           (ref ([(obj-attr_1 val_1) ...
+                  (proto ref_proto)
+                  (obj-attr_2 val_2) ...]
+                 [(string_first property_first) ...]))
+           (ref_rest obj_rest) ...]
+         Σ Γ
+         (in-hole E (get-field ref_proto string val_args)))
+        "E-GetField-Proto"
+        (side-condition (not (member (term string) (term (string_first ...))))))
 
    (--> (σ Σ Γ (in-hole E (seq val e)))
         (σ Σ Γ (in-hole E e)))
