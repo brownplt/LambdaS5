@@ -285,6 +285,10 @@ let sine = function
   | Num d -> Num (sin d)
   | _ -> raise (Throw (str "sin"))
 
+let numstr = function
+  | String s -> Num (try float_of_string s with Failure _ -> nan)
+  | _ -> raise (Throw (str "numstr"))
+
 let op1 op = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -319,6 +323,7 @@ let op1 op = match op with
   | "to-upper" -> to_upper
   | "~" -> bnot
   | "sin" -> sine
+  | "numstr->num" -> numstr
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 let arith s i_op f_op v1 v2 = match v1, v2 with
