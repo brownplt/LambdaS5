@@ -48,13 +48,9 @@ def parse(js):
 
   (out, err) = runner.communicate()
 
-<<<<<<< HEAD
   os.remove(jsfilename)
 
   if err.find("SyntaxError") != -1 or err.find("ReferenceError") != -1:
-=======
-  if err.find("SyntaxError") != -1 || err.find("ReferenceError") != -1:
->>>>>>> check for with errors
     return 'ParseError'
 
   if out != "":
