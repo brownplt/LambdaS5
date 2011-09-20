@@ -220,7 +220,7 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
       | J.Case (p, e, s) -> E.Case (p, jse_to_exprjs e, jss_to_exprjs s)
       | J.Default (p, s) -> E.Default (p, jss_to_exprjs s) in
     E.SwitchExpr (p, jse_to_exprjs disc, map case cl)
-  | J.With _ -> raise ParseError "WithError"
+  | J.With _ -> raise (ParseError ("WithError"))
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 
 and srcElts (ss : J.srcElt list) (context : E.expr) : E.expr =

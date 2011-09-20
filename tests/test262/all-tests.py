@@ -7,19 +7,22 @@ from single_test import *
 result_dir = "results-new"
 
 def testFile(f):
+  def mkRow(typ, message):
+    return "<li class='%s'><a href='%s'>%s</a>%s</li>" % \
+      (typ, str(f), str(f), message)
+
   parsed = parse(buildHarnessed(open(f)))
   if parsed == "ParseError":
-    return ("<li class='passed'><a href='%s'>%s</a></li>" % (str(f), str(f)), 1, 0)
+    return (mkRow('skipped', " (ParseError)"), 0, 0, 1)
 
   (typ, stdout, stderr) = run(parsed)
 
   if typ == "Timeout":
-    return ("<li class='failed'><a href='%s'>%s</a> (Terminated)</li>" % (str(f), str(f)), 0, 1)
+    return (mkRow('failed', " (Timed out)"), 0, 1, 0)
   elif typ == "With":
-    print(str(f))
-    return ("<li class='passed'><a href='%s'>%s</a>(With)</li>" % (str(f), str(f)), 1, 0)
+    return (mkRow('skipped', " (With)"), 0, 0, 1)
   elif typ == "Success":
-    return ("<li class='passed'><a href='%s'>%s</a></li>" % (str(f), str(f)), 1, 0)
+    return (mkRow('passed', ""), 1, 0, 0)
   else: # typ is "Failure"
     return ("<li class='failed'><div><a href='%s'>%s</a> (Failed)</div> \
               <div>Type:%s</div> \
@@ -27,21 +30,23 @@ def testFile(f):
               <p>%s</p> \
               <div>Stderr:</div> \
               <p>%s</p> \
-            </li>" % (str(f), str(f), typ, stdout, stderr), 0, 1)
+            </li>" % (str(f), str(f), typ, stdout, stderr), 0, 1, 0)
 
 def testDir(d):
   files = os.listdir(str(d))
   inner = ""
   passed = 0
   failed = 0
+  skipped = 0
   for f in files:
     f = os.path.join(str(d), f)
     if(os.path.isdir(f)):
-      (fHtml, fPassed, fFailed) = testDir(f)
+      (fHtml, fPassed, fFailed, fSkipped) = testDir(f)
     else:
-      (fHtml, fPassed, fFailed) = testFile(f)
+      (fHtml, fPassed, fFailed, fSkipped) = testFile(f)
     passed += fPassed
     failed += fFailed
+    skipped += fSkipped
     inner += fHtml
 
   color = 'failed'
@@ -52,7 +57,8 @@ def testDir(d):
           <a href='#' class='toggle'>(show/hide)</a> \
           <ul class='showing'>%s</ul></li>" % (color, str(d), passed, failed, inner),
           passed,
-          failed)
+          failed,
+          skipped)
 
 template = """
 <html>
@@ -77,6 +83,10 @@ ul.hidden {
 
 li.passed {
   background: #99FF66;
+}
+
+li.skipped {
+  background: #CCCCFF;
 }
 
 li.failed {
@@ -122,6 +132,9 @@ def usage():
       If the first argument is ie, it will run the directories listed
       within the ietestcenter tests.  If the first argument is sp, it will
       run all the sputnik tests.
+
+      If the first argument is regen, it will recreate summary.html with
+      whatever information it finds in the test directory.
   """)
 
 def dirTests(d):
@@ -130,25 +143,27 @@ def dirTests(d):
     f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
     result = testDir(os.path.join(d, chapter))
     f.write(template % result[0])
-    f2.write("%s %s" % (result[1], result[2]))
+    f2.write("%s %s %s" % (result[1], result[2], result[3]))
 
 def makeFrontPage():
-  html = "<html><head></head><ul>%s</ul><div>Total: %s/%s</div></html>"
+  html = "<html><head></head><ul>%s</ul><div>Total: %s/%s (%s skipped)</div></html>"
   l = ""
   totalS = 0
   totalF = 0
+  totalSk = 0
   for chapter in sorted(os.listdir(result_dir)):
     if chapter[-6:] == 'result':
       line = file(os.path.join(result_dir, chapter)).readline()
-      if line: [success, fail] = line.split(" ")
+      if line: [success, fail, skip] = line.split(" ")
       else: continue
       l += "<li><a href='%s.html'>%s</a> (%s/%s)</li>" % \
               (chapter[0:-7], chapter[0:-7], success, int(success)+int(fail))
       totalS += int(success)
       totalF += int(fail)
+      totalSk += int(skip)
 
   summary = open(os.path.join(result_dir, 'summary.html'), "w")
-  summary.write(html % (l, totalS, totalS + totalF))
+  summary.write(html % (l, totalS, totalS + totalF, totalSk))
 
 def main(args):
   spiderMonkeyDir = 'test262/test/suite/sputnik_converted'

@@ -108,4 +108,4 @@ def run(json):
     os.remove(jsonfilename)
 
 if __name__ == '__main__':
-  print(run(parse(buildHarnessed(open(sys.argv[1]))))[1])
+  print(run(parse(buildHarnessed(open(sys.argv[1])))))
