@@ -48,9 +48,13 @@ def parse(js):
 
   (out, err) = runner.communicate()
 
+<<<<<<< HEAD
   os.remove(jsfilename)
 
   if err.find("SyntaxError") != -1 or err.find("ReferenceError") != -1:
+=======
+  if err.find("SyntaxError") != -1 || err.find("ReferenceError") != -1:
+>>>>>>> check for with errors
     return 'ParseError'
 
   if out != "":
@@ -100,6 +104,8 @@ def run(json):
           return ("JsonError", out, err)
         elif (out.find(ocamlfailure) != -1):
           return ("Exception", out, err)
+        elif (err.find("WithError") != -1):
+          return ("With", out, err)
         else:
           return ("OtherFailure", out, err)
   finally:

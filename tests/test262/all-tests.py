@@ -15,6 +15,9 @@ def testFile(f):
 
   if typ == "Timeout":
     return ("<li class='failed'><a href='%s'>%s</a> (Terminated)</li>" % (str(f), str(f)), 0, 1)
+  elif typ == "With":
+    print(str(f))
+    return ("<li class='passed'><a href='%s'>%s</a>(With)</li>" % (str(f), str(f)), 1, 0)
   elif typ == "Success":
     return ("<li class='passed'><a href='%s'>%s</a></li>" % (str(f), str(f)), 1, 0)
   else: # typ is "Failure"
