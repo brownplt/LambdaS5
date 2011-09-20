@@ -88,14 +88,47 @@
         [] []
         (get-field ref_new "x" null))))
 
+(define obj-get-after-g2
+  (term ([(ref_new ([]
+                    [("x" [(value 5) (writable #f) (config #f) (enum #f)])]))]
+        [] []
+        (get-field2 ref_new ref_new "x" null))))
+
 (define obj-get-after-get
   (term ([(ref_new ([]
                     [("x" [(value 5) (writable #f) (config #f) (enum #f)])]))]
         [] []
         5)))
 
-
 (test--> →s5 obj-get obj-get-after-obj)
-(test--> →s5 obj-get-after-obj obj-get-after-get)
+(test--> →s5 obj-get-after-obj obj-get-after-g2)
+(test--> →s5 obj-get-after-g2 obj-get-after-get)
+
+
+(define obj-with-proto
+  (term ([] [] [] (get-field
+    (object [(proto
+              (object []
+                      [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))]
+            []) "x" null))))
+
+(define obj-with-proto-after-obj
+  (term ([(ref_new ([] [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))] [] []
+         (get-field (object [(proto ref_new)] []) "x" null))))
+
+(define obj-with-proto-after-obj-again
+  (term ([(ref_new1 ([(proto ref_new)] []))
+          (ref_new ([] [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))] [] []
+         (get-field ref_new1 "x" null))))
+
+(define obj-with-proto-after-g2
+  (term ([(ref_new1 ([(proto ref_new)] []))
+          (ref_new ([] [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))] [] []
+         (get-field2 ref_new1 ref_new1 "x" null))))
+  
+
+(test--> →s5 obj-with-proto obj-with-proto-after-obj)
+(test--> →s5 obj-with-proto-after-obj obj-with-proto-after-obj-again)
+(test--> →s5 obj-with-proto-after-obj-again obj-with-proto-after-g2)
 
 

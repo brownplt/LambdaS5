@@ -60,7 +60,9 @@
      (set-attr attr e e e)
 
      (get-field e e e)
+     (get-field2 val val val val)
      (set-field e e e e)
+     (set-field2 val val val val val)
      (delete-field e e e)
 
      (set! x e)
@@ -311,13 +313,17 @@
          (in-hole E ref_new))
         (fresh ref_new))
 
+   (--> (σ Σ Γ (in-hole E (get-field ref string val_args)))
+        (σ Σ Γ (in-hole E (get-field2 ref ref string val_args)))
+        "E-GetField2")
+
    (--> ([(ref_first obj_first) ... 
           (ref (obj-attrs [(string_first property_first) ...
                 (string [(value val) (writable bool) (config bool) (enum bool)])
                 (string_rest property_rest) ...]))
           (ref_rest obj_rest) ...]
          Σ Γ
-         (in-hole E (get-field ref string val_args)))
+         (in-hole E (get-field2 ref ref_this string val_args)))
         ([(ref_first obj_first) ... 
           (ref (obj-attrs [(string_first property_first) ...
                 (string [(value val) (writable bool) (config bool) (enum bool)])
@@ -334,7 +340,7 @@
                  [(string_first property_first) ...]))
            (ref_rest obj_rest) ...]
          Σ Γ
-         (in-hole E (get-field ref string val_args)))
+         (in-hole E (get-field2 ref ref_this string val_args)))
         ([(ref_first obj_first) ... 
            (ref ([(obj-attr_1 val_1) ...
                   (proto ref_proto)
@@ -342,7 +348,7 @@
                  [(string_first property_first) ...]))
            (ref_rest obj_rest) ...]
          Σ Γ
-         (in-hole E (get-field ref_proto string val_args)))
+         (in-hole E (get-field2 ref_proto ref_this string val_args)))
         "E-GetField-Proto"
         (side-condition (not (member (term string) (term (string_first ...))))))
 
