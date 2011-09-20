@@ -446,7 +446,7 @@ and eval_op str env jsonPath =
   let exprjsd = 
     try
       js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
-    with ParseError -> raise (Throw (String "EvalError"))
+    with ParseError _ -> raise (Throw (String "EvalError"))
     in
   let desugard = exprjs_to_ljs exprjsd in
   if (IdMap.mem "%global" env) then

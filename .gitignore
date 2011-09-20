@@ -8,6 +8,7 @@ tests/*.swp
 tests/unit-tests/*.swp
 src/*.swp
 tests/test262/test262/
+tests/test262/results*
 
 build/
 *~
@@ -15,3 +16,4 @@ src/_build/
 
 *.tgz
 *.tar.gz
+*.pyc

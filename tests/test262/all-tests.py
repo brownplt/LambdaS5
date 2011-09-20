@@ -2,47 +2,51 @@ import os
 import subprocess
 import time
 import sys
+from single_test import *
 
-timeout_seconds = 4
+result_dir = "results-new"
 
 def testFile(f):
-  p = subprocess.Popen(["./single-test.sh", str(f)],
-                       stdin=subprocess.PIPE,
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE,
-                       cwd=".")
-  start = time.time()
-  while(True):
-    now = time.time()
-    p.poll()
-    if (p.returncode is None) and (now - start > timeout_seconds):
-      p.kill()
-      return ("<li class='failed'><a href='%s'>%s</a> (Terminated)</li>" % (str(f), str(f)), 0, 1)
-    elif (not p.returncode is None):
-      if p.returncode == 0:
-        return ("<li class='passed'><a href='%s'>%s</a></li>" % (str(f), str(f)), 1, 0)
-      else:
-        (stdout, stderr) = p.communicate(None)
-        return ("<li class='failed'><div><a href='%s'>%s</a> (Failed)</div> \
-                  <div>Stdout:</div> \
-                  <p>%s</p> \
-                  <div>Stderr:</div> \
-                  <p>%s</p> \
-                </li>" % (str(f), str(f), stdout, stderr), 0, 1)
+  def mkRow(typ, message):
+    return "<li class='%s'><a href='%s'>%s</a>%s</li>" % \
+      (typ, str(f), str(f), message)
+
+  parsed = parse(buildHarnessed(open(f)))
+  if parsed == "ParseError":
+    return (mkRow('skipped', " (ParseError)"), 0, 0, 1)
+
+  (typ, stdout, stderr) = run(parsed)
+
+  if typ == "Timeout":
+    return (mkRow('failed', " (Timed out)"), 0, 1, 0)
+  elif typ == "With":
+    return (mkRow('skipped', " (With)"), 0, 0, 1)
+  elif typ == "Success":
+    return (mkRow('passed', ""), 1, 0, 0)
+  else: # typ is "Failure"
+    return ("<li class='failed'><div><a href='%s'>%s</a> (Failed)</div> \
+              <div>Type:%s</div> \
+              <div>Stdout:</div> \
+              <p>%s</p> \
+              <div>Stderr:</div> \
+              <p>%s</p> \
+            </li>" % (str(f), str(f), typ, stdout, stderr), 0, 1, 0)
 
 def testDir(d):
   files = os.listdir(str(d))
   inner = ""
   passed = 0
   failed = 0
+  skipped = 0
   for f in files:
     f = os.path.join(str(d), f)
     if(os.path.isdir(f)):
-      (fHtml, fPassed, fFailed) = testDir(f)
+      (fHtml, fPassed, fFailed, fSkipped) = testDir(f)
     else:
-      (fHtml, fPassed, fFailed) = testFile(f)
+      (fHtml, fPassed, fFailed, fSkipped) = testFile(f)
     passed += fPassed
     failed += fFailed
+    skipped += fSkipped
     inner += fHtml
 
   color = 'failed'
@@ -53,7 +57,8 @@ def testDir(d):
           <a href='#' class='toggle'>(show/hide)</a> \
           <ul class='showing'>%s</ul></li>" % (color, str(d), passed, failed, inner),
           passed,
-          failed)
+          failed,
+          skipped)
 
 template = """
 <html>
@@ -78,6 +83,10 @@ ul.hidden {
 
 li.passed {
   background: #99FF66;
+}
+
+li.skipped {
+  background: #CCCCFF;
 }
 
 li.failed {
@@ -123,39 +132,44 @@ def usage():
       If the first argument is ie, it will run the directories listed
       within the ietestcenter tests.  If the first argument is sp, it will
       run all the sputnik tests.
+
+      If the first argument is regen, it will recreate summary.html with
+      whatever information it finds in the test directory.
   """)
 
 def dirTests(d):
   for chapter in os.listdir(d):
-    f = open(os.path.join('results', chapter + ".html"), "w")
-    f2 = open("results/" + chapter + ".result", "w")
+    f = open(os.path.join(result_dir, chapter + ".html"), "w")
+    f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
     result = testDir(os.path.join(d, chapter))
     f.write(template % result[0])
-    f2.write("%s %s" % (result[1], result[2]))
+    f2.write("%s %s %s" % (result[1], result[2], result[3]))
 
 def makeFrontPage():
-  html = "<html><head></head><ul>%s</ul><div>Total: %s/%s</div></html>"
+  html = "<html><head></head><ul>%s</ul><div>Total: %s/%s (%s skipped)</div></html>"
   l = ""
   totalS = 0
   totalF = 0
-  for chapter in os.listdir('results'):
+  totalSk = 0
+  for chapter in sorted(os.listdir(result_dir)):
     if chapter[-6:] == 'result':
-      line = file(os.path.join('results', chapter)).readline()
-      if line: [success, fail] = line.split(" ")
+      line = file(os.path.join(result_dir, chapter)).readline()
+      if line: [success, fail, skip] = line.split(" ")
       else: continue
       l += "<li><a href='%s.html'>%s</a> (%s/%s)</li>" % \
               (chapter[0:-7], chapter[0:-7], success, int(success)+int(fail))
       totalS += int(success)
       totalF += int(fail)
+      totalSk += int(skip)
 
-  summary = open(os.path.join('results', 'summary.html'), "w")
-  summary.write(html % (l, totalS, totalS + totalF))
+  summary = open(os.path.join(result_dir, 'summary.html'), "w")
+  summary.write(html % (l, totalS, totalS + totalF, totalSk))
 
 def main(args):
   spiderMonkeyDir = 'test262/test/suite/sputnik_converted'
   ieDir = 'test262/test/suite/ietestcenter'
   try:
-    os.mkdir('results')
+    os.mkdir(result_dir)
   except:
     # silent fail, the directory probably already existed
     pass
@@ -171,8 +185,8 @@ def main(args):
       usage()
       return
     for chapter in args[2:]:
-      f = open("results/" + chapter + ".html", "w")
-      f2 = open("results/" + chapter + ".result", "w")
+      f = open(os.path.join(result_dir, chapter + ".html"), "w")
+      f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
       result = testDir(os.path.join(d, chapter))
       f.write(template % result[0])
       f2.write("%s %s" % (result[1], result[2]))
