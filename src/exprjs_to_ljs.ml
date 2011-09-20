@@ -262,6 +262,9 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     | "~" -> S.App (p, S.Id (p, "%BitwiseNot"), [ejs_to_ljs exp])
     | _ -> S.Op1 (p, op, ejs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
+    let op_func =
+      S.Lambda (p, ["a"; "b"],
+        S.Op2 (p, op, S.Id (p, "a"), S.Id (p, "b"))) in
     let sl = ejs_to_ljs l and sr = ejs_to_ljs r in
     let result = match op with
       | "&&" ->
@@ -282,14 +285,11 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       | "+" -> S.App (p, S.Id (p, "%PrimAdd"), [sl; sr])
       | "-" -> S.App (p, S.Id (p, "%PrimSub"), [sl; sr])
       | ">>" -> S.App (p, S.Id (p, "%SignedRightShift"), [sl; sr])
-      | "*"
-      | "%"
-      | "/" -> 
-        let op_func = 
-          S.Lambda (p, ["a"; "b"], S.Op2 (p, op, S.Id (p, "a"), S.Id (p, "b"))) in
+      | "&" | "^" | "|" -> 
+        S.App (p, S.Id (p, "%BitwiseInfix"), [sl; sr; op_func])
+      | "*" | "%" | "/" -> 
         S.App (p, S.Id (p, "%PrimMultOp"), [sl; sr; op_func])
       | "instanceof" -> S.App (p, S.Id (p, "%instanceof"), [sl; sr])
-      | "&" -> S.App (p, S.Id (p, "%BitwiseAnd"), [sl; sr])
       | _ -> let op = match op with
         | "===" -> "stx="
         | _ -> op in S.Op2 (p, op, sl, sr) in result
