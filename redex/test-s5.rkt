@@ -1,0 +1,78 @@
+#lang racket
+(require redex)
+(require "s5.rkt")
+
+(define simple-application
+  (term ([] [] [] ((λ (x) x) 5))))
+(define after-lambda
+  (term ([] [] [] (([] : (λ (x) x)) 5))))
+(define after-applying
+  (term ([] [(loc 5)] [(x loc)] x)))
+(define after-lookup
+  (term ([] [(loc 5)] [(x loc)] 5)))
+
+(test--> →s5 simple-application after-lambda)
+(test--> →s5 after-lambda after-applying)
+(test--> →s5 after-applying after-lookup)
+
+
+(define double-apply
+  (term ([] [] [] ((λ (x y) y) 5 "foo"))))
+(define d-after-lambda
+  (term ([] [] [] (([] : (λ (x y) y)) 5 "foo"))))
+(define d-after-applying
+  (term ([] [(loc 5) (loc1 "foo")] [(x loc) (y loc1)] y)))
+(define d-after-lookup
+  (term ([] [(loc 5) (loc1 "foo")] [(x loc) (y loc1)]  "foo")))
+
+(test--> →s5 double-apply d-after-lambda)
+(test--> →s5 d-after-lambda d-after-applying)
+(test--> →s5 d-after-applying d-after-lookup)
+
+
+(define closure
+  (term ([] [] [] (((λ (x) (λ (y) x)) 5) null))))
+(define c-after-lambda1
+  (term ([] [] [] ((([] : (λ (x) (λ (y) x))) 5) null))))
+(define c-after-apply1
+  (term ([] [(loc 5)] [(x loc)] ((λ (y) x) null))))
+(define c-after-lambda2
+  (term ([] [(loc 5)] [(x loc)] (([(x loc)] : (λ (y) x)) null))))
+(define c-after-apply2
+  (term ([] [(loc 5) (loc1 null)] [(y loc1) (x loc)] x)))
+(define c-after-lookup
+  (term ([] [(loc 5) (loc1 null)] [(y loc1) (x loc)] 5)))
+(test--> →s5 closure c-after-lambda1)
+(test--> →s5 c-after-lambda1 c-after-apply1)
+(test--> →s5 c-after-apply1 c-after-lambda2)
+(test--> →s5 c-after-lambda2 c-after-apply2)
+(test--> →s5 c-after-apply2 c-after-lookup)
+
+(define double-x
+  (term ([] [] [] (λ (x x) x))))
+
+(define rec
+  (term ([] [] [] (rec [f (λ (x) (f x))] (f 3)))))
+(define after-rec
+  (term ([] [(loc ([(f loc)] : (λ (x) (f x))))] [(f loc)] (f 3))))
+(test--> →s5 rec after-rec)
+
+(define shadow
+  (term ([] [] [] (((λ (x) (λ (x) x)) 5) 22))))
+(define shadow-after-lambda
+  (term ([] [] [] ((([] : (λ (x) (λ (x) x))) 5) 22))))
+(define shadow-after-apply
+  (term ([] [(loc 5)] [(x loc)] ((λ (x) x) 22))))
+(define shadow-after-apply2
+  (term ([] [(loc 5)] [(x loc)] (([(x loc)] : (λ (x) x)) 22))))
+(define shadow-after-apply3
+  (term ([] [(loc 5) (loc1 22)] [(x loc1) (x loc)] x)))
+(define shadow-after-apply4
+  (term ([] [(loc 5) (loc1 22)] [(x loc1) (x loc)] 22)))
+
+(test--> →s5 shadow shadow-after-lambda)
+(test--> →s5 shadow-after-lambda shadow-after-apply)
+(test--> →s5 shadow-after-apply shadow-after-apply2)
+(test--> →s5 shadow-after-apply2 shadow-after-apply3)
+(test--> →s5 shadow-after-apply3 shadow-after-apply4)
+
