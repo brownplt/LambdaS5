@@ -296,6 +296,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       | "<=" -> S.App (p, S.Id (p, "%LessEqual"), [sl; sr])
       | ">=" -> S.App (p, S.Id (p, "%GreaterEqual"), [sl; sr])
       | "instanceof" -> S.App (p, S.Id (p, "%instanceof"), [sl; sr])
+      | "in" -> S.App (p, S.Id (p, "%in"), [sl; sr])
       | "===" -> S.Op2 (p, "stx=", sl, sr)
       | _ -> failwith ("fatal: unknown infix operator: " ^ op)
     end
