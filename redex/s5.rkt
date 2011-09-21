@@ -2,11 +2,6 @@
 (require redex)
 (provide s5 →s5)
 
-
-(define (unique xs)
-  (foldr (λ (seen next) (if (member next seen) #f (cons next seen)))
-         '() xs))
-
 ;; This should be easy to match up with es5_values.ml and es5_syntax.ml
 (define-language s5
   ;; variable store
