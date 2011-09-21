@@ -145,3 +145,31 @@
          [(loc ref_new1) (loc1 null)]
          [(this loc) (args loc1)]
          27)))
+
+(define obj-missed-lookup
+  (term ([] [] [] (get-field (object [(proto null)] []) "foo" null))))
+
+(test-->> →s5 obj-missed-lookup (term ([(ref_new ([(proto null)] []))] [] [] undefined)))
+
+(define obj-set-field
+  (term ([(ref_new ([] [("x" [(value 24) (writable #t) (config #f) (enum #f)])]))]
+         [] []
+         (set-field2 ref_new ref_new "x" "foozle" null))))
+(define obj-set-field-after
+  (term ([(ref_new ([] [("x" [(value "foozle") (writable #t) (config #f) (enum #f)])]))]
+         [] []
+         "foozle")))
+
+(test-->> →s5 obj-set-field obj-set-field-after)
+
+(define obj-add-field
+  (term ([(ref_new ([(extensible #t)] []))] [] []
+         (set-field2 ref_new ref_new "foo" 22 null))))
+
+(define obj-add-field-after-add
+  (term ([(ref_new ([(extensible #t)]
+         [("foo" [(value 22) (writable #t) (config #t) (enum #t)])]))]
+        [] []
+        22)))
+
+(test--> →s5 obj-add-field obj-add-field-after-add)

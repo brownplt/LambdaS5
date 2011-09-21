@@ -130,7 +130,6 @@
 
       (let ([x F]) e)
 
-      (label lbl F)
       (break lbl F)
 
       (throw F))
@@ -309,8 +308,10 @@
          (in-hole E ref_new))
         (fresh ref_new))
 
-   (--> (σ Σ Γ (in-hole E (get-field ref string val_args)))
-        (σ Σ Γ (in-hole E (get-field2 ref ref string val_args)))
+
+   ;; Field Access
+   (==> (get-field ref string val_args)
+        (get-field2 ref ref string val_args)
         "E-GetField2")
 
    (--> ([(ref_first obj_first) ... 
@@ -329,45 +330,125 @@
          (in-hole E val))
         "E-GetField-Found")
 
-    (--> ([(ref_first obj_first) ... 
-           (ref ([(obj-attr_1 val_1) ...
-                  (proto ref_proto)
-                  (obj-attr_2 val_2) ...]
-                 [(string_first property_first) ...]))
-           (ref_rest obj_rest) ...]
+   (--> ([(ref_first obj_first) ... 
+          (ref ([(obj-attr_1 val_1) ...
+                 (proto ref_proto)
+                 (obj-attr_2 val_2) ...]
+                [(string_first property_first) ...]))
+          (ref_rest obj_rest) ...]
+        Σ Γ
+        (in-hole E (get-field2 ref ref_this string val_args)))
+;; -->
+        ([(ref_first obj_first) ... 
+          (ref ([(obj-attr_1 val_1) ...
+                 (proto ref_proto)
+                 (obj-attr_2 val_2) ...]
+                [(string_first property_first) ...]))
+          (ref_rest obj_rest) ...]
+        Σ Γ
+        (in-hole E (get-field2 ref_proto ref_this string val_args)))
+       "E-GetField-Proto"
+       (side-condition (not (member (term string) (term (string_first ...))))))
+
+   (--> ([(ref_1 obj_1) ...
+          (ref (obj-attrs [(string_1 property_1) ...
+                           (string [(get val_getter) (set val_setter)
+                                    (config bool_1) (enum bool_2)])
+                           (string_n property_n) ...]))
+          (ref_n obj_n) ...]
          Σ Γ
          (in-hole E (get-field2 ref ref_this string val_args)))
 ;; -->
-         ([(ref_first obj_first) ... 
-           (ref ([(obj-attr_1 val_1) ...
-                  (proto ref_proto)
-                  (obj-attr_2 val_2) ...]
-                 [(string_first property_first) ...]))
-           (ref_rest obj_rest) ...]
+        ([(ref_1 obj_1) ...
+          (ref (obj-attrs [(string_1 property_1) ...
+                           (string [(get val_getter) (set val_setter)
+                                    (config bool_1) (enum bool_2)])
+                           (string_n property_n) ...]))
+          (ref_n obj_n) ...]
          Σ Γ
-         (in-hole E (get-field2 ref_proto ref_this string val_args)))
-        "E-GetField-Proto"
-        (side-condition (not (member (term string) (term (string_first ...))))))
+         (in-hole E (val_getter ref_this val_args)))
+         "E-GetField-Getter")
+
+   (--> ([(ref_1 obj_1) ...
+          (ref ([(obj-attr_1 val_1) ...
+                 (proto null)
+                 (obj-attr_n val_n) ...]
+                [(string property) ...]))
+          (ref_n obj_n) ...]
+         Σ Γ
+         (in-hole E (get-field2 ref ref_this string_lookup val_args)))
+;; -->
+        ([(ref_1 obj_1) ...
+          (ref ([(obj-attr_1 val_1) ...
+                 (proto null)
+                 (obj-attr_n val_n) ...]
+                [(string property) ...]))
+          (ref_n obj_n) ...]
+         Σ Γ
+         (in-hole E undefined))
+         "E-GetField-Not-Found")
+
+
+    ;; Field Update/Addition
+    (==> (set-field ref string val_new args)
+         (set-field2 ref ref string val_new args))
 
     (--> ([(ref_1 obj_1) ...
-           (ref (obj-attrs [(string_1 property_1) ...
-                            (string [(get val_getter) (set val_setter)
-                                     (config bool_1) (enum bool_2)])
-                            (string_n property_n) ...]))
+           (ref (obj-attrs
+                 [(string_1 property_1) ...
+                  (string [(value val) (writable #t)
+                           (config bool_1) (enum bool_1)])
+                  (string_n property_n) ...]))
            (ref_n obj_n) ...]
           Σ Γ
-          (in-hole E (get-field2 ref ref_this string val_args)))
+          (in-hole E (set-field2 ref ref_this string val_new val_args)))
 ;; -->
          ([(ref_1 obj_1) ...
-           (ref (obj-attrs [(string_1 property_1) ...
-                            (string [(get val_getter) (set val_setter)
-                                     (config bool_1) (enum bool_2)])
-                            (string_n property_n) ...]))
+           (ref (obj-attrs
+                 [(string_1 property_1) ...
+                  (string [(value val_new) (writable #t)
+                           (config bool_1) (enum bool_1)])
+                  (string_n property_n) ...]))
            (ref_n obj_n) ...]
           Σ Γ
-          (in-hole E (val_getter ref_this val_args))))
+          (in-hole E val_new))
+          "E-SetField")
 
-    (--> (σ Σ Γ (in-hole E (seq val e)))
-         (σ Σ Γ (in-hole E e)))
+    (--> ([(ref_1 obj_1) ...
+           (ref ([(obj-attr_1 val_1) ...
+                  (extensible #t)
+                  (obj-attr_n val_n) ...]
+                 [(string property) ...]))
+           (ref_n obj_n) ...]
+          Σ Γ
+          (in-hole E (set-field2 ref ref_this string_lookup val_new val_args)))
+;; -->
+         ([(ref_1 obj_1) ...
+           (ref ([(obj-attr_1 val_1) ...
+                  (extensible #t)
+                  (obj-attr_n val_n) ...]
+                 [(string_lookup [(value val_new) (writable #t)
+                                  (config #t) (enum #t)])
+                  (string property) ...]))
+           (ref_n obj_n) ...]
+          Σ Γ
+          (in-hole E val_new))
+         "E-SetField-Add"
+         (side-condition (not (member (term string_lookup) (term (string ...))))))
+
+    ;; boring, standard stuff
+    (==> (seq val_1 val_2) val_2 "E-Seq-Result")
+
+    (==> (if #t e_1 e_2)
+         e_1
+         "E-If-True")
+
+    (==> (if #f e_1 e_2)
+         e_2
+         "E-If-False")
+
+    with
+    [(--> (σ Σ Γ (in-hole E e_1)) (σ Σ Γ (in-hole E e_2)))
+     (==> e_1 e_2)]
 ))
 
