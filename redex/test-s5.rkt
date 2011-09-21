@@ -1,4 +1,5 @@
 #lang racket
+
 (require redex)
 (require "s5.rkt")
 
@@ -131,4 +132,16 @@
 (test--> →s5 obj-with-proto-after-obj obj-with-proto-after-obj-again)
 (test--> →s5 obj-with-proto-after-obj-again obj-with-proto-after-g2)
 
+(define obj-getter
+  (term ([] [] [] (get-field (object [(proto
+    (object [] [("getter" [(get (λ (this args) 27))
+                           (set null) (config #f) (enum #f)])]))] [])
+    "getter" null))))
 
+(test-->> →s5 obj-getter 
+  (term ([(ref_new1 (((proto ref_new)) ()))
+          (ref_new (() [("getter" [(get (() : (λ (this args) 27)))
+                        (set null) (config #f) (enum #f)])]))]
+         [(loc ref_new1) (loc1 null)]
+         [(this loc) (args loc1)]
+         27)))

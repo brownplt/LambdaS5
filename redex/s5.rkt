@@ -23,7 +23,7 @@
   (accessor-e ((get e) (set e)       (config e) (enum e)))
   (data-e ((value e) (writable bool) (config e) (enum e)))
 
-  (attr get set data writable config enum)
+  (attr get set value writable config enum)
   (obj-attr code primval proto extensible klass)
 
   (property accessor data)
@@ -87,12 +87,12 @@
    ((f g x y z loc ref) variable-not-otherwise-mentioned)
 
    ;; try-catch contexts
-   (F-property hole
-      (string (data-e (data F) (writable bool) (config bool) (enum bool)))
-      (string (accessor-e (get F) (set e) (config bool) (enum bool)))
-      (string (accessor-e (get val) (set F) (config bool) (enum bool))))
+   (F-property
+      (string ((value F) (writable bool) (config bool) (enum bool)))
+      (string ((get F) (set e) (config bool) (enum bool)))
+      (string ((get val) (set F) (config bool) (enum bool))))
 
-   (F-attrs hole
+   (F-attrs
       [(obj-attr val) ... (obj-attr F) (obj-attr e) ...])
 
    (F hole
@@ -140,12 +140,12 @@
 
       (throw F))
 
-   (G-property hole
-      (string (data-e (data G) (writable bool) (config bool) (enum bool)))
-      (string (accessor-e (get G) (set e) (config bool) (enum bool)))
-      (string (accessor-e (get val) (set G) (config bool) (enum bool))))
+   (G-property
+      (string ((value G) (writable bool) (config bool) (enum bool)))
+      (string ((get G) (set e) (config bool) (enum bool)))
+      (string ((get val) (set G) (config bool) (enum bool))))
 
-   (G-attrs hole
+   (G-attrs
       [(obj-attr val) ... (obj-attr G) (obj-attr e) ...])
 
    (G hole
@@ -195,12 +195,12 @@
       (catch G e))
 
    ;; Top-level contexts
-   (E-property hole
-      (string (data-e (data E) (writable bool) (config bool) (enum bool)))
-      (string (accessor-e (get E) (set e) (config bool) (enum bool)))
-      (string (accessor-e (get val) (set E) (config bool) (enum bool))))
+   (E-property
+      (string ((value E) (writable bool) (config bool) (enum bool)))
+      (string ((get E) (set e) (config bool) (enum bool)))
+      (string ((get val) (set E) (config bool) (enum bool))))
 
-   (E-attrs hole
+   (E-attrs
       [(obj-attr val) ... (obj-attr E) (obj-attr e) ...])
 
    (E hole
@@ -247,7 +247,8 @@
       (break lbl E)
 
       (throw E)
-      (catch E e)))
+      (catch E e)
+      (finally E e)))
 
 ;; full terms are of the form
 ;; (σ, Σ, Γ, e)
@@ -341,7 +342,8 @@
            (ref_rest obj_rest) ...]
          Σ Γ
          (in-hole E (get-field2 ref ref_this string val_args)))
-        ([(ref_first obj_first) ... 
+;; -->
+         ([(ref_first obj_first) ... 
            (ref ([(obj-attr_1 val_1) ...
                   (proto ref_proto)
                   (obj-attr_2 val_2) ...]
@@ -352,7 +354,25 @@
         "E-GetField-Proto"
         (side-condition (not (member (term string) (term (string_first ...))))))
 
-   (--> (σ Σ Γ (in-hole E (seq val e)))
-        (σ Σ Γ (in-hole E e)))
+    (--> ([(ref_1 obj_1) ...
+           (ref (obj-attrs [(string_1 property_1) ...
+                            (string [(get val_getter) (set val_setter)
+                                     (config bool_1) (enum bool_2)])
+                            (string_n property_n) ...]))
+           (ref_n obj_n) ...]
+          Σ Γ
+          (in-hole E (get-field2 ref ref_this string val_args)))
+;; -->
+         ([(ref_1 obj_1) ...
+           (ref (obj-attrs [(string_1 property_1) ...
+                            (string [(get val_getter) (set val_setter)
+                                     (config bool_1) (enum bool_2)])
+                            (string_n property_n) ...]))
+           (ref_n obj_n) ...]
+          Σ Γ
+          (in-hole E (val_getter ref_this val_args))))
+
+    (--> (σ Σ Γ (in-hole E (seq val e)))
+         (σ Σ Γ (in-hole E e)))
 ))
 
