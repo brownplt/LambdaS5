@@ -266,7 +266,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       S.Lambda (p, ["a"; "b"],
         S.Op2 (p, op, S.Id (p, "a"), S.Id (p, "b"))) in
     let sl = ejs_to_ljs l and sr = ejs_to_ljs r in
-    let result = match op with
+    begin match op with
       | "&&" ->
         S.Let (p, "%l-evaled", sl,
           S.If (p, 
@@ -291,10 +291,14 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
         S.App (p, S.Id (p, "%BitwiseInfix"), [sl; sr; op_func])
       | "*" | "%" | "/" -> 
         S.App (p, S.Id (p, "%PrimMultOp"), [sl; sr; op_func])
+      | "<" -> S.App (p, S.Id (p, "%LessThan"), [sl; sr])
+      | ">" -> S.App (p, S.Id (p, "%GreaterThan"), [sl; sr])
+      | "<=" -> S.App (p, S.Id (p, "%LessEqual"), [sl; sr])
+      | ">=" -> S.App (p, S.Id (p, "%GreaterEqual"), [sl; sr])
       | "instanceof" -> S.App (p, S.Id (p, "%instanceof"), [sl; sr])
-      | _ -> let op = match op with
-        | "===" -> "stx="
-        | _ -> op in S.Op2 (p, op, sl, sr) in result
+      | "===" -> S.Op2 (p, "stx=", sl, sr)
+      | _ -> failwith ("fatal: unknown infix operator: " ^ op)
+    end
   | E.IfExpr (p, e1, e2, e3) -> let e1 = ejs_to_ljs e1
     and e2 = ejs_to_ljs e2
     and e3 = ejs_to_ljs e3 in 
