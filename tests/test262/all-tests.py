@@ -1,7 +1,9 @@
+import datetime
 import os
 import subprocess
-import time
 import sys
+import time
+
 from single_test import *
 
 result_dir = "results-new"
@@ -53,9 +55,9 @@ def testDir(d):
   if failed == 0:
     color = 'passed'
 
-  return ("<li class='%s'>%s; %s passed, %s failed \
+  return ("<li class='%s'>%s; %s passed, %s failed, %s skipped \
           <a href='#' class='toggle'>(show/hide)</a> \
-          <ul class='showing'>%s</ul></li>" % (color, str(d), passed, failed, inner),
+	  <ul class='showing'>%s</ul></li>" % (color, str(d), passed, failed, skipped, inner),
           passed,
           failed,
           skipped)
@@ -146,7 +148,11 @@ def dirTests(d):
     f2.write("%s %s %s" % (result[1], result[2], result[3]))
 
 def makeFrontPage():
-  html = "<html><head></head><ul>%s</ul><div>Total: %s/%s (%s skipped)</div></html>"
+  html = """
+<html><head></head>
+Tests run at %s
+<ul>%s</ul><div>Total: %s/%s (%s skipped)</div></html>
+"""
   l = ""
   totalS = 0
   totalF = 0
@@ -154,16 +160,17 @@ def makeFrontPage():
   for chapter in sorted(os.listdir(result_dir)):
     if chapter[-6:] == 'result':
       line = file(os.path.join(result_dir, chapter)).readline()
+      print(chapter)
       if line: [success, fail, skip] = line.split(" ")
       else: continue
-      l += "<li><a href='%s.html'>%s</a> (%s/%s)</li>" % \
-              (chapter[0:-7], chapter[0:-7], success, int(success)+int(fail))
+      l += "<li><a href='%s.html'>%s</a> (%s/%s, %s skipped)</li>" % \
+              (chapter[0:-7], chapter[0:-7], success, int(success)+int(fail), skip)
       totalS += int(success)
       totalF += int(fail)
       totalSk += int(skip)
 
   summary = open(os.path.join(result_dir, 'summary.html'), "w")
-  summary.write(html % (l, totalS, totalS + totalF, totalSk))
+  summary.write(html % (str(datetime.datetime.now()), l, totalS, totalS + totalF, totalSk))
 
 def main(args):
   spiderMonkeyDir = 'test262/test/suite/sputnik_converted'
@@ -189,7 +196,7 @@ def main(args):
       f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
       result = testDir(os.path.join(d, chapter))
       f.write(template % result[0])
-      f2.write("%s %s" % (result[1], result[2]))
+      f2.write("%s %s %s" % (result[1], result[2], result[3]))
 
   makeFrontPage()
 
