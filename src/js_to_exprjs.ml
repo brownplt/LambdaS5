@@ -233,4 +233,4 @@ and create_context (ss : J.srcElt list) (parent : E.expr) : E.expr =
   let last = srcElts reordered parent in
   fvl_to_letchain free_vars last
 
-let js_to_exprjs = create_context
+let js_to_exprjs ss parent = (J.used_vars_sel ss, create_context ss parent)

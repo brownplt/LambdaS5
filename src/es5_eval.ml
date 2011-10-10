@@ -443,12 +443,12 @@ and eval_op str env jsonPath =
   end;
   let ast =
     parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
-  let exprjsd = 
+  let (used_ids, exprjsd) = 
     try
       js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
     with ParseError _ -> raise (Throw (String "EvalError"))
     in
-  let desugard = exprjs_to_ljs exprjsd in
+  let desugard = exprjs_to_ljs used_ids exprjsd in
   if (IdMap.mem "%global" env) then
     (Es5_pretty.exp desugard std_formatter; print_newline ();
      eval jsonPath desugard env (* TODO: which env? *))
