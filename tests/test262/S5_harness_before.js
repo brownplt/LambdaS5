@@ -19,6 +19,9 @@ function testRun(id, path, description, codeString, preconditionString, result, 
 var ES5Harness = {};
 ES5Harness.registerTest = function(test) {
     var error;
+    if(test.strict === 1) {
+      print("STRICT TEST");
+    }
     if(test.precondition && !test.precondition()) {
         testRun(test.id, test.path, test.description, test.test.toString(),typeof test.precondition !== 'undefined' ? test.precondition.toString() : '', 'fail', 'Precondition Failed');
     } else {
