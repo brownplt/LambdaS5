@@ -10,7 +10,6 @@ open Exprjs_pretty
 module S5 = struct
 
   open Format
-  open SpiderMonkey
   open Js_to_exprjs
   open Exprjs_to_ljs
   open Exprjs_syntax
@@ -44,8 +43,14 @@ module S5 = struct
     let envFunc = Es5.parse_es5_env (open_in path) path in
     srcES5 := envFunc !srcES5
 
-  let desugar_js (path : string) : unit = 
-    let ast = parse_spidermonkey (open_in path) path in
+  let desugar_spidermonkey_js (path : string) : unit = 
+    let ast = SpiderMonkey.parse_spidermonkey (open_in path) path in
+    let exprjsd = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
+    let desugard = exprjs_to_ljs exprjsd in
+    srcEJS := exprjsd; srcES5 := desugard
+
+  let desugar_c3_js (path : string) : unit = 
+    let ast = C3.parse_c3 (open_in path) path in
     let exprjsd = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
     let desugard = exprjs_to_ljs exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
@@ -53,7 +58,9 @@ module S5 = struct
   let main () : unit =
     Arg.parse
       [
-        ("-desugar", Arg.String desugar_js,
+        ("-desugar", Arg.String desugar_spidermonkey_js,
+        "<file> desugar json ast file");
+        ("-c3desugar", Arg.String desugar_c3_js,
         "<file> desugar json ast file");
         ("-s5", Arg.String load_s5,
          "<file> load file as s5");

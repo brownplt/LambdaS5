@@ -17,6 +17,8 @@ val text : string -> printer
 
 val int : int -> printer
 
+val float : float -> printer
+
 val enclose : string -> string -> printer -> printer
 
 val parens : printer -> printer
