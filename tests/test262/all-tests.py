@@ -18,7 +18,7 @@ def testFile(useC3, f):
   if parsed == "ParseError":
     return (mkRow('skipped', " (ParseError)"), 0, 0, 1, 0, 0)
 
-  (typ, stdout, stderr) = run(parsed)
+  (typ, stdout, stderr) = run(useC3, parsed)
   strict = 0
   if not (stdout is None) and (stdout.find("STRICT TEST") != -1):
     strict = 1
@@ -196,13 +196,13 @@ def main(args):
     pass
 
   argparser = argparse.ArgumentParser(description='Launch all test262 tests')
-  argparser.add_argument("action", choices = ["sp", "ie", "regen"], required = False)
+  argparser.add_argument("action", choices = ["sp", "ie", "regen"])
   argparser.add_argument("-c3", action='store_true')
   argparser.add_argument("chapters", nargs="*")
 
   args = argparser.parse_args()
 
-  if len(args.chapters) == 1 && args.action == None:
+  if len(args.chapters) == 1 and args.action == None:
     dirTests(args.c3, spiderMonkeyDir)
     dirTests(args.c3, ieDir)
   else:
