@@ -131,7 +131,6 @@ and mem (v : json_type) : mem =
   if (is_array v) 
   then match (list v) with
   | [name'; value'] ->
-      let _ = print_string ("value' is " ^ (Json_type.json_to_string value' 3) ^ "\n") in
       let name = propName name' in
       let value = expr value' in
       begin match string (get "type" value') with
@@ -178,6 +177,7 @@ and expr (v : json_type) : expr =
   let mkInfix p op v = Infix (p, op, expr (get "operand1" v), expr (get "operand2" v)) in
   match typ with
     | "ConstantWrapper" -> Lit (p, literal v)
+    | "RegExpLiteral" -> Lit (p, Regexp (string (get "source" v))) (* this is incomplete *)
     | "SimpleName" -> Id (p, string (get "name" v))
     | "ThisLiteral" -> This p
     | "ArrayLiteral" ->
@@ -221,17 +221,17 @@ and expr (v : json_type) : expr =
     | "BitwiseBinaryAssign" 
     | "NumericBinaryAssign" ->
 	let op = match (string (get "operatorTok" v)) with
-	| "BitwiseAndAssign" -> "&="
-	| "BitwiseOrAssign" -> "|="
-	| "BitwiseXorAssign" -> "^="
-	| "DivideAssign" -> "/="
-	| "LeftShiftAssign" -> "<<="
-	| "MinusAssign" -> "-="
-	| "ModuloAssign" -> "%="
-	| "MultiplyAssign" -> "*="
-	| "RightShiftAssign" -> ">>="
-	| "UnsignedRightShiftAssign" -> ">>>="
-	| _ -> failwith (sprintf "Unknown %s operator: %s" typ (string (get "operatorTok" v))) in 
+	| "BitwiseAnd" -> "&="
+	| "BitwiseOr" -> "|="
+	| "BitwiseXor" -> "^="
+	| "Divide" -> "/="
+	| "LeftShift" -> "<<="
+	| "Minus" -> "-="
+	| "Modulo" -> "%="
+	| "Multiply" -> "*="
+	| "RightShift" -> ">>="
+	| "UnsignedRightShift" -> ">>>="
+	| _ -> failwith (sprintf "Unknown %s operator: %s" typ (Json_type.json_to_string v 3)) in 
 	Assign (p, op, expr (get "operand1" v), expr (get "operand2" v))
     | "Plus" -> mkInfix p "+" v
     | "PlusAssign" -> 	Assign (p, "+=", expr (get "operand1" v), expr (get "operand2" v))
@@ -248,7 +248,7 @@ and expr (v : json_type) : expr =
 	| "UnaryMinus" -> mkPrefix p "-" v
 	| "BitwiseNot" -> mkPrefix p "~" v
 	| "LogicalNot" -> mkPrefix p "!" v
-	| _ -> failwith (sprintf "Unknown NumericUnary operator: %s" (string (get "operatorTok" v)))
+	| _ -> failwith (sprintf "Unknown NumericUnary operator: %s" (Json_type.json_to_string v 3))
 	end
     | "PostOrPrefixOperator" ->
 	let mkAssign p op v = UnaryAssign (p, op, expr (get "operand" v)) in
@@ -257,7 +257,7 @@ and expr (v : json_type) : expr =
 	| "PrefixDecrement" -> mkAssign p "prefix:--" v
 	| "PostfixIncrement" -> mkAssign p "postfix:++" v
 	| "PostfixDecrement" -> mkAssign p "postfix:--" v
-	| _ -> failwith (sprintf "Unknown PostOrPrefix operator: %s" (string (get "operatorTok" v)))
+	| _ -> failwith (sprintf "Unknown PostOrPrefix operator: %s" (Json_type.json_to_string v 3))
 	end
     | "Conditional" ->
       Cond (p, expr (get "condition" v), expr (get "operand1" v),
@@ -266,6 +266,7 @@ and expr (v : json_type) : expr =
 	if bool (get "isConstructor" v) 
 	then New (p, expr (get "func" v), map expr (list (get "args" v)))
 	else Call (p, expr (get "func" v), map expr (list (get "args" v)))
+    | "Eval" -> Call (p, Lit(p, Str "eval"), [expr (get "operand" v)]) (* this is a hack *)
     | "ParenExpression" -> expr (get "wrapped" v)
     | "Indexer" -> Bracket (p, expr (get "obj" v), expr (get "index" v))
     | "QualifiedName" -> Dot (p, expr (get "rootObject" v), string (get "name" v))

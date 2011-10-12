@@ -3,17 +3,18 @@ import os
 import subprocess
 import sys
 import time
+import argparse
 
 from single_test import *
 
 result_dir = "results-new"
 
-def testFile(f):
+def testFile(useC3, f):
   def mkRow(typ, message):
     return "<li class='%s'><a href='%s'>%s</a>%s</li>" % \
       (typ, str(f), str(f), message)
 
-  parsed = parse(buildHarnessed(open(f)))
+  parsed = parse(useC3, buildHarnessed(open(f)))
   if parsed == "ParseError":
     return (mkRow('skipped', " (ParseError)"), 0, 0, 1, 0, 0)
 
@@ -37,7 +38,7 @@ def testFile(f):
               <p>%s</p> \
             </li>" % (str(f), str(f), typ, stdout, stderr), 0, 1, 0, 0, strict)
 
-def testDir(d):
+def testDir(useC3, d):
   files = os.listdir(str(d))
   inner = ""
   passed = 0
@@ -48,9 +49,9 @@ def testDir(d):
   for f in files:
     f = os.path.join(str(d), f)
     if(os.path.isdir(f)):
-      (fHtml, fPassed, fFailed, fSkipped, fsPassed, fsFailed) = testDir(f)
+      (fHtml, fPassed, fFailed, fSkipped, fsPassed, fsFailed) = testDir(useC3, f)
     else:
-      (fHtml, fPassed, fFailed, fSkipped, fsPassed, fsFailed) = testFile(f)
+      (fHtml, fPassed, fFailed, fSkipped, fsPassed, fsFailed) = testFile(useC3, f)
     passed += fPassed
     failed += fFailed
     spassed += fsPassed
@@ -148,11 +149,11 @@ def usage():
       whatever information it finds in the test directory.
   """)
 
-def dirTests(d):
+def dirTests(useC3, d):
   for chapter in os.listdir(d):
     f = open(os.path.join(result_dir, chapter + ".html"), "w")
     f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
-    result = testDir(os.path.join(d, chapter))
+    result = testDir(useC3, os.path.join(d, chapter))
     f.write(template % result[0])
     f2.write("%s %s %s %s %s" % result[1:])
 
@@ -194,20 +195,25 @@ def main(args):
     # (couldn't find mkdir -p equivalent)
     pass
 
-  if len(args) == 1:
-    dirTests(spiderMonkeyDir)
-    dirTests(ieDir)
+  argparser = argparse.ArgumentParser(description='Launch all test262 tests')
+  argparser.add_argument("action", choices = ["sp", "ie", "regen"], required = False)
+  argparser.add_argument("-c3", action='store_true')
+  argparser.add_argument("chapters", nargs="*")
+
+  args = argparser.parse_args()
+
+  if len(args.chapters) == 1 && args.action == None:
+    dirTests(args.c3, spiderMonkeyDir)
+    dirTests(args.c3, ieDir)
   else:
-    if (args[1] == "sp"): d = spiderMonkeyDir
-    elif (args[1] == "ie"): d = ieDir
-    elif (args[1] == "regen"): makeFrontPage(); return
-    else:
-      usage()
-      return
-    for chapter in args[2:]:
+    if (args.action == "regen"): makeFrontPage(); return
+    elif (args.action == "sp"): d = spiderMonkeyDir
+    else: d = ieDir
+
+    for chapter in args.chapters:
       f = open(os.path.join(result_dir, chapter + ".html"), "w")
       f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
-      result = testDir(os.path.join(d, chapter))
+      result = testDir(args.c3, os.path.join(d, chapter))
       f.write(template % result[0])
       f2.write("%s %s %s %s %s" % result[1:])
 
