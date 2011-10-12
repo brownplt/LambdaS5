@@ -752,11 +752,21 @@ and appexpr_check f app p =
   let error = throw_typ_error p in 
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
     S.If (p, not_function, error, app))
+
+let add_preamble used_ids final = 
+  let p = dummy_pos in
+  let define_id id =
+    S.App (p, S.Id (p, "%defineGlobalAccessors"), [S.String (p, id)]) in
+  let rec dops_of_ids lst = match lst with
+    | [] -> final
+    | [id] -> S.Seq (p, define_id id, final)
+    | id :: rest -> S.Seq (p, define_id id, dops_of_ids rest) in
+  dops_of_ids (IdSet.elements used_ids)
     
-let exprjs_to_ljs (e : E.expr) : S.exp =
+let exprjs_to_ljs (used_ids : IdSet.t) (e : E.expr) : S.exp =
   let p = dummy_pos in
   let (uids, real_body, ncontext) = create_context p [] e (Some (S.Id (p, "%global"))) in
   let desugared = ejs_to_ljs real_body in
   let final = 
     S.Let (p, "%this", S.Id (p, "%context"), desugared) in
-  (S.Let (p, "%context", ncontext, final))
+  add_preamble used_ids (S.Let (p, "%context", ncontext, final))
