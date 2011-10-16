@@ -2,23 +2,26 @@
 (require redex)
 (provide s5 →s5)
 
-;; This should be easy to match up with es5_values.ml and es5_syntax.ml
+;; This should be easy to match up with es5_eval and es5_syntax.ml
 (define-language s5
+  (P (σ Σ Γ e))
   ;; variable store
-  (Σ ((loc val) ...))
+  (loc (variable-prefix loc))
+  (Σ ((loc_!_ val) ...))
   ;; object store
-  (σ ((ref obj) ...))
+  (ref (variable-prefix ref))
+  (σ ((ref_!_ obj) ...))
   ;; explicit closure environments
   (Γ ((x loc) ...))
   (bool #t #f)
 
-  (accessor ((get val) (set val)     (config bool) (enum bool)))
-  (data ((value val) (writable bool) (config bool) (enum bool)))
+  (accessor ((@g val) (@s val) (@c bool) (@e bool)))
+  (data ((@v val) (@w bool) (@c bool) (@e bool)))
 
-  (accessor-e ((get e) (set e)       (config e) (enum e)))
-  (data-e ((value e) (writable bool) (config e) (enum e)))
+  (accessor-e ((@g e) (@s e) (@c e) (@e e)))
+  (data-e ((@v e) (@w bool) (@c e) (@e e)))
 
-  (attr get set value writable config enum)
+  (attr @g @s @v @w @c @e)
   (obj-attr code primval proto extensible klass)
 
   (property accessor data)
@@ -27,12 +30,15 @@
   (obj-attrs [(obj-attr_!_ val) ...])
   (obj-attrs-e [(obj-attr_!_ e) ...])
 
-  (obj (obj-attrs [(string property) ...]))
+  (s string)
 
-  (prim number string #t #f undefined null)
+  (obj (obj-attrs [(s property) ...]))
+
+  (prim number s #t #f undefined null)
   (val prim
        (Γ : (λ (x_!_ ...) e))
-       ref)
+       ref
+       loc)
 
   (op1 typeof surface-typeof primitive? prim->str prim->num
        prim->num prim->bool is-callable is-extensible
@@ -79,13 +85,13 @@
      (finally e e)
      (throw e))
 
-   ((f g x y z loc ref) variable-not-otherwise-mentioned)
+   ((f g x y z) variable-not-otherwise-mentioned)
 
    ;; try-catch contexts
    (F-property
-      (string ((value F) (writable bool) (config bool) (enum bool)))
-      (string ((get F) (set e) (config bool) (enum bool)))
-      (string ((get val) (set F) (config bool) (enum bool))))
+      (string ((@v F) (@w bool) (@c bool) (@e bool)))
+      (string ((@g F) (@s e) (@c bool) (@e bool)))
+      (string ((@g val) (@s F) (@c bool) (@e bool))))
 
    (F-attrs
       [(obj-attr val) ... (obj-attr F) (obj-attr e) ...])
@@ -135,9 +141,9 @@
       (throw F))
 
    (G-property
-      (string ((value G) (writable bool) (config bool) (enum bool)))
-      (string ((get G) (set e) (config bool) (enum bool)))
-      (string ((get val) (set G) (config bool) (enum bool))))
+      (string ((@v G) (@w bool) (@c bool) (@e bool)))
+      (string ((@g G) (@s e) (@c bool) (@e bool)))
+      (string ((@g val) (@s G) (@c bool) (@e bool))))
 
    (G-attrs
       [(obj-attr val) ... (obj-attr G) (obj-attr e) ...])
@@ -190,9 +196,9 @@
 
    ;; Top-level contexts
    (E-property
-      (string ((value E) (writable bool) (config bool) (enum bool)))
-      (string ((get E) (set e) (config bool) (enum bool)))
-      (string ((get val) (set E) (config bool) (enum bool))))
+      (string ((@v E) (@w bool) (@c bool) (@e bool)))
+      (string ((@g E) (@s e) (@c bool) (@e bool)))
+      (string ((@g val) (@s E) (@c bool) (@e bool))))
 
    (E-attrs
       [(obj-attr val) ... (obj-attr E) (obj-attr e) ...])
@@ -316,14 +322,14 @@
 
    (--> ([(ref_first obj_first) ... 
           (ref (obj-attrs [(string_first property_first) ...
-                (string [(value val) (writable bool) (config bool) (enum bool)])
+                (string [(@v val) (@w bool) (@c bool) (@e bool)])
                 (string_rest property_rest) ...]))
           (ref_rest obj_rest) ...]
          Σ Γ
          (in-hole E (get-field2 ref ref_this string val_args)))
         ([(ref_first obj_first) ... 
           (ref (obj-attrs [(string_first property_first) ...
-                (string [(value val) (writable bool) (config bool) (enum bool)])
+                (string [(@v val) (@w bool) (@c bool) (@e bool)])
                 (string_rest property_rest) ...]))
           (ref_rest obj_rest) ...]
          Σ Γ
@@ -351,19 +357,19 @@
        (side-condition (not (member (term string) (term (string_first ...))))))
 
    (--> ([(ref_1 obj_1) ...
-          (ref (obj-attrs [(string_1 property_1) ...
-                           (string [(get val_getter) (set val_setter)
-                                    (config bool_1) (enum bool_2)])
-                           (string_n property_n) ...]))
+          (ref (obj-attrs
+                [(string_1 property_1) ...
+                 (string [(@g val_getter) (@s val_setter) (@c bool_1) (@e bool_2)])
+                 (string_n property_n) ...]))
           (ref_n obj_n) ...]
          Σ Γ
          (in-hole E (get-field2 ref ref_this string val_args)))
 ;; -->
         ([(ref_1 obj_1) ...
-          (ref (obj-attrs [(string_1 property_1) ...
-                           (string [(get val_getter) (set val_setter)
-                                    (config bool_1) (enum bool_2)])
-                           (string_n property_n) ...]))
+          (ref (obj-attrs
+                [(string_1 property_1) ...
+                 (string [(@g val_getter) (@s val_setter) (@c bool_1) (@e bool_2)])
+                 (string_n property_n) ...]))
           (ref_n obj_n) ...]
          Σ Γ
          (in-hole E (val_getter ref_this val_args)))
@@ -386,18 +392,18 @@
           (ref_n obj_n) ...]
          Σ Γ
          (in-hole E undefined))
-         "E-GetField-Not-Found")
+         "E-GetField-Not-Found"
+         (side-condition (not (member (term string_lookup) (term (string ...))))))
 
 
     ;; Field Update/Addition
-    (==> (set-field ref string val_new args)
-         (set-field2 ref ref string val_new args))
+    (==> (set-field ref string val_new val_args)
+         (set-field2 ref ref string val_new val_args))
 
     (--> ([(ref_1 obj_1) ...
            (ref (obj-attrs
                  [(string_1 property_1) ...
-                  (string [(value val) (writable #t)
-                           (config bool_1) (enum bool_1)])
+                  (string [(@v val) (@w #t) (@c bool_1) (@e bool_1)])
                   (string_n property_n) ...]))
            (ref_n obj_n) ...]
           Σ Γ
@@ -406,8 +412,7 @@
          ([(ref_1 obj_1) ...
            (ref (obj-attrs
                  [(string_1 property_1) ...
-                  (string [(value val_new) (writable #t)
-                           (config bool_1) (enum bool_1)])
+                  (string [(@v val_new) (@w #t) (@c bool_1) (@e bool_1)])
                   (string_n property_n) ...]))
            (ref_n obj_n) ...]
           Σ Γ
@@ -424,17 +429,34 @@
           (in-hole E (set-field2 ref ref_this string_lookup val_new val_args)))
 ;; -->
          ([(ref_1 obj_1) ...
-           (ref ([(obj-attr_1 val_1) ...
-                  (extensible #t)
-                  (obj-attr_n val_n) ...]
-                 [(string_lookup [(value val_new) (writable #t)
-                                  (config #t) (enum #t)])
+           (ref ([(obj-attr_1 val_1) ... (extensible #t) (obj-attr_n val_n) ...]
+                 [(string_lookup [(@v val_new) (@w #t) (@c #t) (@e #t)])
                   (string property) ...]))
            (ref_n obj_n) ...]
           Σ Γ
           (in-hole E val_new))
          "E-SetField-Add"
          (side-condition (not (member (term string_lookup) (term (string ...))))))
+
+    (--> ([(ref_1 obj_1) ...
+           (ref ([(obj-attr val) ...]
+                 [(string_1 property_1) ...
+                  (string_x [(@g val_g) (@s val_s) (@c bool_c) (@e bool_e)])
+                  (string_n property_n) ...]))
+           (ref_n obj_n) ...]
+          Σ Γ
+          (in-hole E (set-field2 ref ref_this string_x val_new val_args)))
+;; -->
+         ([(ref_1 obj_1) ...
+           (ref ([(obj-attr val) ...]
+                 [(string_1 property_1) ...
+                  (string_x [(@g val_g) (@s val_s) (@c bool_c) (@e bool_e)])
+                  (string_n property_n) ...]))
+           (ref_n obj_n) ...]
+          Σ Γ
+          (in-hole E (seq (val_s ref_this val_args)
+                          val_new)))
+        "E-SetField-Setter")
 
     ;; boring, standard stuff
     (==> (seq val_1 val_2) val_2 "E-Seq-Result")
