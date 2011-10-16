@@ -32,15 +32,21 @@ print('done');
   return alljs
 
 
-def parse(js):
+def parse(useC3, js):
   (jsfile, jsfilename) = tempfile.mkstemp()
+  if (useC3): jsfilename = jsfilename.replace('\\', '\\\\')
   jsfile = os.fdopen(jsfile, 'w')
   parsejs = "print(JSON.stringify(Reflect.parse(read('%s'),{loc:true}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" % jsfilename
   jsfile.write(js)
   jsfile.flush()
   jsfile.close()
 
-  runner = subprocess.Popen(["../../bin/js", "-e", parsejs],
+  if useC3:
+    command = ["../../bin/jstest.exe", "-e", parsejs]
+  else:
+    command = ["../../bin/js", "-e", parsejs]
+
+  runner = subprocess.Popen(command,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -50,9 +56,11 @@ def parse(js):
 
   os.remove(jsfilename)
 
+  err = err.decode('utf-8')
   if err.find("SyntaxError") != -1 or err.find("ReferenceError") != -1:
     return 'ParseError'
 
+  out = out.decode('utf-8')
   if out != "":
     return out
   else:
@@ -64,22 +72,31 @@ failed       = "HARNESS: Failed"
 jsonerr      = "Json_type.Json_error"
 ocamlfailure = "Failure"
 
-def run(json):
+def run(useC3, json):
   (jsonfile, jsonfilename) = tempfile.mkstemp()
   jsonfile = os.fdopen(jsonfile, 'w')
   jsonfile.write(json)
   jsonfile.close()
 
-  p = subprocess.Popen(["ocamlrun", "../../obj/s5.d.byte",
-                        "-desugar", jsonfilename,
-                        "-env", "../../envs/es5.env",
-                        "-json", "./desugar.sh",
-                        "-eval"],
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        cwd=".")
+  if useC3:
+    command = ["ocamlrun", "../../obj/s5.d.byte",
+               "-c3desugar", jsonfilename,
+               "-env", "../../envs/es5.env",
+               "-json", "./c3desugar.bat",
+               "-eval"]
+  else:
+    command = ["ocamlrun", "../../obj/s5.d.byte",
+               "-desugar", jsonfilename,
+               "-env", "../../envs/es5.env",
+               "-json", "./desugar.sh",
+               "-eval"]
 
+  p = subprocess.Popen(command,
+                       stdin=subprocess.PIPE,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE,
+                       cwd=".")
+  
   start = time.time()
 
   try:
@@ -92,6 +109,8 @@ def run(json):
         return ("Timeout", None, None)
       elif (not p.returncode is None):
         (out, err) = p.communicate()
+        out = out.decode('utf-8')
+        err = err.decode('utf-8')
         if (out.find(passed) != -1):
           return ("Success", out, err)
         elif (out.find(failed) != -1):
@@ -108,4 +127,11 @@ def run(json):
     os.remove(jsonfilename)
 
 if __name__ == '__main__':
-  print(run(parse(buildHarnessed(open(sys.argv[1])))))
+  if sys.argv[1] == "-c3":
+    useC3 = True
+    fileName = sys.argv[2]
+  else:
+    useC3 = False
+    fileName = sys.argv[1]
+  
+  print(run(useC3, parse(useC3, buildHarnessed(open(filename)))))

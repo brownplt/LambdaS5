@@ -21,6 +21,8 @@ val float : t -> float
 
 val get : string -> t -> t
 
+val try_get : string -> t -> t option
+
 val list : t -> t list
 
 val is_null : t -> bool
@@ -28,3 +30,5 @@ val is_null : t -> bool
 val is_array : t -> bool
 
 val bool : t -> bool
+
+val json_to_string : t -> int -> string

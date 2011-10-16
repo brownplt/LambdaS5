@@ -39,6 +39,8 @@ let text s fmt = pp_print_string fmt s
  
 let int n fmt = pp_print_int fmt n
  
+let float f fmt = pp_print_float fmt f
+ 
 let enclose l r (inner : printer) (fmt : formatter) = 
   pp_open_box fmt 2;
   pp_print_string fmt l;
