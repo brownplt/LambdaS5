@@ -55,6 +55,9 @@ and prop =
 and case =
   | Case of pos * expr * expr
   | Default of pos * expr
+
+val pos_of_expr : expr -> pos
+
   (*
    *
 val from_javascript : JavaScript_syntax.prog -> expr

@@ -48,6 +48,7 @@ type exp =
   | Throw of pos * exp
   | Lambda of pos * id list * exp
   | Eval of pos * exp
+  | Hint of pos * string * exp
 and data =       
     {value : exp;
      writable : bool; }
@@ -80,3 +81,33 @@ let d_accessor =
   { getter = Undefined dummy_pos;
     setter = Undefined dummy_pos; }
 
+let pos_of exp = match exp with
+  | Null pos -> pos
+  | Undefined pos -> pos
+  | String (pos, _) -> pos
+  | Num (pos, _) -> pos
+  | True pos -> pos
+  | False pos -> pos
+  | Id (pos, _) -> pos
+  | Object (pos, _, _) -> pos
+  | GetAttr (pos, _, _, _) -> pos
+  | SetAttr (pos, _, _, _, _) -> pos
+  | GetField (pos, _, _, _) -> pos 
+  | SetField (pos, _, _, _, _) -> pos 
+  | DeleteField (pos, _, _) -> pos
+  | SetBang (pos, _, _) -> pos
+  | Op1 (pos, _, _) -> pos
+  | Op2 (pos, _, _, _) -> pos
+  | If (pos, _, _, _) -> pos
+  | App (pos, _, _) -> pos
+  | Seq (pos, _, _) -> pos
+  | Let (pos, _, _, _) -> pos
+  | Rec (pos, _, _, _) -> pos
+  | Label (pos, _, _) -> pos
+  | Break (pos, _, _) -> pos
+  | TryCatch (pos, _, _) -> pos
+  | TryFinally (pos, _, _) -> pos
+  | Throw (pos, _) -> pos
+  | Lambda (pos, _, _) -> pos
+  | Eval (pos, _) -> pos
+  | Hint (pos, _, _) -> pos

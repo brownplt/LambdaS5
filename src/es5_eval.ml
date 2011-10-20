@@ -233,6 +233,7 @@ and fun_obj value = match value with
 let rec eval jsonPath exp env = 
   let eval = eval jsonPath in
   match exp with
+  | S.Hint (_, _, e) -> eval e env
   | S.Undefined _ -> Undefined
   | S.Null _ -> Null
   | S.String (_, s) -> String s

@@ -55,6 +55,12 @@ module S5 = struct
     let desugard = exprjs_to_ljs used_ids exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
 
+  let cfg () : unit =
+    let cfg = Cfg.build !srcES5 in
+    printf "%s" (Cfg.print_cfg cfg) ;
+    printf "Done building CFG";
+    print_newline ()
+
   let main () : unit =
     Arg.parse
       [
@@ -65,7 +71,9 @@ module S5 = struct
         ("-s5", Arg.String load_s5,
          "<file> load file as s5");
         ("-print", Arg.String print_s5,
-         "<exprjs|s5|both> pretty-print s5/exprjs code");
+         "<exprjs|es5> pretty-print s5/exprjs code");
+        ("-cfg", Arg.Unit cfg,
+	 "construct the control flow graph for the current program");
         ("-eval", Arg.Unit eval,
         "evaluate code");
         ("-env", Arg.String env,

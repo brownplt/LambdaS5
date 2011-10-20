@@ -70,6 +70,9 @@ let rec exp e = match e with
           braces (exp e)]
   | Eval (p, s) -> 
       squish [text "@eval"; parens (exp s)]
+  | Hint (p, hint, e) ->
+      vert [squish [text "/* HINT: "; text hint; text " : TNIH */"];
+	    exp e]
 
 and opt_braces expr = match expr with
   | Seq _ -> braces (exp expr)

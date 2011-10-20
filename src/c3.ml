@@ -234,6 +234,7 @@ and expr (v : json_type) : expr =
 	| _ -> failwith (sprintf "Unknown %s operator: %s" typ (Json_type.json_to_string v 3)) in 
 	Assign (p, op, expr (get "operand1" v), expr (get "operand2" v))
     | "Plus" -> mkInfix p "+" v
+    | "In" -> mkInfix p "in" v
     | "PlusAssign" -> 	Assign (p, "+=", expr (get "operand1" v), expr (get "operand2" v))
     | "Comma" -> mkInfix p "," v
     | "Instanceof" -> mkInfix p "instanceof" v
@@ -261,7 +262,7 @@ and expr (v : json_type) : expr =
 	end
     | "Conditional" ->
       Cond (p, expr (get "condition" v), expr (get "operand1" v),
-	    expr (get "operand1" v))
+	    expr (get "operand2" v))
     | "Call" -> 
 	if bool (get "isConstructor" v) 
 	then New (p, expr (get "func" v), map expr (list (get "args" v)))

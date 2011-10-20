@@ -41,3 +41,36 @@ and prop =
 and case =
   | Case of pos * expr * expr
   | Default of pos * expr
+
+let pos_of_expr expr = match expr with
+  | True (pos) -> pos
+  | False (pos) -> pos
+  | Num (pos, _) -> pos
+  | Undefined (pos) -> pos
+  | Null (pos) -> pos
+  | String (pos, _) -> pos
+  | ArrayExpr (pos, _) -> pos
+  | RegExpr (pos, _) -> pos
+  | ObjectExpr (pos, _) -> pos
+  | ThisExpr (pos) -> pos
+  | IdExpr (pos, _) -> pos
+  | BracketExpr (pos, _, _) -> pos
+  | NewExpr (pos, _, _) -> pos
+  | PrefixExpr (pos, _, _) -> pos
+  | InfixExpr (pos, _, _, _) -> pos
+  | IfExpr (pos, _, _, _) -> pos
+  | AssignExpr (pos, _, _, _) -> pos
+  | AppExpr (pos, _, _) -> pos
+  | FuncExpr (pos, _, _) -> pos
+  | LetExpr (pos, _, _, _) -> pos
+  | SeqExpr (pos, _, _) -> pos
+  | WhileExpr (pos, _, _) -> pos
+  | LabelledExpr (pos, _, _) -> pos
+  | BreakExpr (pos, _, _) -> pos
+  | ForInExpr (pos, _, _, _) -> pos
+  | TryCatchExpr (pos, _, _, _) -> pos
+  | TryFinallyExpr (pos, _, _) -> pos
+  | ThrowExpr (pos, _) -> pos
+  | SwitchExpr (pos, _, _) -> pos
+  | FuncStmtExpr (pos, _, _, _) -> pos
+  | HintExpr (pos, _, _) -> pos
