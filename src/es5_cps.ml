@@ -29,8 +29,8 @@ and cps_exp =
   | LetPrim of pos * id * cps_prim * cps_exp (* let binding with only primitive steps in binding *)
   | LetRetCont of id * id * cps_exp * cps_exp (* contName * argName * contBody * exp *)
   | LetExnCont of id * id * id * cps_exp * cps_exp (* contName * argName * labelName * contBody * exp *)
-  | GetField of pos * cps_value * cps_value * cps_value (*pos, left, right, args object *)
-  | SetField of pos * cps_value * cps_value * cps_value * cps_value (* pos, obj, field, new val, args *)
+  | GetField of pos * id * id * id * id * id (*pos, obj, field, args, sk, fk *)
+  | SetField of pos * id * id * id * id * id * id (* pos, obj, field, new val, args, sk, fk *)
   | If of pos * id * cps_exp * cps_exp
   | AppFun of pos * id * id * id * id list
   | AppRetCont of id  * id (* contName * argName *)
@@ -39,18 +39,18 @@ and cps_exp =
   | Eval of pos * cps_exp
 
 and data_cps_value =       
-    {value : cps_value;
+    {value : id;
      writable : bool; }
 and accessor_cps_value =       
-    {getter : cps_value;
-     setter : cps_value; }
+    {getter : id;
+     setter : id; }
 and cps_prop =
   | Data of data_cps_value * bool * bool
   | Accessor of accessor_cps_value * bool * bool
 and cps_attrs =
-    { primval : cps_value option;
-      code : cps_value option;
-      proto : cps_value option;
+    { primval : id option;
+      code : id option;
+      proto : id option;
       klass : string;
       extensible : bool; }
 
@@ -71,8 +71,8 @@ let pos_of_exp (exp : cps_exp) = match exp with
 | LetPrim (pos, _, _, _) -> pos
 | LetRetCont _ -> dummy_pos
 | LetExnCont _ -> dummy_pos
-| GetField (pos, _, _, _) -> pos
-| SetField (pos, _, _, _, _) -> pos
+| GetField (pos, _, _, _, _, _) -> pos
+| SetField (pos, _, _, _, _, _, _) -> pos
 | If (pos, _, _, _) -> pos
 | AppFun (pos, _, _, _, _) -> pos
 | AppRetCont _ -> dummy_pos
@@ -204,8 +204,64 @@ let rec cps (exp : E.exp)
 
 
     | E.Object (pos, meta, props) -> dummy_ret
-    | E.GetField (pos, obj, field, args) -> dummy_ret 
-    | E.SetField (pos, obj, field, value, args) -> dummy_ret 
+(*
+      let make_wrapper exp = match exp with
+        | Some exp ->
+            fun fbody -> (cps exp exn (fun exp' -> (fbody (Some exp'))))
+        | None ->
+            fun fbody -> fbody None in
+      let primval_wrapper = make_wrapper meta.E.primval in
+      let code_wrapper = make_wrapper meta.E.code in
+      let proto_wrapper = make_wrapper meta.E.proto in
+      let cps_data { E.value= exp; E.writable= b } =
+        fun fbody -> 
+          cps exp exn (fun exp' -> fbody { value=exp'; writable=b }) in
+      let cps_accessor { E.getter=gexp; E.setter=sexp } =
+        fun fbody ->
+          cps gexp exn (fun gexp' ->
+            cps sexp exn (fun sexp' -> fbody { getter=gexp'; setter=sexp' })) in
+      let add_prop (Object (pos', meta', props')) prop' =
+        Object (pos', meta', prop'::props') in
+      let prop_wrapper f (s, prop) = 
+        let temp = newVar "prop" in
+        match prop with
+          | E.Data (d, c, e) -> 
+            fun obj ->
+              cps_data d (fun d' -> add_prop (f obj) (s, (Data (d', c, e))))
+          | E.Accessor (a, c, e) ->
+            fun obj ->
+              cps_accessor d (fun d' -> add_prop (f obj) (s, (Accessor (a', c, e))))
+      in
+      primval_wrapper (fun primval' ->
+        code_wrapper (fun code' ->
+          proto_wrapper (fun proto' ->
+            let attrs' = { primval=primval';
+                           code=code';
+                           proto=proto';
+                           klass=meta.klass;
+                           extensible=meta.extensible; } in
+            List.fold_left prop_wrapper (fun p -> Object (pos, attrs', [])) props)))
+*)
+
+    | E.GetField (pos, obj, field, args) ->
+      let successName = newVar "success" in
+      let failName = newVar "fail" in
+      cps obj exn (fun obj' ->
+        cps field exn (fun field' ->
+          cps args exn (fun args' ->
+            LetRetCont (successName, "x", ret "x",
+              LetExnCont (failName, "y", "label", exn "y" "label",
+                GetField (pos, obj', field', args', failName, successName))))))
+    | E.SetField (pos, obj, field, value, args) ->
+      let successName = newVar "success" in
+      let failName = newVar "fail" in
+      cps obj exn (fun obj' ->
+        cps field exn (fun field' ->
+          cps value exn (fun value' ->
+            cps args exn (fun args' ->
+              LetRetCont (successName, "x", ret "x",
+                LetExnCont (failName, "y", "label", exn "y" "label",
+                  SetField (pos, obj', field', value', args', failName, successName)))))))
 
     | E.Label (pos, label, body) -> 
 	let catchmeName = newVar "label" in
