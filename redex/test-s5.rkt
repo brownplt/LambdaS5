@@ -80,24 +80,24 @@
 
 (define obj-get
   (term ([] [] [] (get-field (object []
-                                     [("x" [(value 5) (writable #f) (config #f) (enum #f)])])
+                                     [("x" [(@v 5) (@w #f) (@c #f) (@e #f)])])
                    "x" null))))
 
 (define obj-get-after-obj
   (term ([(ref_new ([]
-                    [("x" [(value 5) (writable #f) (config #f) (enum #f)])]))]
+                    [("x" [(@v 5) (@w #f) (@c #f) (@e #f)])]))]
         [] []
         (get-field ref_new "x" null))))
 
 (define obj-get-after-g2
   (term ([(ref_new ([]
-                    [("x" [(value 5) (writable #f) (config #f) (enum #f)])]))]
+                    [("x" [(@v 5) (@w #f) (@c #f) (@e #f)])]))]
         [] []
         (get-field2 ref_new ref_new "x" null))))
 
 (define obj-get-after-get
   (term ([(ref_new ([]
-                    [("x" [(value 5) (writable #f) (config #f) (enum #f)])]))]
+                    [("x" [(@v 5) (@w #f) (@c #f) (@e #f)])]))]
         [] []
         5)))
 
@@ -110,21 +110,21 @@
   (term ([] [] [] (get-field
     (object [(proto
               (object []
-                      [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))]
+                      [("x" [(@v 22) (@w #f) (@c #f) (@e #f)])]))]
             []) "x" null))))
 
 (define obj-with-proto-after-obj
-  (term ([(ref_new ([] [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))] [] []
+  (term ([(ref_new ([] [("x" [(@v 22) (@w #f) (@c #f) (@e #f)])]))] [] []
          (get-field (object [(proto ref_new)] []) "x" null))))
 
 (define obj-with-proto-after-obj-again
   (term ([(ref_new1 ([(proto ref_new)] []))
-          (ref_new ([] [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))] [] []
+          (ref_new ([] [("x" [(@v 22) (@w #f) (@c #f) (@e #f)])]))] [] []
          (get-field ref_new1 "x" null))))
 
 (define obj-with-proto-after-g2
   (term ([(ref_new1 ([(proto ref_new)] []))
-          (ref_new ([] [("x" [(value 22) (writable #f) (config #f) (enum #f)])]))] [] []
+          (ref_new ([] [("x" [(@v 22) (@w #f) (@c #f) (@e #f)])]))] [] []
          (get-field2 ref_new1 ref_new1 "x" null))))
   
 
@@ -134,14 +134,14 @@
 
 (define obj-getter
   (term ([] [] [] (get-field (object [(proto
-    (object [] [("getter" [(get (λ (this args) 27))
-                           (set null) (config #f) (enum #f)])]))] [])
+    (object [] [("getter" [(@g (λ (this args) 27))
+                           (@s null) (@c #f) (@e #f)])]))] [])
     "getter" null))))
 
 (test-->> →s5 obj-getter 
   (term ([(ref_new1 (((proto ref_new)) ()))
-          (ref_new (() [("getter" [(get (() : (λ (this args) 27)))
-                        (set null) (config #f) (enum #f)])]))]
+          (ref_new (() [("getter" [(@g (() : (λ (this args) 27)))
+                        (@s null) (@c #f) (@e #f)])]))]
          [(loc ref_new1) (loc1 null)]
          [(this loc) (args loc1)]
          27)))
@@ -152,11 +152,11 @@
 (test-->> →s5 obj-missed-lookup (term ([(ref_new ([(proto null)] []))] [] [] undefined)))
 
 (define obj-set-field
-  (term ([(ref_new ([] [("x" [(value 24) (writable #t) (config #f) (enum #f)])]))]
+  (term ([(ref_new ([] [("x" [(@v 24) (@w #t) (@c #f) (@e #f)])]))]
          [] []
          (set-field2 ref_new ref_new "x" "foozle" null))))
 (define obj-set-field-after
-  (term ([(ref_new ([] [("x" [(value "foozle") (writable #t) (config #f) (enum #f)])]))]
+  (term ([(ref_new ([] [("x" [(@v "foozle") (@w #t) (@c #f) (@e #f)])]))]
          [] []
          "foozle")))
 
@@ -164,12 +164,49 @@
 
 (define obj-add-field
   (term ([(ref_new ([(extensible #t)] []))] [] []
-         (set-field2 ref_new ref_new "foo" 22 null))))
+         (set-field ref_new "foo" 22 null))))
+
 
 (define obj-add-field-after-add
   (term ([(ref_new ([(extensible #t)]
-         [("foo" [(value 22) (writable #t) (config #t) (enum #t)])]))]
+         [("foo" [(@v 22) (@w #t) (@c #t) (@e #t)])]))]
         [] []
         22)))
 
-(test--> →s5 obj-add-field obj-add-field-after-add)
+(test-->> →s5 obj-add-field obj-add-field-after-add)
+
+(define obj-setter
+  (term ([(ref_new ([(extensible #t)]
+                    [("x" 
+                      [(@g null)
+                       (@s ([] : (λ (this args) (set-field this "y" args null))))
+                       (@c #t)
+                       (@e #f)])]))]
+         [] []
+         (set-field2 ref_new ref_new "x" "the-answer" "the-args"))))
+
+(define obj-setter-after-set
+  (term ([(ref_new ([(extensible #t)]
+                    [("y" [(@v "the-args") (@w #t) (@c #t) (@e #t)])
+                     ("x" 
+                      [(@g null)
+                       (@s ([] : (λ (this args) (set-field this "y" args null))))
+                       (@c #t) (@e #f)])
+                     ]))]
+         [(loc ref_new) (loc1 "the-args")]
+         [(this loc) (args loc1)]
+         "the-answer")))
+
+(test-->> →s5 obj-setter obj-setter-after-set)
+
+(define eseq
+  (term ([] [] [] (seq 5 6))))
+(test--> →s5 eseq (term ([] [] [] 6)))
+
+(define eseq2
+  (term ([] [] [] (seq (seq 3 4) "end"))))
+(test-->> →s5 eseq2 (term ([] [] [] "end")))
+
+(define eif
+  (term ([] [] [] (if #t "expected" "not-expected"))))
+(test--> →s5 eif (term ([] [] [] "expected")))
