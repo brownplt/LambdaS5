@@ -203,8 +203,7 @@ let rec cps (exp : E.exp)
 					      If (pos, var, app trueName var, app falseName var)))))
 
 
-    | E.Object (pos, meta, props) -> dummy_ret
-(*
+    | E.Object (pos, meta, props) ->
       let make_wrapper exp = match exp with
         | Some exp ->
             fun fbody -> (cps exp exn (fun exp' -> (fbody (Some exp'))))
@@ -220,28 +219,30 @@ let rec cps (exp : E.exp)
         fun fbody ->
           cps gexp exn (fun gexp' ->
             cps sexp exn (fun sexp' -> fbody { getter=gexp'; setter=sexp' })) in
-      let add_prop (Object (pos', meta', props')) prop' =
-        Object (pos', meta', prop'::props') in
-      let prop_wrapper f (s, prop) = 
-        let temp = newVar "prop" in
+      let add_prop e prop' = 
+        match e with
+          | LetValue (pos', var, (Object (pos'', meta', props')), e) ->
+              LetValue (pos', var, (Object (pos'', meta', prop'::props')), e)
+          | _ -> failwith "CPS: add_prop called incorrectly (shouldn't happen)"
+      in
+      let prop_wrapper obj (s, prop) = 
         match prop with
           | E.Data (d, c, e) -> 
-            fun obj ->
-              cps_data d (fun d' -> add_prop (f obj) (s, (Data (d', c, e))))
+            cps_data d (fun d' -> add_prop obj (s, (Data (d', c, e))))
           | E.Accessor (a, c, e) ->
-            fun obj ->
-              cps_accessor d (fun d' -> add_prop (f obj) (s, (Accessor (a', c, e))))
+            cps_accessor a (fun a' -> add_prop obj (s, (Accessor (a', c, e))))
       in
+      let temp = newVar "objVar" in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
             let attrs' = { primval=primval';
                            code=code';
                            proto=proto';
-                           klass=meta.klass;
-                           extensible=meta.extensible; } in
-            List.fold_left prop_wrapper (fun p -> Object (pos, attrs', [])) props)))
-*)
+                           klass=meta.E.klass;
+                           extensible=meta.E.extensible; } in
+            let objExp = LetValue (pos, temp, Object (pos, attrs', []), ret temp) in
+            List.fold_left prop_wrapper objExp props)))
 
     | E.GetField (pos, obj, field, args) ->
       let successName = newVar "success" in
