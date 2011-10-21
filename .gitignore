@@ -17,3 +17,11 @@ src/_build/
 *.tgz
 *.tar.gz
 *.pyc
+
+lib/graph.a
+lib/graph.cma
+lib/graph.cmi
+lib/graph.cmo
+lib/graph.cmx
+lib/graph.cmxa
+lib/graph.o
