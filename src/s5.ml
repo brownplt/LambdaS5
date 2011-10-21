@@ -16,6 +16,7 @@ module S5 = struct
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
+  let cpsES5 = ref (Es5_cps.AppRetCont("fake", "fake"))
 
   let jsonPath = ref ""
 
@@ -32,6 +33,7 @@ module S5 = struct
     match choice with 
     | "es5" -> Es5_pretty.exp !srcES5 std_formatter; print_newline ()
     | "exprjs" -> Exprjs_pretty.exp !srcEJS std_formatter; print_newline ()
+    | "cps5" -> Es5_cps_pretty.exp !cpsES5 std_formatter; print_newline ()
     | _ -> failwith "bad option string"
 
   let eval () : unit =
@@ -61,6 +63,13 @@ module S5 = struct
     printf "Done building CFG";
     print_newline ()
 
+  let cps () =
+    cpsES5 := Es5_cps.cps !srcES5 
+      (fun arg label -> Es5_cps.AppExnCont("%topExn", arg, label))
+      (fun arg -> Es5_cps.AppRetCont("%topRet", arg))
+  let uncps () =
+    srcES5 := Es5_cps.de_cps !cpsES5
+
   let main () : unit =
     Arg.parse
       [
@@ -71,7 +80,11 @@ module S5 = struct
         ("-s5", Arg.String load_s5,
          "<file> load file as s5");
         ("-print", Arg.String print_s5,
-         "<exprjs|es5> pretty-print s5/exprjs code");
+         "<exprjs|es5|cps5> pretty-print s5/exprjs code");
+        ("-cps", Arg.Unit cps,
+         "Convert to CPS");
+        ("-un-cps", Arg.Unit uncps,
+         "Unwrap from CPS back to \\JS");
         ("-cfg", Arg.Unit cfg,
 	 "construct the control flow graph for the current program");
         ("-eval", Arg.Unit eval,
