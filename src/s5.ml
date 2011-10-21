@@ -64,9 +64,7 @@ module S5 = struct
     print_newline ()
 
   let cps () =
-    cpsES5 := Es5_cps.cps !srcES5 
-      (fun arg label -> Es5_cps.AppExnCont("%topExn", arg, label))
-      (fun arg -> Es5_cps.AppRetCont("%topRet", arg))
+    cpsES5 := Es5_cps.cps !srcES5 "%topExn" (fun arg -> Es5_cps.AppRetCont("%topRet", arg))
   let uncps () =
     srcES5 := Es5_cps.de_cps !cpsES5
 
