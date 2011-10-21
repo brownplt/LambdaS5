@@ -1,0 +1,2 @@
+(/*: Some hint thing */ prim("+", 5, 4))
+

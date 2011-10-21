@@ -6,6 +6,10 @@ open Es5_parser
 
 module S = String
 
+let comment_start_p = ref dummy_pos
+
+let block_comment_buf = Buffer.create 120
+
 (* Requires: start < String.length str *)
 let rec drop_spaces (str : string) (start : int) = 
   match String.get str start with
@@ -69,6 +73,8 @@ rule token = parse
    | "/*" {  block_comment lexbuf }
    | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
 
+   | "/*:" { comment_start_p := lexeme_start_p lexbuf;
+             hint lexbuf }
 
    | '"' (double_quoted_string_char* as x) '"' { STRING x }
    | ''' (single_quoted_string_char* as x) ''' { STRING x }
@@ -137,3 +143,14 @@ and block_comment = parse
   | '*' { block_comment lexbuf }
   | [ '\n' '\r' ]  {  block_comment lexbuf }
   | [^ '\n' '\r' '*']+ { block_comment lexbuf }
+
+and hint = parse
+  | "*/" { let str = Buffer.contents block_comment_buf in
+             Buffer.clear block_comment_buf; HINT str }
+  | '*' { Buffer.add_char block_comment_buf '*'; hint lexbuf }
+  | "\r\n" { new_line lexbuf; Buffer.add_char block_comment_buf '\n'; 
+             hint lexbuf }
+  | [ '\n' '\r' ] { new_line lexbuf; Buffer.add_char block_comment_buf '\n';
+                    hint lexbuf }
+  | ([^ '\n' '\r' '*'])+ as txt { Buffer.add_string block_comment_buf txt;
+                                  hint lexbuf }

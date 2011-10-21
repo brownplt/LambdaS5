@@ -57,6 +57,7 @@ let with_pos exp pos = match exp with
 %token <int> INT
 %token <float> NUM
 %token <string> STRING
+%token <string> HINT
 %token <bool> BOOL
 %token <Prelude.id> ID
 %token UNDEFINED NULL FUNC LET DELETE LBRACE RBRACE LPAREN RPAREN LBRACK
@@ -208,6 +209,8 @@ exp :
 cexp :
  | exp { $1 }
  | ifexp { $1 }
+ | LPAREN HINT cexp RPAREN
+     { Hint ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $3) }
  | LABEL ID COLON braced_seq_exp
      { Label ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) } 
  | BREAK ID cexp
