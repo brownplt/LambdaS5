@@ -242,7 +242,7 @@ unbraced_seq_item :
  | cexp { $1 }
  | LET LPAREN ID EQUALS unbraced_seq_exp RPAREN unbraced_seq_item
    { Let ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
- | REC LPAREN ID EQUALS unbraced_seq_exp RPAREN unbraced_seq_item
+ | REC LPAREN ID EQUALS func RPAREN unbraced_seq_item
    { Rec ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
 
 env :

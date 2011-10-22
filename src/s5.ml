@@ -16,7 +16,7 @@ module S5 = struct
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Es5_cps.AppRetCont("fake", "fake"))
+  let cpsES5 = ref (Es5_cps.AppRetCont("fake", Es5_cps.Id(dummy_pos,"fake")))
 
   let jsonPath = ref ""
 
@@ -64,7 +64,7 @@ module S5 = struct
     print_newline ()
 
   let cps () =
-    cpsES5 := Es5_cps.cps !srcES5 None "%topExn" (fun arg -> Es5_cps.AppRetCont("%topRet", arg))
+    cpsES5 := Es5_cps.cps_tail !srcES5 Es5_cps.Nonce "%error" "%answer"
   let uncps () =
     srcES5 := Es5_cps.de_cps !cpsES5
 

@@ -39,7 +39,7 @@ type exp =
   | App of pos * exp * exp list
   | Seq of pos * exp * exp
   | Let of pos * id * exp * exp
-  | Rec of pos * id * exp * exp
+  | Rec of pos * id * exp * exp (** value bound must be an [ELambda] *)
   | Label of pos * id * exp
   | Break of pos * id * exp
   | TryCatch of pos * exp * exp
