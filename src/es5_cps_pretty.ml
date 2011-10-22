@@ -20,8 +20,8 @@ let rec value v = match v with
   | Object (p, avs, props) ->
     braces (vert [attrsv avs; vert (vert_intersperse (text ",") (map prop props))])
   | Lambda (p, ret, exn, xs, e) ->
-    vert [squish [text "lam"; parens (horz (text "Ret " :: text ret :: text "," ::
-                                              text "Exn " :: text exn :: text ";" :: 
+    vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," ::
+                                              text "Exn" :: text exn :: text ";" :: 
                                               (intersperse (text ",") (map text xs))))];
           braces (exp e)]
 
@@ -79,8 +79,8 @@ and exp e = match e with
   | AppExnCont (e, x, l) ->
     horz [squish [text e; parens (horz [text x ; text ","; text l])]]
   | Rec (p, x, e, body) -> 
-    horz [text "rec"; vert [parens (horz [text x; text "="; text e]);
-                            text "in"; exp body]]
+    vert [horz [text "rec"; vert [parens (horz [text x; text "="; text e])]];
+          horz [text "in"; vert [exp body]]]
   | Eval (p, s) -> 
       squish [text "@eval"; parens (exp s)]
 
