@@ -117,21 +117,16 @@ let rec cps (exp : E.exp)
          * isn't a simple matter: we have to store the variable names from the
          * previous return continuations until we're ready...
          *)
-        let funNameRef = ref (Id(dummy_pos,"")) in
-        let argNamesRef = ref [] in
-        let innermostRet : unit -> cps_exp =
-          (fun () ->
+      cps func exnName (fun funName ->
+        let rec process_args args argNames =
+          match args with
+          | arg::args' -> cps arg exnName (fun arg' -> process_args args' (arg'::argNames))
+          | [] -> 
             let retName = newVar "ret" in
             let retArg = newVar "x" in
-            LetRetCont (retName, retArg, (ret (Id(pos,retArg))), 
-                        AppFun (pos, !funNameRef, retName, exnName, (List.rev !argNamesRef)))) in
-        cps func exnName (fun funName ->
-          funNameRef := funName;
-          (List.fold_right (fun arg (ret' : unit -> cps_exp) -> 
-            (fun () -> cps arg exnName (fun name -> 
-              argNamesRef := name :: !argNamesRef;
-              ret' () 
-             ))) args innermostRet) ())
+            LetRetCont (retName, retArg, ret (Id(pos,retArg)), 
+                        AppFun (pos, funName, retName, exnName, (List.rev argNames))) in
+      process_args args [])
     | E.Lambda (pos, args, body) -> 
         let retName = newVar "ret" in
         let exnName = newVar "exn" in
@@ -325,15 +320,12 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
          * isn't a simple matter: we have to store the variable names from the
          * previous return continuations until we're ready...
          *)
-        let funNameRef = ref (Id(dummy_pos,"")) in
-        let argNamesRef = ref [] in
-        let innermostRet () : cps_exp = AppFun (pos, !funNameRef, retName, exnName, (List.rev !argNamesRef)) in
-        cps func exnName (fun funName -> 
-          funNameRef := funName;
-          (List.fold_right (fun arg (ret' : unit -> cps_exp) -> 
-            (fun () -> cps arg exnName (fun name ->
-              argNamesRef := name :: !argNamesRef;
-              ret' ()))) args innermostRet) ())
+      cps func exnName (fun funName ->
+        let rec process_args args argNames =
+          match args with
+          | arg::args' -> cps arg exnName (fun arg' -> process_args args' (arg'::argNames))
+          | [] -> AppFun (pos, funName, retName, exnName, (List.rev argNames)) in
+      process_args args [])
     | E.Lambda (pos, args, body) -> 
         let lamName = newVar "lam" in
         let retName = newVar "ret" in
