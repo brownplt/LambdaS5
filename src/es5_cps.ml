@@ -200,24 +200,17 @@ let rec cps (exp : E.exp)
         fun fbody ->
           cps gexp exnName (fun gexp' ->
             cps sexp exnName (fun sexp' -> fbody { getter=gexp'; setter=sexp' })) in
-      let add_prop e prop' = 
-        match e with
-          | Object (pos', meta', props') ->
-              Object (pos', meta', prop'::props')
-          | _ -> 
-            failwith "CPS: add_prop called incorrectly (shouldn't happen)"
-      in
-      let rec wrap_props obj props =
+      let rec wrap_props (pos, meta, compProps) props =
         match props with
           | (s, E.Data (d, c, e))::props' ->
             cps_data d (fun d' ->
-              wrap_props (add_prop obj (s, (Data (d', c, e)))) props')
+              wrap_props (pos, meta, ((s, Data (d', c, e))::compProps)) props')
           | (s, E.Accessor (a, c, e))::props' ->
             cps_accessor a (fun a' ->
-              wrap_props (add_prop obj (s, (Accessor (a', c, e)))) props')
+              wrap_props (pos, meta, ((s, Accessor (a', c, e))::compProps)) props')
           | [] ->
             let temp = newVar "objVar" in
-              LetValue (pos, temp, obj, ret (Id (pos, temp))) in
+              LetValue (pos, temp, Object(pos, meta, List.rev compProps), ret (Id (pos, temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
@@ -226,7 +219,7 @@ let rec cps (exp : E.exp)
                            proto=proto';
                            klass=meta.E.klass;
                            extensible=meta.E.extensible; } in
-           wrap_props (Object (pos, attrs', [])) props)))
+           wrap_props (pos, attrs', []) props)))
 
     | E.GetField (pos, obj, field, args) ->
       let retName = newVar "ret" in
@@ -400,24 +393,17 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
         fun fbody ->
           cps gexp exnName (fun gexp' ->
             cps sexp exnName (fun sexp' -> fbody { getter=gexp'; setter=sexp' })) in
-      let add_prop e prop' = 
-        match e with
-          | Object (pos', meta', props') ->
-              Object (pos', meta', prop'::props')
-          | _ -> 
-            failwith "CPS: add_prop called incorrectly (shouldn't happen)"
-      in
-      let rec wrap_props obj props =
+      let rec wrap_props (pos, meta, compProps) props =
         match props with
           | (s, E.Data (d, c, e))::props' ->
             cps_data d (fun d' ->
-              wrap_props (add_prop obj (s, (Data (d', c, e)))) props')
+              wrap_props (pos, meta, ((s, Data (d', c, e))::compProps)) props')
           | (s, E.Accessor (a, c, e))::props' ->
             cps_accessor a (fun a' ->
-              wrap_props (add_prop obj (s, (Accessor (a', c, e)))) props')
+              wrap_props (pos, meta, ((s, Accessor (a', c, e))::compProps)) props')
           | [] ->
             let temp = newVar "objVar" in
-              LetValue (pos, temp, obj, AppRetCont(retName, Id (pos,temp))) in
+              LetValue (pos, temp, Object(pos, meta, List.rev compProps), AppRetCont(retName, Id (pos,temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
@@ -426,7 +412,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
                            proto=proto';
                            klass=meta.E.klass;
                            extensible=meta.E.extensible; } in
-            wrap_props (Object (pos, attrs', [])) props)))
+            wrap_props (pos, attrs', []) props)))
 
     | E.GetField (pos, obj, field, args) ->
       cps obj exnName (fun obj' ->
