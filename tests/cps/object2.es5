@@ -1,0 +1,4 @@
+{[#proto: null,]
+ 'field1' : {#value {[#proto: null,]} , #writable false},
+ 'field2' : {#value true , #writable false},
+}
