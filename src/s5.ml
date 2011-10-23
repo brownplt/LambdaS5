@@ -64,7 +64,7 @@ module S5 = struct
     print_newline ()
 
   let cps () =
-    cpsES5 := Es5_cps.cps_tail !srcES5 Es5_cps.Nonce "%error" "%answer"
+    cpsES5 := Es5_cps.cps_tail !srcES5 "%error" "%answer"
   let uncps () =
     srcES5 := Es5_cps.de_cps !cpsES5
 
