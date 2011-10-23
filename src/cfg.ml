@@ -1,12 +1,8 @@
 open Prelude
-open Es5_syntax
+open Es5_cps
 open Graph
 
-type vert = 
-    | Synth of string
-    | TrueBranch of exp
-    | FalseBranch of exp
-    | AtomicExp of exp
+type vert = cps_exp
 module Vert_COMPARABLE = struct
   type t = vert
   let compare t1 t2 = Pervasives.compare t1 t2
@@ -15,57 +11,52 @@ module Vert_COMPARABLE = struct
 end
 
 module Es5_ORDERED_TYPE_DFT = struct
-  type t = Es5_syntax.exp
-  let default = Hint (dummy_pos, "no-op", (Null dummy_pos))
+  type t = Es5_cps.cps_exp
+  let default = AppRetCont ("dummy", Id(dummy_pos, "no-op"))
   let compare t1 t2 = Pervasives.compare t1 t2
 end
 
 module G = Persistent.Digraph.ConcreteBidirectionalLabeled (Vert_COMPARABLE) (Es5_ORDERED_TYPE_DFT)
 
 let build expr =
-  let _ = Es5_cps.cps expr in
-  let v = Synth "entry" in 
+  let v = expr in 
   let cfg = G.add_vertex G.empty v in
-  let rec build_help (g : G.t) (entry : vert) (exp : Es5_syntax.exp) : (G.t * vert) =
+  let rec build_exp (g : G.t) (entry : vert) (exp : Es5_cps.cps_exp) : (G.t * vert) =
     match exp with
-    | Null pos -> (g, entry)
-    | Undefined pos -> (g, entry)
-    | String (pos, str) -> (g, entry)
-    | Num (pos, value) -> (g, entry)
-    | True pos -> (g, entry)
-    | False pos -> (g, entry)
-    | Id (pos, id) -> (g, entry)
-    | Object (pos, meta, props) -> (g, entry)
-    | GetAttr (pos, prop_meta, obj, pname) -> (g, entry)
-    | SetAttr (pos, prop_meta, obj, pname, value) -> (g, entry)
-    | GetField (pos, obj, field, args) -> (g, entry) 
-    | SetField (pos, obj, field, value, args) -> (g, entry) 
-    | DeleteField (pos, obj, field) -> (g, entry)
-    | SetBang (pos, id, value) -> (g, entry)
-    | Op1 (pos, op, exp) -> (g, entry)
-    | Op2 (pos, op, left, right) -> (g, entry)
-    | If (pos, cond, trueBranch, falseBranch) -> (g, entry)
-    | App (pos, func, args) -> (g, entry)
-    | Seq (pos, first, second) -> (g, entry)
-    | Let (pos, id, value, body) -> (g, entry)
-    | Rec (pos, id, value, body) -> (g, entry)
-    | Label (pos, label, body) -> (g, entry)
-    | Break (pos, label, value) -> (g, entry)
-    | TryCatch (pos, body, handler_lam) -> (g, entry)
-    | TryFinally (pos, body, exp) -> (g, entry)
-    | Throw (pos, value) -> (g, entry)
-    | Lambda (pos, args, body) -> (g, entry)
-    | Eval (pos, broken) -> (g, entry) 
-    | Hint (pos, label, exp) -> (g, entry) in
-  fst (build_help cfg v expr)
+  | LetValue(pos, id, value, exp) -> (g, entry)
+  | RecValue(pos, id, value, exp) -> (g, entry)
+  | LetPrim(pos, id, prim, exp) -> (g, entry)
+  | LetRetCont(ret, arg, retBody, exp) -> (g, entry)
+  | LetExnCont(exn, arg, label, exnBody, exp) -> (g, entry)
+  | GetField(pos, obj, field, args, ret, exn) -> (g, entry)
+  | SetField(pos, obj, field, value, args, ret, exn) -> (g, entry)
+  | If(pos, cond, trueBranch, falseBranch) -> (g, entry)
+  | AppFun(pos, func, ret, exn, args) -> (g, entry)
+  | AppRetCont(ret, arg) -> (g, entry)
+  | AppExnCont(exn, arg, label) -> (g, entry)
+  | Eval(pos, eval) -> (g, entry) in
+  fst (build_exp cfg v expr)
 
+let cpsv_to_string cps_value = 
+  Es5_cps_pretty.value cps_value Format.str_formatter; 
+  Format.flush_str_formatter()
 module Display = struct
   include G
   let vertex_name v = match v with
-  | Synth str -> "Synth(" ^ str ^ ")"
-  | TrueBranch expr -> "TrueBranch"
-  | FalseBranch expr -> "FalseBranch"
-  | AtomicExp expr -> "AtomicExp"
+  | LetValue(pos, id, value, exp) -> "LetValue(" ^ id ^ ")"
+  | RecValue(pos, id, value, exp) -> "RecValue(" ^ id ^ ")"
+  | LetPrim(pos, id, prim, exp) -> "LetPrim(" ^ id ^ ")"
+  | LetRetCont(ret, arg, retBody, exp) -> "LetRet(" ^ ret ^ ")"
+  | LetExnCont(exn, arg, label, exnBody, exp) -> "LetExn(" ^ exn ^ ")"
+  | GetField(pos, obj, field, args, ret, exn) -> "GetField(" ^ (cpsv_to_string obj) 
+    ^ "[" ^ (cpsv_to_string field) ^ "])"
+  | SetField(pos, obj, field, value, args, ret, exn) -> "SetField(" ^ (cpsv_to_string obj)
+    ^ "[" ^ (cpsv_to_string field) ^ "])"
+  | If(pos, cond, trueBranch, falseBranch) -> "If(" ^ (cpsv_to_string cond) ^ ")"
+  | AppFun(pos, func, ret, exn, args) -> "App(" ^ (cpsv_to_string func) ^ ")"
+  | AppRetCont(ret, arg) -> "Ret(" ^ ret ^ ")"
+  | AppExnCont(exn, arg, label) -> "Exn(" ^ exn ^ ", " ^ label ^ ")"
+  | Eval(pos, eval) -> "Eval"
   let graph_attributes _ = []
   let default_vertex_attributes _ = []
   let vertex_attributes _ = []
