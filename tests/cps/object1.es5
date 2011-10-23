@@ -1,0 +1,4 @@
+{ [#proto : %ObjectProto, #class : "Boolean", #value : false,]
+  "baluga" : {#value 12, #writable true},
+  "whale" : {#value prim("+", 4, 5), #writable false},
+  "henry" : {#value prim("+", 4, 5), #writable false}}

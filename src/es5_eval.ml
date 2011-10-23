@@ -38,14 +38,12 @@ let rec get_field p obj1 obj2 field args = match obj1 with
   | Null -> Undefined (* nothing found *)
   | ObjCell c -> begin match !c with
       | { proto = pvalue; }, props ->
-	 try
-	   match IdMap.find field props with
+         try match IdMap.find field props with
              | Data ({ value = v; }, _, _) -> v
              | Accessor ({ getter = g; }, _, _) ->
-	       apply p g [obj2; args]
-         (*apply g [obj2]*)
-        (* Not_found means prototype lookup is necessary *)
-	 with Not_found ->
+               apply p g [obj2; args]
+         (* Not_found means prototype lookup is necessary *)
+         with Not_found ->
 	   get_field p pvalue obj2 field args
   end
   | _ -> failwith (interp_error p 
@@ -87,25 +85,25 @@ let rec update_field p obj1 obj2 field newval args = match obj1 with
   | ObjCell c -> begin match !c with
       | { proto = pvalue; } as attrs, props ->
         if (not (IdMap.mem field props)) then
-	  (* EUpdateField-Proto *)
-	  update_field p pvalue obj2 field newval args
+          (* EUpdateField-Proto *)
+          update_field p pvalue obj2 field newval args
         else
-	  match (IdMap.find field props) with
+          match (IdMap.find field props) with
             | Data ({ writable = true; }, enum, config) ->
             (* This check asks how far down we are in searching *)
-	      if (not (obj1 == obj2)) then
-	      (* 8.12.4, last step where inherited.[[writable]] is true *)
-	        add_field obj2 field newval
-	      else begin
-	      (* 8.12.5, step 3, changing the value of a field *)
-	        c := (attrs, IdMap.add field
+              if (not (obj1 == obj2)) then
+                (* 8.12.4, last step where inherited.[[writable]] is true *)
+                add_field obj2 field newval
+              else begin
+                (* 8.12.5, step 3, changing the value of a field *)
+                c := (attrs, IdMap.add field
                   (Data ({ value = newval; writable = true }, enum, config))
 		  props);
-	        newval
-	      end
+                newval
+              end
             | Accessor ({ setter = setterv; }, enum, config) ->
-	      (* 8.12.5, step 5 *)
-	      apply p setterv [obj2; args]
+              (* 8.12.5, step 5 *)
+              apply p setterv [obj2; args]
             | _ -> Fail "Field not writable!"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
