@@ -202,20 +202,22 @@ let rec cps (exp : E.exp)
             cps sexp exnName (fun sexp' -> fbody { getter=gexp'; setter=sexp' })) in
       let add_prop e prop' = 
         match e with
-          | LetValue (pos', var, (Object (pos'', meta', props')), e) ->
-              LetValue (pos', var, (Object (pos'', meta', prop'::props')), e)
+          | Object (pos', meta', props') ->
+              Object (pos', meta', prop'::props')
           | _ -> 
-            Es5_pretty.exp exp Format.std_formatter; Format.print_newline();
-            (!pretty_print) e Format.std_formatter; Format.print_newline();
             failwith "CPS: add_prop called incorrectly (shouldn't happen)"
       in
-      let prop_wrapper obj (s, prop) = 
-        match prop with
-          | E.Data (d, c, e) -> 
-            cps_data d (fun d' -> add_prop obj (s, (Data (d', c, e))))
-          | E.Accessor (a, c, e) ->
-            cps_accessor a (fun a' -> add_prop obj (s, (Accessor (a', c, e))))
-      in
+      let rec wrap_props obj props =
+        match props with
+          | (s, E.Data (d, c, e))::props' ->
+            cps_data d (fun d' ->
+              wrap_props (add_prop obj (s, (Data (d', c, e)))) props')
+          | (s, E.Accessor (a, c, e))::props' ->
+            cps_accessor a (fun a' ->
+              wrap_props (add_prop obj (s, (Accessor (a', c, e)))) props')
+          | [] ->
+            let temp = let_or_newVar "objVar" in
+              let_or_recValue (pos, temp, obj, ret (Id (pos, temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
@@ -225,8 +227,7 @@ let rec cps (exp : E.exp)
                            proto=proto';
                            klass=meta.E.klass;
                            extensible=meta.E.extensible; } in
-            let objExp = LetValue (pos, temp, Object (pos, attrs', []), ret (Id(pos,temp))) in
-            List.fold_left prop_wrapper objExp props)))
+           wrap_props (Object (pos, attrs', [])) props)))
 
     | E.GetField (pos, obj, field, args) ->
       let retName = newVar "ret" in
@@ -402,20 +403,23 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
             cps sexp exnName (fun sexp' -> fbody { getter=gexp'; setter=sexp' })) in
       let add_prop e prop' = 
         match e with
-          | LetValue (pos', var, (Object (pos'', meta', props')), e) ->
-              LetValue (pos', var, (Object (pos'', meta', prop'::props')), e)
+          | Object (pos', meta', props') ->
+              Object (pos', meta', prop'::props')
           | _ -> 
-            Es5_pretty.exp exp Format.std_formatter; Format.print_newline();
-            (!pretty_print) e Format.std_formatter; Format.print_newline();
             failwith "CPS: add_prop called incorrectly (shouldn't happen)"
       in
-      let prop_wrapper obj (s, prop) = 
-        match prop with
-          | E.Data (d, c, e) -> 
-            cps_data d (fun d' -> add_prop obj (s, (Data (d', c, e))))
-          | E.Accessor (a, c, e) ->
-            cps_accessor a (fun a' -> add_prop obj (s, (Accessor (a', c, e))))
-      in
+      let rec wrap_props obj props =
+        match props with
+          | (s, E.Data (d, c, e))::props' ->
+            cps_data d (fun d' ->
+              wrap_props (add_prop obj (s, (Data (d', c, e)))) props')
+          | (s, E.Accessor (a, c, e))::props' ->
+            cps_accessor a (fun a' ->
+              wrap_props (add_prop obj (s, (Accessor (a', c, e)))) props')
+          | [] ->
+            let temp = let_or_newVar "objVar" in
+              let_or_recValue (pos, temp, obj, AppRetCont(retName, Id (pos,temp))) in
+      let temp = let_or_newVar "objVar" in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
@@ -425,8 +429,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
                            proto=proto';
                            klass=meta.E.klass;
                            extensible=meta.E.extensible; } in
-            let objExp = LetValue (pos, temp, Object (pos, attrs', []), AppRetCont(retName, Id(pos,temp))) in
-            List.fold_left prop_wrapper objExp props)))
+            wrap_props (Object (pos, attrs', [])) props)))
 
     | E.GetField (pos, obj, field, args) ->
       cps obj exnName (fun obj' ->
