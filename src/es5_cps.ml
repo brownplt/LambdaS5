@@ -216,12 +216,11 @@ let rec cps (exp : E.exp)
             cps_accessor a (fun a' ->
               wrap_props (add_prop obj (s, (Accessor (a', c, e)))) props')
           | [] ->
-            let temp = let_or_newVar "objVar" in
-              let_or_recValue (pos, temp, obj, ret (Id (pos, temp))) in
+            let temp = newVar "objVar" in
+              LetValue (pos, temp, obj, ret (Id (pos, temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
-            let temp = newVar "objVar" in
             let attrs' = { primval=primval';
                            code=code';
                            proto=proto';
@@ -417,13 +416,11 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
             cps_accessor a (fun a' ->
               wrap_props (add_prop obj (s, (Accessor (a', c, e)))) props')
           | [] ->
-            let temp = let_or_newVar "objVar" in
-              let_or_recValue (pos, temp, obj, AppRetCont(retName, Id (pos,temp))) in
-      let temp = let_or_newVar "objVar" in
+            let temp = newVar "objVar" in
+              LetValue (pos, temp, obj, AppRetCont(retName, Id (pos,temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
-            let temp = newVar "objVar" in
             let attrs' = { primval=primval';
                            code=code';
                            proto=proto';
