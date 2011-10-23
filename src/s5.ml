@@ -58,7 +58,7 @@ module S5 = struct
     srcEJS := exprjsd; srcES5 := desugard
 
   let cfg () : unit =
-    let cfg = Cfg.build !srcES5 in
+    let cfg = Cfg.build !cpsES5 in
     printf "%s" (Cfg.print_cfg cfg) ;
     printf "Done building CFG";
     print_newline ()
