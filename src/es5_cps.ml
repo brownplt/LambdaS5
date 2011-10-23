@@ -102,6 +102,39 @@ let rec cps (exp : E.exp)
     (exnName : id) 
     (ret : cps_value -> cps_exp) : cps_exp =
 
+  (* debugging in case we hang infinitely... *)
+  (* (match exp with *)
+  (* | E.Null pos -> printf "Nul %s\n" (string_of_position pos) *)
+  (* | E.Undefined pos -> printf "Undef %s\n" (string_of_position pos) *)
+  (* | E.String (pos, _) -> printf "String %s\n" (string_of_position pos) *)
+  (* | E.Num (pos, _) -> printf "Num %s\n" (string_of_position pos) *)
+  (* | E.True pos -> printf "True %s\n" (string_of_position pos) *)
+  (* | E.False pos -> printf "False %s\n" (string_of_position pos) *)
+  (* | E.Id (pos, _) -> printf "Id %s\n" (string_of_position pos) *)
+  (* | E.Object (pos, _, _) -> printf "Object %s\n" (string_of_position pos) *)
+  (* | E.GetAttr (pos, _, _, _) -> printf "GetAttr %s\n" (string_of_position pos) *)
+  (* | E.SetAttr (pos, _, _, _, _) -> printf "SetAttr %s\n" (string_of_position pos) *)
+  (* | E.GetField (pos, _, _, _) -> printf "GetField %s\n" (string_of_position pos)  *)
+  (* | E.SetField (pos, _, _, _, _) -> printf "SetField %s\n" (string_of_position pos)  *)
+  (* | E.DeleteField (pos, _, _) -> printf "Delete %s\n" (string_of_position pos) *)
+  (* | E.SetBang (pos, _, _) -> printf "Set! %s\n" (string_of_position pos) *)
+  (* | E.Op1 (pos, _, _) -> printf "Op1 %s\n" (string_of_position pos) *)
+  (* | E.Op2 (pos, _, _, _) -> printf "Op2 %s\n" (string_of_position pos) *)
+  (* | E.If (pos, _, _, _) -> printf "If %s\n" (string_of_position pos) *)
+  (* | E.App (pos, _, _) -> printf "App %s\n" (string_of_position pos) *)
+  (* | E.Seq (pos, _, _) -> printf "Seq %s\n" (string_of_position pos) *)
+  (* | E.Let (pos, _, _, _) -> printf "Let %s\n" (string_of_position pos) *)
+  (* | E.Rec (pos, _, _, _) -> printf "Rec %s\n" (string_of_position pos) *)
+  (* | E.Label (pos, _, _) -> printf "Label %s\n" (string_of_position pos) *)
+  (* | E.Break (pos, _, _) -> printf "Break %s\n" (string_of_position pos) *)
+  (* | E.TryCatch (pos, _, _) -> printf "TryCatch %s\n" (string_of_position pos) *)
+  (* | E.TryFinally (pos, _, _) -> printf "TryFinally %s\n" (string_of_position pos) *)
+  (* | E.Throw (pos, _) -> printf "Throw %s\n" (string_of_position pos) *)
+  (* | E.Lambda (pos, _, _) -> printf "Lambda %s\n" (string_of_position pos) *)
+  (* | E.Eval (pos, _) -> printf "Eval %s\n" (string_of_position pos) *)
+  (* | E.Hint (pos, _, _) -> printf "Hint %s\n" (string_of_position pos)); *)
+
+
   match exp with
     (* most of the CPS Value forms *)
     | E.Null pos -> ret (Null pos)
@@ -136,7 +169,7 @@ let rec cps (exp : E.exp)
 
     (* CPS Primitive forms *)
     | E.SetBang (pos, id, value) ->
-        cps exp exnName (fun var ->
+        cps value exnName (fun var ->
           let temp = newVar "set!Temp" in
           LetPrim (pos, temp, SetBang (pos, id, var), ret (Id(pos,temp))))
     | E.Op1 (pos, op, exp) -> 
@@ -523,9 +556,9 @@ and de_cps_val (value : cps_value) : E.exp =
                   E.klass = attrs.klass;
                   E.extensible = attrs.extensible} in
     let prop_wrapper (name, prop) = match prop with
-      | Data(value, b1, b2) -> (name, E.Data ({E.value = de_cps_val value.value; E.writable = value.writable}, b1, b2))
-      | Accessor(acc, b1, b2) -> 
-        (name, E.Accessor ({E.getter = de_cps_val acc.getter; E.setter = de_cps_val acc.setter}, b1, b2)) in
+      | Data(value, config, enum) -> (name, E.Data ({E.value = de_cps_val value.value; E.writable = value.writable}, config, enum))
+      | Accessor(acc, config, enum) -> 
+        (name, E.Accessor ({E.getter = de_cps_val acc.getter; E.setter = de_cps_val acc.setter}, config, enum)) in
     E.Object(pos, attrs', List.map prop_wrapper props)
 and de_cps_prim (prim : cps_prim) : E.exp =
   match prim with
