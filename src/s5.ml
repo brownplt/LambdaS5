@@ -64,7 +64,8 @@ module S5 = struct
     print_newline ()
 
   let cps () =
-    cpsES5 := Es5_cps.cps_tail !srcES5 "%error" "%answer"
+    cpsES5 := Es5_cps.cps_tail !srcES5 "%error" "%answer";
+    cpsES5 := fst (Cfg.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty)))
   let uncps () =
     srcES5 := Es5_cps.de_cps !cpsES5
 
