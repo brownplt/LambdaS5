@@ -34,17 +34,17 @@ let rec apply p func args = match func with
                      ("Applied non-function, was actually " ^ 
 		         pretty_value func))
 
-let rec get_field p obj1 field getter_params = match obj1 with
+let rec get_field p obj1 field getter_params result = match obj1 with
   | Null -> Undefined (* nothing found *)
   | ObjCell c -> begin match !c with
       | { proto = pvalue; }, props ->
          try match IdMap.find field props with
-             | Data ({ value = v; }, _, _) -> v
+             | Data ({ value = v; }, _, _) -> result v
              | Accessor ({ getter = g; }, _, _) ->
                apply p g getter_params
          (* Not_found means prototype lookup is necessary *)
          with Not_found ->
-	   get_field p pvalue field getter_params
+	   get_field p pvalue field getter_params result
   end
   | _ -> failwith (interp_error p 
 		     "get_field on a non-object.  The expression was (get-field " 
@@ -55,16 +55,16 @@ let rec get_field p obj1 field getter_params = match obj1 with
 
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
-let rec add_field obj field newval = match obj with
+let rec add_field obj field newval result = match obj with
   | ObjCell c -> begin match !c with
       | { extensible = true; } as attrs, props ->
         begin
 	  c := (attrs, IdMap.add field 
             (Data ({ value = newval; writable = true; }, true, true))
 	    props);
-	  newval
+	  result newval
         end
-      | _ -> Undefined(* TODO: Check error in case of non-extensible *)
+      | _ -> result Undefined(* TODO: Check error in case of non-extensible *)
   end
   | _ -> failwith ("[interp] add_field given non-object.")
 
@@ -79,27 +79,27 @@ let rec not_writable prop = match prop with
 
 (* EUpdateField *)
 (* ES5 8.12.4, 8.12.5 *)
-let rec update_field p obj1 obj2 field newval setter_args = match obj1 with
+let rec update_field p obj1 obj2 field newval setter_args result = match obj1 with
     (* 8.12.4, step 4 *)
-  | Null -> add_field obj2 field newval
+  | Null -> add_field obj2 field newval result
   | ObjCell c -> begin match !c with
       | { proto = pvalue; } as attrs, props ->
         if (not (IdMap.mem field props)) then
           (* EUpdateField-Proto *)
-          update_field p pvalue obj2 field newval setter_args
+          update_field p pvalue obj2 field newval setter_args result
         else
           match (IdMap.find field props) with
             | Data ({ writable = true; }, enum, config) ->
             (* This check asks how far down we are in searching *)
               if (not (obj1 == obj2)) then
                 (* 8.12.4, last step where inherited.[[writable]] is true *)
-                add_field obj2 field newval
+                add_field obj2 field newval result
               else begin
                 (* 8.12.5, step 3, changing the value of a field *)
                 c := (attrs, IdMap.add field
                   (Data ({ value = newval; writable = true }, enum, config))
 		  props);
-                newval
+                result newval
               end
             | Accessor ({ setter = setterv; }, enum, config) ->
               (* 8.12.5, step 5 *)
@@ -296,11 +296,12 @@ let rec eval jsonPath exp env =
       let args_value = eval args env in begin
 	match (obj_value, f_value) with
 	  | (ObjCell o, String s) ->
-	      update_field p obj_value 
+	      update_field p obj_value
 		obj_value 
 		s
 		v_value
 		[obj_value; args_value]
+    (fun x -> x)
 	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
 			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
@@ -319,6 +320,7 @@ let rec eval jsonPath exp env =
           s
           v_value
           [k1v; k2v; obj_value; args_value]
+          (fun x -> apply p k1v [x])
 	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
 			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
@@ -329,7 +331,7 @@ let rec eval jsonPath exp env =
       let args_value = eval args env in begin
         match (obj_value, f_value) with
           | (ObjCell o, String s) ->
-              get_field p obj_value s [obj_value; args_value]
+              get_field p obj_value s [obj_value; args_value] (fun x -> x)
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
                  ^ string_of_position p 
                  ^ ". Instead, it got " 
@@ -346,6 +348,7 @@ let rec eval jsonPath exp env =
         match (obj_value, f_value) with
           | (ObjCell o, String s) ->
               get_field p obj_value s [k1v; k2v; obj_value; args_value]
+                        (fun x -> apply p k1v [x])
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
                  ^ string_of_position p 
                  ^ ". Instead, it got " 

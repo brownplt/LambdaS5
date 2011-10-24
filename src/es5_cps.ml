@@ -264,7 +264,7 @@ let rec cps (exp : E.exp)
                   cps obj exnName (fun obj' ->
                     cps field exnName (fun field' ->
                       cps args exnName (fun args' ->
-                        GetField (pos, obj', field', args', exnName, retName)))))
+                        GetField (pos, obj', field', args', retName, exnName)))))
     | E.SetField (pos, obj, field, value, args) ->
       let retName = newVar "ret" in
       let retArg = newVar "x" in
@@ -273,7 +273,7 @@ let rec cps (exp : E.exp)
                     cps field exnName (fun field' ->
                       cps value exnName (fun value' ->
                         cps args exnName (fun args' ->
-                          SetField (pos, obj', field', value', args', exnName, retName))))))
+                          SetField (pos, obj', field', value', args', retName, exnName))))))
 
     | E.Label (pos, label, body) -> 
         let newExnName = newVar "exn" in
@@ -532,9 +532,9 @@ let rec de_cps (exp : cps_exp) : E.exp =
   | LetExnCont (contId, argId, labelId, contBody, body) ->
     E.Let (dummy_pos, contId, E.Lambda(dummy_pos, [argId; labelId], de_cps contBody), de_cps body)
   | GetField (pos, objId, fieldId, argsId, retId, exnId) -> 
-    E.GetField(pos, de_cps_val objId, de_cps_val fieldId, de_cps_val argsId)
+    E.GetFieldK (pos, de_cps_val objId, de_cps_val fieldId, de_cps_val argsId, E.Id (pos, retId), E.Id (pos, exnId))
   | SetField (pos, objId, fieldId, valueId, argsId, retId, exnId) -> 
-    E.SetField(pos, de_cps_val objId, de_cps_val fieldId, de_cps_val valueId, de_cps_val argsId)
+    E.SetFieldK (pos, de_cps_val objId, de_cps_val fieldId, de_cps_val valueId, de_cps_val argsId, E.Id (pos, retId), E.Id (pos, exnId))
   | If (pos, condId, trueBranch, falseBranch) -> 
     E.If(pos, de_cps_val condId, de_cps trueBranch, de_cps falseBranch)
   | AppFun (pos, funId, retId, exnId, argsIds) -> E.App(pos, de_cps_val funId,
