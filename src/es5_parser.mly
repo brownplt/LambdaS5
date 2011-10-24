@@ -34,6 +34,8 @@ let with_pos exp pos = match exp with
   | SetAttr (_, prop, obj, field, value) -> SetAttr (pos, prop, obj, field, value)
   | GetField (_, left, right, args) -> GetField (pos, left, right, args)
   | SetField (_, obj, field, value, args) -> SetField (pos, obj, field, value, args)
+  | GetFieldK (_, left, right, args, k1, k2) -> GetFieldK (pos, left, right, args, k1, k2)
+  | SetFieldK (_, obj, field, value, args, k1, k2) -> SetFieldK (pos, obj, field, value, args, k1, k2)
   | DeleteField (_, obj, field) -> DeleteField (pos, obj, field)
   | SetBang (_, id, exp) -> SetBang (pos, id, exp)
   | Op1 (_, op, exp) -> Op1 (pos, op, exp)
@@ -184,13 +186,19 @@ exp :
     }
  | exp LBRACK unbraced_seq_exp EQUALS unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
    { SetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $1, $3, $5, $7) }
+ | exp LBRACK unbraced_seq_exp EQUALS unbraced_seq_exp COMMA unbraced_seq_exp
+        COMMA unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
+   { SetFieldK ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $1, $3, $5, $7, $9, $11) }
  | exp LBRACK unbraced_seq_exp RBRACK
    { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4) in
      GetField (p, $1,  $3,
 		       Object (p, d_attrs,
             [])) }
  | exp LBRACK unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
-   { GetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $1,  $3, $5) }
+   { GetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $1, $3, $5) }
+ | exp LBRACK unbraced_seq_exp COMMA unbraced_seq_exp COMMA
+              unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
+   { GetFieldK ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $1, $3, $5, $7, $9) }
  | exp LBRACK DELETE unbraced_seq_exp RBRACK
      { DeleteField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $1, $4) }
  | exp LBRACK unbraced_seq_exp LT attr_name GT RBRACK

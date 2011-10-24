@@ -21,8 +21,15 @@ let rec exp e = match e with
     braces (vert [attrsv avs; vert (vert_intersperse (text ",") (map prop props))])
   | SetField (p, o, f, v, args) ->
     squish [exp o; brackets (horz [exp f; text "="; exp v; text ","; exp args])]
+  | SetFieldK (p, o, f, v, args, k1, k2) ->
+    squish [exp o; brackets (horz [exp f; text "="; exp v; text ",";
+                                   exp args; text ",";
+                                   exp k1; text ","; exp k2])]
   | GetField (p, o, f, args) ->
     squish [exp o; brackets (horz [exp f; text ","; exp args])]
+  | GetFieldK (p, o, f, args, k1, k2) ->
+    squish [exp o; brackets (horz [exp f; text ","; exp args; text ",";
+                                   exp k1; text ","; exp k2])]
   | DeleteField (p, o, f) ->
     squish [exp o; brackets (horz [text "delete"; exp f])]
   | GetAttr (p, a, o, f) ->

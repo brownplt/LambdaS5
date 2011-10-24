@@ -34,22 +34,22 @@ let rec apply p func args = match func with
                      ("Applied non-function, was actually " ^ 
 		         pretty_value func))
 
-let rec get_field p obj1 obj2 field args = match obj1 with
+let rec get_field p obj1 field getter_params = match obj1 with
   | Null -> Undefined (* nothing found *)
   | ObjCell c -> begin match !c with
       | { proto = pvalue; }, props ->
          try match IdMap.find field props with
              | Data ({ value = v; }, _, _) -> v
              | Accessor ({ getter = g; }, _, _) ->
-               apply p g [obj2; args]
+               apply p g getter_params
          (* Not_found means prototype lookup is necessary *)
          with Not_found ->
-	   get_field p pvalue obj2 field args
+	   get_field p pvalue field getter_params
   end
   | _ -> failwith (interp_error p 
 		     "get_field on a non-object.  The expression was (get-field " 
 		   ^ pretty_value obj1 
-		   ^ " " ^ pretty_value obj2 
+		   ^ " " ^ pretty_value (List.nth getter_params 0)
 		   ^ " " ^ field ^ ")")
 
 
@@ -79,14 +79,14 @@ let rec not_writable prop = match prop with
 
 (* EUpdateField *)
 (* ES5 8.12.4, 8.12.5 *)
-let rec update_field p obj1 obj2 field newval args = match obj1 with
+let rec update_field p obj1 obj2 field newval setter_args = match obj1 with
     (* 8.12.4, step 4 *)
   | Null -> add_field obj2 field newval
   | ObjCell c -> begin match !c with
       | { proto = pvalue; } as attrs, props ->
         if (not (IdMap.mem field props)) then
           (* EUpdateField-Proto *)
-          update_field p pvalue obj2 field newval args
+          update_field p pvalue obj2 field newval setter_args
         else
           match (IdMap.find field props) with
             | Data ({ writable = true; }, enum, config) ->
@@ -103,7 +103,7 @@ let rec update_field p obj1 obj2 field newval args = match obj1 with
               end
             | Accessor ({ setter = setterv; }, enum, config) ->
               (* 8.12.5, step 5 *)
-              apply p setterv [obj2; args]
+              apply p setterv setter_args
             | _ -> Fail "Field not writable!"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
@@ -300,7 +300,25 @@ let rec eval jsonPath exp env =
 		obj_value 
 		s
 		v_value
-		args_value
+		[obj_value; args_value]
+	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
+			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
+                             ", " ^ (pretty_value f_value))
+	end
+  | S.SetFieldK (p, obj, f, v, args, k1, k2) ->
+      let obj_value = eval obj env in
+      let f_value = eval f env in
+      let v_value = eval v env in
+      let args_value = eval args env in
+      let k1v = eval k1 env in
+      let k2v = eval k2 env in begin
+	match (obj_value, f_value) with
+	  | (ObjCell o, String s) ->
+	      update_field p obj_value 
+          obj_value 
+          s
+          v_value
+          [k1v; k2v; obj_value; args_value]
 	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
 			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
@@ -309,16 +327,32 @@ let rec eval jsonPath exp env =
       let obj_value = eval obj env in
       let f_value = eval f env in 
       let args_value = eval args env in begin
-	match (obj_value, f_value) with
-	  | (ObjCell o, String s) ->
-	      get_field p obj_value obj_value s args_value
-	  | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
-			   ^ string_of_position p 
-			   ^ ". Instead, it got " 
-			   ^ pretty_value obj_value 
-			   ^ " and " 
-			   ^ pretty_value f_value)
-	end
+        match (obj_value, f_value) with
+          | (ObjCell o, String s) ->
+              get_field p obj_value s [obj_value; args_value]
+          | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
+                 ^ string_of_position p 
+                 ^ ". Instead, it got " 
+                 ^ pretty_value obj_value 
+                 ^ " and " 
+                 ^ pretty_value f_value)
+      end
+  | S.GetFieldK (p, obj, f, args, k1, k2) ->
+      let obj_value = eval obj env in
+      let f_value = eval f env in 
+      let args_value = eval args env in
+      let k1v = eval k1 env in
+      let k2v = eval k2 env in begin
+        match (obj_value, f_value) with
+          | (ObjCell o, String s) ->
+              get_field p obj_value s [k1v; k2v; obj_value; args_value]
+          | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
+                 ^ string_of_position p 
+                 ^ ". Instead, it got " 
+                 ^ pretty_value obj_value 
+                 ^ " and " 
+                 ^ pretty_value f_value)
+      end
   | S.DeleteField (p, obj, f) ->
       let obj_val = eval obj env in
       let f_val = eval f env in begin

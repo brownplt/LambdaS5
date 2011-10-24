@@ -254,6 +254,9 @@ let rec cps (exp : E.exp)
                            extensible=meta.E.extensible; } in
            wrap_props (pos, attrs', []) props)))
 
+    | E.GetFieldK _ -> failwith "Don't CPS GetFieldK yet"
+    | E.SetFieldK _ -> failwith "Don't CPS SetFieldK yet"
+    
     | E.GetField (pos, obj, field, args) ->
       let retName = newVar "ret" in
       let retArg = newVar "x" in
@@ -510,6 +513,9 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
     | E.Eval (pos, broken) -> 
       let var = newVar "dummy" in 
       LetValue (dummy_pos, var, Null dummy_pos, AppRetCont(retName, Id(pos,var))) 
+
+    | E.GetFieldK _ -> failwith "Don't CPS GetFieldK yet"
+    | E.SetFieldK _ -> failwith "Don't CPS SetFieldK yet"
 
 
 

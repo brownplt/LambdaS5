@@ -31,6 +31,9 @@ type exp =
   | SetAttr of pos * pattr * exp * exp * exp
   | GetField of pos * exp * exp * exp (*pos, left, right, args object *)
   | SetField of pos * exp * exp * exp * exp (* pos, obj, field, new val, args *)
+    (* GetFieldK and SetFieldK are for CPS-ed programs. *)
+  | GetFieldK of pos * exp * exp * exp * exp * exp
+  | SetFieldK of pos * exp * exp * exp * exp * exp * exp
   | DeleteField of pos * exp * exp (* pos, obj, field *)
   | SetBang of pos * id * exp
   | Op1 of pos * string * exp
@@ -94,6 +97,8 @@ let pos_of exp = match exp with
   | SetAttr (pos, _, _, _, _) -> pos
   | GetField (pos, _, _, _) -> pos 
   | SetField (pos, _, _, _, _) -> pos 
+  | GetFieldK (pos, _, _, _, _, _) -> pos 
+  | SetFieldK (pos, _, _, _, _, _, _) -> pos 
   | DeleteField (pos, _, _) -> pos
   | SetBang (pos, _, _) -> pos
   | Op1 (pos, _, _) -> pos
