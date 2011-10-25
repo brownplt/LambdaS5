@@ -58,14 +58,6 @@ and exp e = match e with
   | LetExnCont (exn, x, l, e, body) ->
     vert [horz [text "letExn"; horz [text exn; parens (horz [text x; text l]); text "="; vert [exp e]]];
           horz [text "in"; vert [exp body]]]
-  | SetField (p, o, f, v, args, ret, exn) ->
-    squish [value o; 
-            brackets (horz [value f; text "="; value v; text ","; value args]); 
-            brackets (horz [text ret; text "or"; text exn])]
-  | GetField (p, o, f, args, ret, exn) ->
-    squish [value o; 
-            brackets (horz [value f; text ","; value args]); 
-            brackets (horz [text ret; text "or"; text exn])]
   | If (p, c, t, e) -> 
     vert [horz [text "if  "; vert [parens (horz [value c])]];
           horz [text "then"; braces (exp t)];
@@ -79,7 +71,7 @@ and exp e = match e with
   | AppRetCont (r, x) ->
     horz [squish [text r; parens (horz [value x])]]
   | AppExnCont (e, x, l) ->
-    horz [squish [text e; parens (horz [value x ; text ","; text l])]]
+    horz [squish [text e; parens (horz [value x ; text ","; value l])]]
   | Eval (p, s) -> 
       squish [text "@eval"; parens (exp s)]
 

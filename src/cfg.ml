@@ -1,5 +1,6 @@
 open Prelude
 open Es5_cps
+module E = Es5_syntax
 open Graph
 
 type vert = cps_exp
@@ -50,16 +51,13 @@ let no_free_vars exp (env : unit IdMap.t) : bool =
     | LetPrim(_, id, prim, exp) -> free_prim env prim && free_exp (env ++ [id]) exp
     | LetRetCont(ret, arg, retBody, exp) -> free_exp (env ++ [arg]) retBody && free_exp (env ++ [ret]) exp
     | LetExnCont(exn, arg, lbl, exnBody, exp) -> free_exp (env ++ [arg;lbl]) exnBody && free_exp (env ++ [exn]) exp
-    | GetField(_, obj, field, args, ret, exn) -> (env $$ [ret;exn]) && List.for_all (free_val env) [obj;field;args]
-    | SetField(_, obj, field, value, args, ret, exn) -> 
-      (env $$ [ret;exn]) && List.for_all (free_val env) [obj;field;value;args]
     | If(_, cond, trueBranch, falseBranch) ->
       free_val env cond && List.for_all (free_exp env) [trueBranch; falseBranch]
     | AppFun(_, func, ret, exn, args) ->
       (env $$ [ret;exn])
       && List.for_all (free_val env) (func::args)
     | AppRetCont(ret, arg) -> (env $$ [ret]) && free_val env arg
-    | AppExnCont(exn, arg, label) -> (env $$ [exn;label]) && free_val env arg
+    | AppExnCont(exn, arg, label) -> (env $$ [exn]) && List.for_all (free_val env) [arg;label]
     | Eval(_, eval) -> true in
   free_exp env exp
 
@@ -143,6 +141,7 @@ let alphatize allowUnbound (exp, env) =
     | SetBang (p, id, value) ->
       let (value', env1) = alph_val (value, env) in
       (SetBang(p, lookup (id, env), value'), env1)
+
   and alph_exp (exp, env) = 
     match exp with 
     | LetValue (p, id, value, exp) -> 
@@ -173,21 +172,6 @@ let alphatize allowUnbound (exp, env) =
       let (exn', env4) = update (exn, env) in 
       let (exp', env5) = alph_exp (exp, env4) in
       (LetExnCont(exn', arg', label', exnBody', exp'), merge env3 env5)
-    | GetField(p, obj, field, args, ret, exn) -> 
-      let ret' = lookup (ret, env) in
-      let exn' = lookup (exn, env) in
-      let (obj', env1) = alph_val (obj, env) in
-      let (field', env2) = alph_val (field, env1) in
-      let (args', env3) = alph_val (args, env2) in
-      (GetField(p, obj', field', args', ret', exn'), env3)
-    | SetField(p, obj, field, value, args, ret, exn) -> 
-      let ret' = lookup (ret, env) in
-      let exn' = lookup (exn, env) in
-      let (obj', env1) = alph_val (obj, env) in
-      let (field', env2) = alph_val (field, env1) in
-      let (value', env3) = alph_val (value, env2) in
-      let (args', env4) = alph_val (args, env3) in
-      (SetField(p, obj', field', value', args', ret', exn'), env4)
     | If(p, cond, trueBranch, falseBranch) -> 
       let (cond', env1) = alph_val (cond, env) in
       let (true', env2) = alph_exp (trueBranch, env1) in
@@ -206,13 +190,46 @@ let alphatize allowUnbound (exp, env) =
       (AppRetCont(ret', arg'), env1)
     | AppExnCont(exn, arg, label) -> 
       let exn' = lookup (exn, env) in
-      let label' = lookup (label, env) in
       let (arg', env1) = alph_val (arg, env) in      
-      (AppExnCont(exn', arg', label'), env1)
+      let (label', env2) = alph_val (label, env1) in
+      (AppExnCont(exn', arg', label'), env2)
     | Eval(p, eval) -> (Eval(p, eval), env)
-
   in alph_exp (exp, env)
 
+module Es5Exp = struct
+  type t = int
+  let compare = Pervasives.compare
+end
+
+module ExpSet = Set.Make (Es5Exp)
+
+(* type Binding =  *)
+(*   | Exp of E.exp  *)
+(*   | Ret of id * cps_exp  *)
+(*   | Exn of id * id * cps_exp  *)
+(*   | Mu of id * E.exp *)
+
+(* type Bindings = Binding IdMap.t *)
+
+(* let trackReturns cps_exp =
+  (* assumes that exp has been alphatized *)
+  let rec track_exp (targetRet : id) (exp : cps_exp) (env : Bindings) (rets : ExpSet) =
+    let appRet ret binding =
+      match (IdMap.find ret env) with
+        Ret (arg, body) -> track_exp targetRet body (IdMap.add arg binding env) rets
+      | _ -> failwith "Name " ^ ret ^ " not bound to a return continuation" in
+    match exp with
+    | AppRetCont (ret, value) ->
+      if (ret = targetRet) 
+      then ExpSet.Add (get_value value env) rets
+      else appRet ret (Exp (E.de_cps_val value))
+    | LetValue (_, id, value, exp) -> track_exp targetRet exp (IdMap.add id (Exp (E.de_cps_val value)) env) rets
+    | RecValue (_, id, value, exp) -> track_exp targetRet exp (IdMap.add id (Mu (id, E.de_cps_val value)) env) rets
+    | LetPrim (_, id, prim, exp) track_exp targetRet exp (IdMap.add id (Exp (E.cps_prim prim)) env) rets
+    | LetRetCont (ret, arg, body, exp) -> track_exp targetRet exp (IdMap.add ret (Ret(arg,body)) env) rets
+    | LetExnCont (ret, arg, label body, exp) -> track_exp targetRet exp (IdMap.add ret (Exn(arg,label,body)) env) rets
+    | GetField (_, obj, field, args, ret, _) 
+*)
 let build expr =
   let v = expr in 
   let cfg = G.add_vertex G.empty v in
@@ -223,8 +240,6 @@ let build expr =
   | LetPrim(pos, id, prim, exp) -> (g, entry)
   | LetRetCont(ret, arg, retBody, exp) -> (g, entry)
   | LetExnCont(exn, arg, label, exnBody, exp) -> (g, entry)
-  | GetField(pos, obj, field, args, ret, exn) -> (g, entry)
-  | SetField(pos, obj, field, value, args, ret, exn) -> (g, entry)
   | If(pos, cond, trueBranch, falseBranch) -> (g, entry)
   | AppFun(pos, func, ret, exn, args) -> (g, entry)
   | AppRetCont(ret, arg) -> (g, entry)
@@ -243,14 +258,10 @@ module Display = struct
   | LetPrim(pos, id, prim, exp) -> "LetPrim(" ^ id ^ ")"
   | LetRetCont(ret, arg, retBody, exp) -> "LetRet(" ^ ret ^ ")"
   | LetExnCont(exn, arg, label, exnBody, exp) -> "LetExn(" ^ exn ^ ")"
-  | GetField(pos, obj, field, args, ret, exn) -> "GetField(" ^ (cpsv_to_string obj) 
-    ^ "[" ^ (cpsv_to_string field) ^ "])"
-  | SetField(pos, obj, field, value, args, ret, exn) -> "SetField(" ^ (cpsv_to_string obj)
-    ^ "[" ^ (cpsv_to_string field) ^ "])"
   | If(pos, cond, trueBranch, falseBranch) -> "If(" ^ (cpsv_to_string cond) ^ ")"
   | AppFun(pos, func, ret, exn, args) -> "App(" ^ (cpsv_to_string func) ^ ")"
   | AppRetCont(ret, arg) -> "Ret(" ^ ret ^ ")"
-  | AppExnCont(exn, arg, label) -> "Exn(" ^ exn ^ ", " ^ label ^ ")"
+  | AppExnCont(exn, arg, label) -> "Exn(" ^ exn ^ ", " ^ (cpsv_to_string label) ^ ")"
   | Eval(pos, eval) -> "Eval"
   let graph_attributes _ = []
   let default_vertex_attributes _ = []

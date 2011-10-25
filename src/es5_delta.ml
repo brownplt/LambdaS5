@@ -413,7 +413,9 @@ let has_own_property obj field = match obj, field with
   | ObjCell o, String s -> 
       let (attrs, props) = !o in
         bool (IdMap.mem s props)
-  | _ -> raise (Throw (str "has-own-property?"))
+  | ObjCell o, _ -> raise (Throw (str "has-own-property: field not a string"))
+  | _, String s -> raise (Throw (str ("has-own-property: obj not an object for field " ^ s)))
+  | _ -> raise (Throw (str "has-own-property: neither an object nor a string"))
 
 let base n r = 
   let rec get_digits n l = match n with

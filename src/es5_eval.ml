@@ -306,25 +306,6 @@ let rec eval jsonPath exp env =
 			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
 	end
-  | S.SetFieldK (p, obj, f, v, args, k1, k2) ->
-      let obj_value = eval obj env in
-      let f_value = eval f env in
-      let v_value = eval v env in
-      let args_value = eval args env in
-      let k1v = eval k1 env in
-      let k2v = eval k2 env in begin
-	match (obj_value, f_value) with
-	  | (ObjCell o, String s) ->
-	      update_field p obj_value 
-          obj_value 
-          s
-          v_value
-          [k1v; k2v; obj_value; args_value]
-          (fun x -> apply p k1v [x])
-	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
-                             ", " ^ (pretty_value f_value))
-	end
   | S.GetField (p, obj, f, args) ->
       let obj_value = eval obj env in
       let f_value = eval f env in 
@@ -332,23 +313,6 @@ let rec eval jsonPath exp env =
         match (obj_value, f_value) with
           | (ObjCell o, String s) ->
               get_field p obj_value s [obj_value; args_value] (fun x -> x)
-          | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
-                 ^ string_of_position p 
-                 ^ ". Instead, it got " 
-                 ^ pretty_value obj_value 
-                 ^ " and " 
-                 ^ pretty_value f_value)
-      end
-  | S.GetFieldK (p, obj, f, args, k1, k2) ->
-      let obj_value = eval obj env in
-      let f_value = eval f env in 
-      let args_value = eval args env in
-      let k1v = eval k1 env in
-      let k2v = eval k2 env in begin
-        match (obj_value, f_value) with
-          | (ObjCell o, String s) ->
-              get_field p obj_value s [k1v; k2v; obj_value; args_value]
-                        (fun x -> apply p k1v [x])
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
                  ^ string_of_position p 
                  ^ ". Instead, it got " 
