@@ -1,38 +1,38 @@
 open Prelude
 module E = Es5_syntax
 
+type label = int
+
 type cps_value =
-  | Null of pos
-  | Undefined of pos
-  | String of pos * string
-  | Num of pos * float
-  | True of pos
-  | False of pos
-  | Id of pos * id
-  | Object of pos * cps_attrs * (string * cps_prop) list
-      (* GetAttr (pos, property, object, field name) *)
-  | Lambda of pos * id * id * id list * cps_exp
+  | Null of pos * label
+  | Undefined of pos * label
+  | String of pos * label * string
+  | Num of pos * label * float
+  | True of pos * label
+  | False of pos * label
+  | Id of pos * label * id
+  | Object of pos * label * cps_attrs * (string * cps_prop) list
+  | Lambda of pos * label * id * id * id list * cps_exp
 
 and cps_prim =
-  | GetAttr of pos * E.pattr * cps_value * cps_value
-      (* SetAttr (pos, property, object, field name, new value) *)
-  | SetAttr of pos * E.pattr * cps_value * cps_value * cps_value
-  | Op1 of pos * string * cps_value
-  | Op2 of pos * string * cps_value * cps_value
-  | DeleteField of pos * cps_value * cps_value (* pos, obj, field *)
-  | SetBang of pos * id * cps_value
+  | GetAttr of pos * label * E.pattr * cps_value * cps_value
+  | SetAttr of pos * label * E.pattr * cps_value * cps_value * cps_value
+  | Op1 of pos * label * string * cps_value
+  | Op2 of pos * label * string * cps_value * cps_value
+  | DeleteField of pos * label * cps_value * cps_value (* pos, obj, field *)
+  | SetBang of pos * label * id * cps_value
 
 and cps_exp =
-  | LetValue of pos * id * cps_value * cps_exp (* let binding of values to variables *)
-  | RecValue of pos * id * cps_value * cps_exp (* letrec binding of values to lambdas *)
-  | LetPrim of pos * id * cps_prim * cps_exp (* let binding with only primitive steps in binding *)
-  | LetRetCont of id * id * cps_exp * cps_exp (* contName * argName * contBody * exp *)
-  | LetExnCont of id * id * id * cps_exp * cps_exp (* contName * argName * labelName * contBody * exp *)
-  | If of pos * cps_value * cps_exp * cps_exp
-  | AppFun of pos * cps_value * id * id * cps_value list
-  | AppRetCont of id * cps_value (* contName * argName *)
-  | AppExnCont of id * cps_value * cps_value (* contName * argName * labelName *)
-  | Eval of pos * cps_exp
+  | LetValue of pos * label * id * cps_value * cps_exp (* let binding of values to variables *)
+  | RecValue of pos * label * id * cps_value * cps_exp (* letrec binding of values to lambdas *)
+  | LetPrim of pos * label * id * cps_prim * cps_exp (* let binding with only primitive steps in binding *)
+  | LetRetCont of label * id * id * cps_exp * cps_exp (* contName * argName * contBody * exp *)
+  | LetExnCont of label * id * id * id * cps_exp * cps_exp (* contName * argName * labelName * contBody * exp *)
+  | If of pos * label * cps_value * cps_exp * cps_exp
+  | AppFun of pos * label * cps_value * id * id * cps_value list
+  | AppRetCont of label * id * cps_value (* contName * argName *)
+  | AppExnCont of label * id * cps_value * cps_value (* contName * argName * labelName *)
+  | Eval of pos * label * cps_exp
 
 and data_cps_value =       
     {value : cps_value;
@@ -52,37 +52,37 @@ and cps_attrs =
 
 
 let idName value = match value with
-  | Id (_, id) -> id
+  | Id (_, _, id) -> id
   | _ -> failwith "expected an Id"
 
 let pos_of_val (value : cps_value) = match value with
-| Null pos -> pos
-| Undefined pos -> pos
-| String (pos, _) -> pos
-| Num (pos, _) -> pos
-| True pos -> pos
-| False pos -> pos
-| Id (pos, _) -> pos
-| Object (pos, _, _) -> pos
-| Lambda (pos, _, _, _, _) -> pos
+| Null (pos, _) -> pos
+| Undefined (pos, _) -> pos
+| String (pos, _, _) -> pos
+| Num (pos, _, _) -> pos
+| True (pos, _) -> pos
+| False (pos, _) -> pos
+| Id (pos, _, _) -> pos
+| Object (pos, _, _, _) -> pos
+| Lambda (pos, _, _, _, _, _) -> pos
 let pos_of_exp (exp : cps_exp) = match exp with
-| LetValue (pos, _, _, _) -> pos
-| RecValue (pos, _, _, _) -> pos
-| LetPrim (pos, _, _, _) -> pos
+| LetValue (pos, _, _, _, _) -> pos
+| RecValue (pos, _, _, _, _) -> pos
+| LetPrim (pos, _, _, _, _) -> pos
 | LetRetCont _ -> dummy_pos
 | LetExnCont _ -> dummy_pos
-| If (pos, _, _, _) -> pos
-| AppFun (pos, _, _, _, _) -> pos
+| If (pos, _, _, _, _) -> pos
+| AppFun (pos, _, _, _, _, _) -> pos
 | AppRetCont _ -> dummy_pos
 | AppExnCont _ -> dummy_pos
-| Eval (pos, _) -> pos
+| Eval (pos, _, _) -> pos
 let pos_of_prim (prim : cps_prim) = match prim with
-| GetAttr (pos, _, _, _) -> pos
-| SetAttr (pos, _, _, _, _) -> pos
-| Op1 (pos, _, _) -> pos
-| Op2 (pos, _, _, _) -> pos
-| DeleteField (pos, _, _) -> pos
-| SetBang (pos, _, _) -> pos
+| GetAttr (pos, _, _, _, _) -> pos
+| SetAttr (pos, _, _, _, _, _) -> pos
+| Op1 (pos, _, _, _) -> pos
+| Op2 (pos, _, _, _, _) -> pos
+| DeleteField (pos, _, _, _) -> pos
+| SetBang (pos, _, _, _) -> pos
 
 let pretty_print : (cps_exp -> Format.formatter -> unit) ref = ref (fun _ _ -> ())
 
@@ -91,6 +91,10 @@ let newVar =
   (fun prefix ->
     incr varIdx;
     "@_" ^ prefix ^ (string_of_int !varIdx))
+let newLabel =
+  let labelIdx = ref 0 in
+  (fun () -> incr labelIdx; !labelIdx)
+
 
 (* let get_field pos getField : cps_value = *)
 (*   (\* *)
@@ -272,13 +276,13 @@ let rec cps (exp : E.exp)
 
   match exp with
     (* most of the CPS Value forms *)
-    | E.Null pos -> ret (Null pos)
-    | E.Undefined pos -> ret (Undefined pos)
-    | E.String (pos, str) -> ret (String(pos,str))
-    | E.Num (pos, value) -> ret (Num(pos,value))
-    | E.True pos -> ret (True pos)
-    | E.False pos -> ret (False pos)
-    | E.Id (pos, id) -> ret (Id(pos,id))
+    | E.Null pos -> ret (Null (pos, newLabel()))
+    | E.Undefined pos -> ret (Undefined (pos, newLabel()))
+    | E.String (pos, str) -> ret (String(pos,newLabel(),str))
+    | E.Num (pos, value) -> ret (Num(pos,newLabel(),value))
+    | E.True pos -> ret (True (pos,newLabel()))
+    | E.False pos -> ret (False (pos,newLabel()))
+    | E.Id (pos, id) -> ret (Id(pos,newLabel(),id))
 
     | E.App (pos, func, args) -> 
         (* because we're using n-ary functions, building the innermostRet
@@ -292,13 +296,13 @@ let rec cps (exp : E.exp)
           | [] -> 
             let retName = newVar "ret" in
             let retArg = newVar "x" in
-            LetRetCont (retName, retArg, ret (Id(pos,retArg)), 
-                        AppFun (pos, funName, retName, exnName, (List.rev argNames))) in
+            LetRetCont (newLabel(), retName, retArg, ret (Id(pos,newLabel(),retArg)), 
+                        AppFun (pos,newLabel(), funName, retName, exnName, (List.rev argNames))) in
       process_args args [])
     | E.Lambda (pos, args, body) -> 
         let retName = newVar "ret" in
         let exnName = newVar "exn" in
-        ret (Lambda (pos, retName, exnName, args, (cps_tail body exnName retName)))
+        ret (Lambda (pos,newLabel(), retName, exnName, args, (cps_tail body exnName retName)))
 
 
 
@@ -306,48 +310,54 @@ let rec cps (exp : E.exp)
     | E.SetBang (pos, id, value) ->
         cps value exnName (fun var ->
           let temp = newVar "set!Temp" in
-          LetPrim (pos, temp, SetBang (pos, id, var), ret (Id(pos,temp))))
+          LetPrim (pos,newLabel(), temp, SetBang (pos,newLabel(), id, var), 
+                   ret (Id(pos,newLabel(),temp))))
     | E.Op1 (pos, op, exp) -> 
         cps exp exnName (fun var ->
           let temp = newVar "op1Temp" in
-          LetPrim (pos, temp, Op1 (pos, op, var), ret (Id(pos, temp))))
+          LetPrim (pos,newLabel(), temp, Op1 (pos,newLabel(), op, var), 
+                   ret (Id(pos,newLabel(), temp))))
     | E.Op2 (pos, op, left, right) -> 
         cps left exnName (fun leftVar -> 
           cps right exnName (fun rightVar ->
             let temp = newVar "op2Temp" in
-            LetPrim (pos, temp, Op2 (pos, op, leftVar, rightVar), ret (Id(pos, temp)))))
+            LetPrim (pos,newLabel(), temp, Op2 (pos,newLabel(), op, leftVar, rightVar), 
+                     ret (Id(pos,newLabel(), temp)))))
     | E.DeleteField (pos, obj, field) -> 
         cps obj exnName (fun objVar -> 
           cps field exnName (fun fieldVar ->
             let temp = newVar "delTemp" in
-            LetPrim (pos, temp, DeleteField (pos, objVar, fieldVar), ret (Id(pos, temp)))))
+            LetPrim (pos,newLabel(), temp, DeleteField (pos,newLabel(), objVar, fieldVar), 
+                     ret (Id(pos,newLabel(), temp)))))
     | E.GetAttr (pos, prop_meta, obj, pname) -> 
         cps obj exnName (fun objVar -> 
           cps pname exnName (fun pnameVar ->
             let temp = newVar "getTemp" in
-            LetPrim (pos, temp, GetAttr (pos, prop_meta, objVar, pnameVar), ret (Id(pos, temp)))))
+            LetPrim (pos,newLabel(), temp, GetAttr (pos,newLabel(), prop_meta, objVar, pnameVar), 
+                     ret (Id(pos,newLabel(), temp)))))
     | E.SetAttr (pos, prop_meta, obj, pname, value) -> 
         cps obj exnName (fun objVar -> 
           cps pname exnName (fun pnameVar ->
             cps value exnName (fun valueVar ->
               let temp = newVar "setTemp" in
-              LetPrim (pos, temp, SetAttr (pos, prop_meta, objVar, pnameVar, valueVar), ret (Id(pos, temp))))))
+              LetPrim (pos,newLabel(), temp, SetAttr (pos,newLabel(), prop_meta, objVar, pnameVar, valueVar), 
+                       ret (Id(pos,newLabel(), temp))))))
 
     (* CPS Expression forms *)
     | E.Hint (pos, label, exp) -> cps exp exnName ret
     | E.Seq (pos, first, second) -> 
       cps first exnName (fun ignored -> cps second exnName ret)
     | E.Let (pos, id, value, body) -> 
-      cps value exnName (fun value' -> LetValue(pos, id, value', cps body exnName ret))
+      cps value exnName (fun value' -> LetValue(pos,newLabel(), id, value', cps body exnName ret))
     | E.Rec (pos, id, value, body) -> 
-      cps value exnName (fun value' -> RecValue(pos, id, value', cps body exnName ret))
+      cps value exnName (fun value' -> RecValue(pos,newLabel(), id, value', cps body exnName ret))
 
     | E.If (pos, cond, trueBranch, falseBranch) -> 
         cps cond exnName (fun var -> 
           let retName = newVar "ret" in
           let retArg = newVar "x" in
-          LetRetCont (retName, retArg, ret (Id(pos,retArg)),
-                      If (pos, var, 
+          LetRetCont (newLabel(), retName, retArg, ret (Id(pos,newLabel(),retArg)),
+                      If (pos,newLabel(), var, 
                           cps_tail trueBranch exnName retName, 
                           cps_tail falseBranch exnName retName)))
           
@@ -378,7 +388,8 @@ let rec cps (exp : E.exp)
               wrap_props (pos, meta, ((s, Accessor (a', c, e))::compProps)) props')
           | [] ->
             let temp = newVar "objVar" in
-              LetValue (pos, temp, Object(pos, meta, List.rev compProps), ret (Id (pos, temp))) in
+              LetValue (pos,newLabel(), temp, Object(pos,newLabel(), meta, List.rev compProps), 
+                        ret (Id (pos,newLabel(), temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
@@ -391,39 +402,42 @@ let rec cps (exp : E.exp)
 
     | E.GetField (pos, obj, field, args) ->
       let getField = "%getField" in
-      let id id = Id(pos, id) in
+      let id id = Id(pos,newLabel(), id) in
       cps obj exnName (fun obj' ->
         cps field exnName (fun field' ->
           cps args exnName (fun args' ->
             let retName = newVar "ret" in
             let argName = newVar "arg" in
-            LetRetCont(retName, argName, ret (id argName),
-                       AppFun(pos, id getField, retName, exnName, [obj'; field'; args'])))))
+            LetRetCont(newLabel(), retName, argName, ret (id argName),
+                       AppFun(pos,newLabel(), id getField, retName, exnName, [obj'; field'; args'])))))
     | E.SetField (pos, obj, field, value, args) ->
       let updateField = "%updateField" in
-      let id id = Id(pos, id) in
+      let id id = Id(pos,newLabel(), id) in
       cps obj exnName (fun obj' ->
         cps field exnName (fun field' ->
           cps value exnName (fun value' ->
             cps args exnName (fun args' ->
               let retName = newVar "ret" in
               let retArg = newVar "x" in
-              LetRetCont (retName, retArg, ret (Id(pos,retArg)),
-                          AppFun(pos, id updateField, retName, exnName, 
+              LetRetCont (newLabel(), retName, retArg, ret (id retArg),
+                          AppFun(pos,newLabel(), id updateField, retName, exnName, 
                                  [obj'; obj'; field'; value'; args']))))))
     | E.Label (pos, label, body) -> 
         let newExnName = newVar "exn" in
         let argName = newVar "argX" in
         let labelArgName = newVar "labelArg" in
         let temp = newVar "labelEqTemp" in
-        LetExnCont (newExnName, argName, labelArgName,
-                    LetPrim (pos, temp, Op2(pos, "stx=", String(pos, label), Id(pos,labelArgName)),
-                             If (pos, Id(pos,temp),
-                                 ret (Id(pos,argName)),
-                                 AppExnCont(exnName, Id(pos,argName), Id(pos,labelArgName)))),
+        LetExnCont (newLabel(), newExnName, argName, labelArgName,
+                    LetPrim (pos,newLabel(), temp, 
+                             Op2(pos,newLabel(), "stx=", 
+                                 String(pos,newLabel(), label), Id(pos,newLabel(),labelArgName)),
+                             If (pos,newLabel(), Id(pos,newLabel(),temp),
+                                 ret (Id(pos,newLabel(),argName)),
+                                 AppExnCont(newLabel(),exnName, 
+                                            Id(pos,newLabel(),argName), Id(pos,newLabel(),labelArgName)))),
                     cps body newExnName ret)
     | E.Break (pos, label, value) -> 
-      cps value exnName (fun var -> AppExnCont(exnName, var, String(pos,label)))
+      cps value exnName (fun var -> AppExnCont(newLabel(), exnName, var, String(pos,newLabel(),label)))
           
 
     | E.TryCatch (pos, body, handler_lam) -> 
@@ -434,13 +448,15 @@ let rec cps (exp : E.exp)
       let handler_app (var : id) : E.exp =
         E.App (E.pos_of handler_lam, handler_lam, [E.Id (pos, var)]) in
       let temp = newVar "catchEqTemp" in
-      LetRetCont (retName, argName, ret (Id(pos,argName)),
-                  LetExnCont (newExnName, argName, labelArgName,
-                              LetPrim (pos, temp, Op2(pos, "stx=", 
-                                                      String(pos, "##catchMe##"), Id(pos,labelArgName)),
-                                       If (pos, Id(pos,temp),
+      LetRetCont (newLabel(), retName, argName, ret (Id(pos,newLabel(),argName)),
+                  LetExnCont (newLabel(), newExnName, argName, labelArgName,
+                              LetPrim (pos, newLabel(), temp, Op2(pos,newLabel(), "stx=", 
+                                                                  String(pos,newLabel(), "##catchMe##"), 
+                                                                  Id(pos,newLabel(),labelArgName)),
+                                       If (pos,newLabel(), Id(pos,newLabel(),temp),
                                            cps (handler_app argName) exnName ret,
-                                           AppExnCont(exnName, Id(pos,argName), Id(pos,labelArgName))
+                                           AppExnCont(newLabel(), exnName, 
+                                                      Id(pos,newLabel(),argName), Id(pos,newLabel(),labelArgName))
                                        )),
                               cps_tail body newExnName retName))
     | E.TryFinally (pos, body, exp) -> 
@@ -448,17 +464,20 @@ let rec cps (exp : E.exp)
       let argX = newVar "argX" in
       let finallyExn = newVar "finallyExn" in
       let labelArg = newVar "label" in
-      LetRetCont (finallyRet, argX, 
-                  cps exp exnName (fun ignored -> ret (Id(pos,argX))),
-                  LetExnCont(finallyExn, argX, labelArg, 
-                             cps exp exnName (fun ignored -> AppExnCont(exnName, Id(pos,argX), Id(pos,labelArg))),
+      LetRetCont (newLabel(), finallyRet, argX, 
+                  cps exp exnName (fun ignored -> ret (Id(pos,newLabel(),argX))),
+                  LetExnCont(newLabel(), finallyExn, argX, labelArg, 
+                             cps exp exnName (fun ignored -> 
+                               AppExnCont(newLabel(), exnName, 
+                                          Id(pos,newLabel(),argX), Id(pos,newLabel(),labelArg))),
                              cps_tail body finallyExn finallyRet))
-    | E.Throw (pos, value) -> cps value exnName (fun var -> AppExnCont(exnName, var, String(pos,"##catchMe##")))
+    | E.Throw (pos, value) -> cps value exnName (fun var -> 
+      AppExnCont(newLabel(), exnName, var, String(pos,newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
     | E.Eval (pos, broken) -> 
       let var = newVar "dummy" in 
-      LetValue (dummy_pos, var, Null dummy_pos, ret (Id(pos,var))) 
+      LetValue (dummy_pos, newLabel(), var, Null (dummy_pos, newLabel()), ret (Id(pos,newLabel(),var))) 
 
 
 
@@ -466,13 +485,13 @@ let rec cps (exp : E.exp)
 and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
   match exp with
     (* most of the CPS Value forms *)
-    | E.Null pos -> AppRetCont(retName, Null pos)
-    | E.Undefined pos -> AppRetCont(retName, Undefined pos)
-    | E.String (pos, str) -> AppRetCont(retName, String(pos, str))
-    | E.Num (pos, value) -> AppRetCont(retName, Num(pos,value))
-    | E.True pos -> AppRetCont(retName, True pos)
-    | E.False pos -> AppRetCont(retName, False pos)
-    | E.Id (pos, id) -> AppRetCont(retName, Id(pos,id))
+    | E.Null pos -> AppRetCont(newLabel(), retName, Null (pos, newLabel()))
+    | E.Undefined pos -> AppRetCont(newLabel(), retName, Undefined (pos, newLabel()))
+    | E.String (pos, str) -> AppRetCont(newLabel(), retName, String(pos,newLabel(), str))
+    | E.Num (pos, value) -> AppRetCont(newLabel(), retName, Num(pos,newLabel(),value))
+    | E.True pos -> AppRetCont(newLabel(), retName, True (pos,newLabel()))
+    | E.False pos -> AppRetCont(newLabel(), retName, False (pos,newLabel()))
+    | E.Id (pos, id) -> AppRetCont(newLabel(), retName, Id(pos,newLabel(),id))
 
     | E.App (pos, func, args) -> 
         (* because we're using n-ary functions, building the innermostRet
@@ -483,15 +502,15 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
         let rec process_args args argNames =
           match args with
           | arg::args' -> cps arg exnName (fun arg' -> process_args args' (arg'::argNames))
-          | [] -> AppFun (pos, funName, retName, exnName, (List.rev argNames)) in
+          | [] -> AppFun (pos,newLabel(), funName, retName, exnName, (List.rev argNames)) in
       process_args args [])
     | E.Lambda (pos, args, body) -> 
         let lamName = newVar "lam" in
         let retName = newVar "ret" in
         let exnName = newVar "exn" in
-        LetValue (pos, lamName, Lambda (pos, retName, exnName, args, 
+        LetValue (pos,newLabel(), lamName, Lambda (pos,newLabel(), retName, exnName, args, 
                                         (cps_tail body exnName retName)),
-                  AppRetCont(retName, Id(pos,lamName)))
+                  AppRetCont(newLabel(), retName, Id(pos,newLabel(),lamName)))
 
 
 
@@ -499,47 +518,47 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
     | E.SetBang (pos, id, value) ->
         cps exp exnName (fun var ->
           let temp = newVar "set!Temp" in
-          LetPrim (pos, temp, SetBang (pos, id, var), AppRetCont(retName, Id(pos,temp))))
+          LetPrim (pos,newLabel(), temp, SetBang (pos,newLabel(), id, var), AppRetCont(newLabel(), retName, Id(pos,newLabel(),temp))))
     | E.Op1 (pos, op, exp) -> 
         cps exp exnName (fun var ->
           let temp = newVar "op1Temp" in
-          LetPrim (pos, temp, Op1 (pos, op, var), AppRetCont(retName, Id(pos,temp))))
+          LetPrim (pos,newLabel(), temp, Op1 (pos,newLabel(), op, var), AppRetCont(newLabel(), retName, Id(pos,newLabel(),temp))))
     | E.Op2 (pos, op, left, right) -> 
         cps left exnName (fun leftVar -> 
           cps right exnName (fun rightVar ->
             let temp = newVar "op2Temp" in
-            LetPrim (pos, temp, Op2 (pos, op, leftVar, rightVar), AppRetCont(retName, Id(pos,temp)))))
+            LetPrim (pos,newLabel(), temp, Op2 (pos,newLabel(), op, leftVar, rightVar), AppRetCont(newLabel(), retName, Id(pos,newLabel(),temp)))))
     | E.DeleteField (pos, obj, field) -> 
         cps obj exnName (fun objVar -> 
           cps field exnName (fun fieldVar ->
             let temp = newVar "delTemp" in
-            LetPrim (pos, temp, DeleteField (pos, objVar, fieldVar), AppRetCont(retName, Id(pos,temp)))))
+            LetPrim (pos,newLabel(), temp, DeleteField (pos,newLabel(), objVar, fieldVar), AppRetCont(newLabel(), retName, Id(pos,newLabel(),temp)))))
     | E.GetAttr (pos, prop_meta, obj, pname) -> 
         cps obj exnName (fun objVar -> 
           cps pname exnName (fun pnameVar ->
             let temp = newVar "getTemp" in
-            LetPrim (pos, temp, GetAttr (pos, prop_meta, objVar, pnameVar), AppRetCont(retName, Id(pos,temp)))))
+            LetPrim (pos,newLabel(), temp, GetAttr (pos,newLabel(), prop_meta, objVar, pnameVar), AppRetCont(newLabel(), retName, Id(pos,newLabel(),temp)))))
     | E.SetAttr (pos, prop_meta, obj, pname, value) -> 
         cps obj exnName (fun objVar -> 
           cps pname exnName (fun pnameVar ->
             cps value exnName (fun valueVar ->
               let temp = newVar "setTemp" in
-              LetPrim (pos, temp, SetAttr (pos, prop_meta, objVar, pnameVar, valueVar), 
-                       AppRetCont(retName, Id(pos,temp))))))
+              LetPrim (pos,newLabel(), temp, SetAttr (pos,newLabel(), prop_meta, objVar, pnameVar, valueVar), 
+                       AppRetCont(newLabel(), retName, Id(pos,newLabel(),temp))))))
 
     (* CPS Expression forms *)
     | E.Hint (pos, label, exp) -> cps_tail exp exnName retName
     | E.Seq (pos, first, second) -> 
       cps first exnName (fun ignored -> cps_tail second exnName retName)
     | E.Let (pos, id, value, body) -> 
-      cps value exnName (fun value' -> LetValue(pos, id, value', cps_tail body exnName retName))
+      cps value exnName (fun value' -> LetValue(pos,newLabel(), id, value', cps_tail body exnName retName))
     | E.Rec (pos, id, value, body) -> 
-      cps value exnName (fun value' -> RecValue(pos, id, value', cps_tail body exnName retName))
+      cps value exnName (fun value' -> RecValue(pos,newLabel(), id, value', cps_tail body exnName retName))
 
 
     | E.If (pos, cond, trueBranch, falseBranch) -> 
       cps cond exnName
-        (fun var -> (If (pos, var, 
+        (fun var -> (If (pos,newLabel(), var, 
                          cps_tail trueBranch exnName retName, 
                          cps_tail falseBranch exnName retName)))
 
@@ -569,7 +588,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
               wrap_props (pos, meta, ((s, Accessor (a', c, e))::compProps)) props')
           | [] ->
             let temp = newVar "objVar" in
-              LetValue (pos, temp, Object(pos, meta, List.rev compProps), AppRetCont(retName, Id (pos,temp))) in
+              LetValue (pos,newLabel(), temp, Object(pos,newLabel(), meta, List.rev compProps), AppRetCont(newLabel(), retName, Id (pos,newLabel(),temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
@@ -582,19 +601,19 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
 
     | E.GetField (pos, obj, field, args) ->
       let getField = "%getField" in
-      let id id = Id(pos, id) in
+      let id id = Id(pos,newLabel(), id) in
       cps obj exnName (fun obj' ->
         cps field exnName (fun field' ->
           cps args exnName (fun args' ->
-            AppFun(pos, id getField, retName, exnName, [obj'; field'; args']))))
+            AppFun(pos,newLabel(), id getField, retName, exnName, [obj'; field'; args']))))
     | E.SetField (pos, obj, field, value, args) ->
       let updateField = "%updateField" in
-      let id id = Id(pos, id) in
+      let id id = Id(pos,newLabel(), id) in
       cps obj exnName (fun obj' ->
         cps field exnName (fun field' ->
           cps value exnName (fun value' ->
             cps args exnName (fun args' ->
-              AppFun(pos, id updateField, retName, exnName, 
+              AppFun(pos,newLabel(), id updateField, retName, exnName, 
                      [obj'; obj'; field'; value'; args'])))))
 
     | E.Label (pos, label, body) -> 
@@ -602,16 +621,16 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
       let argName = newVar "argX" in
       let labelArgName = newVar "labelArg" in
       let temp = newVar "labelEqTemp" in
-      LetExnCont (newExnName, argName, labelArgName,
-                  LetPrim (pos, temp, Op2(pos, "stx=", String(pos, label), Id(pos,labelArgName)),
-                           If (pos, Id(pos,temp),
-                               AppRetCont(retName, Id(pos,argName)),
-                               AppExnCont(exnName, Id(pos,argName), Id(pos,labelArgName)))),
+      LetExnCont (newLabel(), newExnName, argName, labelArgName,
+                  LetPrim (pos,newLabel(), temp, Op2(pos,newLabel(), "stx=", String(pos,newLabel(), label), Id(pos,newLabel(),labelArgName)),
+                           If (pos,newLabel(), Id(pos,newLabel(),temp),
+                               AppRetCont(newLabel(), retName, Id(pos,newLabel(),argName)),
+                               AppExnCont(newLabel(), exnName, Id(pos,newLabel(),argName), Id(pos,newLabel(),labelArgName)))),
                   cps_tail body newExnName retName)
     | E.Break (pos, label, value) -> 
       let labelName = newVar "label" in
-      LetValue(pos, labelName, String(pos, label),
-               cps value exnName (fun var -> AppExnCont(exnName, var, Id(pos,labelName))))
+      LetValue(pos,newLabel(), labelName, String(pos,newLabel(), label),
+               cps value exnName (fun var -> AppExnCont(newLabel(), exnName, var, Id(pos,newLabel(),labelName))))
           
 
     | E.TryCatch (pos, body, handler_lam) -> 
@@ -621,11 +640,11 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
       let handler_app (var : id) : E.exp =
         E.App (E.pos_of handler_lam, handler_lam, [E.Id (pos, var)]) in
       let temp = newVar "catchEqTemp" in
-      LetExnCont (newExnName, argName, labelArgName,
-                  LetPrim (pos, temp, Op2(pos, "stx=", String(pos, "##catchMe##"), Id(pos,labelArgName)),
-                           If (pos, Id(pos,temp),
+      LetExnCont (newLabel(), newExnName, argName, labelArgName,
+                  LetPrim (pos,newLabel(), temp, Op2(pos,newLabel(), "stx=", String(pos,newLabel(), "##catchMe##"), Id(pos,newLabel(),labelArgName)),
+                           If (pos,newLabel(), Id(pos,newLabel(),temp),
                                cps_tail (handler_app argName) exnName retName,
-                               AppExnCont(exnName, Id(pos,argName), Id(pos,labelArgName))
+                               AppExnCont(newLabel(), exnName, Id(pos,newLabel(),argName), Id(pos,newLabel(),labelArgName))
                            )),
                   cps_tail body newExnName retName)
     | E.TryFinally (pos, body, exp) -> 
@@ -633,17 +652,17 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
       let argX = newVar "argX" in
       let finallyExn = newVar "finallyExn" in
       let labelArg = newVar "label" in
-      LetRetCont (finallyRet, argX, 
-                  cps exp exnName (fun ignored -> AppRetCont(retName, Id(pos,argX))),
-                  LetExnCont(finallyExn, argX, labelArg, 
-                             cps exp exnName (fun ignored -> AppExnCont(exnName, Id(pos,argX), Id(pos,labelArg))),
+      LetRetCont (newLabel(), finallyRet, argX, 
+                  cps exp exnName (fun ignored -> AppRetCont(newLabel(), retName, Id(pos,newLabel(),argX))),
+                  LetExnCont(newLabel(), finallyExn, argX, labelArg, 
+                             cps exp exnName (fun ignored -> AppExnCont(newLabel(), exnName, Id(pos,newLabel(),argX), Id(pos,newLabel(),labelArg))),
                              cps_tail body finallyExn finallyRet))
-    | E.Throw (pos, value) -> cps value exnName (fun var -> AppExnCont(exnName, var, String(pos,"##catchMe##")))
+    | E.Throw (pos, value) -> cps value exnName (fun var -> AppExnCont(newLabel(), exnName, var, String(pos,newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
     | E.Eval (pos, broken) -> 
       let var = newVar "dummy" in 
-      LetValue (dummy_pos, var, Null dummy_pos, AppRetCont(retName, Id(pos,var))) 
+      LetValue (dummy_pos, newLabel(), var, Null (dummy_pos, newLabel()), AppRetCont(newLabel(), retName, Id(pos,newLabel(),var))) 
 
 
 
@@ -653,33 +672,33 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : id) : cps_exp =
 
 let rec de_cps (exp : cps_exp) : E.exp =
   match exp with
-  | LetValue (pos, id, value, body) -> E.Let (pos, id, de_cps_val value, de_cps body)
-  | RecValue (pos, id, value, body) -> E.Rec (pos, id, de_cps_val value, de_cps body)
-  | LetPrim (pos, id, prim, body) -> E.Let(pos, id, de_cps_prim prim, de_cps body)
-  | LetRetCont (contId, argId, contBody, body) -> 
+  | LetValue (pos, _, id, value, body) -> E.Let (pos, id, de_cps_val value, de_cps body)
+  | RecValue (pos, _, id, value, body) -> E.Rec (pos, id, de_cps_val value, de_cps body)
+  | LetPrim (pos, _, id, prim, body) -> E.Let(pos, id, de_cps_prim prim, de_cps body)
+  | LetRetCont (_, contId, argId, contBody, body) -> 
     E.Let (dummy_pos, contId, E.Lambda(dummy_pos, [argId], de_cps contBody), de_cps body)
-  | LetExnCont (contId, argId, labelId, contBody, body) ->
+  | LetExnCont (_, contId, argId, labelId, contBody, body) ->
     E.Let (dummy_pos, contId, E.Lambda(dummy_pos, [argId; labelId], de_cps contBody), de_cps body)
-  | If (pos, condId, trueBranch, falseBranch) -> 
+  | If (pos, _, condId, trueBranch, falseBranch) -> 
     E.If(pos, de_cps_val condId, de_cps trueBranch, de_cps falseBranch)
-  | AppFun (pos, funId, retId, exnId, argsIds) -> E.App(pos, de_cps_val funId,
+  | AppFun (pos, _, funId, retId, exnId, argsIds) -> E.App(pos, de_cps_val funId,
                                                         E.Id(pos,retId) :: E.Id(pos, exnId) ::
                                                           (List.map de_cps_val argsIds))
-  | AppRetCont (contName, argName) -> E.App(dummy_pos, E.Id(dummy_pos, contName), [de_cps_val argName])
-  | AppExnCont (contName, argName, labelName) -> E.App(dummy_pos, E.Id(dummy_pos, contName), 
+  | AppRetCont (_, contName, argName) -> E.App(dummy_pos, E.Id(dummy_pos, contName), [de_cps_val argName])
+  | AppExnCont (_, contName, argName, labelName) -> E.App(dummy_pos, E.Id(dummy_pos, contName), 
                                                        [de_cps_val argName; de_cps_val labelName])
-  | Eval (pos, body) -> E.Eval(pos, de_cps body)
+  | Eval (pos, _, body) -> E.Eval(pos, de_cps body)
 and de_cps_val (value : cps_value) : E.exp =
   match value with
-  | Null pos -> E.Null pos
-  | Undefined pos -> E.Undefined pos
-  | String (pos, str) -> E.String (pos, str)
-  | Num (pos, num) -> E.Num (pos, num)
-  | True pos -> E.True pos
-  | False pos -> E.False pos
-  | Id (pos, id) -> E.Id (pos, id)
-  | Lambda (pos, retName, exnName, argNames, body) -> E.Lambda (pos, retName::exnName::argNames, de_cps body)
-  | Object (pos, attrs, props) -> 
+  | Null (pos, _) -> E.Null pos
+  | Undefined (pos, _) -> E.Undefined pos
+  | String (pos, _, str) -> E.String (pos, str)
+  | Num (pos, _, num) -> E.Num (pos, num)
+  | True (pos, _) -> E.True pos
+  | False (pos, _) -> E.False pos
+  | Id (pos, _, id) -> E.Id (pos, id)
+  | Lambda (pos, _, retName, exnName, argNames, body) -> E.Lambda (pos, retName::exnName::argNames, de_cps body)
+  | Object (pos, _, attrs, props) -> 
     let id_exp_opt id = match id with None -> None | Some id -> Some (de_cps_val id) in
     let attrs' = {E.primval = id_exp_opt attrs.primval;
                   E.code = id_exp_opt attrs.code;
@@ -693,10 +712,10 @@ and de_cps_val (value : cps_value) : E.exp =
     E.Object(pos, attrs', List.map prop_wrapper props)
 and de_cps_prim (prim : cps_prim) : E.exp =
   match prim with
-  | GetAttr (pos, prop, obj, field) -> E.GetAttr(pos, prop, de_cps_val obj, de_cps_val field)
-  | SetAttr (pos, prop, obj, field, value) -> E.SetAttr(pos, prop, de_cps_val obj, de_cps_val field, de_cps_val value)
-  | Op1 (pos, op, id) -> E.Op1 (pos, op, de_cps_val id)
-  | Op2 (pos, op, left, right) -> E.Op2 (pos, op, de_cps_val left, de_cps_val right)
-  | DeleteField (pos, obj, field) -> E.DeleteField (pos, de_cps_val obj, de_cps_val field)
-  | SetBang (pos, var, value) -> E.SetBang (pos, var, de_cps_val value)
+  | GetAttr (pos, _, prop, obj, field) -> E.GetAttr(pos, prop, de_cps_val obj, de_cps_val field)
+  | SetAttr (pos, _, prop, obj, field, value) -> E.SetAttr(pos, prop, de_cps_val obj, de_cps_val field, de_cps_val value)
+  | Op1 (pos, _, op, id) -> E.Op1 (pos, op, de_cps_val id)
+  | Op2 (pos, _, op, left, right) -> E.Op2 (pos, op, de_cps_val left, de_cps_val right)
+  | DeleteField (pos, _, obj, field) -> E.DeleteField (pos, de_cps_val obj, de_cps_val field)
+  | SetBang (pos, _, var, value) -> E.SetBang (pos, var, de_cps_val value)
 

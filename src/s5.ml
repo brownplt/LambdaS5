@@ -16,7 +16,7 @@ module S5 = struct
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Es5_cps.AppRetCont("fake", Es5_cps.Id(dummy_pos,"fake")))
+  let cpsES5 = ref (Es5_cps.AppRetCont(0, "fake", Es5_cps.Id(dummy_pos,0,"fake")))
 
   let jsonPath = ref ""
 
@@ -33,7 +33,7 @@ module S5 = struct
     match choice with 
     | "es5" -> Es5_pretty.exp !srcES5 std_formatter; print_newline ()
     | "exprjs" -> Exprjs_pretty.exp !srcEJS std_formatter; print_newline ()
-    | "cps5" -> Es5_cps_pretty.exp !cpsES5 std_formatter; print_newline ()
+    | "cps5" -> Es5_cps_pretty.exp false !cpsES5 std_formatter; print_newline ()
     | _ -> failwith "bad option string"
 
   let eval () : unit =
@@ -57,17 +57,25 @@ module S5 = struct
     let desugard = exprjs_to_ljs used_ids exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
 
-  let cfg () : unit =
-    let cfg = Cfg.build !cpsES5 in
-    printf "%s" (Cfg.print_cfg cfg) ;
-    printf "Done building CFG";
-    print_newline ()
+  (* let cfg () : unit = *)
+  (*   let cfg = Cfg.build !cpsES5 in *)
+  (*   printf "%s" (Cfg.print_cfg cfg) ; *)
+  (*   printf "Done building CFG"; *)
+  (*   print_newline () *)
 
   let cps () =
-    cpsES5 := Es5_cps.cps_tail !srcES5 "%error" "%answer";
-    cpsES5 := fst (Cfg.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty)))
+    cpsES5 := Es5_cps.cps_tail !srcES5 "%error" "%answer"
+  let alphatize () = 
+    cpsES5 := fst (Cfg.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) 
   let uncps () =
     srcES5 := Es5_cps.de_cps !cpsES5
+
+  let cps_eval () =
+    let v = Cfg.eval !cpsES5 in
+    (match v with
+    | Cfg.Ans v -> printf "ANSWER %s" (Es5_cps_values.pretty_bind v)
+    | Cfg.Err v -> printf "ERROR %s" (Es5_cps_values.pretty_bind v));
+    print_newline ()
 
   let main () : unit =
     Arg.parse
@@ -82,12 +90,16 @@ module S5 = struct
          "<exprjs|es5|cps5> pretty-print s5/exprjs code");
         ("-cps", Arg.Unit cps,
          "Convert to CPS");
+        ("-alph", Arg.Unit alphatize,
+         "Alpha-convert the CPS representation");
         ("-un-cps", Arg.Unit uncps,
          "Unwrap from CPS back to \\JS");
-        ("-cfg", Arg.Unit cfg,
-	 "construct the control flow graph for the current program");
+        (* ("-cfg", Arg.Unit cfg, *)
+	(*  "construct the control flow graph for the current program"); *)
         ("-eval", Arg.Unit eval,
         "evaluate code");
+        ("-cps-eval", Arg.Unit cps_eval,
+        "evaluate code in CPS form");
         ("-env", Arg.String env,
          "wrap the program in an environment");
         ("-json", Arg.String set_json,
