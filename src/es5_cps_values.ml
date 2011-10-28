@@ -21,6 +21,7 @@ type bind_value =
   | Num of pos * label * float
   | True of pos * label
   | False of pos * label
+  | VarCell of pos * label * ADDRESS.t
   | Object of pos * label * bind_attrs * (string * bind_prop) list
   | Closure of pos * label * id * id * id list * cps_exp * bindingEnv * retContEnv * exnContEnv
 and bind_attrs =
@@ -50,6 +51,7 @@ let rec pretty_bind v = match v with
   | Null _ -> "null"
   | Closure (_, _, ret, exn, args, body, _,_,_) -> "Closure(Ret " ^ ret ^ " , Exn " ^ exn ^ " ; " 
         ^ String.concat " , " args ^ ") { ... }"
+  | VarCell (_, _, a) -> "*<" ^ (string_of_int a) ^ ">"
   | Object (_, _, _, props) -> "{" ^ String.concat ", " (List.map (fun (k, p) ->
     match p with
     | Data({value = v}, _, _) -> k ^ ": " ^ (pretty_bind v) 
@@ -57,11 +59,11 @@ let rec pretty_bind v = match v with
   ) props) ^ "}"
 
 
-module BINDING = struct
-  type t = bind_value
-  let compare = Pervasives.compare
-end
-module BindingSet = Set.Make (BINDING)
+(* module BINDING = struct *)
+(*   type t = bind_value *)
+(*   let compare = Pervasives.compare *)
+(* end *)
+(* module BindingSet = Set.Make (BINDING) *)
 module Store = Map.Make (ADDRESS)
 
 type retCont = 
@@ -70,17 +72,17 @@ type retCont =
 type exnCont = 
   | Error
   | ExnCont of label * id * id * cps_exp * bindingEnv * retContEnv * exnContEnv
-module RET_CONT = struct
-  type t = retCont
-  let compare = Pervasives.compare
-end
-module RetContSet = Set.Make (RET_CONT)
-module EXN_CONT = struct
-  type t = exnCont
-  let compare = Pervasives.compare
-end
-module ExnContSet = Set.Make (EXN_CONT)
+(* module RET_CONT = struct *)
+(*   type t = retCont *)
+(*   let compare = Pervasives.compare *)
+(* end *)
+(* module RetContSet = Set.Make (RET_CONT) *)
+(* module EXN_CONT = struct *)
+(*   type t = exnCont *)
+(*   let compare = Pervasives.compare *)
+(* end *)
+(* module ExnContSet = Set.Make (EXN_CONT) *)
 
-type retContStore = RET_CONT.t Store.t
-type exnContStore = EXN_CONT.t Store.t
-type bindingStore = BINDING.t Store.t  (* for now these are not sets *)
+type retContStore = retCont Store.t
+type exnContStore = exnCont Store.t
+type bindingStore = bind_value Store.t  (* for now these are not sets *)

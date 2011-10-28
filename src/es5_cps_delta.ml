@@ -19,7 +19,7 @@ let to_int v = match v with
   | Num (_, _, x) -> int_of_float x
   | _ -> raise (CpsThrow ( ("expected number in es5_cps_delta.to_int: " ^ (pretty_bind v))))
 
-let typeof v = str begin match v with
+let typeof v _ = str begin match v with
   | Undefined _ -> "undefined"
   | Null _-> "null"
   | String _ -> "string"
@@ -29,15 +29,16 @@ let typeof v = str begin match v with
   | Object (_, _, { code = Some _ }, _) -> "function"
   | Object _ -> "object"
   | Closure _ -> "lambda"
+  | VarCell _ -> failwith "[cps-interp] Can't get typeof VarCell!"
 end
 
-let surface_typeof v = begin match v with
+let surface_typeof v store = begin match v with
   | Closure _ -> raise (CpsThrow ( "surface_typeof got lambda"))
   | Null _ -> str "object"
-  | _ -> typeof v
+  | _ -> typeof v store
 end
   
-let is_primitive v = match v with
+let is_primitive v _ = match v with
   | Undefined _
   | Null _
   | String _
@@ -45,7 +46,7 @@ let is_primitive v = match v with
   | True _ | False _ -> True (dummy_pos, newLabel())
   | _ -> False (dummy_pos, newLabel())
 
-let float_str n = 
+let float_str n _ = 
   if n == nan then "NaN"
   else
     if n == infinity then "Infinity"
@@ -55,11 +56,11 @@ let float_str n =
       then string_of_int (int_of_float n) 
       else string_of_float n
 
-let prim_to_str v = str begin match v with
+let prim_to_str v store = str begin match v with
   | Undefined _ -> "undefined"
   | Null _ -> "null"
   | String (_, _, s) -> s
-  | Num (_, _, n) -> let fs = float_str n in let fslen = String.length fs in
+  | Num (_, _, n) -> let fs = float_str n store in let fslen = String.length fs in
     if String.get fs (fslen - 1) = '.' then String.sub fs 0 (fslen - 1) else
       (* This is because we don't want leading zeroes in the "-e" part.
        * For example, OCaml says 1.2345e-07, but ES5 wants 1.2345e-7 *)
@@ -78,12 +79,12 @@ let prim_to_str v = str begin match v with
   | _ -> raise (CpsThrow ( "prim_to_num"))
 end
 
-let strlen s = match s with
+let strlen s _ = match s with
   | String (_, _, s) -> Num (dummy_pos, newLabel(), (float_of_int (String.length s)))
   | _ -> raise (CpsThrow ( "strlen"))
 
 (* Section 9.3, excluding objects *)
-let prim_to_num v = num begin match v with
+let prim_to_num v _ = num begin match v with
   | Undefined _ -> nan 
   | Null _ -> 0.0
   | True _ -> 1.0
@@ -95,7 +96,7 @@ let prim_to_num v = num begin match v with
   | _ -> raise (CpsThrow ( "prim_to_num"))
 end
   
-let prim_to_bool v = bool begin match v with
+let prim_to_bool v _ = bool begin match v with
   | True _ -> true
   | False _ -> false
   | Undefined _ -> false
@@ -105,48 +106,63 @@ let prim_to_bool v = bool begin match v with
   | _ -> true
 end
 
-let is_callable obj = bool begin match obj with
-  | Object (_, _, { code = Some (Closure _) }, _) -> true
+let is_callable obj (store : bindingStore) = bool begin match obj with
+  | VarCell (_, _, a) -> (match (Store.find a store) with
+    | Object (_, _, { code = Some (Closure _) }, _) -> true
+    | _ -> false)
   | _ -> false
 end
 
-let print v = match v with
+let print v _ = match v with
   | String (_, _, s) -> 
       printf "%S\n%!" s; Undefined (dummy_pos, newLabel())
   | Num (_, _, n) -> let s = string_of_float n in printf "%S\n" s; Undefined (dummy_pos, newLabel())
   | _ -> failwith ("[cps-interp] Print received non-string: " ^ (pretty_bind v))
 
-let is_extensible obj = match obj with
-  | Object (_, _, { extensible = true }, _) -> bool true
+let is_extensible obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object (_, _, { extensible = true }, _) -> bool true
+    | _ -> raise (CpsThrow ( "is-extensible: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "is-extensible: " ^ (pretty_bind obj)))
 
-let prevent_extensions obj = match obj with
-  | Object (p, l, attrs, props) -> Object(p, l, {attrs with extensible = false}, props)
+let prevent_extensions obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object (p, l, attrs, props) -> Object(p, l, {attrs with extensible = false}, props)
+    | _ -> raise (CpsThrow ( "prevent-extensions: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "prevent-extensions: " ^ (pretty_bind obj)))
       
-let get_code obj = match obj with
-  | Object (_, _, { code = Some v }, _) -> v
-  | Object (_, _, { code = None }, _) -> Null (dummy_pos, newLabel())
+let get_code obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object (_, _, { code = Some v }, _) -> v
+    | Object (_, _, { code = None }, _) -> Null (dummy_pos, newLabel())
+    | _ -> raise (CpsThrow ( "get-code: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "get-code: " ^ (pretty_bind obj)))
 
-let get_proto obj = match obj with
-  | Object (_, _, { proto = Some p }, _) -> p
-  | Object (_, _, { proto = None }, _) -> Null (dummy_pos, newLabel())
-  | v -> raise (CpsThrow ( ("cps-get-proto got a non-object:"  ^ (pretty_bind obj))))
+let get_proto obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object (_, _, { proto = Some p }, _) -> p
+    | Object (_, _, { proto = None }, _) -> Null (dummy_pos, newLabel())
+    | v -> raise (CpsThrow ( ("cps-get-proto got a non-object:"  ^ (pretty_bind obj)))))
+  | v -> raise (CpsThrow ( ("cps-get-proto got a non-VarCell:"  ^ (pretty_bind obj))))
 
-let get_primval obj = match obj with
-  | Object (_, _, { primval = Some v }, _) -> v
-  | Object (_, _, { primval = None }, _) -> raise (CpsThrow ( "get-primval on an object with no prim val"))
+let get_primval obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object (_, _, { primval = Some v }, _) -> v
+    | Object (_, _, { primval = None }, _) -> raise (CpsThrow ( "get-primval on an object with no prim val"))
+    | _ -> raise (CpsThrow ( "cps-get-primval: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "cps-get-primval: " ^ (pretty_bind obj)))
 
-let get_class obj = match obj with
-  | Object (_, _, { klass = s }, _) -> str s
+let get_class obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object (_, _, { klass = s }, _) -> str s
+    | _ -> raise (CpsThrow ( "cps-get-class: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "cps-get-class: " ^ (pretty_bind obj)))
 
 (* All the enumerable property names of an object *)
-let rec get_property_names obj = match obj with
-  | Object _ ->
-      let protos = obj::(all_protos obj) in
+let rec get_property_names obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object _ ->
+      let protos = obj::(all_protos obj store) in
       let folder o set = begin match o with
 	| Object(_, _, attrs, props) ->
 	  List.fold_left (fun s (k, v) -> 
@@ -164,52 +180,60 @@ let rec get_property_names obj = match obj with
         [] in
       let d_attrsv = { primval = None; code = None; proto = None; extensible = false; klass = "LambdaJS interal" }
       in Object(dummy_pos, newLabel(),d_attrsv, name_props)
+    | _ -> raise (CpsThrow ( "get-property-names: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "get-property-names: " ^ (pretty_bind obj)))
 
-and all_protos o = 
+and all_protos o store = 
   match o with
-  | Object (_, _, { proto = Some p }, _) -> p::(all_protos p)
+  | Object (_, _, { proto = Some p }, _) -> p::(all_protos p store)
+  | VarCell (_, _, a) -> all_protos (Store.find a store) store
   | _ -> []
 
 and enum prop = match prop with
   | Accessor (_, b, _)
   | Data (_, b, _) -> b
 
-let get_own_property_names obj = match obj with
-  | Object (_, _, _, props) ->
-    let add_name n x m = 
-      ((string_of_int x),
-       (Data ({ value = String (dummy_pos, newLabel(), n); writable = false; }, false, false))) :: m in
+let get_own_property_names obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object (_, _, _, props) ->
+      let add_name n x m = 
+        ((string_of_int x),
+         (Data ({ value = String (dummy_pos, newLabel(), n); writable = false; }, false, false))) :: m in
       let namelist = List.fold_left (fun l (k, v) -> (k :: l)) [] props in
       let props = 
 	List.fold_right2 add_name namelist (iota (List.length namelist)) []
       in
-        let d = (float_of_int (List.length namelist)) in
-        let final_props = 
-          ("length",
-           (Data ({ value = Num (dummy_pos, newLabel(), d); writable = false; }, false, false)))::props in 
-        let d_attrsv = { primval = None; code = None; proto = None; 
-                         extensible = false; klass = "LambdaJS interal" }
-        in Object(dummy_pos, newLabel(), d_attrsv, final_props)
+      let d = (float_of_int (List.length namelist)) in
+      let final_props = 
+        ("length",
+         (Data ({ value = Num (dummy_pos, newLabel(), d); writable = false; }, false, false)))::props in 
+      let d_attrsv = { primval = None; code = None; proto = None; 
+                       extensible = false; klass = "LambdaJS interal" }
+      in Object(dummy_pos, newLabel(), d_attrsv, final_props)
+    | _ -> raise (CpsThrow ( "own-property-names: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "own-property-names: " ^ (pretty_bind obj)))
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
-let object_to_string obj = match obj with
-  | Object(_, _, {klass=s},_) -> str ("[object " ^ s ^ "]")
-  | _ -> raise (CpsThrow ( "object-to-string, wasn't given object: " ^ (pretty_bind obj)))
+let object_to_string obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object(_, _, {klass=s},_) -> str ("[object " ^ s ^ "]")
+    | _ -> raise (CpsThrow ( "object-to-string, wasn't given object: " ^ (pretty_bind obj))))
+  | _ -> raise (CpsThrow ( "object-to-string, wasn't given VarCell: " ^ (pretty_bind obj)))
 
-let is_array obj = match obj with
-  | Object(_, _, {klass="Array"},_) -> bool true
-  | Object _ -> bool false
-  | _ -> raise (CpsThrow ( "is-array: " ^ (pretty_bind obj)))	
+let is_array obj store = match obj with
+  | VarCell(_, _, a) -> (match (Store.find a store) with
+    | Object(_, _, {klass="Array"},_) -> bool true
+    | Object _ -> bool false
+    | _ -> raise (CpsThrow ( "is-array: " ^ (pretty_bind obj))))
+  | _ -> raise (CpsThrow ( "is-array: " ^ (pretty_bind obj)))
 
 
-let to_int32 v = match v with
+let to_int32 v _ = match v with
   | Num (_,_,d) -> Num(dummy_pos, newLabel(), (float_of_int (int_of_float d)))
   | _ -> raise (CpsThrow ( "to-int: " ^ (pretty_bind v)))
 
-let nnot e = match e with
+let nnot e _ = match e with
   | Undefined _ -> bool true
   | Null _ -> bool true
   | True _ -> bool false
@@ -218,46 +242,47 @@ let nnot e = match e with
   | String (_, _, s) -> if s = "" then bool true else bool false
   | Object _ -> bool false
   | Closure _ -> bool false
+  | VarCell _ -> failwith "[cps-interp] Can't get nnot VarCell!"
 
-let void v = Undefined (dummy_pos, newLabel())
+let void v _ = Undefined (dummy_pos, newLabel())
 
-let floor' = function Num (_, _, d) -> num (floor d) | _ -> raise (CpsThrow ( "floor"))
+let floor' n _ = match n with Num (_, _, d) -> num (floor d) | _ -> raise (CpsThrow ( "floor"))
 
-let ceil' = function Num (_, _, d) -> num (ceil d) | _ -> raise (CpsThrow ( "ceil"))
+let ceil' n _ = match n with Num (_, _, d) -> num (ceil d) | _ -> raise (CpsThrow ( "ceil"))
 
-let absolute = function Num (_, _, d) -> num (abs_float d) | _ -> raise (CpsThrow ( "abs"))
+let absolute n _ = match n with Num (_, _, d) -> num (abs_float d) | _ -> raise (CpsThrow ( "abs"))
 
-let log' = function Num (_, _, d) -> num (log d ) | _ -> raise (CpsThrow ( "log"))
+let log' n _ = match n with Num (_, _, d) -> num (log d ) | _ -> raise (CpsThrow ( "log"))
 
-let ascii_ntoc n = match n with
+let ascii_ntoc n _ = match n with
   | Num (_, _, d) -> str (String.make 1 (Char.chr (int_of_float d)))
   | _ -> raise (CpsThrow ( "ascii_ntoc"))
 
-let ascii_cton c = match c with
+let ascii_cton c _ = match c with
   | String (_, _, s) -> num (float_of_int (Char.code (String.get s 0)))
   | _ -> raise (CpsThrow ( "ascii_cton"))
 
-let to_lower = function
+let to_lower s _ = match s with
   | String (_, _, s) -> str (String.lowercase s)
   | _ -> raise (CpsThrow ( "to_lower"))
 
-let to_upper = function
+let to_upper s _ = match s with
   | String (_, _, s) -> str (String.uppercase s)
   | _ -> raise (CpsThrow ( "to_lower"))
 
-let bnot = function
+let bnot b _ = match b with
   | Num (_, _, d) -> num (float_of_int (lnot (int_of_float d)))
   | _ -> raise (CpsThrow ( "bnot"))
 
-let sine = function
+let sine n _ = match n with
   | Num (_, _, d) -> num (sin d)
   | _ -> raise (CpsThrow ( "sin"))
 
-let numstr = function
+let numstr s _ = match s with
   | String (_, _, s) -> num (try float_of_string s with Failure _ -> nan)
   | _ -> raise (CpsThrow ( "numstr"))
 
-let op1 op = match op with
+let op1 op : bind_value -> bind_value Store.t -> bind_value = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
   | "primitive?" -> is_primitive
@@ -293,12 +318,12 @@ let op1 op = match op with
   | "numstr->num" -> numstr
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
-let arith s f_op v1 v2 = match v1, v2 with
+let arith s f_op v1 v2 _ = match v1, v2 with
   | Num (_, _, x), Num (_, _, y) -> num (f_op x y)
   | v1, v2 -> raise (CpsThrow ( ("arithmetic operator: " ^ s ^ " got non-numbers, " ^
                                    "perhaps something wasn't desugared fully?")))
 
-let compare s f_op v1 v2 = match v1, v2 with
+let compare s f_op v1 v2 _ = match v1, v2 with
   | Num (_, _, x), Num (_, _, y) -> bool (f_op x y)
   | v1, v2 -> raise (CpsThrow ( ("compare operator: " ^ s ^ " got non-numbers, " ^
                                    "perhaps something wasn't desugared fully?")))
@@ -310,10 +335,10 @@ let arith_sub = arith "-" (-.)
 (* OCaml syntax failure! Operator section syntax lexes as a comment. *)
 let arith_mul = arith "*" (fun x y -> x *. y)
 
-let arith_div x y = try arith "/" (/.) x y
+let arith_div x y env = try arith "/" (/.) x y env
 with Division_by_zero -> num infinity
 
-let arith_mod x y = try arith "mod" mod_float x y
+let arith_mod x y env = try arith "mod" mod_float x y env
 with Division_by_zero -> num nan
 
 let arith_lt = compare "<" (<) 
@@ -324,28 +349,28 @@ let arith_gt = compare ">" (>)
 
 let arith_ge = compare ">=" (>=) 
 
-let bitwise_and v1 v2 = num (float_of_int ((to_int v1) land (to_int v2)))
+let bitwise_and v1 v2 _ = num (float_of_int ((to_int v1) land (to_int v2)))
 
-let bitwise_or v1 v2 = num (float_of_int ((to_int v1) lor (to_int v2)))
+let bitwise_or v1 v2 _ = num (float_of_int ((to_int v1) lor (to_int v2)))
 
-let bitwise_xor v1 v2 = num (float_of_int ((to_int v1) lxor (to_int v2)))
+let bitwise_xor v1 v2 _ = num (float_of_int ((to_int v1) lxor (to_int v2)))
 
-let bitwise_shiftl v1 v2 = num (float_of_int ((to_int v1) lsl (to_int v2)))
+let bitwise_shiftl v1 v2 _ = num (float_of_int ((to_int v1) lsl (to_int v2)))
 
-let bitwise_zfshiftr v1 v2 = num (float_of_int ((to_int v1) lsr (to_int v2)))
+let bitwise_zfshiftr v1 v2 _ = num (float_of_int ((to_int v1) lsr (to_int v2)))
 
-let bitwise_shiftr v1 v2 = num (float_of_int ((to_int v1) asr (to_int v2)))
+let bitwise_shiftr v1 v2 _ = num (float_of_int ((to_int v1) asr (to_int v2)))
 
-let string_plus v1 v2 = match v1, v2 with
+let string_plus v1 v2 _ = match v1, v2 with
   | String (_, _, s1), String (_, _, s2) ->
       str (s1 ^ s2)
   | _ -> raise (CpsThrow ( "string concatenation"))
 
-let string_lessthan v1 v2 = match v1, v2 with
+let string_lessthan v1 v2 _ = match v1, v2 with
   | String (_, _, s1), String (_, _, s2) -> bool (s1 < s2)
   | _ -> raise (CpsThrow ( "string less than"))
 
-let stx_eq v1 v2 = bool begin match v1, v2 with
+let stx_eq v1 v2 _ = bool begin match v1, v2 with
   | Num (_, _, x1), Num (_, _, x2) -> x1 = x2
   | String (_, _, x1), String (_, _, x2) -> x1 = x2
   | Undefined _, Undefined _ -> true
@@ -357,7 +382,7 @@ end
 
 (* Algorithm 11.9.3, steps 1 through 19. Steps 20 and 21 are desugared to
    access the heap. *)
-let abs_eq v1 v2 = bool begin
+let abs_eq v1 v2 _ = bool begin
   if v1 = v2 then (* works correctly on floating point values *)
     true
   else match v1, v2 with
@@ -372,18 +397,22 @@ let abs_eq v1 v2 = bool begin
 (* TODO: are these all the cases? *)
 end
 
-let rec has_property obj field = match obj, field with
-  | Object(_, _, {proto=p}, props), String (_, _, s) -> 
-    if List.mem_assoc s props 
-    then bool true
-    else (match p with None -> bool false | Some proto -> has_property proto field)
+let rec has_property obj field store = match obj with
+  | VarCell (_, _, a) -> (match (Store.find a store), field with
+    | Object(_, _, {proto=p}, props), String (_, _, s) -> 
+      if List.mem_assoc s props 
+      then bool true
+      else (match p with None -> bool false | Some proto -> has_property proto field store)
+    | _ -> bool false)
   | _ -> bool false
 
-let has_own_property obj field = match obj, field with
-  | Object(_, _, {proto=p}, props), String (_, _, s) -> bool (List.mem_assoc s props)
-  | Object _, _ -> raise (CpsThrow ( "has-own-property: field not a string"))
-  | _, String (_, _, s) -> raise (CpsThrow ( ("has-own-property: obj not an object for field " ^ s)))
-  | _ -> raise (CpsThrow ( "has-own-property: neither an object nor a string"))
+let has_own_property obj field store = match obj with
+  | VarCell (_, _, a) -> (match (Store.find a store), field with
+    | Object(_, _, {proto=p}, props), String (_, _, s) -> bool (List.mem_assoc s props)
+    | Object _, _ -> raise (CpsThrow ( "has-own-property: field not a string"))
+    | _, String (_, _, s) -> raise (CpsThrow ( ("has-own-property: obj not an object for field " ^ s)))
+    | _ -> raise (CpsThrow ( "has-own-property: neither an object nor a string")))
+  | _ -> raise (CpsThrow ("[cps-interp] has-own-property didn't get a VarCell"))
 
 let base n r = 
   let rec get_digits n l = match n with
@@ -411,27 +440,27 @@ let base n r =
     (* TODO: implement *)
     "non-base-10 with fractional parts NYI"
 
-let get_base n r = match n, r with
+let get_base n r _ = match n, r with
   | Num (_, _, x), Num (_, _, y) -> 
     let result = base (abs_float x) (abs_float y) in
     str (if x < 0.0 then "-" ^ result else result)
   | _ -> raise (CpsThrow ( "base got non-numbers"))
 
-let char_at a b  = match a, b with
+let char_at a b _ = match a, b with
   | String (_, _, s), Num (_, _, n) ->
     str (String.make 1 (String.get s (int_of_float n)))
   | _ -> raise (CpsThrow ( "char_at didn't get a string and a number"))
 
-let locale_compare a b = match a, b with
+let locale_compare a b _ = match a, b with
   | String (_, _, r), String (_, _, s) ->
     num (float_of_int (String.compare r s))
   | _ -> raise (CpsThrow ( "locale_compare didn't get 2 strings"))
 
-let pow a b = match a, b with
+let pow a b _ = match a, b with
   | Num (_, _, base), Num (_, _, exp) -> num (base ** exp)
   | _ -> raise (CpsThrow ( "pow didn't get 2 numbers"))
 
-let to_fixed a b = match a, b with
+let to_fixed a b _ = match a, b with
   | Num (_, _, x), Num (_, _, f) -> 
     let s = string_of_float x
     and fint = int_of_float f in
@@ -449,17 +478,19 @@ let to_fixed a b = match a, b with
         str (s ^ suffix)
   | _ -> raise (CpsThrow ( "to-fixed didn't get 2 numbers"))
 
-let rec is_accessor a b = match a, b with
-  | Object(_, _, {proto = p}, props), String (_, _, s) ->
-    (try
-       match List.assoc s props with
-       | Data _ -> bool false
-       | Accessor _ -> bool true
-     with Not_found ->
-       match p with None -> bool false | Some pr -> is_accessor pr b)
-  | Null _, String (_, _, s) -> raise (CpsThrow ( "isAccessor topped out"))
-  | _ -> raise (CpsThrow ( "isAccessor"))
-
+let rec is_accessor a b store = match a with
+  | VarCell (_, _, a) -> (match (Store.find a store), b with
+    | Object(_, _, {proto = p}, props), String (_, _, s) ->
+      (try
+         match List.assoc s props with
+         | Data _ -> bool false
+         | Accessor _ -> bool true
+       with Not_found ->
+         match p with None -> bool false | Some pr -> is_accessor pr b store)
+    | Null _, String (_, _, s) -> raise (CpsThrow ( "isAccessor topped out"))
+    | _ -> raise (CpsThrow ( "isAccessor")))
+  | _ -> raise (CpsThrow ("[cps-interp] isAccessor didn't get a VarCell"))
+      
 let op2 op = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
