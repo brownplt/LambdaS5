@@ -11,23 +11,39 @@ def nocomments(s):
   rx = re.compile("^//.*$", re.MULTILINE)
   return "".join(re.split(rx, s))
 
-harness = open("test262/test/harness/sta.js").read()
-extra   = open("S5_harness_before.js").read()
-sputnik = open("test262/test/harness/sputnikLib.js").read()
+# Sophisticated Ph.D level error detection solution: string matching
+# Patent Pending
+parseerror   = "XXXParseErrorXXX"
+passed       = "HARNESS: Passed"
+failed       = "HARNESS: Failed"
+jsonerr      = "Json_type.Json_error"
+ocamlfailure = "Failure"
 
+framework = open("test262/test/harness/framework.js").read()
 
 def buildHarnessed(jsfile):
   testjs = jsfile.read()
   alljs = """
 var currentTest;
 var window = this;
+function go() {
 %s
 %s
-%s
-%s
+}
+try {
+  go();
+} catch (e) {
+  if (e instanceof Test262Error) {
+    print('%s');
+  } else {
+    print('%s');
+  }
+}
+
+print('%s');
 print('done');
 """
-  alljs = alljs % (harness, extra, sputnik, testjs)
+  alljs = alljs % (framework, testjs, failed, ocamlfailure, passed)
   alljs = nocomments(alljs)
   return alljs
 
@@ -69,13 +85,6 @@ def parse(useC3, js):
     return ("success", out)
   else:
     raise Exception("Nothing on standard out from parse, stderr: %s" % err)
-
-# Sophisticated error detection: string matching
-parseerror   = "XXXParseErrorXXX"
-passed       = "HARNESS: Passed"
-failed       = "HARNESS: Failed"
-jsonerr      = "Json_type.Json_error"
-ocamlfailure = "Failure"
 
 def run(useC3, json):
   (outcome, json) = json
@@ -142,4 +151,5 @@ if __name__ == '__main__':
     useC3 = False
     fileName = sys.argv[1]
   
-  print("Outcome: %s\nStdout:\n%s\nStderr:\n%s\n" % run(useC3, parse(useC3, buildHarnessed(open(fileName)))))
+  #print("Outcome: %s\nStdout:\n%s\nStderr:\n%s\n" % run(useC3, parse(useC3, buildHarnessed(open(fileName)))))
+  print(run(useC3, parse(useC3, buildHarnessed(open(fileName)))))

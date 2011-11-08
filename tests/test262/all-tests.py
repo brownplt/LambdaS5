@@ -157,7 +157,7 @@ def dirTests(useC3, d):
     f.write(template % result[0])
     f2.write("%s %s %s %s %s" % result[1:])
 
-def makeFrontPage():
+def makeFrontPage(summary):
   html = """
 <html><head></head>
 Tests run at %s
@@ -186,10 +186,11 @@ Tests run at %s
 
   summary = open(os.path.join(result_dir, 'summary.html'), 'w')
   summary.write(html % (str(datetime.datetime.now()), l, totalS, totalS + totalF, totalSs, totalSf, totalSk))
+  summary.close()
 
 def main(args):
-  spiderMonkeyDir = 'test262/test/suite/sputnik_converted'
-  ieDir = 'test262/test/suite/ietestcenter'
+  spiderMonkeyDir = 'test262/test/suite/'
+  ieDir = 'test262/test/suite/'
   try:
     os.mkdir(result_dir)
   except:
@@ -218,8 +219,11 @@ def main(args):
       result = testDir(args.c3, os.path.join(d, chapter))
       f.write(template % result[0])
       f2.write("%s %s %s %s %s" % result[1:])
+      f.close()
+      f2.close()
 
-  makeFrontPage()
+  summary = open(os.path.join(result_dir, 'summary.html'), 'w')
+  makeFrontPage(summary)
 
 main(sys.argv)
 
