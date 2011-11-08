@@ -34,9 +34,9 @@ print('done');
 
 def parse(useC3, js):
   (jsfile, jsfilename) = tempfile.mkstemp()
-  if (useC3): jsfilename = jsfilename.replace('\\', '\\\\')
+  jsfilename = jsfilename.replace('\\', '\\\\')
   jsfile = os.fdopen(jsfile, 'w')
-  parsejs = "print(JSON.stringify(Reflect.parse(read('%s'),{loc:true}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" % jsfilename
+  parsejs = "print(JSON.stringify(Reflect.parse(read('%s'),{loc:true,source:'%s'}),function(key,value){if(key==='value'&&(value)instanceof(RegExp)){return{re_lit:String(value)}}return(value)},2))" % (jsfilename, jsfilename)
   jsfile.write(js)
   jsfile.flush()
   jsfile.close()
@@ -44,7 +44,8 @@ def parse(useC3, js):
   if useC3:
     command = ["../../bin/jstest.exe", "-e", parsejs]
   else:
-    command = ["../../bin/js", "-e", parsejs]
+    command = ['../../bin/js', '-e', parsejs]
+
 
   runner = subprocess.Popen(command,
                             stdin=subprocess.PIPE,
@@ -58,21 +59,28 @@ def parse(useC3, js):
 
   err = err.decode('utf-8')
   if err.find("SyntaxError") != -1 or err.find("ReferenceError") != -1:
-    return 'ParseError'
+    return (parseerror, err)
 
   out = out.decode('utf-8')
+  if useC3 and (out.find("Syntax error") != -1):
+    return (parseerror, out)
+
   if out != "":
-    return out
+    return ("success", out)
   else:
     raise Exception("Nothing on standard out from parse, stderr: %s" % err)
 
 # Sophisticated error detection: string matching
+parseerror   = "XXXParseErrorXXX"
 passed       = "HARNESS: Passed"
 failed       = "HARNESS: Failed"
 jsonerr      = "Json_type.Json_error"
 ocamlfailure = "Failure"
 
 def run(useC3, json):
+  (outcome, json) = json
+  if (outcome != "success"):
+    return (outcome, "", json)
   (jsonfile, jsonfilename) = tempfile.mkstemp()
   jsonfile = os.fdopen(jsonfile, 'w')
   jsonfile.write(json)
@@ -115,7 +123,7 @@ def run(useC3, json):
           return ("Success", out, err)
         elif (out.find(failed) != -1):
           return ("HarnessFailure", out, err)
-        elif (out.find(jsonerr) != -1):
+        elif (out.find(jsonerr) != -1 or err.find(jsonerr) != -1):
           return ("JsonError", out, err)
         elif (out.find(ocamlfailure) != -1):
           return ("Exception", out, err)
@@ -134,4 +142,4 @@ if __name__ == '__main__':
     useC3 = False
     fileName = sys.argv[1]
   
-  print(run(useC3, parse(useC3, buildHarnessed(open(filename)))))
+  print("Outcome: %s\nStdout:\n%s\nStderr:\n%s\n" % run(useC3, parse(useC3, buildHarnessed(open(fileName)))))

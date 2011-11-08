@@ -171,7 +171,8 @@ Tests run at %s
   totalSf = 0
   for chapter in sorted(os.listdir(result_dir)):
     if chapter[-6:] == 'result':
-      line = file(os.path.join(result_dir, chapter)).readline()
+      print("Result dir: %s\nChapter:%s\n" % (result_dir, chapter))
+      line = open(os.path.join(result_dir, chapter)).readline()
       if line: [success, fail, skip, ssuccess, sfail] = line.split(" ")
       else: continue
       l += "<li><a href='%s.html'>%s</a> (%s/%s), (%s/%s)</li>" % \
@@ -183,6 +184,7 @@ Tests run at %s
       totalSs += int(ssuccess)
       totalSf += int(sfail)
 
+  summary = open(os.path.join(result_dir, 'summary.html'), 'w')
   summary.write(html % (str(datetime.datetime.now()), l, totalS, totalS + totalF, totalSs, totalSf, totalSk))
 
 def main(args):
@@ -202,7 +204,7 @@ def main(args):
 
   args = argparser.parse_args()
 
-  if len(args.chapters) == 1 and args.action == None:
+  if len(args.chapters) == 1 and args.action == None or len(args.chapters) == 0:
     dirTests(args.c3, spiderMonkeyDir)
     dirTests(args.c3, ieDir)
   else:
