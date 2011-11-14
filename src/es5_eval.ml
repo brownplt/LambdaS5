@@ -23,11 +23,10 @@ let unbool b = match b with
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
-let rec apply p func args = match func with
+let apply p func args = match func with
   | Closure c -> c args
   | ObjCell c -> begin match !c with
-      | ({ code = Some cvalue }, _) ->
-        apply p cvalue args
+      | ({ code = Some (Closure c) }, _) -> c args
       | _ -> Fail "Applied an object without a code attribute"
   end
   | _ -> failwith (interp_error p 

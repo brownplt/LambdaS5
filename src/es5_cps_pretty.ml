@@ -106,3 +106,4 @@ and prop (f, prop) = match prop with
                                           value s])]
 ;;
 Es5_cps.pretty_print := (fun e fmt -> exp false e fmt)
+let cps_value_to_string v = value v Format.str_formatter; Format.flush_str_formatter(); 

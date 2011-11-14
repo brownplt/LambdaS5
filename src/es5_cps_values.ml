@@ -72,6 +72,14 @@ type retCont =
 type exnCont = 
   | Error
   | ExnCont of label * id * id * cps_exp * bindingEnv * retContEnv * exnContEnv
+
+let pretty_retcont ret = match ret with
+  | Answer -> "Answer"
+  | RetCont (label, arg, _, _, _, _) -> (string_of_int label) ^ ":RetCont(" ^ arg ^ ") {...}"
+let pretty_exncont exn = match exn with
+  | Error -> "Error"
+  | ExnCont (label, arg, lbl, _, _, _, _) -> (string_of_int label) ^ ":ExnCont(" ^ arg ^ ", " ^ lbl ^ ") {...}"
+
 (* module RET_CONT = struct *)
 (*   type t = retCont *)
 (*   let compare = Pervasives.compare *)
