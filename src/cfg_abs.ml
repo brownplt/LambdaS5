@@ -1,7 +1,6 @@
 open Prelude
 module C = Es5_cps
-module D = Es5_cps_delta
-module A = Es5_cps_absdelta
+module D = Es5_cps_absdelta
 module E = Es5_syntax
 module V = Es5_cps_values
 module U = Es5_cps_util
@@ -31,110 +30,105 @@ module AddrSet = Set.Make (Es5_cps_values.ADDRESS)
 
 
 let eval (exp : C.cps_exp) =
-  let newLabel = C.newLabel in
-  let bool b pos = if b then V.True(pos, newLabel()) else V.False(pos, newLabel()) in
-  let unbool v = match v with
-    | V.True _ -> true
-    | V.False _ -> false
-    | _ -> failwith "tried to unbool a non-bool" in
+  (* let newLabel = C.newLabel in *)
 
-  (* 
-   * Garbage collection of the stores, assuming that the provided environments are all the 
-   * roots that exist.  Similarly, assume that the closed-over environments in closures and
-   * continuations are themselves gc'ed, so that they only contain reachable information and
-   * no garbage.
-   *)
-  let garbage_collect
-      bindingEnv (bindingStore : V.bind_value Es5_cps_values.Store.t)
-      retContEnv retContStore
-      exnContEnv exnContStore =
-    (U.dump_heap_as_dot "before_" bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore) Format.str_formatter;
-    print_string (Format.flush_str_formatter ());
-    let noIds = AddrSet.empty in
-    let just addr = AddrSet.singleton addr in
-    let add addr = AddrSet.add addr in
-    let (++) l1 l2 = AddrSet.union l1 l2 in
-    let join (b1, r1, e1) (b2, r2, e2) = (b1++b2, r1++r2, e1++e2) in
-    let lookup addr store = try Some (Es5_cps_values.Store.find addr store) with _ -> None in
-    let rec reachable_retContEnv_addrs (retContEnv : V.retContEnv) =
-      IdMap.fold (fun _ rAddr (b, r, e) ->
-        match (lookup rAddr retContStore) with
-        | None
-        | Some V.Answer -> (b, add rAddr r, e)
-        | Some (V.RetCont (_, _, _, bindingEnv, retContEnv, exnContEnv)) -> join
-          (join (reachable_bindingEnv_addrs bindingEnv)
-             (join (reachable_retContEnv_addrs retContEnv)
-                (reachable_exnContEnv_addrs exnContEnv)))
-          (b, add rAddr r, e)) retContEnv (noIds, noIds, noIds)
-    and reachable_exnContEnv_addrs (exnContEnv : V.exnContEnv) =
-      IdMap.fold (fun _ eAddr (b, r, e) ->
-        match (lookup eAddr exnContStore) with
-        | None
-        | Some V.Error -> (b, r, add eAddr e)
-        | Some (V.ExnCont (_, _, _, _, bindingEnv, retContEnv, exnContEnv)) -> join
-          (join (reachable_bindingEnv_addrs bindingEnv)
-             (join (reachable_retContEnv_addrs retContEnv)
-                (reachable_exnContEnv_addrs exnContEnv)))
-          (b, r, add eAddr e)) exnContEnv (noIds, noIds, noIds)
-    and reachable_bindingEnv_addrs (bindingEnv : V.bindingEnv) =
-      let rec reachable_binding v =
-        match v with
-        | V.VarCell (_, _, ptr) -> 
-          begin match (lookup ptr bindingStore) with
-          | None -> (just ptr, noIds, noIds)
-          | Some v -> join (just ptr, noIds, noIds) (reachable_binding v)
-          end
-        | V.Object (_, _, attrs, props) ->
-          let prim = match attrs.V.primval with 
-            | None -> (noIds, noIds, noIds)
-            | Some v -> reachable_binding v in
-          let code = match attrs.V.code with
-            | None -> (noIds, noIds, noIds)
-            | Some v -> reachable_binding v in
-          let proto = match attrs.V.proto with
-            | None -> (noIds, noIds, noIds)
-            | Some v -> reachable_binding v in
-          let prop a = match a with
-            | (_, V.Data ({V.value = v}, _, _)) -> reachable_binding v
-            | (_, V.Accessor ({V.getter = g; V.setter = s}, _, _)) -> 
-              join (reachable_binding g) (reachable_binding s) in
-          List.fold_left (fun acc p -> join (prop p) acc) (join prim (join code proto)) props
-        | V.Closure(_, _, _, _, _, _, bindingEnv', retContEnv', exnContEnv') ->
-          let newBinds = if (bindingEnv == bindingEnv') then (noIds, noIds, noIds) else (reachable_bindingEnv_addrs bindingEnv') in
-          let newRets = if (retContEnv == retContEnv') then (noIds, noIds, noIds) else (reachable_retContEnv_addrs retContEnv') in
-          let newExns = if (exnContEnv == exnContEnv') then (noIds, noIds, noIds) else (reachable_exnContEnv_addrs exnContEnv') in
-          join newBinds (join newRets newExns)
-        | _ -> (noIds, noIds, noIds) in
-      IdMap.fold (fun _ bAddr (b, r, e) -> 
-        match (lookup bAddr bindingStore) with
-        | None -> (add bAddr b, r, e)
-        | Some v -> join (add bAddr b, r, e) (reachable_binding v)) bindingEnv (noIds, noIds, noIds) in 
-    let (reachable_bind_addrs, reachable_ret_addrs, reachable_exn_addrs) =
-      join (reachable_bindingEnv_addrs bindingEnv)
-        (join (reachable_retContEnv_addrs retContEnv)
-           (reachable_exnContEnv_addrs exnContEnv)) in
-    (* monomorphism restriction at module level means I can't encapsulate the call to Store.fold... *)
-    let filter_sto stoName pretty addrs = (fun addr value acc -> 
-      if (AddrSet.mem addr addrs)
-      then acc
-      else 
-        (
-          (* print_string ("discarding " ^ (string_of_int addr) ^ "->" ^ (pretty value) ^ " from store " ^ stoName ^ "\n"); *)
-          Es5_cps_values.Store.remove addr acc)
-    ) in
-    let (newBindings, newRets, newExns) =
-      (Es5_cps_values.Store.fold (filter_sto "bindings" V.pretty_bind reachable_bind_addrs) 
-         bindingStore bindingStore,
-       Es5_cps_values.Store.fold (filter_sto "retconts" V.pretty_retcont reachable_ret_addrs) 
-         retContStore retContStore,
-       Es5_cps_values.Store.fold (filter_sto "exnconts" V.pretty_exncont reachable_exn_addrs) 
-         exnContStore exnContStore) in
-    (U.dump_heap_as_dot "after_" bindingEnv newBindings retContEnv newRets exnContEnv newExns) Format.str_formatter;
-    (newBindings, newRets, newExns) in
+  (* (\*  *)
+  (*  * Garbage collection of the stores, assuming that the provided environments are all the  *)
+  (*  * roots that exist.  Similarly, assume that the closed-over environments in closures and *)
+  (*  * continuations are themselves gc'ed, so that they only contain reachable information and *)
+  (*  * no garbage. *)
+  (*  *\) *)
+  (* let garbage_collect *)
+  (*     bindingEnv (bindingStore : V.bind_value Es5_cps_values.Store.t) *)
+  (*     retContEnv retContStore *)
+  (*     exnContEnv exnContStore = *)
+  (*   (U.dump_heap_as_dot "before_" bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore) Format.str_formatter; *)
+  (*   print_string (Format.flush_str_formatter ()); *)
+  (*   let noIds = AddrSet.empty in *)
+  (*   let just addr = AddrSet.singleton addr in *)
+  (*   let add addr = AddrSet.add addr in *)
+  (*   let (++) l1 l2 = AddrSet.union l1 l2 in *)
+  (*   let join (b1, r1, e1) (b2, r2, e2) = (b1++b2, r1++r2, e1++e2) in *)
+  (*   let lookup addr store = try Some (Es5_cps_values.Store.find addr store) with _ -> None in *)
+  (*   let rec reachable_retContEnv_addrs (retContEnv : V.retContEnv) = *)
+  (*     IdMap.fold (fun _ rAddr (b, r, e) -> *)
+  (*       match (lookup rAddr retContStore) with *)
+  (*       | None *)
+  (*       | Some V.Answer -> (b, add rAddr r, e) *)
+  (*       | Some (V.RetCont (_, _, _, bindingEnv, retContEnv, exnContEnv)) -> join *)
+  (*         (join (reachable_bindingEnv_addrs bindingEnv) *)
+  (*            (join (reachable_retContEnv_addrs retContEnv) *)
+  (*               (reachable_exnContEnv_addrs exnContEnv))) *)
+  (*         (b, add rAddr r, e)) retContEnv (noIds, noIds, noIds) *)
+  (*   and reachable_exnContEnv_addrs (exnContEnv : V.exnContEnv) = *)
+  (*     IdMap.fold (fun _ eAddr (b, r, e) -> *)
+  (*       match (lookup eAddr exnContStore) with *)
+  (*       | None *)
+  (*       | Some V.Error -> (b, r, add eAddr e) *)
+  (*       | Some (V.ExnCont (_, _, _, _, bindingEnv, retContEnv, exnContEnv)) -> join *)
+  (*         (join (reachable_bindingEnv_addrs bindingEnv) *)
+  (*            (join (reachable_retContEnv_addrs retContEnv) *)
+  (*               (reachable_exnContEnv_addrs exnContEnv))) *)
+  (*         (b, r, add eAddr e)) exnContEnv (noIds, noIds, noIds) *)
+  (*   and reachable_bindingEnv_addrs (bindingEnv : V.bindingEnv) = *)
+  (*     let rec reachable_binding v = *)
+  (*       match v with *)
+  (*       | V.VarCell (_, _, ptr) ->  *)
+  (*         begin match (lookup ptr bindingStore) with *)
+  (*         | None -> (just ptr, noIds, noIds) *)
+  (*         | Some v -> join (just ptr, noIds, noIds) (reachable_binding v) *)
+  (*         end *)
+  (*       | V.Object (_, _, attrs, props) -> *)
+  (*         let prim = match attrs.V.primval with  *)
+  (*           | None -> (noIds, noIds, noIds) *)
+  (*           | Some v -> reachable_binding v in *)
+  (*         let code = match attrs.V.code with *)
+  (*           | None -> (noIds, noIds, noIds) *)
+  (*           | Some v -> reachable_binding v in *)
+  (*         let proto = match attrs.V.proto with *)
+  (*           | None -> (noIds, noIds, noIds) *)
+  (*           | Some v -> reachable_binding v in *)
+  (*         let prop a = match a with *)
+  (*           | (_, V.Data ({V.value = v}, _, _)) -> reachable_binding v *)
+  (*           | (_, V.Accessor ({V.getter = g; V.setter = s}, _, _)) ->  *)
+  (*             join (reachable_binding g) (reachable_binding s) in *)
+  (*         List.fold_left (fun acc p -> join (prop p) acc) (join prim (join code proto)) props *)
+  (*       | V.Closure(_, _, _, _, _, _, bindingEnv', retContEnv', exnContEnv') -> *)
+  (*         let newBinds = if (bindingEnv == bindingEnv') then (noIds, noIds, noIds) else (reachable_bindingEnv_addrs bindingEnv') in *)
+  (*         let newRets = if (retContEnv == retContEnv') then (noIds, noIds, noIds) else (reachable_retContEnv_addrs retContEnv') in *)
+  (*         let newExns = if (exnContEnv == exnContEnv') then (noIds, noIds, noIds) else (reachable_exnContEnv_addrs exnContEnv') in *)
+  (*         join newBinds (join newRets newExns) *)
+  (*       | _ -> (noIds, noIds, noIds) in *)
+  (*     IdMap.fold (fun _ bAddr (b, r, e) ->  *)
+  (*       match (lookup bAddr bindingStore) with *)
+  (*       | None -> (add bAddr b, r, e) *)
+  (*       | Some v -> join (add bAddr b, r, e) (reachable_binding v)) bindingEnv (noIds, noIds, noIds) in  *)
+  (*   let (reachable_bind_addrs, reachable_ret_addrs, reachable_exn_addrs) = *)
+  (*     join (reachable_bindingEnv_addrs bindingEnv) *)
+  (*       (join (reachable_retContEnv_addrs retContEnv) *)
+  (*          (reachable_exnContEnv_addrs exnContEnv)) in *)
+  (*   (\* monomorphism restriction at module level means I can't encapsulate the call to Store.fold... *\) *)
+  (*   let filter_sto stoName pretty addrs = (fun addr value acc ->  *)
+  (*     if (AddrSet.mem addr addrs) *)
+  (*     then acc *)
+  (*     else  *)
+  (*       ( *)
+  (*         (\* print_string ("discarding " ^ (string_of_int addr) ^ "->" ^ (pretty value) ^ " from store " ^ stoName ^ "\n"); *\) *)
+  (*         Es5_cps_values.Store.remove addr acc) *)
+  (*   ) in *)
+  (*   let (newBindings, newRets, newExns) = *)
+  (*     (Es5_cps_values.Store.fold (filter_sto "bindings" V.pretty_bind reachable_bind_addrs)  *)
+  (*        bindingStore bindingStore, *)
+  (*      Es5_cps_values.Store.fold (filter_sto "retconts" V.pretty_retcont reachable_ret_addrs)  *)
+  (*        retContStore retContStore, *)
+  (*      Es5_cps_values.Store.fold (filter_sto "exnconts" V.pretty_exncont reachable_exn_addrs)  *)
+  (*        exnContStore exnContStore) in *)
+  (*   (U.dump_heap_as_dot "after_" bindingEnv newBindings retContEnv newRets exnContEnv newExns) Format.str_formatter; *)
+  (*   (newBindings, newRets, newExns) in *)
 
   let rec eval_exp exp 
       bindingEnv retContEnv exnContEnv 
-      (bindingStore : V.bind_value Es5_cps_values.Store.t) retContStore exnContStore = 
+      (bindingStore : ValueLattice.t Es5_cps_values.Store.t) retContStore exnContStore = 
     (* print_string "In eval_exp for "; *)
     (* (match exp with *)
     (* | C.LetValue (_, l, id, _, _) -> printf "%s" ("LetValue " ^ (string_of_int l) ^ "," ^ id ^ "\n") *)
@@ -237,7 +231,7 @@ let eval (exp : C.cps_exp) =
     | C.If(pos, label, cond, left, right) ->
       let (cond', bindingStore, retContStore, exnContStore) = 
         eval_val cond bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in
-      if unbool cond' 
+      if D.unbool cond' 
       then eval_exp left bindingEnv retContEnv exnContEnv bindingStore retContStore exnContStore
       else eval_exp right bindingEnv retContEnv exnContEnv bindingStore retContStore exnContStore
     | C.AppFun(pos, label, func, ret, exn, args) ->
@@ -279,8 +273,8 @@ let eval (exp : C.cps_exp) =
     | C.True(p,l) -> (V.True(p,l), bindingStore, retStore, exnStore)
     | C.False(p,l) -> (V.False(p,l), bindingStore, retStore, exnStore)
     | C.Object(p,l,a,ps) -> 
-      let (bindingStore, retStore, exnStore) =
-        garbage_collect env bindingStore retEnv retStore exnEnv exnStore in
+      (* let (bindingStore, retStore, exnStore) = *)
+      (*   garbage_collect env bindingStore retEnv retStore exnEnv exnStore in *)
       let opt_val v bindingStore = match v with 
         | None -> (None, bindingStore, retStore, exnStore)
         | Some v -> let (ans,bs,rs,es) = 
@@ -304,8 +298,8 @@ let eval (exp : C.cps_exp) =
       (V.VarCell(dummy_pos,newLabel(),addr), 
        Es5_cps_values.Store.add addr (V.Object(p,l,a',ps')) bindingStore, retStore, exnStore)
     | C.Lambda(p,l,r,e,a,b) -> 
-      let (bindingStore, retStore, exnStore) =
-        garbage_collect env bindingStore retEnv retStore exnEnv exnStore in
+      (* let (bindingStore, retStore, exnStore) = *)
+      (*   garbage_collect env bindingStore retEnv retStore exnEnv exnStore in *)
       (V.Closure(p,l,r,e,a,b,env, retEnv, exnEnv), bindingStore, retStore, exnStore)
   and eval_prim (prim : C.cps_prim) env bindingStore retEnv retStore exnEnv exnStore = 
     (* U.print_bindings env bindingStore; *)
@@ -335,11 +329,11 @@ let eval (exp : C.cps_exp) =
             | V.Data({ V.value = v }, _, _), E.Value -> (v, bindingStore, retStore, exnStore)
             | V.Accessor({ V.getter = g }, _, _), E.Getter -> (g, bindingStore, retStore, exnStore)
             | V.Accessor({ V.setter = s }, _, _), E.Setter -> (s, bindingStore, retStore, exnStore)
-            | V.Data(_, _, config), E.Config -> (bool config pos, bindingStore, retStore, exnStore)
-            | V.Accessor(_, _, config), E.Config -> (bool config pos, bindingStore, retStore, exnStore)
-            | V.Data(_, enum, _), E.Enum -> (bool enum pos, bindingStore, retStore, exnStore)
-            | V.Accessor(_, enum, _), E.Enum -> (bool enum pos, bindingStore, retStore, exnStore)
-            | V.Data({ V.writable = w }, _, _), E.Writable -> (bool w pos, bindingStore, retStore, exnStore)
+            | V.Data(_, _, config), E.Config -> (D.bool config, bindingStore, retStore, exnStore)
+            | V.Accessor(_, _, config), E.Config -> (D.bool config, bindingStore, retStore, exnStore)
+            | V.Data(_, enum, _), E.Enum -> (D.bool enum, bindingStore, retStore, exnStore)
+            | V.Accessor(_, enum, _), E.Enum -> (D.bool enum, bindingStore, retStore, exnStore)
+            | V.Data({ V.writable = w }, _, _), E.Writable -> (D.bool w, bindingStore, retStore, exnStore)
             | _ -> failwith "bad access of attribute"
           with Not_found -> failwith "Field not found"
         end
@@ -361,9 +355,9 @@ let eval (exp : C.cps_exp) =
           try 
             match (List.assoc s props), pattr with
             | V.Data ({ V.writable = true } as d, enum, config), E.Writable -> 
-              V.Data ({ d with V.writable = unbool value' }, enum, config)
+              V.Data ({ d with V.writable = D.unbool value' }, enum, config)
             | V.Data (d, enum, true), E.Writable ->
-              V.Data ({ d with V.writable = unbool value' }, enum, true)
+              V.Data ({ d with V.writable = D.unbool value' }, enum, true)
             (* Updating values only checks writable *)
             | V.Data ({ V.writable = true } as d, enum, config), E.Value ->
               V.Data ({ d with V.value = value' }, enum, config)
@@ -381,20 +375,20 @@ let eval (exp : C.cps_exp) =
             | V.Accessor (a, enum, true), E.Value ->
               V.Data ({ V.value = value'; V.writable = false; }, enum, true)
             | V.Accessor (a, enum, true), E.Writable ->
-              V.Data ({ V.value = V.Undefined(dummy_pos, newLabel()); V.writable = unbool value'; }, enum, true)
+              V.Data ({ V.value = V.Undefined(dummy_pos, newLabel()); V.writable = D.unbool value'; }, enum, true)
             (* enumerable and configurable need configurable=true *)
             | V.Data (d, _, true), E.Enum ->
-              V.Data (d, unbool value', true)
+              V.Data (d, D.unbool value', true)
             | V.Data (d, enum, true), E.Config ->
-              V.Data (d, enum, unbool value')
+              V.Data (d, enum, D.unbool value')
             | V.Data (d, enum, false), E.Config ->
               (match value' with
               | V.False _ -> V.Data (d, enum, false)
               | _ -> failwith ("[cps-interp] can't set Config property to true once it's false: " ^ s))
             | V.Accessor (a, enum, true), E.Config ->
-              V.Accessor (a, enum, unbool value')
+              V.Accessor (a, enum, D.unbool value')
             | V.Accessor (a, enum, true), E.Enum ->
-              V.Accessor (a, unbool value', true)
+              V.Accessor (a, D.unbool value', true)
             | V.Accessor (a, enum, false), E.Config ->
               (match value' with 
               | V.False _ -> V.Accessor(a, enum, false)
@@ -406,9 +400,9 @@ let eval (exp : C.cps_exp) =
             | E.Getter -> V.Accessor({V.getter = value'; V.setter = undef ()}, false, false)
             | E.Setter -> V.Accessor({V.getter = undef (); V.setter = value'}, false, false)
             | E.Value -> V.Data({V.value = value'; V.writable = false}, false, false)
-            | E.Writable -> V.Data({V.value = undef(); V.writable = unbool value'}, false, false)
-            | E.Enum -> V.Data({V.value = undef(); V.writable = false}, unbool value', true)
-            | E.Config -> V.Data({V.value = undef(); V.writable = false}, true, unbool value')
+            | E.Writable -> V.Data({V.value = undef(); V.writable = D.unbool value'}, false, false)
+            | E.Enum -> V.Data({V.value = undef(); V.writable = false}, D.unbool value', true)
+            | E.Config -> V.Data({V.value = undef(); V.writable = false}, true, D.unbool value')
         end in
         let replaceProp ((s, prop) as newProp) props =
           let rec help props acc =
@@ -419,7 +413,7 @@ let eval (exp : C.cps_exp) =
               else help props' (oldProp::acc) in
           help props [] in
         let newobj = V.Object(pos, label, attrs, replaceProp (s, newprop) props) in
-        (bool true pos, (Es5_cps_values.Store.add addr newobj bindingStore), retStore, exnStore)
+        (D.bool true, (Es5_cps_values.Store.add addr newobj bindingStore), retStore, exnStore)
       | V.Object(pos, label, {V.extensible = false}, props), V.String (_, _, s) -> 
         failwith "[cps-interp] extending inextensible object"
       | _ -> failwith "[cps-interp] set-attr didn't get an object and a string"
@@ -445,9 +439,9 @@ let eval (exp : C.cps_exp) =
             | V.Data (_, _, true)
             | V.Accessor (_, _, true) ->
               let newObj = V.Object(pos, label, attrs, List.remove_assoc s props) in
-              (bool true pos, Es5_cps_values.Store.add addr newObj bindingStore, retStore, exnStore)
-            | _ -> (bool false pos, bindingStore, retStore, exnStore)
-          with Not_found -> (bool false pos, bindingStore, retStore, exnStore)
+              (D.bool true, Es5_cps_values.Store.add addr newObj bindingStore, retStore, exnStore)
+            | _ -> (D.bool false, bindingStore, retStore, exnStore)
+          with Not_found -> (D.bool false, bindingStore, retStore, exnStore)
         end
       | _ -> failwith "DeleteField didn't have both an object and a string"
       end
