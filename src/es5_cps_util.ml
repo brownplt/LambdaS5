@@ -3,6 +3,7 @@ module C = Es5_cps
 module D = Es5_cps_delta
 module E = Es5_syntax
 module V = Es5_cps_values
+module A = Es5_cps_absdelta
 open Graph
 open Format
 open FormatExt
@@ -18,8 +19,8 @@ let no_free_vars exp (env : unit IdMap.t) : bool =
       let opt_val value = match value with None -> true | Some v -> free_val env v in
       List.for_all opt_val [attrs.C.primval; attrs.C.code; attrs.C.proto]
       && List.for_all (fun (_, v) -> match v with
-      | C.Data ({C.value = v},_,_) -> free_val env v
-      | C.Accessor ({C.getter=g; C.setter=s},_,_) -> free_val env g && free_val env s) props
+      | C.Data ({C.value = v},_,_) -> env $$ [v]
+      | C.Accessor ({C.getter=g; C.setter=s},_,_) -> env $$ [g;s]) props
     | _ -> true
   and free_prim env prim =
     match prim with
@@ -91,12 +92,12 @@ let alphatize allowUnbound (exp, env) =
       let (revProps', env4) = List.fold_left (fun (revProps, env) (name,v) ->
         match v with
         | C.Data ({C.value=v; C.writable=w},config,enum) ->
-          let (v', env') = alph_val (v,env) in
-          ((name,C.Data({C.value=v';C.writable=w},config,enum))::revProps, env')
+          let v' = lookup (v, env) in
+          ((name,C.Data({C.value=v';C.writable=w},config,enum))::revProps, env)
         | C.Accessor ({C.getter=g;C.setter=s},config,enum) ->
-          let (g', env') = alph_val (g, env) in
-          let (s', env'') = alph_val (s, env') in
-          ((name,C.Accessor({C.getter=g'; C.setter=s'},config,enum))::revProps, env'')) ([], env3) props in
+          let g' = lookup (g, env) in
+          let s' = lookup (s, env) in
+          ((name,C.Accessor({C.getter=g'; C.setter=s'},config,enum))::revProps, env)) ([], env3) props in
       (C.Object(p,l,
               {C.primval=prim';C.code=code';C.proto=proto';C.klass=attrs.C.klass;C.extensible=attrs.C.extensible},
               List.rev revProps'),
@@ -197,43 +198,45 @@ let print_bindings env store =
     try 
       let lookup = Es5_cps_values.Store.find addr store in
       addReachable lookup;
-      printf "  %s -> %d -> %s\n" id addr (V.pretty_bind lookup)
-    with _ -> printf "  %s -> %d -> XXX dangling pointer XXX\n" id addr) env;
+      printf "  %s -> %s -> %s\n" id (V.ADDRESS.toString addr) (V.pretty_bind lookup)
+    with _ -> printf "  %s -> %s -> XXX dangling pointer XXX\n" id (V.ADDRESS.toString addr)) env;
   List.iter (fun addr ->
     if List.mem addr !rootAddrs then ()
-    else (printf "  ** -> %d -> %s\n" addr (V.pretty_bind (Es5_cps_values.Store.find addr store));
+    else (printf "  ** -> %s -> %s\n" (V.ADDRESS.toString addr) 
+            (V.pretty_bind (Es5_cps_values.Store.find addr store));
           rootAddrs := addr::!rootAddrs))
     !reachableAddrs
+
 let print_all_bindings env store =
   printf "Binding Env:\n";
-  IdMap.iter (fun id addr -> printf "  %s -> %d\n" id addr) env;
+  IdMap.iter (fun id addr -> printf "  %s -> %s\n" id (V.ADDRESS.toString addr)) env;
   printf "Binding Store:\n";
-  Es5_cps_values.Store.iter (fun addr value -> printf "  %d -> %s\n" addr (V.pretty_bind value)) store
+  Es5_cps_values.Store.iter (fun addr value -> printf "  %s -> %s\n" (V.ADDRESS.toString addr) (V.pretty_bind value)) store
 
 let print_rets env store = 
   printf "Condensed returns:\n";
-  IdMap.iter (fun id addr -> printf "  %s -> %d" id addr;
+  IdMap.iter (fun id addr -> printf "  %s -> %s" id (V.ADDRESS.toString addr);
     match (Es5_cps_values.Store.find addr store) with
     | V.Answer -> printf " -> ANS\n"
     | V.RetCont(l, arg, _, _,_,_) -> printf " -> RET(%s->...)[...]\n" arg) env
 let print_all_rets env store = 
   printf "Return Env:\n";
-  IdMap.iter (fun id addr -> printf "  %s -> %d\n" id addr) env;
+  IdMap.iter (fun id addr -> printf "  %s -> %s\n" id (V.ADDRESS.toString addr)) env;
   printf "Return Store:\n";
   Es5_cps_values.Store.iter (fun addr ret ->
     match ret with
-    | V.Answer -> printf "  %d -> ANS\n" addr
-    | V.RetCont(l, arg, body, _,_,_) -> printf "  %d -> RET(%s->...)\n" addr arg
+    | V.Answer -> printf "  %s -> ANS\n" (V.ADDRESS.toString addr)
+    | V.RetCont(l, arg, body, _,_,_) -> printf "  %s -> RET(%s->...)\n" (V.ADDRESS.toString addr) arg
   ) store 
 
 let print_exns env store = 
   printf "Error Env:\n";
-  IdMap.iter (fun id addr -> printf "  %s -> %d\n" id addr) env;
+  IdMap.iter (fun id addr -> printf "  %s -> %s\n" id (V.ADDRESS.toString addr)) env;
   printf "Error Store:\n";
   Es5_cps_values.Store.iter (fun addr ret ->
     match ret with
-    | V.Error -> printf "  %d -> ERR\n" addr
-    | V.ExnCont(l, arg, lbl, body, _,_,_) -> printf "  %d -> RET(%s, %s->...)\n" addr arg lbl
+    | V.Error -> printf "  %s -> ERR\n" (V.ADDRESS.toString addr)
+    | V.ExnCont(l, arg, lbl, body, _,_,_) -> printf "  %s -> RET(%s, %s->...)\n" (V.ADDRESS.toString addr) arg lbl
   ) store
 
 
@@ -273,22 +276,22 @@ let dump_heap_as_dot prefix bindingEnv bindingStore retEnv retStore exnEnv exnSt
   (*               text ">];"]; *)
   (*         vert (IdMap.fold (fun id addr acc -> *)
   (*           horz [squish [text name; text ":\""; text id; text "\" -> ";  *)
-  (*                         text envName; text ":"; int addr; text ";"]] ::  *)
+  (*                         text envName; text ":"; V.ADDRESS.pretty addr; text ";"]] ::  *)
   (*             acc) env [])] in *)
   let fmt_bindings name env envName =
     let bindRecord = IdMap.fold (fun id addr acc ->
       (horz [squish [text "{rank=same ";
                      text "\""; text name; text "_"; text id; text "\" [label=\""; text id; text "\",";
                      text "group="; text name; text "]";
-                     text envName; text "_"; int addr; text ";"]])::
+                     text envName; text "_"; V.ADDRESS.pretty addr; text ";"]])::
         (horz [squish [text "\""; text name; text "_"; text id; text "\" -> ";
-                      text envName; text "_"; int addr; text ";}"]])::acc)
+                      text envName; text "_"; V.ADDRESS.pretty addr; text ";}"]])::acc)
       env [] in
     group_with_comment 2 [text name; text "bindings"] bindRecord in
   (* let fmt_env name map = *)
   (*   let envRecord = (List.rev_map (fun (addr, _, _, _, _) ->  *)
-  (*     horz [squish [text "<TR><TD PORT=\""; int addr; text "\">";  *)
-  (*                   int addr;  *)
+  (*     horz [squish [text "<TR><TD PORT=\""; V.ADDRESS.pretty addr; text "\">";  *)
+  (*                   V.ADDRESS.pretty addr;  *)
   (*                   text "</TD></TR>"]]) map) in *)
   (*   vert [horz[text name; text "[label=<"]; *)
   (*         vert [text "<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\">"; *)
@@ -298,42 +301,42 @@ let dump_heap_as_dot prefix bindingEnv bindingStore retEnv retStore exnEnv exnSt
   (*         text ">];"] in *)
   let fmt_env name map =
     let envRecord = List.rev_map (fun (addr, _, _, _, _) ->
-      horz [squish [text "\""; text name; text "_"; int addr; text "\" ";
-                    text "[label=\""; text name; int addr; 
+      horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" ";
+                    text "[label=\""; text name; V.ADDRESS.pretty addr; 
                     text "\",shape=box,group="; text name; text "];"]]) map in
     let edges = match map with
       | []
       | [_] -> [text "/* No edges needed */"]
       | (first, _, _, _, _)::tl -> (snd (List.fold_left (fun (prev,acc) (addr, _, _, _, _) ->
-        (addr, (horz [squish [text "\""; text name; text "_"; int addr; text "\" -> ";
-                              text "\""; text name; text "_"; int prev; text "\" [weight=100,style=\"invis\"];"]])::acc))
+        (addr, (horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" -> ";
+                              text "\""; text name; text "_"; V.ADDRESS.pretty prev; text "\" [weight=100,style=\"invis\"];"]])::acc))
                                            (first,[]) tl)) in
     vert [group_with_comment 2 [text name; text "environment"] envRecord;
           group_with_comment 2 [text name; text "ordering edges"] edges
-          ] in
+         ] in
   let fmt_store name map envName =
-      (* horz [squish [text "<TR><TD PORT=\""; int addr; text "\">"; *)
+      (* horz [squish [text "<TR><TD PORT=\""; V.ADDRESS.pretty addr; text "\">"; *)
       (*               escape value; *)
       (*               text "</TD></TR>"]]) map) in *)
     let storeRecord = (List.rev_map (fun (addr, value, bindings, rets, exns) ->
-      horz [squish [text "\""; text name; text "_"; int addr; text "\" [label=\"";
+      horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" [label=\"";
                     text value;
                     text "\",shape=box,group="; text name; text "]"]]) map) in
     let edges = match map with
       | []
       | [_] -> [text "/* No edges needed */"]
       | (first, _, _, _, _)::tl -> (snd (List.fold_left (fun (prev,acc) (addr, _, _, _, _) ->
-        (addr, (horz [squish [text "\""; text name; text "_"; int addr; text "\" -> ";
-                              text "\""; text name; text "_"; int prev; text "\" [weight=100,style=\"invis\"];"]])::acc))
+        (addr, (horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" -> ";
+                              text "\""; text name; text "_"; V.ADDRESS.pretty prev; text "\" [weight=100,style=\"invis\"];"]])::acc))
                                            (first,[]) tl)) in
     let ranks = match map with
       | [] -> [text "/* No ranks needed */"]
       | _ -> List.rev_map (fun (addr, _, _, _, _) ->
         horz [squish [text "{rank=same; "; 
-                      text envName; text "_"; int addr; text "; ";
-                      text name; text "_"; int addr; text "; ";
-                      text envName; text "_"; int addr; text " -> ";
-                      text name; text "_"; int addr; text " [weight=100]; }"]]) map in
+                      text envName; text "_"; V.ADDRESS.pretty addr; text "; ";
+                      text name; text "_"; V.ADDRESS.pretty addr; text "; ";
+                      text envName; text "_"; V.ADDRESS.pretty addr; text " -> ";
+                      text name; text "_"; V.ADDRESS.pretty addr; text " [weight=100]; }"]]) map in
     (* vert [vert [horz[text name; text "[label=<"]; *)
     (*             vert [text "<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\">"; *)
     (*                   indent 2 (horz [text "<TR><TD BORDER=\"0\">"; text name; text "</TD></TR>"]); *)
@@ -346,49 +349,49 @@ let dump_heap_as_dot prefix bindingEnv bindingStore retEnv retStore exnEnv exnSt
           group_with_comment 2 [text "bindings dependencies"] 
             (List.flatten (List.rev_map (fun (addr, _, bindings, _, _) ->
               (IdMap.fold (fun _ addr2 acc ->
-                horz [squish [text "\""; text name; text "_"; int addr; text "\" -> ";
-                              text "\""; text envName; text "_"; int addr2; text "\"";
+                horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" -> ";
+                              text "\""; text envName; text "_"; V.ADDRESS.pretty addr2; text "\"";
                               text " [color=blue];"]] :: 
                   acc) bindings [])) map))
          ] in
   let fmt_conts name map rankEnvName bindEnvName retEnvName exnEnvName =
     let storeRecord = (List.rev_map (fun (addr, value, bindings, rets, exns) ->
-      horz [squish [text "\""; text name; text "_"; int addr; text "\" [label=\"";
+      horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" [label=\"";
                     text value;
                     text "\",shape=box,group="; text name; text "]"]]) map) in
     let edges = match map with
       | []
       | [_] -> [text "/* No edges needed */"]
       | (first, _, _, _, _)::tl -> (snd (List.fold_left (fun (prev,acc) (addr, _, _, _, _) ->
-        (addr, (horz [squish [text "\""; text name; text "_"; int addr; text "\" -> ";
-                              text "\""; text name; text "_"; int prev; text "\" [weight=100,style=\"invis\"];"]])::acc))
+        (addr, (horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" -> ";
+                              text "\""; text name; text "_"; V.ADDRESS.pretty prev; text "\" [weight=100,style=\"invis\"];"]])::acc))
                                            (first,[]) tl)) in
     let ranks = match map with
       | [] -> [text "/* No ranks needed */"]
       | _ -> List.rev_map (fun (addr, _, _, _, _) ->
         horz [squish [text "{rank=same; "; 
-                      text rankEnvName; text "_"; int addr; text "; ";
-                      text name; text "_"; int addr; text "; ";
-                      text rankEnvName; text "_"; int addr; text " -> ";
-                      text name; text "_"; int addr; text " [weight=100]; }"]]) map in
+                      text rankEnvName; text "_"; V.ADDRESS.pretty addr; text "; ";
+                      text name; text "_"; V.ADDRESS.pretty addr; text "; ";
+                      text rankEnvName; text "_"; V.ADDRESS.pretty addr; text " -> ";
+                      text name; text "_"; V.ADDRESS.pretty addr; text " [weight=100]; }"]]) map in
     vert [group_with_comment 2 [text name] storeRecord;
           group_with_comment 2 [text name; text "ordering edges"] edges;
           group_with_comment 2 [text name; text "same rank as"; text rankEnvName] ranks;
           group_with_comment 2 [text name; text "references"]
             (List.flatten (List.flatten (List.rev_map (fun (addr, _, bindings, rets, exns) ->
               [(IdMap.fold (fun _ addr2 acc ->
-                horz [squish [text "\""; text name; text "_"; int addr; text "\" -> ";
-                              text "\""; text bindEnvName; text "_"; int addr2; text "\"";
+                horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" -> ";
+                              text "\""; text bindEnvName; text "_"; V.ADDRESS.pretty addr2; text "\"";
                               text " [color=purple];"]] :: 
                   acc) bindings []);
                (IdMap.fold (fun _ addr2 acc ->
-                 horz [squish [text "\""; text name; text "_"; int addr; text "\" -> ";
-                               text "\""; text retEnvName; text "_"; int addr2; text "\"";
+                 horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" -> ";
+                               text "\""; text retEnvName; text "_"; V.ADDRESS.pretty addr2; text "\"";
                                text " [color=green];"]] :: 
                    acc) rets []);
                (IdMap.fold (fun _ addr2 acc ->
-                 horz [squish [text "\""; text name; text "_"; int addr; text "\" -> ";
-                               text "\""; text exnEnvName; text "_"; int addr2; text "\"";
+                 horz [squish [text "\""; text name; text "_"; V.ADDRESS.pretty addr; text "\" -> ";
+                               text "\""; text exnEnvName; text "_"; V.ADDRESS.pretty addr2; text "\"";
                                text " [color=red];"]] :: 
                    acc) exns [])]) map)))
          ] in
@@ -409,3 +412,20 @@ let dump_heap_as_dot prefix bindingEnv bindingStore retEnv retStore exnEnv exnSt
                                  fmt_conts (prefix ^ "exnEnv") exnsMap (prefix ^ "exnConts") (prefix ^ "bindings") (prefix ^ "retConts") (prefix ^ "exnConts")]);
                        text "}"]);
         horz[text "}"]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -93,7 +93,7 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                          value v; text ","; 
+                                          text v; text ","; 
                                           text "#writable";  
                                           text (string_of_bool w);
                                           text ",";
@@ -101,9 +101,9 @@ and prop (f, prop) = match prop with
                                           text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                          value g; text ",";
+                                          text g; text ",";
                                           text "#setter";
-                                          value s])]
+                                          text s])]
 ;;
 Es5_cps.pretty_print := (fun e fmt -> exp false e fmt)
 let cps_value_to_string v = value v Format.str_formatter; Format.flush_str_formatter(); 

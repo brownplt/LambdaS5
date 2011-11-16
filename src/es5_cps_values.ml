@@ -1,12 +1,48 @@
 open Prelude
 open Es5_cps
+module F = Format
+module FX = FormatExt
 
-module ADDRESS = struct
-  type t = int
-  let newAddr =
-    let nextAddr = ref 0 in
-    (fun () -> incr nextAddr; !nextAddr)
+module ADDRESS : sig
+  type t
+  val newAddr : unit -> t
+  val compare : t -> t -> int
+  val addrForContour : Label.t list -> t
+  val resetForContour : Label.t list -> unit
+  val pretty : t -> FX.printer
+  val toString : t -> string
+end = struct
+  module IntList = struct
+    type t = int list
+    let compare = Pervasives.compare
+  end
+  module IntListMap = Map.Make(IntList)
+  type t = (int list * int)
+  let nextAddr : int ref IntListMap.t ref = ref IntListMap.empty
   let compare = Pervasives.compare
+  let takeFst l = match l with
+    | [] -> []
+    | hd::_ -> [hd]
+  let addrForContour c = 
+    let truncC = takeFst c in
+    let nextAddrRef = 
+      try
+        IntListMap.find truncC !nextAddr 
+      with Not_found ->
+        let addr = ref 0 in
+        nextAddr := IntListMap.add truncC addr !nextAddr;
+        addr in
+    (incr nextAddrRef;
+     (truncC, !nextAddrRef))
+  let newAddr () = addrForContour []
+  let resetForContour c = 
+    let truncC = takeFst c in
+    try
+      let addr = IntListMap.find truncC !nextAddr in
+      addr := 0
+    with Not_found -> ()
+  let pretty (c, n) = FX.horz [FX.squish [FX.brackets (FX.horz (List.map FX.int c)); FX.text ";"; FX.int n]]
+  let toString a = pretty a F.str_formatter; F.flush_str_formatter()
 end
 type retContEnv = ADDRESS.t IdMap.t
 type exnContEnv = ADDRESS.t IdMap.t
@@ -15,15 +51,15 @@ type bindingEnv = ADDRESS.t IdMap.t
 
 
 type bind_value =
-  | Null of pos * label
-  | Undefined of pos * label
-  | String of pos * label * string
-  | Num of pos * label * float
-  | True of pos * label
-  | False of pos * label
-  | VarCell of pos * label * ADDRESS.t
-  | Object of pos * label * bind_attrs * (string * bind_prop) list
-  | Closure of pos * label * id * id * id list * cps_exp * bindingEnv * retContEnv * exnContEnv
+  | Null of pos * Label.t
+  | Undefined of pos * Label.t
+  | String of pos * Label.t * string
+  | Num of pos * Label.t * float
+  | True of pos * Label.t
+  | False of pos * Label.t
+  | VarCell of pos * Label.t * ADDRESS.t
+  | Object of pos * Label.t * bind_attrs * (string * bind_prop) list
+  | Closure of pos * Label.t * id * id * id list * cps_exp * bindingEnv * retContEnv * exnContEnv
 and bind_attrs =
     { primval : bind_value option;
       code : bind_value option;
@@ -51,7 +87,7 @@ let rec pretty_bind v = match v with
   | Null _ -> "null"
   | Closure (_, _, ret, exn, args, body, _,_,_) -> "Closure(Ret " ^ ret ^ " , Exn " ^ exn ^ " ; " 
         ^ String.concat " , " args ^ ") { ... }"
-  | VarCell (_, _, a) -> "*<" ^ (string_of_int a) ^ ">"
+  | VarCell (_, _, a) -> "*<" ^ (ADDRESS.toString a) ^ ">"
   | Object (_, _, _, props) -> "{" ^ String.concat ", " (List.map (fun (k, p) ->
     match p with
     | Data({value = v}, _, _) -> k ^ ": " ^ (pretty_bind v) 
@@ -68,10 +104,10 @@ module Store = Map.Make (ADDRESS)
 
 type retCont = 
   | Answer
-  | RetCont of label * id * cps_exp * bindingEnv * retContEnv * exnContEnv
+  | RetCont of Label.t * id * cps_exp * bindingEnv * retContEnv * exnContEnv
 type exnCont = 
   | Error
-  | ExnCont of label * id * id * cps_exp * bindingEnv * retContEnv * exnContEnv
+  | ExnCont of Label.t * id * id * cps_exp * bindingEnv * retContEnv * exnContEnv
 
 let pretty_retcont ret = match ret with
   | Answer -> "Answer"

@@ -33,7 +33,7 @@ module S5 = struct
     match choice with 
     | "es5" -> Es5_pretty.exp !srcES5 std_formatter; print_newline ()
     | "exprjs" -> Exprjs_pretty.exp !srcEJS std_formatter; print_newline ()
-    | "cps5" -> Es5_cps_pretty.exp false !cpsES5 std_formatter; print_newline ()
+    | "cps5" -> Es5_cps_pretty.exp true !cpsES5 std_formatter; print_newline ()
     | _ -> failwith "bad option string"
 
   let eval () : unit =
@@ -77,6 +77,16 @@ module S5 = struct
     | Cfg.Err v -> printf "ERROR %s" (Es5_cps_values.pretty_bind v));
     print_newline ()
 
+  let cps_abs_eval () =
+    let module FX = FormatExt in
+    let (finalEnv, finalStore, finalLab) = Cfg_abs.eval !cpsES5 in
+    printf "Finished evaling...\n";
+    let ans = Cfg_abs.getBinding finalLab "%%ANSWER" finalEnv finalStore in
+    let err = Cfg_abs.getBinding finalLab "%%ERROR" finalEnv finalStore in
+    FX.vert [FX.horz [FX.text "ANSWER <="; Es5_cps_absdelta.ValueLattice.pretty ans];
+             FX.horz [FX.text "ERROR  <="; Es5_cps_absdelta.ValueLattice.pretty err]] Format.str_formatter;
+    printf "%s\n" (Format.flush_str_formatter ())
+
   let main () : unit =
     Arg.parse
       [
@@ -100,6 +110,8 @@ module S5 = struct
         "evaluate code");
         ("-cps-eval", Arg.Unit cps_eval,
         "evaluate code in CPS form");
+        ("-cps-abs-eval", Arg.Unit cps_abs_eval,
+        "abstractly evaluate code in CPS form");
         ("-env", Arg.String env,
          "wrap the program in an environment");
         ("-json", Arg.String set_json,

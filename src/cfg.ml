@@ -31,7 +31,7 @@ module AddrSet = Set.Make (Es5_cps_values.ADDRESS)
 
 
 let eval (exp : C.cps_exp) =
-  let newLabel = C.newLabel in
+  let newLabel = C.Label.newLabel in
   let bool b pos = if b then V.True(pos, newLabel()) else V.False(pos, newLabel()) in
   let unbool v = match v with
     | V.True _ -> true
@@ -292,11 +292,11 @@ let eval (exp : C.cps_exp) =
                  V.klass = a.C.klass; V.extensible = a.C.extensible } in
       let prop (props, bindingStore,retStore,exnStore) (str, p) = (match p with
         | C.Data({C.value = v; C.writable = w}, enum, config) ->
-          let (v, bindingStore,retStore,exnStore) = eval_val v env bindingStore retEnv retStore exnEnv exnStore in
+          let v = (Es5_cps_values.Store.find (IdMap.find v env) bindingStore) in
           (str, V.Data({V.value = v; V.writable = w}, enum, config))::props, bindingStore,retStore,exnStore
         | C.Accessor({C.getter = g; C.setter = s}, enum, config) -> 
-          let (g, bindingStore,retStore,exnStore) = eval_val g env bindingStore retEnv retStore exnEnv exnStore in
-          let (s, bindingStore,retStore,exnStore) = eval_val s env bindingStore retEnv retStore exnEnv exnStore in
+          let g = (Es5_cps_values.Store.find (IdMap.find g env) bindingStore) in
+          let s = (Es5_cps_values.Store.find (IdMap.find s env) bindingStore) in
           (str, V.Accessor({V.getter = g; V.setter = s}, enum, config))::props, bindingStore,retStore,exnStore) in
       let (ps', bindingStore,retStore,exnStore) = List.fold_left prop ([], bindingStore,retStore,exnStore) ps in
       let ps' = List.rev ps' in
