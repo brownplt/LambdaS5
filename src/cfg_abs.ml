@@ -50,7 +50,7 @@ let print_abs_bindings label env store =
     try 
       let lookup = Es5_cps_values.Store.find addr bH in
       addReachable lookup;
-      vert[horz[text "  "; text id; text "->"; (V.ADDRESS.pretty addr); text "->"; (D.ValueLattice.pretty lookup)]]
+      vert[horz[text " "; text id; text "->"; (V.ADDRESS.pretty addr); text "->"; (D.ValueLattice.pretty lookup)]]
         Format.str_formatter;
       printf "%s\n" (Format.flush_str_formatter ())
     with _ -> printf "  %s -> %s -> XXX dangling pointer XXX\n" id (V.ADDRESS.toString addr)) bE;
@@ -64,6 +64,25 @@ let print_abs_bindings label env store =
       rootAddrs := addr::!rootAddrs
     end)
     !reachableAddrs
+
+let print_all_abs_bindings store =
+  printf "All abs bindings:\n";
+  vert (C.LabelMap.fold (fun label (store, _, _) acc ->
+    (horz [int label; text "->";
+           braces (vert (Es5_cps_values.Store.fold (fun addr value acc ->
+             (horz [V.ADDRESS.pretty addr; text "->"; D.ValueLattice.pretty value])::acc) store []))])::acc)
+          store [])
+    Format.str_formatter;
+  printf "%s\n" (Format.flush_str_formatter ())
+
+
+let printAnsErr msg ans err =
+  let module FX = FormatExt in
+  FX.vert [FX.text (msg ^ ",");
+           FX.horz [FX.text "ANSWER <="; Es5_cps_absdelta.ValueLattice.pretty ans];
+           FX.horz [FX.text "ERROR  <="; Es5_cps_absdelta.ValueLattice.pretty err]] Format.str_formatter;
+  printf "%s\n" (Format.flush_str_formatter())
+  
 
 (* let print_rets env store =  *)
 (*   printf "Condensed returns:\n"; *)
@@ -109,7 +128,7 @@ let updateValue label addr v store =
       try
         let oldV = Es5_cps_values.Store.find addr b in
         Es5_cps_values.Store.add addr (D.ValueLattice.join [v; oldV]) b
-      with _ -> Es5_cps_values.Store.singleton addr v in
+      with _ -> Es5_cps_values.Store.add addr v b in
     C.LabelMap.add label (b', r, e) store
   with _ -> C.LabelMap.singleton label (Es5_cps_values.Store.singleton addr v,
                                         V.Store.empty,
@@ -129,8 +148,6 @@ let getBinding label id env store =
       Es5_cps_values.Store.find addr b
     with Not_found -> D.ValueLattice._Bot ()
   with Not_found -> D.ValueLattice._Bot ()
-
-let refineStore whichBranch branchLabel cond store = store (* TODO *)
 
 let updateRet label addr v store =
   try
@@ -187,6 +204,23 @@ let copyEnv label1 label2 env =
 let replaceBindings label bindings env =
   let (_, r, e) = getEnv label env in
   C.LabelMap.add label (bindings, r, e) env
+
+let refineStore whichBranch branchLabel cond cond' env store = 
+  let condLab = C.label_of_val cond in
+  let store' = pushStore condLab branchLabel store in
+  match cond with
+  | C.Id(_, _, id) -> 
+    let (b, _, _) = C.LabelMap.find branchLabel env in
+    let addr = IdMap.find id b in
+    let store2 = 
+      updateValue branchLabel addr (D.ValueLattice.meet [cond'; D.bool whichBranch]) store' in
+    (* (match (D.ValueLattice.boolOf cond') with *)
+    (* | D.BoolLattice.TrueTypeof (t, v) -> *)
+    (* | D.BoolLattice.FalseTypeof (t, v) -> *)
+    (* ) *) (* TODO *)
+    store2
+  | _ -> store'
+
 
 let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
   (* let newLabel = C.newLabel in *)
@@ -306,7 +340,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
     | C.Eval(_, l, _) -> printf "%s" ("Eval " ^ (string_of_int l) ^ "\n"); l
     ) in
     print_abs_bindings label env store;
-
+    printf "Done...\n";
     match exp with
     | C.LetValue(pos, label, id, value, body) ->
       let oldValue = eval_val value env store in
@@ -325,8 +359,9 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       printf "Env/store for body:%d:\n" blab;
       print_abs_bindings blab env'' store'';
       let (env3, store3, bodyMod) = eval_exp body exitLab env'' store'' in
-      printModReasons label ["bodyMod", bodyMod; "oldValue != value'", oldValue != value'];
-      ((joinEnvs env'' env3), (joinStores store'' store3), (bodyMod || (oldValue != value')))
+      printModReasons label ["bodyMod", bodyMod; "oldValue <> value'", oldValue <> value'];
+      printAnsErr "After LetValue" (getBinding exitLab "%%ANSWER" env3 store3) (getBinding exitLab "%%ERROR" env3 store3);
+      ((joinEnvs env'' env3), (joinStores store'' store3), (bodyMod || (oldValue <> value')))
     | C.RecValue(pos, label, id, value, body) ->
       let oldValue = eval_val value env store in
       let vlab = C.label_of_val value in
@@ -335,23 +370,28 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       V.ADDRESS.resetForContour [label];
       let addr = V.ADDRESS.addrForContour [label] in
       let env' = addBinding vlab id addr (copyEnv label vlab env) in
-      let rec fixpoint (bot, modified) store =
+      let rec fixpoint bot store =
         let value' = eval_val value env' store in
         if (bot = value') 
         then begin
           printf "Finished with inner fixpoint\n";
-          (value', store, modified)
+          (value', store)
         end 
         else begin
-          printf "In inner fixpoint, modified: %s\n" (if modified then "true" else "false");
+          (* let module FX = FormatExt in *)
+          (* FX.vert [FX.text "In inner fixpoint,"; *)
+          (*          FX.horz [FX.text "oldValue <="; Es5_cps_absdelta.ValueLattice.pretty oldValue]; *)
+          (*          FX.horz [FX.text "value' <="; Es5_cps_absdelta.ValueLattice.pretty value']] Format.str_formatter; *)
+          (* printf "%s\n" (Format.flush_str_formatter()); *)
           let widened = (D.ValueLattice.join [bot;value']) in
-          fixpoint (widened, true) (updateValue vlab addr widened store) 
+          fixpoint widened (updateValue vlab addr widened store) 
         end in
-      let (value', store'', modified) = 
-        fixpoint (D.ValueLattice._Bot (), false) (updateValue vlab addr (D.ValueLattice._Bot ()) store') in
+      let (value', store'') = 
+        fixpoint (D.ValueLattice._Bot ()) (updateValue vlab addr (D.ValueLattice._Bot ()) store') in
       let (env3, store3, bodyMod) = eval_exp body exitLab (copyEnv vlab blab env') (pushStore vlab blab store'') in
-      printModReasons label ["bodyMod", bodyMod; "modified", modified; "value' != oldValue", value' != oldValue];
-      ((joinEnvs env' env3), (joinStores store'' store3), (bodyMod || modified || (value' != oldValue)))
+      printModReasons label ["bodyMod", bodyMod; "value' <> oldValue", value' <> oldValue];
+      printAnsErr "After RecValue" (getBinding exitLab "%%ANSWER" env3 store3) (getBinding exitLab "%%ERROR" env3 store3);
+      ((joinEnvs env' env3), (joinStores store'' store3), (bodyMod || (value' <> oldValue)))
     | C.LetPrim(pos, label, id, prim, body) ->
       let (oldValue, oldStore, oldMod) = eval_prim prim env store in
       let plab = C.label_of_prim prim in
@@ -364,7 +404,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let env'' = (addBinding blab id addr (copyEnv plab blab env')) in
       let store3 = (updateValue blab addr value' (pushStore plab blab store'')) in
       let (env3, store4, bodyMod) = eval_exp body exitLab env'' store3 in
-      ((joinEnvs env'' env3), (joinStores store3 store4), (oldMod || primMod || bodyMod || (oldValue != value')))
+      ((joinEnvs env'' env3), (joinStores store3 store4), (oldMod || primMod || bodyMod || (oldValue <> value')))
     | C.LetRetCont(label, id, arg, body, exp) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
       (*   garbage_collect bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in *)
@@ -378,13 +418,20 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       eval_exp exp exitLab env' store'
     | C.AppRetCont(label, id, value) ->
       (* print_rets retContEnv retContStore; *)
+      printf "Here1\n";
       let oldValue = eval_val value env store in
+      printf "Here2\n";
       let store' = pushStore label (C.label_of_val value) store in
+      printf "Here3\n";
       let env' = copyEnv label (C.label_of_val value) env in
+      printf "Here4\n";
       let value' = eval_val value env' store' in
+      printf "Here5\n";
       let (bindingEnv, retContEnv, _) = getEnv label env in
       let (bindingStore, retContStore, _) = getStore label store in
+      printf "Trying to find %s in %d..." id label;
       let ret = V.Store.find (IdMap.find id retContEnv) retContStore in
+      printf "Found.\n";
       begin match ret with
       | V.Answer -> 
         let finalAns = (match (D.ValueLattice.addrsOf value') with
@@ -395,7 +442,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
           | a -> value'
         ) in
         let answerVal = IdMap.find "%%ANSWER" bindingEnv in
-        (env', updateValue exitLab answerVal finalAns store', value' != oldValue)
+        (env', updateValue exitLab answerVal finalAns store', value' <> oldValue)
       | V.RetCont (_, arg, body, bindingEnv, retContEnv, exnContEnv) ->
         V.ADDRESS.resetForContour [label];
         let addr = V.ADDRESS.addrForContour [label] in
@@ -403,7 +450,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let env'' = (addBinding blab arg addr (copyEnv label blab env')) in
         let store'' = (updateValue blab addr value' (pushStore label blab store')) in
         let (env3, store3, modRet) = eval_exp body exitLab env'' store'' in
-        ((joinEnvs env'' env3), (joinStores store'' store3), (modRet || value' != oldValue))
+        ((joinEnvs env'' env3), (joinStores store'' store3), (modRet || value' <> oldValue))
       end
     | C.LetExnCont(label, id, arg, lbl, body, exp) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
@@ -439,8 +486,9 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
             D.ValueLattice.join [deref; arg']
           | a -> arg'
         ) in
+        printf "%d Throwing %s to %d\n" label (D.ValueLattice.pretty finalErr Format.str_formatter; Format.flush_str_formatter()) exitLab;
         let errorVal = IdMap.find "%%ERROR" bindingEnv in
-        (envLbl, updateValue exitLab errorVal finalErr storeLbl, finalErr != oldFinalErr)
+        (envLbl, updateValue exitLab errorVal finalErr storeLbl, finalErr <> oldFinalErr)
       | V.ExnCont(_, arg, lbl, body, bindingEnv, retContEnv, exnContEnv) ->
         V.ADDRESS.resetForContour [label];
         let argAddr = V.ADDRESS.addrForContour [label] in
@@ -451,22 +499,22 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let store'' = (updateValue blab argAddr arg' 
                          (updateValue blab lblAddr lbl' (pushStore label blab storeLbl))) in
         let (env3, store3, modExn) = eval_exp body exitLab env'' store'' in
-        ((joinEnvs env'' env3), (joinStores store'' store3), (modExn || arg' != oldArg || lbl' != oldLbl))
+        ((joinEnvs env'' env3), (joinStores store'' store3), (modExn || arg' <> oldArg || lbl' <> oldLbl))
       end
     | C.If(pos, label, cond, left, right) ->
       let oldCond = eval_val cond env store in
       let store' = pushStore label (C.label_of_val cond) store in
       let env' = copyEnv label (C.label_of_val cond) env in
       let cond' = eval_val cond env' store' in
-      let leftStore = refineStore true (C.label_of_exp left) cond store' in
       let leftEnv = copyEnv label (C.label_of_exp left) env in
-      let rightStore = refineStore false (C.label_of_exp right) cond store' in
+      let leftStore = refineStore true (C.label_of_exp left) cond cond' leftEnv store' in
       let rightEnv = copyEnv label (C.label_of_exp right) env in
+      let rightStore = refineStore false (C.label_of_exp right) cond cond' rightEnv store' in
       let (leftEnv', leftStore', leftMod) = (eval_exp left exitLab leftEnv leftStore) in
       let (rightEnv', rightStore', rightMod) = (eval_exp right exitLab rightEnv rightStore) in
       ((joinEnvs leftEnv' rightEnv'), 
        (joinStores leftStore' rightStore'), 
-       (leftMod || rightMod || (oldCond != cond')))
+       (leftMod || rightMod || (oldCond <> cond')))
     | C.AppFun(pos, label, func, ret, exn, args) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
       (*   garbage_collect bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in *)
@@ -482,7 +530,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let envArg' = copyEnv label argLab envArg in
         let storeArg' = pushStore label argLab storeArg in
         let arg' = eval_val arg envArg' storeArg' in
-        (arg'::args, argsMod || oldArg != arg', joinEnvs envArg envArg', joinStores storeArg storeArg')
+        (arg'::args, argsMod || oldArg <> arg', joinEnvs envArg envArg', joinStores storeArg storeArg')
       ) ([], false, env1, store1) args in
       if (func' = oldFunc && not argsMod) 
       then (env, store, false)
@@ -519,8 +567,11 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
             let store'' = updateRet blab retAddr ret' (updateExn blab exnAddr exn' store') in
             (eval_exp body exitLab env'' store'')::acc
           ) closures [] in
-        List.fold_left (fun (e1, s1, m1) (e2, s2, m2) -> (joinEnvs e1 e2, joinStores s1 s2, m1 || m2)) 
-          (env2, store2, oldFunc != func' || argsMod) closureResults
+        let (e, s, m) = 
+          List.fold_left (fun (e1, s1, m1) (e2, s2, m2) -> (joinEnvs e1 e2, joinStores s1 s2, m1 || m2)) 
+            (env2, store2, oldFunc <> func' || argsMod) closureResults in
+        printAnsErr "After AppFun" (getBinding exitLab "%%ANSWER" e s) (getBinding exitLab "%%ERROR" e s);
+        (e, s, m)
       end
     | C.Eval _ ->
       failwith "Not yet implemented"
@@ -729,20 +780,24 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
   let exnContStore = V.Store.add errorAddr V.Error V.Store.empty in
   let expLab = C.label_of_exp exp in
   let finalLab = C.Label.newLabel() in
+  printf "FinalLab is %d\n" finalLab;
   let initEnv = C.LabelMap.singleton expLab (bindingEnv, retContEnv, exnContEnv) in
+  let initEnv = copyEnv expLab finalLab initEnv in
   let initStore = C.LabelMap.singleton expLab (bindingStore, retContStore, exnContStore) in
+  let initStore = pushStore expLab finalLab initStore in
   let rec fixpoint eval exp env store =
     let finalAns = getBinding finalLab "%%ANSWER" env store in
     let finalErr = getBinding finalLab "%%ERROR" env store in
-    let module FX = FormatExt in
-    FX.vert [FX.text "In outer fixpoint,";
-             FX.horz [FX.text "ANSWER <="; Es5_cps_absdelta.ValueLattice.pretty finalAns];
-             FX.horz [FX.text "ERROR  <="; Es5_cps_absdelta.ValueLattice.pretty finalErr]] Format.str_formatter;
-    printf "%s\n" (Format.flush_str_formatter());
+    printAnsErr "In outer fixpoint" finalAns finalErr;
     let (env', store', modified) = eval exp finalLab env store in
+    let finalAns = getBinding finalLab "%%ANSWER" env store in
+    let finalErr = getBinding finalLab "%%ERROR" env store in
+    printAnsErr "After loop of outer fixpoint" finalAns finalErr;
     if not modified then (printf "Reached outer fixpoint, modified is false\n"; (env', store', finalLab))
     else fixpoint eval exp (joinEnvs env env') (joinStores store store') in
-  fixpoint eval_exp exp initEnv initStore
+  let (env, store, finalLab) = fixpoint eval_exp exp initEnv initStore in
+  (* print_all_abs_bindings store; *)
+  (env, store, finalLab)
 
 
 
@@ -785,7 +840,7 @@ let build expr =
   fst (build_exp cfg IdMap.empty v expr)
 
 let cpsv_to_string cps_value =
-  Es5_cps_pretty.value cps_value Format.str_formatter;
+  Es5_cps_pretty.value false cps_value Format.str_formatter;
   Format.flush_str_formatter()
 module Display = struct
   include G

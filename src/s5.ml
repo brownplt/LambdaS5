@@ -80,7 +80,7 @@ module S5 = struct
   let cps_abs_eval () =
     let module FX = FormatExt in
     let (finalEnv, finalStore, finalLab) = Cfg_abs.eval !cpsES5 in
-    printf "Finished evaling...\n";
+    printf "Finished evaling...finalLab is %d\n" finalLab;
     let ans = Cfg_abs.getBinding finalLab "%%ANSWER" finalEnv finalStore in
     let err = Cfg_abs.getBinding finalLab "%%ERROR" finalEnv finalStore in
     FX.vert [FX.horz [FX.text "ANSWER <="; Es5_cps_absdelta.ValueLattice.pretty ans];

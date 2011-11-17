@@ -9,7 +9,9 @@ let rec vert_intersperse a lst = match lst with
   | [x] -> [x]
   | x :: xs -> squish [x; a] :: (vert_intersperse a xs)
 
-let rec value v = match v with
+let rec value verbose v = 
+  let exp = exp verbose in 
+  match v with
   | Null _ -> text "null"
   | Undefined _ -> text "undefined"
   | Num (_,_,n) -> text (string_of_float n)
@@ -17,35 +19,40 @@ let rec value v = match v with
   | True _ -> text "true"
   | False _-> text "false"
   | Id (p,_, x) -> text x
-  | Object (p,_, avs, props) ->
-    braces (vert [attrsv avs; vert (vert_intersperse (text ",") (map prop props))])
-  | Lambda (p,_, ret, exn, xs, e) ->
-    vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," ::
-                                              text "Exn" :: text exn :: text ";" :: 
-                                              (intersperse (text ",") (map text xs))))];
-          braces (exp false e)]
+  | Object (p,lbl, avs, props) ->
+    label verbose lbl (braces (vert [attrsv verbose avs; vert (vert_intersperse (text ",") (map prop props))]))
+  | Lambda (p,lbl, ret, exn, xs, e) ->
+    label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," ::
+                                                                 text "Exn" :: text exn :: text ";" :: 
+                                                                 (intersperse (text ",") (map text xs))))];
+                             braces (exp e)])
 
-and prim p = match p with
-  | GetAttr (p,_, a, o, f) ->
-    squish [value o;
-            brackets (horz [value f; angles (horz [text (Es5_syntax.string_of_attr a)])])]
-  | SetAttr (p,_, a, o, f, v) ->
-    squish [value o;
-            brackets (squish [value f; angles (horz [text (Es5_syntax.string_of_attr a)]);
-                              text "="; value v])]
-  | SetBang (p,_, x, e) ->
-    horz [text x; text "<-"; value e]
-  | Op1 (p,_, op, e) -> 
-    squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); value e])]
-  | Op2 (p,_, op, e1, e2) ->
-    squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); value e1; text ","; value e2])]
-  | DeleteField (p,_, o, f) ->
-    squish [value o; brackets (horz [text "delete"; value f])]
+and prim verbose p = 
+  let value = value verbose in
+  match p with
+  | GetAttr (p,lbl, a, o, f) ->
+    label verbose lbl (squish [value o;
+                               brackets (horz [value f; angles (horz [text (Es5_syntax.string_of_attr a)])])])
+  | SetAttr (p,lbl, a, o, f, v) ->
+    label verbose lbl (squish [value o;
+                               brackets (squish [value f; angles (horz [text (Es5_syntax.string_of_attr a)]);
+                                                 text "="; value v])])
+  | SetBang (p,lbl, x, e) ->
+    label verbose lbl (horz [text x; text "<-"; value e])
+  | Op1 (p,lbl, op, e) -> 
+    label verbose lbl (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); value e])])
+  | Op2 (p,lbl, op, e1, e2) ->
+    label verbose lbl (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); 
+                                                          value e1; text ","; value e2])])
+  | DeleteField (p,lbl, o, f) ->
+    label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])])
 
 and label verbose lbl ret = if verbose then squish [int lbl; text ":"; ret] else ret
 
 and exp verbose e = 
-  let exp = exp verbose in match e with
+  let exp = exp verbose in 
+  let prim = prim verbose in
+  let value = value verbose in match e with
   | LetValue (p,lbl, x, v, body) ->
     label verbose lbl (vert [horz [text "letVal"; vert [parens (horz [text x; text "="; value v])]];
                                  horz [text "in"; vert [exp body]]])
@@ -78,7 +85,8 @@ and exp verbose e =
   | Eval (p,lbl, s) -> 
     label verbose lbl (squish [text "@eval"; parens (exp s)])
 
-and attrsv { proto = p; code = c; extensible = b; klass = k } =
+and attrsv verbose { proto = p; code = c; extensible = b; klass = k } =
+  let value = value verbose in
   let proto = match p with None -> [] 
     | Some e -> [horz [text "#proto:"; value e]] in
   let code = match c with None -> [] 
@@ -106,4 +114,4 @@ and prop (f, prop) = match prop with
                                           text s])]
 ;;
 Es5_cps.pretty_print := (fun e fmt -> exp false e fmt)
-let cps_value_to_string v = value v Format.str_formatter; Format.flush_str_formatter(); 
+let cps_value_to_string v = value false v Format.str_formatter; Format.flush_str_formatter(); 

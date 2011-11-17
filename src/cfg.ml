@@ -682,7 +682,7 @@ let build expr =
   fst (build_exp cfg IdMap.empty v expr)
 
 let cpsv_to_string cps_value =
-  Es5_cps_pretty.value cps_value Format.str_formatter;
+  Es5_cps_pretty.value false cps_value Format.str_formatter;
   Format.flush_str_formatter()
 module Display = struct
   include G
