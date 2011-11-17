@@ -418,20 +418,13 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       eval_exp exp exitLab env' store'
     | C.AppRetCont(label, id, value) ->
       (* print_rets retContEnv retContStore; *)
-      printf "Here1\n";
       let oldValue = eval_val value env store in
-      printf "Here2\n";
       let store' = pushStore label (C.label_of_val value) store in
-      printf "Here3\n";
       let env' = copyEnv label (C.label_of_val value) env in
-      printf "Here4\n";
       let value' = eval_val value env' store' in
-      printf "Here5\n";
       let (bindingEnv, retContEnv, _) = getEnv label env in
       let (bindingStore, retContStore, _) = getStore label store in
-      printf "Trying to find %s in %d..." id label;
       let ret = V.Store.find (IdMap.find id retContEnv) retContStore in
-      printf "Found.\n";
       begin match ret with
       | V.Answer -> 
         let finalAns = (match (D.ValueLattice.addrsOf value') with
@@ -506,12 +499,22 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let store' = pushStore label (C.label_of_val cond) store in
       let env' = copyEnv label (C.label_of_val cond) env in
       let cond' = eval_val cond env' store' in
-      let leftEnv = copyEnv label (C.label_of_exp left) env in
-      let leftStore = refineStore true (C.label_of_exp left) cond cond' leftEnv store' in
-      let rightEnv = copyEnv label (C.label_of_exp right) env in
-      let rightStore = refineStore false (C.label_of_exp right) cond cond' rightEnv store' in
-      let (leftEnv', leftStore', leftMod) = (eval_exp left exitLab leftEnv leftStore) in
-      let (rightEnv', rightStore', rightMod) = (eval_exp right exitLab rightEnv rightStore) in
+      let condAsBool = D.ValueLattice.boolOf cond' in
+      let (leftEnv', leftStore', leftMod) = match condAsBool with
+        | D.BoolLattice.Bool
+        | D.BoolLattice.True
+        | D.BoolLattice.TrueTypeof _ ->
+          let leftEnv = copyEnv label (C.label_of_exp left) env in
+          let leftStore = refineStore true (C.label_of_exp left) cond cond' leftEnv store' in
+          (eval_exp left exitLab leftEnv leftStore)
+        | _ -> (env', store', false) in
+      let (rightEnv', rightStore', rightMod) = match condAsBool with
+        | D.BoolLattice.True
+        | D.BoolLattice.TrueTypeof _ -> (env', store', false)
+        | _ ->
+          let rightEnv = copyEnv label (C.label_of_exp right) env in
+          let rightStore = refineStore false (C.label_of_exp right) cond cond' rightEnv store' in
+          (eval_exp right exitLab rightEnv rightStore) in
       ((joinEnvs leftEnv' rightEnv'), 
        (joinStores leftStore' rightStore'), 
        (leftMod || rightMod || (oldCond <> cond')))
