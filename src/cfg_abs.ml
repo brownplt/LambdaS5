@@ -74,7 +74,14 @@ let print_all_abs_bindings store =
           store [])
     Format.str_formatter;
   printf "%s\n" (Format.flush_str_formatter ())
-
+let print_all_abs_env env =
+  printf "All abs environments:\n";
+  vert (C.LabelMap.fold (fun label (env, _, _) acc ->
+    (horz [int label; text "->";
+           braces (vert (IdMap.fold (fun id addr acc ->
+             (horz [text id; text "->"; V.ADDRESS.pretty addr])::acc) env []))])::acc) env [])
+    Format.str_formatter;
+  printf "%s\n" (Format.flush_str_formatter ())
 
 let printAnsErr msg ans err =
   let module FX = FormatExt in
@@ -121,13 +128,16 @@ let addExn label id addr env =
     let (b, r, e) = C.LabelMap.find label env in
     C.LabelMap.add label (b, r, (IdMap.add id addr e)) env
   with _ -> C.LabelMap.add label (IdMap.empty, IdMap.empty, IdMap.singleton id addr) env
-let updateValue label addr v store =
+let updateValue strong label addr v store =
   try
     let (b, r, e) = C.LabelMap.find label store in
     let b' =
       try
-        let oldV = Es5_cps_values.Store.find addr b in
-        Es5_cps_values.Store.add addr (D.ValueLattice.join [v; oldV]) b
+        if strong then
+          Es5_cps_values.Store.add addr v b
+        else 
+          let oldV = Es5_cps_values.Store.find addr b in
+          Es5_cps_values.Store.add addr (D.ValueLattice.join [v; oldV]) b
       with _ -> Es5_cps_values.Store.add addr v b in
     C.LabelMap.add label (b', r, e) store
   with _ -> C.LabelMap.singleton label (Es5_cps_values.Store.singleton addr v,
@@ -213,7 +223,7 @@ let refineStore whichBranch branchLabel cond cond' env store =
     let (b, _, _) = C.LabelMap.find branchLabel env in
     let addr = IdMap.find id b in
     let store2 = 
-      updateValue branchLabel addr (D.ValueLattice.meet [cond'; D.bool whichBranch]) store' in
+      updateValue true branchLabel addr (D.ValueLattice.meet [cond'; D.bool whichBranch]) store' in
     (* (match (D.ValueLattice.boolOf cond') with *)
     (* | D.BoolLattice.TrueTypeof (t, v) -> *)
     (* | D.BoolLattice.FalseTypeof (t, v) -> *)
@@ -340,21 +350,20 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
     | C.Eval(_, l, _) -> printf "%s" ("Eval " ^ (string_of_int l) ^ "\n"); l
     ) in
     print_abs_bindings label env store;
-    printf "Done...\n";
     match exp with
     | C.LetValue(pos, label, id, value, body) ->
-      let oldValue = eval_val value env store in
+      let blab = C.label_of_exp body in
+      let oldValue = getBinding blab id env store in
       let store' = pushStore label (C.label_of_val value) store in
       let env' = copyEnv label (C.label_of_val value) env in
       let value' = eval_val value env' store' in
       printf "Pushing env/store from %d to %d\n" label (C.label_of_val value);
       printf "Env/store for value:%d:\n" (C.label_of_val value);
       print_abs_bindings (C.label_of_val value) env' store';
-      let blab = C.label_of_exp body in
       V.ADDRESS.resetForContour [label];
       let addr = V.ADDRESS.addrForContour [label] in
       let env'' = (addBinding blab id addr (copyEnv (C.label_of_val value) blab env')) in
-      let store'' = (updateValue blab addr value' (pushStore (C.label_of_val value) blab store')) in
+      let store'' = (updateValue false blab addr value' (pushStore (C.label_of_val value) blab store')) in
       printf "Pushing env/store from %d to %d\n" (C.label_of_val value) blab;
       printf "Env/store for body:%d:\n" blab;
       print_abs_bindings blab env'' store'';
@@ -384,27 +393,30 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
           (*          FX.horz [FX.text "value' <="; Es5_cps_absdelta.ValueLattice.pretty value']] Format.str_formatter; *)
           (* printf "%s\n" (Format.flush_str_formatter()); *)
           let widened = (D.ValueLattice.join [bot;value']) in
-          fixpoint widened (updateValue vlab addr widened store) 
+          fixpoint widened (updateValue false vlab addr widened store) 
         end in
       let (value', store'') = 
-        fixpoint (D.ValueLattice._Bot ()) (updateValue vlab addr (D.ValueLattice._Bot ()) store') in
+        fixpoint (D.ValueLattice._Bot ()) (updateValue false vlab addr (D.ValueLattice._Bot ()) store') in
       let (env3, store3, bodyMod) = eval_exp body exitLab (copyEnv vlab blab env') (pushStore vlab blab store'') in
       printModReasons label ["bodyMod", bodyMod; "value' <> oldValue", value' <> oldValue];
       printAnsErr "After RecValue" (getBinding exitLab "%%ANSWER" env3 store3) (getBinding exitLab "%%ERROR" env3 store3);
       ((joinEnvs env' env3), (joinStores store'' store3), (bodyMod || (value' <> oldValue)))
     | C.LetPrim(pos, label, id, prim, body) ->
-      let (oldValue, oldStore, oldMod) = eval_prim prim env store in
+      let oldValue = getBinding label id env store in
       let plab = C.label_of_prim prim in
       let blab = C.label_of_exp body in
       let store' = pushStore label plab store in
-      let env' = copyEnv label plab env in
+      V.ADDRESS.resetForContour [label];
+      let addr = V.ADDRESS.addrForContour [label] in
+      let env' = addBinding plab id addr (copyEnv label plab env) in
       let (value', store'', primMod) = eval_prim prim env' store' in
       V.ADDRESS.resetForContour [label];
       let addr = V.ADDRESS.addrForContour [label] in
       let env'' = (addBinding blab id addr (copyEnv plab blab env')) in
-      let store3 = (updateValue blab addr value' (pushStore plab blab store'')) in
+      let store3 = (updateValue false blab addr value' (pushStore plab blab store'')) in
       let (env3, store4, bodyMod) = eval_exp body exitLab env'' store3 in
-      ((joinEnvs env'' env3), (joinStores store3 store4), (oldMod || primMod || bodyMod || (oldValue <> value')))
+      printModReasons label ["bodyMod", bodyMod; "primMod", primMod; "value' <> oldValue", value' <> oldValue];
+      ((joinEnvs env'' env3), (joinStores store3 store4), (primMod || bodyMod || (oldValue <> value')))
     | C.LetRetCont(label, id, arg, body, exp) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
       (*   garbage_collect bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in *)
@@ -435,13 +447,13 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
           | a -> value'
         ) in
         let answerVal = IdMap.find "%%ANSWER" bindingEnv in
-        (env', updateValue exitLab answerVal finalAns store', value' <> oldValue)
+        (env', updateValue false exitLab answerVal finalAns store', value' <> oldValue)
       | V.RetCont (_, arg, body, bindingEnv, retContEnv, exnContEnv) ->
         V.ADDRESS.resetForContour [label];
         let addr = V.ADDRESS.addrForContour [label] in
         let blab = C.label_of_exp body in
         let env'' = (addBinding blab arg addr (copyEnv label blab env')) in
-        let store'' = (updateValue blab addr value' (pushStore label blab store')) in
+        let store'' = (updateValue false blab addr value' (pushStore label blab store')) in
         let (env3, store3, modRet) = eval_exp body exitLab env'' store'' in
         ((joinEnvs env'' env3), (joinStores store'' store3), (modRet || value' <> oldValue))
       end
@@ -481,7 +493,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         ) in
         printf "%d Throwing %s to %d\n" label (D.ValueLattice.pretty finalErr Format.str_formatter; Format.flush_str_formatter()) exitLab;
         let errorVal = IdMap.find "%%ERROR" bindingEnv in
-        (envLbl, updateValue exitLab errorVal finalErr storeLbl, finalErr <> oldFinalErr)
+        (envLbl, updateValue false exitLab errorVal finalErr storeLbl, finalErr <> oldFinalErr)
       | V.ExnCont(_, arg, lbl, body, bindingEnv, retContEnv, exnContEnv) ->
         V.ADDRESS.resetForContour [label];
         let argAddr = V.ADDRESS.addrForContour [label] in
@@ -489,8 +501,8 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let blab = C.label_of_exp body in
         let env'' = (addBinding blab arg argAddr 
                        (addBinding blab lbl lblAddr (copyEnv label blab envLbl))) in
-        let store'' = (updateValue blab argAddr arg' 
-                         (updateValue blab lblAddr lbl' (pushStore label blab storeLbl))) in
+        let store'' = (updateValue false blab argAddr arg' 
+                         (updateValue false blab lblAddr lbl' (pushStore label blab storeLbl))) in
         let (env3, store3, modExn) = eval_exp body exitLab env'' store'' in
         ((joinEnvs env'' env3), (joinStores store'' store3), (modExn || arg' <> oldArg || lbl' <> oldLbl))
       end
@@ -564,7 +576,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
             let env' = List.fold_left (fun env (name, addr) -> addBinding blab name addr env)
               (replaceBindings blab cBindingEnv (copyEnv label blab env2))  (* NEED THE CLOSURE ENVIRONMENTS *)
               (List.combine argNames argAddrs) in
-            let store' = List.fold_left (fun store (addr, value) -> updateValue blab addr value store)
+            let store' = List.fold_left (fun store (addr, value) -> updateValue false blab addr value store)
               (pushStore label blab store2) (List.combine argAddrs args') in
             let env'' = addRet blab retArg retAddr (addExn blab exnArg exnAddr env') in
             let store'' = updateRet blab retAddr ret' (updateExn blab exnAddr exn' store') in
@@ -627,149 +639,313 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let (env, retEnv, exnEnv) = getEnv label env in
       VL.injectClosure (D.ClosureSetLattice.inject (r, e, args, body, env, retEnv, exnEnv))
 
-  and eval_prim (prim : C.cps_prim) (env : abstractEnv) (store : abstractStore) : D.ValueLattice.t * abstractStore  * bool = failwith "TODO" in
-    (* match prim with *)
-    (* | C.GetAttr(_, _, pattr, obj, field) -> *)
-    (*   let (obj', bindingStore, retStore, exnStore) =  *)
-    (*     eval_val obj env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   let obj' = match obj' with *)
-    (*     | V.VarCell (_, _, a) -> Es5_cps_values.Store.find a bindingStore *)
-    (*     | _ -> failwith "[cps-interp] set-attr didn't get a VarCell" in *)
-    (*   let (field', bindingStore, retStore, exnStore) =  *)
-    (*     eval_val field env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   begin match obj', field' with *)
-    (*   | V.Object(pos, label, attrs, props), V.String(_, _, s) ->  *)
-    (*     begin  *)
-    (*       try *)
-    (*         match (List.assoc s props), pattr with *)
-    (*         | V.Data({ V.value = v }, _, _), E.Value -> (v, bindingStore, retStore, exnStore) *)
-    (*         | V.Accessor({ V.getter = g }, _, _), E.Getter -> (g, bindingStore, retStore, exnStore) *)
-    (*         | V.Accessor({ V.setter = s }, _, _), E.Setter -> (s, bindingStore, retStore, exnStore) *)
-    (*         | V.Data(_, _, config), E.Config -> (D.bool config, bindingStore, retStore, exnStore) *)
-    (*         | V.Accessor(_, _, config), E.Config -> (D.bool config, bindingStore, retStore, exnStore) *)
-    (*         | V.Data(_, enum, _), E.Enum -> (D.bool enum, bindingStore, retStore, exnStore) *)
-    (*         | V.Accessor(_, enum, _), E.Enum -> (D.bool enum, bindingStore, retStore, exnStore) *)
-    (*         | V.Data({ V.writable = w }, _, _), E.Writable -> (D.bool w, bindingStore, retStore, exnStore) *)
-    (*         | _ -> failwith "bad access of attribute" *)
-    (*       with Not_found -> failwith "Field not found" *)
-    (*     end *)
-    (*   | _ -> failwith "GetAttr didn't have both an object and a string" *)
-    (*   end *)
-    (* | C.SetAttr(pos, label, pattr, obj, field, value) -> *)
-    (*   let (obj', bindingStore, retStore, exnStore) =  *)
-    (*     eval_val obj env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   let (obj', addr) = match obj' with *)
-    (*     | V.VarCell (_, _, a) -> (Es5_cps_values.Store.find a bindingStore, a) *)
-    (*     | _ -> failwith ("[cps-interp] set-attr didn't get a VarCell: " ^ (V.pretty_bind obj')) in *)
-    (*   let (field', bindingStore, retStore, exnStore) =  *)
-    (*     eval_val field env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   let (value', bindingStore, retStore, exnStore) =  *)
-    (*     eval_val value env bindingStore retEnv retStore exnEnv exnStore  in *)
-    (*   begin match obj', field' with *)
-    (*   | V.Object(pos, label, ({V.extensible = true} as attrs), props), V.String (_, _, s) -> *)
-    (*     let newprop = begin *)
-    (*       try  *)
-    (*         match (List.assoc s props), pattr with *)
-    (*         | V.Data ({ V.writable = true } as d, enum, config), E.Writable ->  *)
-    (*           V.Data ({ d with V.writable = D.unbool value' }, enum, config) *)
-    (*         | V.Data (d, enum, true), E.Writable -> *)
-    (*           V.Data ({ d with V.writable = D.unbool value' }, enum, true) *)
-    (*         (\* Updating values only checks writable *\) *)
-    (*         | V.Data ({ V.writable = true } as d, enum, config), E.Value -> *)
-    (*           V.Data ({ d with V.value = value' }, enum, config) *)
-    (*         (\* If we had a data property, update it to an accessor *\) *)
-    (*         | V.Data (d, enum, true), E.Setter -> *)
-    (*           V.Accessor ({ V.getter = V.Undefined(dummy_pos, newLabel()); V.setter = value' }, enum, true) *)
-    (*         | V.Data (d, enum, true), E.Getter -> *)
-    (*           V.Accessor ({ V.getter = value'; V.setter = V.Undefined(dummy_pos, newLabel()) }, enum, true) *)
-    (*         (\* Accessors can update their getter and setter properties *\) *)
-    (*         | V.Accessor (a, enum, true), E.Getter -> *)
-    (*           V.Accessor ({ a with V.getter = value' }, enum, true) *)
-    (*         | V.Accessor (a, enum, true), E.Setter -> *)
-    (*           V.Accessor ({ a with V.setter = value' }, enum, true) *)
-    (*         (\* An accessor can be changed into a data property *\) *)
-    (*         | V.Accessor (a, enum, true), E.Value -> *)
-    (*           V.Data ({ V.value = value'; V.writable = false; }, enum, true) *)
-    (*         | V.Accessor (a, enum, true), E.Writable -> *)
-    (*           V.Data ({ V.value = V.Undefined(dummy_pos, newLabel()); V.writable = D.unbool value'; }, enum, true) *)
-    (*         (\* enumerable and configurable need configurable=true *\) *)
-    (*         | V.Data (d, _, true), E.Enum -> *)
-    (*           V.Data (d, D.unbool value', true) *)
-    (*         | V.Data (d, enum, true), E.Config -> *)
-    (*           V.Data (d, enum, D.unbool value') *)
-    (*         | V.Data (d, enum, false), E.Config -> *)
-    (*           (match value' with *)
-    (*           | V.False _ -> V.Data (d, enum, false) *)
-    (*           | _ -> failwith ("[cps-interp] can't set Config property to true once it's false: " ^ s)) *)
-    (*         | V.Accessor (a, enum, true), E.Config -> *)
-    (*           V.Accessor (a, enum, D.unbool value') *)
-    (*         | V.Accessor (a, enum, true), E.Enum -> *)
-    (*           V.Accessor (a, D.unbool value', true) *)
-    (*         | V.Accessor (a, enum, false), E.Config -> *)
-    (*           (match value' with  *)
-    (*           | V.False _ -> V.Accessor(a, enum, false) *)
-    (*           | _ -> failwith ("[cps-interp] can't set Config property to true once it's false: " ^ s)) *)
-    (*         | _ -> failwith ("[cps-interp] bad property set: " ^ s) *)
-    (*       with Not_found -> *)
-    (*         let undef () = V.Undefined(pos, newLabel()) in *)
-    (*         match pattr with *)
-    (*         | E.Getter -> V.Accessor({V.getter = value'; V.setter = undef ()}, false, false) *)
-    (*         | E.Setter -> V.Accessor({V.getter = undef (); V.setter = value'}, false, false) *)
-    (*         | E.Value -> V.Data({V.value = value'; V.writable = false}, false, false) *)
-    (*         | E.Writable -> V.Data({V.value = undef(); V.writable = D.unbool value'}, false, false) *)
-    (*         | E.Enum -> V.Data({V.value = undef(); V.writable = false}, D.unbool value', true) *)
-    (*         | E.Config -> V.Data({V.value = undef(); V.writable = false}, true, D.unbool value') *)
-    (*     end in *)
-    (*     let replaceProp ((s, prop) as newProp) props = *)
-    (*       let rec help props acc = *)
-    (*         match props with *)
-    (*         | [] -> List.rev_append acc [newProp] *)
-    (*         | ((n, p) as oldProp)::props' -> if (s = n)  *)
-    (*           then List.rev_append acc (newProp::props') *)
-    (*           else help props' (oldProp::acc) in *)
-    (*       help props [] in *)
-    (*     let newobj = V.Object(pos, label, attrs, replaceProp (s, newprop) props) in *)
-    (*     (D.bool true, (Es5_cps_values.Store.add addr newobj bindingStore), retStore, exnStore) *)
-    (*   | V.Object(pos, label, {V.extensible = false}, props), V.String (_, _, s) ->  *)
-    (*     failwith "[cps-interp] extending inextensible object" *)
-    (*   | _ -> failwith "[cps-interp] set-attr didn't get an object and a string" *)
-    (*   end *)
-    (* | C.Op1(_, _, op, arg) ->  *)
-    (*   let (arg', bindingStore, retStore, exnStore) = eval_val arg env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   (D.op1 op arg' bindingStore, bindingStore, retStore, exnStore) *)
-    (* | C.Op2(_, _, op, left, right) ->  *)
-    (*   let (left', bindingStore, retStore, exnStore) = eval_val left env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   let (right', bindingStore, retStore, exnStore) = eval_val right env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   (D.op2 op left' right' bindingStore, bindingStore, retStore, exnStore) *)
-    (* | C.DeleteField(pos, _, obj, field) ->  *)
-    (*   let (obj', bindingStore, retStore, exnStore) = eval_val obj env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   let (obj', addr, retStore, exnStore) = match obj' with *)
-    (*     | V.VarCell (_, _, a) -> ((Es5_cps_values.Store.find a bindingStore), a, retStore, exnStore) *)
-    (*     | _ -> failwith "[cps-interp] set-attr didn't get a VarCell" in *)
-    (*   let (field', bindingStore, retStore, exnStore) = eval_val field env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   begin match obj', field' with *)
-    (*   | V.Object(pos, label, attrs, props), V.String (_, _, s) -> *)
-    (*     begin  *)
-    (*       try *)
-    (*         match (List.assoc s props) with *)
-    (*         | V.Data (_, _, true) *)
-    (*         | V.Accessor (_, _, true) -> *)
-    (*           let newObj = V.Object(pos, label, attrs, List.remove_assoc s props) in *)
-    (*           (D.bool true, Es5_cps_values.Store.add addr newObj bindingStore, retStore, exnStore) *)
-    (*         | _ -> (D.bool false, bindingStore, retStore, exnStore) *)
-    (*       with Not_found -> (D.bool false, bindingStore, retStore, exnStore) *)
-    (*     end *)
-    (*   | _ -> failwith "DeleteField didn't have both an object and a string" *)
-    (*   end *)
-    (* | C.SetBang(_, _, id, value) ->  *)
-    (*   let (value', bindingStore, retStore, exnStore) = eval_val value env bindingStore retEnv retStore exnEnv exnStore in *)
-    (*   let addr = IdMap.find id env in *)
-    (*   (\* this is for binding sets *)
-    (*      let bindings = IdMap.find addr bindingStore in *)
-    (*      if (BindingSet.cardinal bindings == 1)  *)
-    (*      then (value', IdMap.add addr (BindingSet.singleton value') bindingStore) *)
-    (*      else (value', IdMap.add addr (BindingSet.add value' bindings) bindingStore) *\) *)
-    (*   (value', Es5_cps_values.Store.add addr value' bindingStore, retStore, exnStore) in *)
+  and eval_prim (prim : C.cps_prim) (env : abstractEnv) (store : abstractStore) : D.ValueLattice.t * abstractStore  * bool = 
+    (let pretty_val v = Es5_cps_pretty.value false v Format.str_formatter; Format.flush_str_formatter() in
+      match prim with
+      | C.GetAttr(_, l, a, o, f) -> printf "%d GetAttr %s[%s<%s>]\n" l (pretty_val o) (E.string_of_attr a) (pretty_val f)
+      | C.SetAttr(_, l, a, o, f, v) -> printf "%d SetAttr %s[%s<%s> = %s]\n" l (pretty_val o) (E.string_of_attr a) (pretty_val f) (pretty_val v)
+      | C.DeleteField(_, l, o, f) -> printf "%d DeleteField %s[%s]\n" l (pretty_val o) (pretty_val f)
+      | C.Op1(_, l, o, a) -> printf "%d Op1(%s, %s)\n" l o (pretty_val a)
+      | C.Op2(_, l, o, a, b) -> printf "%d Op2(%s, %s, %s)\n" l o (pretty_val a) (pretty_val b)
+      | C.MutableOp1(_, l, o, a) -> printf "%d MutableOp1(%s, %s)\n" l o (pretty_val a)
+      | C.SetBang(_, l, i, v) -> printf "%d Set!(%s = %s)\n" l i (pretty_val v)
+    );
+    match prim with
+    | C.GetAttr(_, label, pattr, obj, field) ->
+      let module VL = D.ValueLattice in
+      let module ASL = D.AddressSetLattice in
+      let module SL = D.StringLattice in
+      let module OL = D.ObjLattice in
+      let oldObj = eval_val obj env store in
+      let envObj = copyEnv label (C.label_of_val obj) env in
+      let storeObj = pushStore label (C.label_of_val obj) store in
+      let obj' = eval_val obj envObj storeObj in begin
+        match (VL.addrsOf obj') with
+        | ASL.Top -> (VL._Top (), storeObj, oldObj <> obj')
+        | ASL.Bot -> (VL._Bot (), storeObj, oldObj <> obj')
+        | ASL.Set addrs -> 
+          let oldField = eval_val field env store in
+          let envField = copyEnv label (C.label_of_val field) envObj in
+          let storeField = pushStore label (C.label_of_val field) storeObj in
+          let field' = eval_val field envField storeField in
+          match (VL.strOf field') with
+          | SL.Bot -> (VL._Bot(), storeField, oldObj <> obj' || oldField <> field')
+          | fieldStr ->
+            let (bindingStore, _, _) = getStore label storeField in
+            let addrResults = D.AddressSet.fold (fun addr acc -> 
+              let obj' = Es5_cps_values.Store.find addr bindingStore in
+              match (VL.objOf obj') with
+              | OL.Bot -> VL._Bot ()
+              | OL.Top -> VL._Top ()
+              | OL.Obj (_, props) ->
+                let possibleFieldValue = 
+                  IdMap.fold (fun s prop acc ->
+                    let sStr = SL.inject s in
+                    let candidate = SL.meet [sStr; fieldStr] in
+                    if (sStr = candidate) 
+                    then begin (* fieldStr could be s *)
+                      let valueToJoin = match prop, pattr with
+                        | OL.Data({ OL.value = v}, _, _), E.Value -> v
+                        | OL.Data({ OL.writable = w }, _, _), E.Writable -> VL.injectBool w
+                        | OL.Accessor({ OL.getter = g }, _, _), E.Getter -> g
+                        | OL.Accessor({ OL.setter = s }, _, _), E.Setter -> s
+                        | OL.Data(_, _, config), E.Config -> VL.injectBool config
+                        | OL.Accessor(_, _, config), E.Config -> VL.injectBool config
+                        | OL.Data(_, enum, _), E.Enum -> VL.injectBool enum
+                        | OL.Accessor(_, enum, _), E.Enum -> VL.injectBool enum
+                        | _ -> VL._Bot() in
+                      VL.join [valueToJoin; acc]
+                    end
+                    else begin (* whatever fieldStr is, it isn't compatible with s *)
+                      acc
+                    end) props (VL._Bot ())
+                in VL.join [possibleFieldValue; acc]
+            ) addrs (VL._Bot ()) in
+            (addrResults, storeField, oldObj <> obj' || oldField <> field')
+      end
+    | C.SetAttr(pos, label, pattr, obj, field, value) ->
+      let module VL = D.ValueLattice in
+      let module ASL = D.AddressSetLattice in
+      let module SL = D.StringLattice in
+      let module OL = D.ObjLattice in
+      let oldObj = eval_val obj env store in
+      let envObj = copyEnv label (C.label_of_val obj) env in
+      let storeObj = pushStore label (C.label_of_val obj) store in
+      let obj' = eval_val obj envObj storeObj in begin
+        match (VL.addrsOf obj') with
+        | ASL.Top -> (VL._Top (), storeObj, oldObj <> obj')
+        | ASL.Bot -> (VL._Bot (), storeObj, oldObj <> obj')
+        | ASL.Set addrs -> 
+          let strongUpdate = D.AddressSet.cardinal addrs = 1 in
+          let oldField = eval_val field env store in
+          let envField = copyEnv label (C.label_of_val field) envObj in
+          let storeField = pushStore label (C.label_of_val field) storeObj in
+          let field' = eval_val field envField storeField in
+          begin match (VL.strOf field') with
+          | SL.Bot -> (VL._Bot(), storeField, oldObj <> obj' || oldField <> field')
+          | SL.String
+          | SL.UintString
+          | SL.NonUintString ->
+            let (store3, modified) = D.AddressSet.fold (fun addr (storeAcc, modAcc) ->
+              let (bindingStore, _, _) = getStore label storeAcc in
+              let obj' = Es5_cps_values.Store.find addr bindingStore in
+              match (VL.objOf obj') with
+              | OL.Bot -> (storeAcc, modAcc)
+              | OL.Top -> (storeAcc, modAcc)
+              | OL.Obj _ -> (updateValue strongUpdate label addr (VL.injectObj (OL._Top ())) storeAcc, true)
+            ) addrs (storeField, false) in
+            (D.bool true, store3, modified)
+          | fieldStr ->
+            let s = (match fieldStr with
+              | SL.ConcreteUint s
+              | SL.ConcreteNonUint s -> s
+              | SL.TypeofString (t, _) -> SL.stringofTypeof t
+              | _ -> failwith "Impossible case -- we've already matched these away") in
+            let oldValue = eval_val value env store in
+            let envValue = copyEnv label (C.label_of_val value) envField in
+            let storeValue = pushStore label (C.label_of_val value) storeField in
+            let value' = eval_val value envValue storeValue in
+            let trueEnough b = match b with
+              | D.BoolLattice.Bool
+              | D.BoolLattice.True
+              | D.BoolLattice.TrueTypeof _ -> true
+              | _ -> false in
+            let (store3, modified) = D.AddressSet.fold (fun addr (store, modified) -> 
+              let (bindingStore, _, _) = getStore label store in
+              let obj' = Es5_cps_values.Store.find addr bindingStore in
+              match (VL.objOf obj') with
+              | OL.Bot
+              | OL.Top -> (store, modified)
+              | OL.Obj ({OL.extensible = b} as attrs, props) when trueEnough b ->
+                let undef = VL.injectUndef (D.UndefLattice._Top ()) in
+                let bool = D.BoolLattice.inject in
+                let (newprop, modified') = begin
+                  try
+                    let oldprop = IdMap.find s props in
+                    let newprop = match oldprop, pattr with
+                      | OL.Data ({ OL.writable = b } as d, enum, config), E.Writable when trueEnough b ->
+                        OL.Data ({ d with OL.writable = VL.boolOf value' }, enum, config)
+                      | OL.Data (d, enum, b), E.Writable when trueEnough b ->
+                        OL.Data ({ d with OL.writable = VL.boolOf value' }, enum, bool true)
+                      (* Updating values only checks writable *)
+                      | OL.Data ({ OL.writable = b } as d, enum, config), E.Value when trueEnough b ->
+                        OL.Data ({ d with OL.value = value' }, enum, config)
+                      (* If we had a data property, update it to an accessor *)
+                      | OL.Data (d, enum, c), E.Setter when trueEnough c ->
+                        OL.Accessor ({ OL.getter = undef; OL.setter = value' }, 
+                                     enum, bool true)
+                      | OL.Data (d, enum, c), E.Getter when trueEnough c ->
+                        OL.Accessor ({ OL.getter = value'; OL.setter = undef }, 
+                                     enum, bool true)
+                      (* Accessors can update their getter and setter properties *)
+                      | OL.Accessor (a, enum, c), E.Getter when trueEnough c ->
+                        OL.Accessor ({ a with OL.getter = value' }, enum, bool true)
+                      | OL.Accessor (a, enum, c), E.Setter when trueEnough c ->
+                        OL.Accessor ({ a with OL.setter = value' }, enum, bool true)
+                      (* An accessor can be changed into a data property *)
+                      | OL.Accessor (a, enum, c), E.Value when trueEnough c ->
+                        OL.Data ({ OL.value = value'; OL.writable = bool false; }, enum, bool true)
+                      | OL.Accessor (a, enum, c), E.Writable when trueEnough c->
+                        OL.Data ({ OL.value = undef; OL.writable = VL.boolOf value' }, enum, bool true)
+                      (* enumerable and configurable need configurable=true *)
+                      | OL.Data (d, _, c), E.Enum when trueEnough c ->
+                        OL.Data (d, VL.boolOf value', bool true)
+                      | OL.Data (d, enum, c), E.Config when trueEnough c ->
+                        OL.Data (d, enum, VL.boolOf value')
+                      | OL.Data (d, enum, _), E.Config ->
+                        (match (VL.boolOf value') with
+                        | D.BoolLattice.False
+                        | D.BoolLattice.FalseTypeof _ -> OL.Data (d, enum, bool false)
+                        | D.BoolLattice.Bot -> OL.Unknown
+                        | _ -> OL.PropTop)
+                      | OL.Accessor (a, enum, c), E.Config when trueEnough c ->
+                        OL.Accessor (a, enum, VL.boolOf value')
+                      | OL.Accessor (a, enum, c), E.Enum when trueEnough c ->
+                        OL.Accessor (a, VL.boolOf value', bool true)
+                      | OL.Accessor (a, enum, _), E.Config ->
+                        (match (VL.boolOf value') with
+                        | D.BoolLattice.False
+                        | D.BoolLattice.FalseTypeof _ -> OL.Accessor(a, enum, bool false)
+                        | D.BoolLattice.Bot -> OL.Unknown
+                        | _ -> OL.PropTop)
+                      | _ -> OL.PropTop in
+                    (newprop, newprop <> oldprop)
+                  with Not_found ->
+                    let newprop = match pattr with
+                      | E.Getter -> OL.Accessor({OL.getter = value'; OL.setter = undef}, 
+                                                bool false, bool false)
+                      | E.Setter -> OL.Accessor({OL.getter = undef; OL.setter = value'}, 
+                                                bool false, bool false)
+                      | E.Value -> OL.Data({OL.value = value'; OL.writable = bool false}, 
+                                           bool false, bool false)
+                      | E.Writable -> OL.Data({OL.value = undef; OL.writable = VL.boolOf value'}, 
+                                              bool false, bool false)
+                      | E.Enum -> OL.Data({OL.value = undef; OL.writable = bool false}, 
+                                          VL.boolOf value', bool true)
+                      | E.Config -> OL.Data({OL.value = undef; OL.writable = bool false}, 
+                                            bool true, VL.boolOf value')
+                    in (newprop, true)
+                end in
+                let newProps = IdMap.add s newprop props in
+                let newObj = OL.Obj(attrs, newProps) in
+                let newStore = updateValue strongUpdate label addr (VL.injectObj newObj) store in
+                (newStore, modified || modified')
+              | _ -> (store, modified)
+            ) addrs (storeValue, false) in
+            (D.bool true, store3, modified || oldValue <> value' || oldField <> field')
+          end
+      end
+    | C.Op1(_, label, op, arg) ->
+      let oldArg = eval_val arg env store in
+      let envArg = copyEnv label (C.label_of_val arg) env in
+      let storeArg = pushStore label (C.label_of_val arg) store in
+      let arg' = eval_val arg envArg storeArg in
+      let (bindingStore, _, _) = getStore label storeArg in
+      printModReasons label ["oldArg <> arg'", arg' <> oldArg];
+      (D.op1 op arg' bindingStore, storeArg, oldArg <> arg')
+    | C.MutableOp1(_, label, op, arg) ->
+      let oldArg = eval_val arg env store in
+      let envArg = copyEnv label (C.label_of_val arg) env in
+      let storeArg = pushStore label (C.label_of_val arg) store in
+      let arg' = eval_val arg envArg storeArg in
+      let (value', store', modified) = D.mutableOp1 label getStore updateValue op arg' storeArg in
+      (arg', store', modified || oldArg <> arg')
+    | C.Op2(_, label, op, left, right) ->
+      print_all_abs_bindings store;
+      let oldLeft = eval_val left env store in
+      let envLeft = copyEnv label (C.label_of_val left) env in
+      let storeLeft = pushStore label (C.label_of_val left) store in
+      let left' = eval_val left envLeft storeLeft in
+      let oldRight = eval_val right env store in
+      let envRight = copyEnv label (C.label_of_val right) envLeft in
+      let storeRight = pushStore label (C.label_of_val right) storeLeft in
+      let right' = eval_val right envRight storeRight in
+      let (bindingStore, _, _) = getStore label storeRight in
+      let module FX = FormatExt in
+      FX.vert [FX.text "In prim_op2,";
+               FX.horz [FX.text "oldLeft <="; Es5_cps_absdelta.ValueLattice.pretty oldLeft];
+               FX.horz [FX.text "left' <="; Es5_cps_absdelta.ValueLattice.pretty left'];
+               FX.horz [FX.text "oldRight <="; Es5_cps_absdelta.ValueLattice.pretty oldRight];
+               FX.horz [FX.text "right' <="; Es5_cps_absdelta.ValueLattice.pretty right']] Format.str_formatter;
+      printf "%s\n" (Format.flush_str_formatter());
+      printModReasons label ["oldLeft<>left'", oldLeft <> left'; "oldRight<>right'", oldRight <> right'];
+      (D.op2 op left' right' bindingStore, storeRight, oldLeft <> left' || oldRight <> right')
+    | C.DeleteField(_, label, obj, field) ->
+      let module VL = D.ValueLattice in
+      let module ASL = D.AddressSetLattice in
+      let module SL = D.StringLattice in
+      let module OL = D.ObjLattice in
+      let oldObj = eval_val obj env store in
+      let envObj = copyEnv label (C.label_of_val obj) env in
+      let storeObj = pushStore label (C.label_of_val obj) store in
+      let obj' = eval_val obj envObj storeObj in begin
+        match (VL.addrsOf obj') with
+        | ASL.Top -> (VL._Top (), storeObj, oldObj <> obj')
+        | ASL.Bot -> (VL._Bot (), storeObj, oldObj <> obj')
+        | ASL.Set addrs -> 
+          let strongUpdate = D.AddressSet.cardinal addrs = 1 in
+          let oldField = eval_val field env store in
+          let envField = copyEnv label (C.label_of_val field) envObj in
+          let storeField = pushStore label (C.label_of_val field) storeObj in
+          let field' = eval_val field envField storeField in
+          begin match (VL.strOf field') with
+          | SL.Bot -> (VL._Bot(), storeField, oldObj <> obj' || oldField <> field')
+          | SL.String
+          | SL.UintString
+          | SL.NonUintString ->
+            let (store3, modified) = D.AddressSet.fold (fun addr (storeAcc, modAcc) ->
+              let (bindingStore, _, _) = getStore label storeAcc in
+              let obj' = Es5_cps_values.Store.find addr bindingStore in
+              match (VL.objOf obj') with
+              | OL.Bot -> (storeAcc, modAcc)
+              | OL.Top -> (storeAcc, modAcc)
+              | OL.Obj _ -> (updateValue strongUpdate label addr (VL.injectObj (OL._Top ())) storeAcc, true)
+            ) addrs (storeField, false) in
+            (obj', store3, modified)
+          | fieldStr ->
+            let s = (match fieldStr with
+              | SL.ConcreteUint s
+              | SL.ConcreteNonUint s -> s
+              | SL.TypeofString (t, _) -> SL.stringofTypeof t
+              | _ -> failwith "Impossible case -- we've already matched these away") in
+            let trueEnough b = match b with
+              | D.BoolLattice.Bool
+              | D.BoolLattice.True
+              | D.BoolLattice.TrueTypeof _ -> true
+              | _ -> false in
+            let (store3, modified) = D.AddressSet.fold (fun addr (store, modified) ->
+              let (bindingStore, _, _) = getStore label store in
+              let obj' = Es5_cps_values.Store.find addr bindingStore in
+              match (VL.objOf obj') with
+              | OL.Bot
+              | OL.Top -> (storeField, oldObj <> obj' || oldField <> oldField)
+              | OL.Obj (attrs, props) ->
+                try
+                  match (IdMap.find s props) with
+                  | OL.Data (_, _, b) 
+                  | OL.Accessor (_, _, b) when trueEnough b ->
+                    let newObj = if strongUpdate
+                      then OL.Obj (attrs, IdMap.remove s props) 
+                      else OL.Obj (attrs, IdMap.add s OL.PropTop props) in
+                    (updateValue strongUpdate label addr (VL.injectObj newObj) store, true)
+                  | _ -> (store, modified)
+                with Not_found -> (store, modified)
+            ) addrs (storeField, false) in
+            (obj', store3, modified)
+          end
+      end
+    | C.SetBang(_, label, id, value) ->
+      let (bE, _, _) = getEnv label env in
+      let (bH, _, _) = getStore label store in
+      let idAddr = IdMap.find id bE in
+      let oldIdValue = Es5_cps_values.Store.find idAddr bH in
+      let envValue = copyEnv label (C.label_of_val value) env in
+      let storeValue = pushStore label (C.label_of_val value) store in
+      let value' = eval_val value envValue storeValue in
+      if (oldIdValue = value')
+      then (value', store, false)
+      else (value', updateValue true label idAddr value' storeValue, true) in
+
   let answerVal = V.ADDRESS.newAddr() in
   let errorVal = V.ADDRESS.newAddr() in
   let bot = D.ValueLattice._Bot () in
@@ -789,17 +965,31 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
   let initStore = C.LabelMap.singleton expLab (bindingStore, retContStore, exnContStore) in
   let initStore = pushStore expLab finalLab initStore in
   let rec fixpoint eval exp env store =
+    printf "At beginning of outer fixpoint:\n";
+    print_all_abs_env env;
+    print_all_abs_bindings store;
     let finalAns = getBinding finalLab "%%ANSWER" env store in
     let finalErr = getBinding finalLab "%%ERROR" env store in
     printAnsErr "In outer fixpoint" finalAns finalErr;
     let (env', store', modified) = eval exp finalLab env store in
-    let finalAns = getBinding finalLab "%%ANSWER" env store in
-    let finalErr = getBinding finalLab "%%ERROR" env store in
+    let finalAns = getBinding finalLab "%%ANSWER" env' store' in
+    let finalErr = getBinding finalLab "%%ERROR" env' store' in
+    printf "At end of outer fixpoint:\n";
+    print_all_abs_env env';
+    print_all_abs_bindings store';
     printAnsErr "After loop of outer fixpoint" finalAns finalErr;
-    if not modified then (printf "Reached outer fixpoint, modified is false\n"; (env', store', finalLab))
+    let envUnchanged = C.LabelMap.equal (fun (b1, r1, e1) (b2, r2, e2) -> 
+      IdMap.equal (=) b1 b2 && IdMap.equal (=) r1 r2 && IdMap.equal (=) e1 e2) env env' in
+    let storeUnchanged = C.LabelMap.equal (fun (b1, r1, e1) (b2, r2, e2) -> 
+      Es5_cps_values.Store.equal D.ValueLattice.eq b1 b2 (* &&  *)
+        (* V.Store.equal (=) r1 r2 &&  *)
+        (* V.Store.equal (=) e1 e2 *)) store store' in
+    printf "Env unchanged: %s, Store unchanged: %s\n" 
+      (string_of_bool envUnchanged) (string_of_bool storeUnchanged);
+    if envUnchanged && storeUnchanged
+    then (printf "Reached outer fixpoint, env/store is unchanged\n"; (env', store', finalLab))
     else fixpoint eval exp (joinEnvs env env') (joinStores store store') in
   let (env, store, finalLab) = fixpoint eval_exp exp initEnv initStore in
-  (* print_all_abs_bindings store; *)
   (env, store, finalLab)
 
 

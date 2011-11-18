@@ -44,6 +44,8 @@ and prim verbose p =
   | Op2 (p,lbl, op, e1, e2) ->
     label verbose lbl (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); 
                                                           value e1; text ","; value e2])])
+  | MutableOp1 (p,lbl, op, e) -> 
+    label verbose lbl (squish [text "mutPrim"; parens (horz [text ("\"" ^ op ^ "\","); value e])])
   | DeleteField (p,lbl, o, f) ->
     label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])])
 

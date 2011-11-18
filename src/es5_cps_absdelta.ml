@@ -80,7 +80,8 @@ module rec BoolLattice : sig
   val join : t list -> t
   val inject : bool -> t
   val injectTypeof : bool * ValueLattice.t * StringLattice.typeofStrings -> t
-  val eq : t -> t -> BoolLattice.t
+  val eq : t -> t -> bool
+  val absEq : t -> t -> BoolLattice.t
   val pretty : t -> FormatExt.printer
 end = struct
   type t = 
@@ -143,6 +144,14 @@ end = struct
   let eq b1 b2 = match (b1, b2) with
     | Bot, Bot
     | True, True
+    | TrueTypeof _, TrueTypeof _
+    | False, False
+    | FalseTypeof _, FalseTypeof _
+    | Bool, Bool -> true
+    | _ -> false
+  let absEq b1 b2 = match (b1, b2) with
+    | Bot, Bot
+    | True, True
     | True, TrueTypeof _
     | TrueTypeof _, True
     | False, False
@@ -164,7 +173,8 @@ and UndefLattice : sig
   val _Bot : unit -> t
   val meet : t list -> t
   val join : t list -> t
-  val eq : t -> t -> BoolLattice.t
+  val eq : t -> t -> bool
+  val absEq : t -> t -> BoolLattice.t
   val pretty : t -> FormatExt.printer
 end = struct
   type t = Bot | Undef
@@ -184,6 +194,10 @@ end = struct
     in List.fold_left meet' (_Top ()) ts
   let eq u1 u2 = match (u1, u2) with
     | Bot, Bot
+    | Undef, Undef -> true
+    | _ -> false
+  let absEq u1 u2 = match (u1, u2) with
+    | Bot, Bot
     | Undef, Undef -> BoolLattice.inject true
     | _ -> BoolLattice.inject false
   let pretty u = match u with
@@ -196,7 +210,8 @@ and NullLattice : sig
   val _Bot : unit -> t
   val meet : t list -> t
   val join : t list -> t
-  val eq : t -> t -> BoolLattice.t
+  val eq : t -> t -> bool
+  val absEq : t -> t -> BoolLattice.t
   val pretty : t -> FormatExt.printer
 end = struct
   type t = Bot | Null
@@ -215,6 +230,10 @@ end = struct
       | _ -> Null
     in List.fold_left meet' (_Top ()) ts
   let eq n1 n2 = match (n1, n2) with
+    | Bot, Bot
+    | Null, Null -> true
+    | _ -> false
+  let absEq n1 n2 = match (n1, n2) with
     | Bot, Bot
     | Null, Null -> BoolLattice.inject true
     | _ -> BoolLattice.inject false
@@ -239,7 +258,8 @@ and StringLattice : sig
   val inject : string -> t
   val injectTypeof : typeofStrings * ValueLattice.t -> t
   val stringofTypeof : typeofStrings -> string
-  val eq : t -> t -> BoolLattice.t
+  val eq : t -> t -> bool
+  val absEq : t -> t -> BoolLattice.t
   val pretty : t -> FormatExt.printer
 end = struct
   type typeofStrings = TyUndefined | TyNull | TyString | TyNumber | TyBoolean | TyFunction | TyObject | TyLambda
@@ -269,6 +289,15 @@ end = struct
     | TyObject -> "object"
     | TyLambda -> "lambda"
   let eq s1 s2 = match (s1, s2) with
+    | Bot, Bot -> true
+    | ConcreteUint s1, ConcreteUint s2
+    | ConcreteNonUint s1, ConcreteNonUint s2 -> s1 = s2
+    | TypeofString (t1, _), TypeofString (t2, _) -> (t1 = t2)
+    | UintString, UintString
+    | NonUintString, NonUintString
+    | String, String -> true
+    | _ -> false
+  let absEq s1 s2 = match (s1, s2) with
     | Bot, Bot -> BoolLattice.inject true
     | ConcreteUint s1, ConcreteUint s2
     | ConcreteNonUint s1, ConcreteNonUint s2
@@ -363,7 +392,8 @@ and NumLattice : sig
   val meet : t list -> t
   val join : t list -> t
   val inject : float -> t
-  val eq : t -> t -> BoolLattice.t
+  val eq : t -> t -> bool
+  val absEq : t -> t -> BoolLattice.t
   val pretty : t -> FormatExt.printer
 end = struct
   type t = Bot | PosInf | NegInf | INF | NaN 
@@ -456,7 +486,19 @@ end = struct
         let n = int_of_float f in
         if (abs_float(f -. (float_of_int n)) < epsilon_float) && n >= 0 then ConcreteUint n else ConcreteNonUint f
       with _ -> ConcreteNonUint f
-  let eq n1 n2 = match (n1, n2) with
+  let eq n1 n2 = match n1, n2 with
+    | Bot, Bot
+    | NaN, NaN
+    | NegInf, NegInf
+    | PosInf, PosInf
+    | INF, INF
+    | Uint, Uint
+    | NonUint, NonUint
+    | Num, Num -> true
+    | ConcreteUint n1, ConcreteUint n2 -> n1 = n2
+    | ConcreteNonUint n1, ConcreteNonUint n2 -> n1 = n2
+    | _ -> false
+  let absEq n1 n2 = match (n1, n2) with
     | NaN, _
     | _, NaN -> BoolLattice.inject false
     | Bot, Bot
@@ -504,6 +546,7 @@ and AddressSetLattice : sig
   val elements : AddressSet.t -> AddressSet.elt list
   val inject : AddressSet.elt -> t
   val pretty : (AddressSet.elt -> FormatExt.printer) -> t -> FormatExt.printer
+  val eq : t -> t -> bool
 end = struct
   type t = Bot | Set of AddressSet.t | Top
   let _Bot () = Bot
@@ -530,6 +573,11 @@ end = struct
     | Top -> text "Set:Top"
     | Set s -> braces (vert (AddressSet.fold (fun e acc -> (eltPrint e)::acc) s []))
   let inject e = Set (AddressSet.singleton e)
+  let eq s1 s2 = match s1, s2 with
+    | Bot, Bot
+    | Top, Top -> true
+    | Set s1, Set s2 -> AddressSet.equal s1 s2
+    | _ -> false
 end
 
 and ClosureSetLattice : sig 
@@ -541,6 +589,7 @@ and ClosureSetLattice : sig
   val elements : ClosureSet.t -> ClosureSet.elt list
   val inject : ClosureSet.elt -> t
   val pretty : (ClosureSet.elt -> FormatExt.printer) -> t -> FormatExt.printer
+  val eq : t -> t -> bool
 end = struct
   type t = Bot | Set of ClosureSet.t | Top
   let _Bot () = Bot
@@ -567,6 +616,11 @@ end = struct
     | Top -> text "Set:Top"
     | Set s -> braces (vert (ClosureSet.fold (fun e acc -> (eltPrint e)::acc) s []))
   let inject e = Set (ClosureSet.singleton e)
+  let eq s1 s2 = match s1, s2 with
+    | Bot, Bot
+    | Top, Top -> true
+    | Set s1, Set s2 -> ClosureSet.equal s1 s2
+    | _ -> false
 end
 
 and ObjLattice : sig
@@ -588,7 +642,7 @@ and ObjLattice : sig
   val _Bot : unit -> t
   val meet : t list -> t
   val join : t list -> t
-  val setExtensible : t -> BoolLattice.t -> t
+  val setExtensible : bool -> t -> BoolLattice.t -> t
   val setKlass : t -> StringLattice.t -> t
   val setProto : t -> ValueLattice.t option -> t
   val setCode : t -> ClosureSetLattice.t option -> t
@@ -598,6 +652,7 @@ and ObjLattice : sig
   val setGetter : t -> id -> ValueLattice.t -> t
   val setSetter : t -> id -> ValueLattice.t -> t
   val pretty : t -> FormatExt.printer
+  val eq : t -> t -> bool
 end = struct
   type bindAttrs = 
       { primval : ValueLattice.t option;
@@ -683,8 +738,11 @@ end = struct
         let newProps = IdMap.merge merge p1 p2 in
         Obj (bindProps, newProps)
     in List.fold_left meet' (_Top ()) ts
-  let setExtensible obj b = match obj with
-    | Obj(attrs, props) -> Obj({attrs with extensible = b}, props)
+  let setExtensible strong obj b = match obj with
+    | Obj({extensible = e} as attrs, props) -> 
+      if strong 
+      then Obj({attrs with extensible = b}, props)
+      else Obj({attrs with extensible = BoolLattice.join [e;b]}, props)
     | _ -> obj
   let setKlass obj klass = match obj with
     | Obj(attrs, props) -> Obj({attrs with klass = klass}, props)
@@ -745,7 +803,52 @@ end = struct
   let pretty o = match o with
     | Bot -> text "Obj:Bot"
     | Top -> text "Obj:Top"
-    | Obj(attrs, props) -> text "{an object}" (* todo *)
+    | Obj(attrs, props) -> 
+      let fmtAttrs {primval = p; code = c; proto = t; klass = k; extensible = e} = 
+        brackets (vert [horz[text "#primval:"; match p with None -> text "None" | Some v -> ValueLattice.pretty v];
+                        horz[text "#code:"; match c with None -> text "None" 
+                        | Some c -> ClosureSetLattice.pretty CLOSURE.pretty c];
+                        horz[text "#proto:"; match t with None -> text "None" | Some t -> ValueLattice.pretty t];
+                        horz[text "#class:"; StringLattice.pretty k];
+                        horz[text "#extensible:"; BoolLattice.pretty e]]) in
+      let fmtProps props = 
+        braces (vert (IdMap.fold (fun k prop acc ->
+          (horz[text k; text ":"; match prop with
+          | Data ({value = v; writable = w}, config, enum) ->
+            horz [text "Data({value ="; ValueLattice.pretty v; text "; writable ="; BoolLattice.pretty w; text "},"; BoolLattice.pretty config; text ","; BoolLattice.pretty enum; text ")"]
+          | Accessor ({getter = g; setter = s}, config, enum) ->
+            horz [text "Data({getter ="; ValueLattice.pretty g; text "; setter ="; ValueLattice.pretty s; text "},"; BoolLattice.pretty config; text ","; BoolLattice.pretty enum; text ")"]
+          | Unknown -> text "Unknown"
+          | PropTop -> text "PropTop"])::acc) props [])) in
+      horz[text "Obj("; vert [fmtAttrs attrs; fmtProps props]; text ")"]
+  let eq o1 o2 = match o1, o2 with
+    | Bot, Bot
+    | Top, Top -> true
+    | Obj({primval = p1; code = c1; proto = t1; klass = k1; extensible = e1}, props1), 
+      Obj({primval = p2; code = c2; proto = t2; klass = k2; extensible = e2}, props2) ->
+      (match (p1, p2) with
+      | None, None -> true
+      | Some p1, Some p2 -> ValueLattice.eq p1 p2
+      | _ -> false) &&
+        (match (c1, c2) with
+        | None, None -> true
+        | Some c1, Some c2 -> ClosureSetLattice.eq c1 c2
+        | _ -> false) &&
+        (match (t1, t2) with
+        | None, None -> true
+        | Some t1, Some t2 -> ValueLattice.eq t1 t2
+        | _ -> false) &&
+        StringLattice.eq k1 k2 &&
+        BoolLattice.eq e1 e2 &&
+        IdMap.equal (fun p1 p2 -> match p1, p2 with
+        | Data({value = v1; writable = w1}, c1, e1), Data({value = v2; writable = w2}, c2, e2) ->
+          ValueLattice.eq v1 v2 && BoolLattice.eq w1 w2 && BoolLattice.eq c1 c2 && BoolLattice.eq e1 e2
+        | Accessor({getter = g1; setter = s1}, c1, e1), Accessor({getter = g2; setter = s2}, c2, e2) ->
+          ValueLattice.eq g1 g2 && ValueLattice.eq s1 s2 && BoolLattice.eq c1 c2 && BoolLattice.eq e1 e2
+        | Unknown, Unknown
+        | PropTop, PropTop -> true
+        | _ -> false) props1 props2
+    | _ -> false
 end
 and ValueLattice : sig
   type t = UndefLattice.t * NullLattice.t * BoolLattice.t * NumLattice.t * StringLattice.t
@@ -783,6 +886,7 @@ and ValueLattice : sig
   val asMono : t -> monoValue
   val pretty : t -> FormatExt.printer
   val leq : t -> t -> bool
+  val eq : t -> t -> bool
 end = struct
   type t = UndefLattice.t * NullLattice.t * BoolLattice.t * NumLattice.t * StringLattice.t
       * ObjLattice.t * AddressSetLattice.t * ClosureSetLattice.t
@@ -865,10 +969,18 @@ end = struct
           ObjLattice.pretty o;
           AddressSetLattice.pretty V.ADDRESS.pretty a;
           ClosureSetLattice.pretty CLOSURE.pretty c]
-  let leq v1 v2 = join [v1;v2] = v2
+  let eq (u1, n1, b1, i1, s1, o1, a1, c1) (u2, n2, b2, i2, s2, o2, a2, c2) =
+    UndefLattice.eq u1 u2 &&
+      NullLattice.eq n1 n2 &&
+      BoolLattice.eq b1 b2 &&
+      NumLattice.eq i1 i2 &&
+      StringLattice.eq s1 s2 &&
+      ObjLattice.eq o1 o2 &&
+      AddressSetLattice.eq a1 a2 &&
+      ClosureSetLattice.eq c1 c2
+      
+  let leq v1 v2 = eq (join [v1;v2]) v2
 end
-type absStore = ValueLattice.t V.Store.t
-
 
 let str s = ValueLattice.injectStr (StringLattice.inject s)
 let num f = ValueLattice.injectNum (NumLattice.inject f)
@@ -1053,7 +1165,7 @@ let is_callable obj store =
   let module OL = ObjLattice in
   match (ValueLattice.addrsOf obj) with
   | ASL.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (ASL.elements addrs)) in
     (match (VL.objOf value) with
     | OL.Bot -> VL.injectBool (BoolLattice._Bot ())
@@ -1071,7 +1183,7 @@ let is_extensible obj store =
   let module OL = ObjLattice in
   match (ValueLattice.addrsOf obj) with
   | ASL.Set addrs ->
-    let value = VL.meet (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.meet (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (ASL.elements addrs)) in
     (match (VL.objOf value) with
     | OL.Bot -> VL.injectBool (BoolLattice._Bot ())
@@ -1079,21 +1191,25 @@ let is_extensible obj store =
     | OL.Top -> VL.injectBool (BoolLattice._Top ()))
   | _ -> bool false
 
-let prevent_extensions obj store = match (ValueLattice.addrsOf obj) with
+let prevent_extensions label getStore updateValue obj store = match (ValueLattice.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = ValueLattice.join (List.map (fun addr -> V.Store.find addr store)
-                                     (AddressSetLattice.elements addrs)) in
-    let o = ValueLattice.objOf value in
-    let o' = ObjLattice.setExtensible o BoolLattice.False in
-    ValueLattice.injectObj o'
-  | a -> ValueLattice.injectAddrs a
-      
+    let strongUpdate = AddressSet.cardinal addrs = 1 in
+    let (store, modified) = AddressSet.fold (fun addr (store, modified) ->
+      let (bindingStore, _, _) = getStore label store in
+      let value = Es5_cps_values.Store.find addr bindingStore in
+      let o = ValueLattice.objOf value in
+      let o' = ObjLattice.setExtensible strongUpdate o BoolLattice.False in
+      (updateValue true label addr (ValueLattice.injectObj o') store, modified || o' <> o)
+    ) addrs (store, false) in
+    (obj, store, modified)
+  | _ -> (obj, store, false) 
+
 let get_code obj store = 
   let module VL = ValueLattice in
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1108,7 +1224,7 @@ let get_proto obj store =
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1123,7 +1239,7 @@ let get_primval obj store =
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1138,7 +1254,7 @@ let get_class obj store =
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1149,19 +1265,20 @@ let get_class obj store =
 
 (* All the enumerable property names of an object *)
 exception Pointy of ValueLattice.t
-let rec get_property_names obj store =
+let rec get_property_names label getStore updateValue obj store =
   let module VL = ValueLattice in
   let module BL = BoolLattice in
   let module OL = ObjLattice in
   try
     match (VL.addrsOf obj) with
     | AddressSetLattice.Set addrs ->
-      let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+      let (bindingStore, _, _) = getStore label store in
+      let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr bindingStore)
                              (AddressSetLattice.elements addrs)) in
       let o = VL.objOf value in
       (match o with
       | OL.Obj (_, _) -> 
-        let protos = o::(all_protos obj store) in
+        let protos = o::(all_protos obj bindingStore) in
         let folder o set = begin match o with
 	  | OL.Obj(attrs, props) -> 
 	    IdMap.fold (fun k v s ->
@@ -1184,11 +1301,17 @@ let rec get_property_names obj store =
           IdMap.empty in
         let d_attrsv = { OL.primval = None; OL.code = None; OL.proto = None; 
                          OL.extensible = BL.inject false; OL.klass = StringLattice.inject "LambdaJS interal" }
-        in VL.injectObj (OL.Obj(d_attrsv, name_props))
-      | OL.Bot -> VL._Bot ()
-      | OL.Top -> VL.injectObj (OL._Top ()))
-    | a -> ValueLattice.injectAddrs a
-  with Pointy v -> v (* if anything went wrong, abort with a pointy *)
+        in 
+        let newAddr = V.ADDRESS.addrForContour [label] in
+        let oldObj = Es5_cps_values.Store.find newAddr bindingStore in
+        let newObj = VL.injectObj (OL.Obj(d_attrsv, name_props)) in
+        (VL.injectAddrs (AddressSetLattice.inject newAddr), 
+         updateValue true label newAddr (VL.join [newObj; oldObj]) store, 
+         oldObj <> newObj)
+      | OL.Bot -> (VL._Bot (), store, false)
+      | OL.Top -> (VL.injectObj (OL._Top ())), store, false)
+    | a -> (ValueLattice.injectAddrs a, store, false)
+  with Pointy v -> (v, store, false) (* if anything went wrong, abort with a pointy *)
 
 
 and all_protos o store : ObjLattice.t list = 
@@ -1200,7 +1323,7 @@ and all_protos o store : ObjLattice.t list =
     | _ -> None in
   let fromAddrs = match (VL.addrsOf o) with
     | ASL.Set addrs ->
-      let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+      let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                              (ASL.elements addrs)) in
       (match (VL.objOf value) with
       | OL.Obj ({ OL.proto = Some p }, _) -> Some p
@@ -1225,13 +1348,14 @@ and enum prop = match prop with
   | ObjLattice.PropTop -> BoolLattice.Bool
   | ObjLattice.Unknown -> BoolLattice.Bot
 
-let get_own_property_names obj store =
+let get_own_property_names label getStore updateValue obj store =
   let module VL = ValueLattice in
   let module BL = BoolLattice in
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let (bindingStore, _, _) = getStore label store in
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr bindingStore)
                            (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1251,10 +1375,16 @@ let get_own_property_names obj store =
                     BL.inject false, BL.inject false)) props in 
       let d_attrsv = { OL.primval = None; OL.code = None; OL.proto = None; 
                        OL.extensible = BL.inject false; OL.klass = StringLattice.inject "LambdaJS interal" }
-      in VL.injectObj (OL.Obj(d_attrsv, final_props))
-    | OL.Bot -> VL._Bot ()
-    | OL.Top -> VL.injectObj (OL._Top ()))
-  | a -> ValueLattice.injectAddrs a
+      in
+      let newAddr = V.ADDRESS.addrForContour [label] in
+      let oldObj = Es5_cps_values.Store.find newAddr bindingStore in
+      let newObj = VL.injectObj (OL.Obj(d_attrsv, final_props)) in
+      (VL.injectAddrs (AddressSetLattice.inject newAddr), 
+       updateValue true label newAddr (VL.join [newObj; oldObj]) store, 
+       oldObj <> newObj)
+    | OL.Bot -> (VL._Bot (), store, false)
+    | OL.Top -> (VL.injectObj (OL._Top ())), store, false)
+  | a -> (ValueLattice.injectAddrs a, store, false)
 
 
 (* Implement this here because there's no need to expose the class
@@ -1265,7 +1395,7 @@ let object_to_string obj store =
   let module SL = StringLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1287,7 +1417,7 @@ let is_array obj store =
   let module SL = StringLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1402,7 +1532,14 @@ let sine n _ = to_num_fn sin n
 
 let numstr s _ = str_to_num_fn (fun s -> (try float_of_string s with Failure _ -> nan)) s
 
-let op1 op : ValueLattice.t -> ValueLattice.t V.Store.t -> ValueLattice.t = match op with
+let mutableOp1 label getStore updateValue op = match op with
+  | "property-names" -> get_property_names label getStore updateValue
+  | "own-property-names" -> get_own_property_names label getStore updateValue
+  | "prevent-extensions" -> prevent_extensions label getStore updateValue
+  | _ -> failwith ("Not a mutable op1: " ^ op)
+
+
+let op1 op : ValueLattice.t -> ValueLattice.t Es5_cps_values.Store.t -> ValueLattice.t = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
   | "primitive?" -> is_primitive
@@ -1411,14 +1548,11 @@ let op1 op : ValueLattice.t -> ValueLattice.t V.Store.t -> ValueLattice.t = matc
   | "prim->bool" -> prim_to_bool
   | "is-callable" -> is_callable
   | "is-extensible" -> is_extensible
-  | "prevent-extensions" -> prevent_extensions
   | "print" -> print
   | "get-proto" -> get_proto
   | "get-primval" -> get_primval
   | "get-class" -> get_class
   | "get-code" -> get_code
-  | "property-names" -> get_property_names
-  | "own-property-names" -> get_own_property_names
   | "object-to-string" -> object_to_string
   | "strlen" -> strlen
   | "is-array" -> is_array
@@ -1540,13 +1674,13 @@ let string_lessthan v1 v2 _ = str_str_to_bool_fn (<) v1 v2
 let stx_eq v1 v2 _ = 
   let module VL = ValueLattice in
   match (VL.asMono v1, VL.asMono v2) with
-  | VL.Undef u1, VL.Undef u2 -> VL.injectBool (UndefLattice.eq u1 u2)
-  | VL.Null n1, VL.Null n2 -> VL.injectBool (NullLattice.eq n1 n2)
-  | VL.Bool b1, VL.Bool b2 -> VL.injectBool (BoolLattice.eq b1 b2)
-  | VL.Num n1, VL.Num n2 -> VL.injectBool (NumLattice.eq n1 n2)
-  | VL.Str s1, VL.Str s2 -> VL.injectBool (StringLattice.eq s1 s2)
+  | VL.Undef u1, VL.Undef u2 -> VL.injectBool (UndefLattice.absEq u1 u2)
+  | VL.Null n1, VL.Null n2 -> VL.injectBool (NullLattice.absEq n1 n2)
+  | VL.Bool b1, VL.Bool b2 -> VL.injectBool (BoolLattice.absEq b1 b2)
+  | VL.Num n1, VL.Num n2 -> VL.injectBool (NumLattice.absEq n1 n2)
+  | VL.Str s1, VL.Str s2 -> VL.injectBool (StringLattice.absEq s1 s2)
+  | VL.Addrs a1, VL.Addrs a2 -> bool (AddressSetLattice.eq a1 a2)
   | VL.Obj _, VL.Obj _
-  | VL.Addrs _, VL.Addrs _
   | VL.Closure _, VL.Closure _ -> bool (v1 == v2)
   | _ -> bool false
 
@@ -1600,7 +1734,7 @@ let has_property obj field store =
     let rec checkObj obj =
       match (VL.addrsOf obj) with
       | AddressSetLattice.Set addrs ->
-        let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+        let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                (AddressSetLattice.elements addrs)) in
         let o = VL.objOf value in
         (match o with
@@ -1629,7 +1763,7 @@ let has_own_property obj field store =
     let rec checkObj obj =
       match (VL.addrsOf obj) with
       | AddressSetLattice.Set addrs ->
-        let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+        let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                (AddressSetLattice.elements addrs)) in
         let o = VL.objOf value in
         (match o with
@@ -1720,7 +1854,7 @@ let is_accessor a b store =
     let rec checkObj obj =
       match (VL.addrsOf obj) with
       | AddressSetLattice.Set addrs ->
-        let value = VL.join (List.map (fun addr -> V.Store.find addr store)
+        let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
                                (AddressSetLattice.elements addrs)) in
         let o = VL.objOf value in
         (match o with
@@ -1737,7 +1871,7 @@ let is_accessor a b store =
     checkObj a
   with Pointy e -> e
        
-let op2 op : ValueLattice.t -> ValueLattice.t -> ValueLattice.t V.Store.t -> ValueLattice.t = match op with
+let op2 op : ValueLattice.t -> ValueLattice.t -> ValueLattice.t Es5_cps_values.Store.t -> ValueLattice.t = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
   | "/" -> arith_div

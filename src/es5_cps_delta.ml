@@ -127,7 +127,8 @@ let is_extensible obj store = match obj with
 
 let prevent_extensions obj store = match obj with
   | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (p, l, attrs, props) -> Object(p, l, {attrs with extensible = false}, props)
+    | Object (p, l, attrs, props) -> 
+      (obj, Store.add a (Object(p, l, {attrs with extensible = false}, props)) store)
     | _ -> raise (CpsThrow ( "prevent-extensions: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "prevent-extensions: " ^ (pretty_bind obj)))
       
@@ -179,7 +180,10 @@ let rec get_property_names obj store = match obj with
         name_list
         [] in
       let d_attrsv = { primval = None; code = None; proto = None; extensible = false; klass = "LambdaJS interal" }
-      in Object(dummy_pos, newLabel(),d_attrsv, name_props)
+      in
+      let newAddr = ADDRESS.newAddr() in
+      (VarCell(dummy_pos, newLabel(), newAddr), 
+       Store.add newAddr (Object(dummy_pos, newLabel(),d_attrsv, name_props)) store)
     | _ -> raise (CpsThrow ( "get-property-names: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "get-property-names: " ^ (pretty_bind obj)))
 
@@ -209,7 +213,10 @@ let get_own_property_names obj store = match obj with
          (Data ({ value = Num (dummy_pos, newLabel(), d); writable = false; }, false, false)))::props in 
       let d_attrsv = { primval = None; code = None; proto = None; 
                        extensible = false; klass = "LambdaJS interal" }
-      in Object(dummy_pos, newLabel(), d_attrsv, final_props)
+      in 
+      let newAddr = ADDRESS.newAddr() in
+      (VarCell(dummy_pos, newLabel(), newAddr), 
+       Store.add newAddr (Object(dummy_pos, newLabel(), d_attrsv, final_props)) store)
     | _ -> raise (CpsThrow ( "own-property-names: " ^ (pretty_bind obj))))
   | _ -> raise (CpsThrow ( "own-property-names: " ^ (pretty_bind obj)))
 
@@ -282,6 +289,12 @@ let numstr s _ = match s with
   | String (_, _, s) -> num (try float_of_string s with Failure _ -> nan)
   | _ -> raise (CpsThrow ( "numstr"))
 
+let mutableOp1 op : bind_value -> bind_value Store.t -> bind_value * bind_value Store.t = match op with
+  | "property-names" -> get_property_names
+  | "own-property-names" -> get_own_property_names
+  | "prevent-extensions" -> prevent_extensions
+  | _ -> failwith ("Not a mutable op1: " ^ op)
+
 let op1 op : bind_value -> bind_value Store.t -> bind_value = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -291,14 +304,11 @@ let op1 op : bind_value -> bind_value Store.t -> bind_value = match op with
   | "prim->bool" -> prim_to_bool
   | "is-callable" -> is_callable
   | "is-extensible" -> is_extensible
-  | "prevent-extensions" -> prevent_extensions
   | "print" -> print
   | "get-proto" -> get_proto
   | "get-primval" -> get_primval
   | "get-class" -> get_class
   | "get-code" -> get_code
-  | "property-names" -> get_property_names
-  | "own-property-names" -> get_own_property_names
   | "object-to-string" -> object_to_string
   | "strlen" -> strlen
   | "is-array" -> is_array
