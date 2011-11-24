@@ -59,7 +59,7 @@ module CLOSURE = struct
   type t = id * id * id list * E.cps_exp * V.bindingEnv * V.retContEnv * V.exnContEnv
   let compare = Pervasives.compare
   let pretty (ret,exn,args,_,_,_,_) = horz [squish [text "\\("; text ret; text ", "; text exn; text " ;"];
-                                            squish (List.map text args);
+                                            squish (intersperse (text ",") (List.map text args));
                                             text ")"]
 end
 
