@@ -12,13 +12,13 @@ module ADDRESS : sig
   val pretty : t -> FX.printer
   val toString : t -> string
 end = struct
-  module IntList = struct
-    type t = int list
+  module LabelTList = struct
+    type t = Label.t list
     let compare = Pervasives.compare
   end
-  module IntListMap = Map.Make(IntList)
-  type t = (int list * int)
-  let nextAddr : int ref IntListMap.t ref = ref IntListMap.empty
+  module LabelTListMap = Map.Make(LabelTList)
+  type t = (Label.t list * int)
+  let nextAddr : int ref LabelTListMap.t ref = ref LabelTListMap.empty
   let compare = Pervasives.compare
   let takeFst l = match l with
     | [] -> []
@@ -27,10 +27,10 @@ end = struct
     let truncC = takeFst c in
     let nextAddrRef = 
       try
-        IntListMap.find truncC !nextAddr 
+        LabelTListMap.find truncC !nextAddr 
       with Not_found ->
         let addr = ref 0 in
-        nextAddr := IntListMap.add truncC addr !nextAddr;
+        nextAddr := LabelTListMap.add truncC addr !nextAddr;
         addr in
     (incr nextAddrRef;
      (truncC, !nextAddrRef))
@@ -38,10 +38,10 @@ end = struct
   let resetForContour c = 
     let truncC = takeFst c in
     try
-      let addr = IntListMap.find truncC !nextAddr in
+      let addr = LabelTListMap.find truncC !nextAddr in
       addr := 0
     with Not_found -> ()
-  let pretty (c, n) = FX.horz [FX.squish [FX.brackets (FX.horz (List.map FX.int c)); FX.text ";"; FX.int n]]
+  let pretty (c, n) = FX.horz [FX.squish [FX.brackets (FX.horz (List.map Label.pretty c)); FX.text ";"; FX.int n]]
   let toString a = pretty a F.str_formatter; F.flush_str_formatter()
 end
 type retContEnv = ADDRESS.t IdMap.t
@@ -111,10 +111,15 @@ type exnCont =
 
 let pretty_retcont ret = match ret with
   | Answer -> "Answer"
-  | RetCont (label, arg, _, _, _, _) -> (string_of_int label) ^ ":RetCont(" ^ arg ^ ") {...}"
+  | RetCont (label, arg, _, _, _, _) -> 
+    (FX.squish [Label.pretty label; FX.text ":RetCont("; FX.text arg; FX.text ") {...}"] Format.str_formatter;
+     Format.flush_str_formatter())
 let pretty_exncont exn = match exn with
   | Error -> "Error"
-  | ExnCont (label, arg, lbl, _, _, _, _) -> (string_of_int label) ^ ":ExnCont(" ^ arg ^ ", " ^ lbl ^ ") {...}"
+  | ExnCont (label, arg, lbl, _, _, _, _) -> 
+    (FX.squish [Label.pretty label; FX.text ":ExnCont("; FX.text arg;
+                FX.text ", "; FX.text lbl; FX.text ") {...}"] Format.str_formatter;
+     Format.flush_str_formatter())
 
 (* module RET_CONT = struct *)
 (*   type t = retCont *)

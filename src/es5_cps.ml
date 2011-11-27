@@ -1,7 +1,16 @@
 open Prelude
 module E = Es5_syntax
 
-module Label = struct
+module Label : sig 
+  type t
+  val compare : t -> t -> int
+  val hash : t -> int
+  val equal : t -> t -> bool
+  val newLabel : unit -> t
+  val dummy : t
+  val pretty : t -> FormatExt.printer
+  val toString : t -> string
+end = struct
   type t = int
   let compare = Pervasives.compare
   let hash = Hashtbl.hash
@@ -9,6 +18,9 @@ module Label = struct
   let newLabel =
     let labelIdx = ref 0 in
     (fun () -> incr labelIdx; !labelIdx)
+  let dummy = 0
+  let pretty = FormatExt.int
+  let toString = string_of_int
 end
 module LabelMap = Map.Make(Label)
 

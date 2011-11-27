@@ -36,7 +36,7 @@ type abstractStore = (D.ValueLattice.t Es5_cps_values.Store.t * V.retContStore *
 let print_abs_bindings label env store =
   let (bE, rE, eE) = C.LabelMap.find label env in
   let (bH, rH, eH) = C.LabelMap.find label store in
-  printf "Condensed abs bindings at %d:\n" label;
+  printf "Condensed abs bindings at %s:\n" (C.Label.toString label);
   let reachableAddrs : V.ADDRESS.t list ref = ref [] in
   let rootAddrs : V.ADDRESS.t list ref = ref [] in
   let rec addReachable obj = match (D.ValueLattice.addrsOf obj) with
@@ -68,7 +68,7 @@ let print_abs_bindings label env store =
 let print_all_abs_bindings store =
   printf "All abs bindings:\n";
   vert (C.LabelMap.fold (fun label (store, _, _) acc ->
-    (horz [int label; text "->";
+    (horz [C.Label.pretty label; text "->";
            braces (vert (Es5_cps_values.Store.fold (fun addr value acc ->
              (horz [V.ADDRESS.pretty addr; text "->"; D.ValueLattice.pretty value])::acc) store []))])::acc)
           store [])
@@ -77,7 +77,7 @@ let print_all_abs_bindings store =
 let print_all_abs_env env =
   printf "All abs environments:\n";
   vert (C.LabelMap.fold (fun label (env, _, _) acc ->
-    (horz [int label; text "->";
+    (horz [C.Label.pretty label; text "->";
            braces (vert (IdMap.fold (fun id addr acc ->
              (horz [text id; text "->"; V.ADDRESS.pretty addr])::acc) env []))])::acc) env [])
     Format.str_formatter;
@@ -330,24 +330,24 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
   (*   (newBindings, newRets, newExns) in *)
   let printModReasons label reasons = 
     let module FX = FormatExt in
-    FX.vert ((FX.horz [FX.text "For label"; FX.int label])::
+    FX.vert ((FX.horz [FX.text "For label"; C.Label.pretty label])::
                 (List.map (fun (n,b) -> FX.horz [FX.text n; FX.text "="; if b then FX.text "true" else FX.text "false"]) reasons))
       Format.str_formatter;
     printf "%s\n" (Format.flush_str_formatter ()) in
   let rec eval_exp exp (exitLab : C.Label.t) (env : abstractEnv) (store : abstractStore) : abstractEnv * abstractStore * bool = 
     print_string "In eval_exp for ";
     let label = (match exp with
-    | C.LetValue (_, l, id, _, _) -> printf "%s" ("LetValue " ^ (string_of_int l) ^ "," ^ id ^ "\n"); l
-    | C.RecValue (_, l, id, _, _) -> printf "%s" ("RecValue " ^ (string_of_int l) ^ "," ^ id ^ "\n"); l
-    | C.LetPrim (_, l, id, _, _) -> printf "%s" ("LetPrim " ^ (string_of_int l) ^ "," ^ id ^ "\n"); l
-    | C.LetRetCont (l, id, _, _, _) -> printf "%s" ("LetRetCont " ^ (string_of_int l) ^ "," ^ id ^ "\n"); l
-    | C.LetExnCont (l, id, _, _, _, _) -> printf "%s" ("LetExnCont " ^ (string_of_int l) ^ "," ^ id ^ "\n"); l
-    | C.AppRetCont (l, id, _) -> printf "%s" ("AppRetCont " ^ (string_of_int l) ^ "," ^ id ^ "\n"); l
-    | C.AppExnCont (l, id, _, _) -> printf "%s" ("AppExnCont " ^ (string_of_int l) ^ "," ^ id ^ "\n"); l
-    | C.AppFun (_, l, f, r, e, a) -> printf "%s %s(Ret %s, Exn %s; %s)\n" ("AppFun " ^ (string_of_int l))
+    | C.LetValue (_, l, id, _, _) -> printf "%s" ("LetValue " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.RecValue (_, l, id, _, _) -> printf "%s" ("RecValue " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.LetPrim (_, l, id, _, _) -> printf "%s" ("LetPrim " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.LetRetCont (l, id, _, _, _) -> printf "%s" ("LetRetCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.LetExnCont (l, id, _, _, _, _) -> printf "%s" ("LetExnCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.AppRetCont (l, id, _) -> printf "%s" ("AppRetCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.AppExnCont (l, id, _, _) -> printf "%s" ("AppExnCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.AppFun (_, l, f, r, e, a) -> printf "%s %s(Ret %s, Exn %s; %s)\n" ("AppFun " ^ (C.Label.toString l))
       (Es5_cps_pretty.cps_value_to_string f) r e (String.concat ", " (List.map Es5_cps_pretty.cps_value_to_string a)); l
-    | C.If(_, l, _, _, _) -> printf "%s" ("If " ^ (string_of_int l) ^ "\n"); l
-    | C.Eval(_, l, _) -> printf "%s" ("Eval " ^ (string_of_int l) ^ "\n"); l
+    | C.If(_, l, _, _, _) -> printf "%s" ("If " ^ (C.Label.toString l) ^ "\n"); l
+    | C.Eval(_, l, _) -> printf "%s" ("Eval " ^ (C.Label.toString l) ^ "\n"); l
     ) in
     print_abs_bindings label env store;
     match exp with
@@ -357,15 +357,15 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let store' = pushStore label (C.label_of_val value) store in
       let env' = copyEnv label (C.label_of_val value) env in
       let value' = eval_val value env' store' in
-      printf "Pushing env/store from %d to %d\n" label (C.label_of_val value);
-      printf "Env/store for value:%d:\n" (C.label_of_val value);
+      printf "Pushing env/store from %s to %s\n" (C.Label.toString label) (C.Label.toString(C.label_of_val value));
+      printf "Env/store for value:%s:\n" (C.Label.toString (C.label_of_val value));
       print_abs_bindings (C.label_of_val value) env' store';
       V.ADDRESS.resetForContour [label];
       let addr = V.ADDRESS.addrForContour [label] in
       let env'' = (addBinding blab id addr (copyEnv (C.label_of_val value) blab env')) in
       let store'' = (updateValue false blab addr value' (pushStore (C.label_of_val value) blab store')) in
-      printf "Pushing env/store from %d to %d\n" (C.label_of_val value) blab;
-      printf "Env/store for body:%d:\n" blab;
+      printf "Pushing env/store from %s to %s\n" (C.Label.toString (C.label_of_val value)) (C.Label.toString blab);
+      printf "Env/store for body:%s:\n" (C.Label.toString blab);
       print_abs_bindings blab env'' store'';
       let (env3, store3, bodyMod) = eval_exp body exitLab env'' store'' in
       printModReasons label ["bodyMod", bodyMod; "oldValue <> value'", oldValue <> value'];
@@ -446,6 +446,8 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
             D.ValueLattice.join [deref; value']
           | a -> value'
         ) in
+        let finalErr = getBinding exitLab "%%ERROR" env' store' in
+        printAnsErr "At V.Answer" finalAns finalErr;
         let answerVal = IdMap.find "%%ANSWER" bindingEnv in
         (env', updateValue false exitLab answerVal finalAns store', value' <> oldValue)
       | V.RetCont (_, arg, body, bindingEnv, retContEnv, exnContEnv) ->
@@ -454,6 +456,8 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let blab = C.label_of_exp body in
         let env'' = (addBinding blab arg addr (copyEnv label blab env')) in
         let store'' = (updateValue false blab addr value' (pushStore label blab store')) in
+        let finalErr = getBinding exitLab "%%ERROR" env'' store'' in
+        printAnsErr "At V.RetCont" value' finalErr;
         let (env3, store3, modRet) = eval_exp body exitLab env'' store'' in
         ((joinEnvs env'' env3), (joinStores store'' store3), (modRet || value' <> oldValue))
       end
@@ -491,7 +495,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
             D.ValueLattice.join [deref; arg']
           | a -> arg'
         ) in
-        printf "%d Throwing %s to %d\n" label (D.ValueLattice.pretty finalErr Format.str_formatter; Format.flush_str_formatter()) exitLab;
+        printf "%s Throwing %s to %s\n" (C.Label.toString label) (D.ValueLattice.pretty finalErr Format.str_formatter; Format.flush_str_formatter()) (C.Label.toString exitLab);
         let errorVal = IdMap.find "%%ERROR" bindingEnv in
         (envLbl, updateValue false exitLab errorVal finalErr storeLbl, finalErr <> oldFinalErr)
       | V.ExnCont(_, arg, lbl, body, bindingEnv, retContEnv, exnContEnv) ->
@@ -547,9 +551,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let arg' = eval_val arg envArg' storeArg' in
         (arg'::args, argsMod || oldArg <> arg', joinEnvs envArg envArg', joinStores storeArg storeArg')
       ) ([], false, env1, store1) args in
-      if (func' = oldFunc && not argsMod) 
-      then (env, store, false)
-      else begin
+      begin
         let args' = List.rev args' in
         let (bindingEnv, retContEnv, exnContEnv) = getEnv label env in
         let (bindingStore, retContStore, exnContStore) = getStore label store in
@@ -632,7 +634,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
                                                D.BoolLattice.inject enum, D.BoolLattice.inject config)) props
       ) in
       let ps' = List.fold_left prop IdMap.empty ps in
-      VL.injectObj (D.ObjLattice.Obj (a', ps'))
+      VL.injectObj (D.ObjLattice.Obj (a', ps'))  (* XXXXXXXXXX WRONG: Need to return a reference cell to this object! *)
     | C.Lambda(_, label, r, e, args, body) -> 
       (* let (bindingStore, retStore, exnStore) = *)
       (*   garbage_collect env bindingStore retEnv retStore exnEnv exnStore in *)
@@ -642,13 +644,13 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
   and eval_prim (prim : C.cps_prim) (env : abstractEnv) (store : abstractStore) : D.ValueLattice.t * abstractStore  * bool = 
     (let pretty_val v = Es5_cps_pretty.value false v Format.str_formatter; Format.flush_str_formatter() in
       match prim with
-      | C.GetAttr(_, l, a, o, f) -> printf "%d GetAttr %s[%s<%s>]\n" l (pretty_val o) (E.string_of_attr a) (pretty_val f)
-      | C.SetAttr(_, l, a, o, f, v) -> printf "%d SetAttr %s[%s<%s> = %s]\n" l (pretty_val o) (E.string_of_attr a) (pretty_val f) (pretty_val v)
-      | C.DeleteField(_, l, o, f) -> printf "%d DeleteField %s[%s]\n" l (pretty_val o) (pretty_val f)
-      | C.Op1(_, l, o, a) -> printf "%d Op1(%s, %s)\n" l o (pretty_val a)
-      | C.Op2(_, l, o, a, b) -> printf "%d Op2(%s, %s, %s)\n" l o (pretty_val a) (pretty_val b)
-      | C.MutableOp1(_, l, o, a) -> printf "%d MutableOp1(%s, %s)\n" l o (pretty_val a)
-      | C.SetBang(_, l, i, v) -> printf "%d Set!(%s = %s)\n" l i (pretty_val v)
+      | C.GetAttr(_, l, a, o, f) -> printf "%s GetAttr %s[%s<%s>]\n" (C.Label.toString l) (pretty_val o) (E.string_of_attr a) (pretty_val f)
+      | C.SetAttr(_, l, a, o, f, v) -> printf "%s SetAttr %s[%s<%s> = %s]\n" (C.Label.toString l) (pretty_val o) (E.string_of_attr a) (pretty_val f) (pretty_val v)
+      | C.DeleteField(_, l, o, f) -> printf "%s DeleteField %s[%s]\n" (C.Label.toString l) (pretty_val o) (pretty_val f)
+      | C.Op1(_, l, o, a) -> printf "%s Op1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
+      | C.Op2(_, l, o, a, b) -> printf "%s Op2(%s, %s, %s)\n" (C.Label.toString l) o (pretty_val a) (pretty_val b)
+      | C.MutableOp1(_, l, o, a) -> printf "%s MutableOp1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
+      | C.SetBang(_, l, i, v) -> printf "%s Set!(%s = %s)\n" (C.Label.toString l) i (pretty_val v)
     );
     match prim with
     | C.GetAttr(_, label, pattr, obj, field) ->
@@ -959,7 +961,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
   let exnContStore = V.Store.add errorAddr V.Error V.Store.empty in
   let expLab = C.label_of_exp exp in
   let finalLab = C.Label.newLabel() in
-  printf "FinalLab is %d\n" finalLab;
+  printf "FinalLab is %s\n" (C.Label.toString finalLab);
   let initEnv = C.LabelMap.singleton expLab (bindingEnv, retContEnv, exnContEnv) in
   let initEnv = copyEnv expLab finalLab initEnv in
   let initStore = C.LabelMap.singleton expLab (bindingStore, retContStore, exnContStore) in

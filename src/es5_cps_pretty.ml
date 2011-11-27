@@ -49,7 +49,7 @@ and prim verbose p =
   | DeleteField (p,lbl, o, f) ->
     label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])])
 
-and label verbose lbl ret = if verbose then squish [int lbl; text ":"; ret] else ret
+and label verbose lbl ret = if verbose then squish [Label.pretty lbl; text ":"; ret] else ret
 
 and exp verbose e = 
   let exp = exp verbose in 

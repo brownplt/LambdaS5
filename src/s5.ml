@@ -16,7 +16,7 @@ module S5 = struct
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Es5_cps.AppRetCont(0, "fake", Es5_cps.Id(dummy_pos,0,"fake")))
+  let cpsES5 = ref (Es5_cps.AppRetCont(Es5_cps.Label.dummy, "fake", Es5_cps.Id(dummy_pos,Es5_cps.Label.dummy,"fake")))
 
   let jsonPath = ref ""
 
@@ -80,7 +80,7 @@ module S5 = struct
   let cps_abs_eval () =
     let module FX = FormatExt in
     let (finalEnv, finalStore, finalLab) = Cfg_abs.eval !cpsES5 in
-    printf "Finished evaling...finalLab is %d\n" finalLab;
+    printf "Finished evaling...finalLab is %s\n" (Es5_cps.Label.toString finalLab);
     let ans = Cfg_abs.getBinding finalLab "%%ANSWER" finalEnv finalStore in
     let err = Cfg_abs.getBinding finalLab "%%ERROR" finalEnv finalStore in
     FX.vert [FX.horz [FX.text "ANSWER <="; Es5_cps_absdelta.ValueLattice.pretty ans];
