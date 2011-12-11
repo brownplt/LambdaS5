@@ -6,5 +6,5 @@ if [ $# -eq 1 ]; then
            -env ../envs/cps.env -eval
    rm $1.ast
 else
-   echo "usage: unit_test.sh <filepath>"
+   echo "usage: $0 <filepath>"
 fi
