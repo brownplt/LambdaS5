@@ -6,6 +6,6 @@ try {
 }
 catch(e) {
   if(e instanceof TypeError) {
-    print('Passed');
+    print('passed');
   }
 }
