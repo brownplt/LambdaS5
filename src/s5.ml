@@ -41,6 +41,13 @@ module S5 = struct
     printf "%s" (pretty_value v);
     print_newline ()
 
+  let sym_eval () : unit =
+    let vpcs = Es5_sym_eval.eval_expr !srcES5 !jsonPath [] in
+    List.iter (fun (v, pcs) -> printf "%s: " (Es5_sym_values.pretty_value v); 
+      List.iter (fun pc -> printf "%s, " (Es5_sym_values.pretty_sym_exp pc)) pcs;
+      print_newline())
+      vpcs
+
   let env (path : string) : unit =
     let envFunc = Es5.parse_es5_env (open_in path) path in
     srcES5 := envFunc !srcES5
@@ -100,6 +107,8 @@ module S5 = struct
         "evaluate code");
         ("-cps-eval", Arg.Unit cps_eval,
         "evaluate code in CPS form");
+        ("-sym-eval", Arg.Unit sym_eval,
+        "evaluate code symbolically");
         ("-env", Arg.String env,
          "wrap the program in an environment");
         ("-json", Arg.String set_json,
