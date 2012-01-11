@@ -360,20 +360,23 @@ let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list =
           (fun (ev_val, pc') -> 
             x' := ev_val;
             eval body (IdMap.add x (VarCell (ref ev_val)) env) pc')
-
+      | S.SetBang (p, x, e) -> begin
+        try
+          match IdMap.find x env with
+            | VarCell v -> 
+              bind 
+                (eval e env pc)
+                (fun (e_val, pc') ->
+                  v := e_val; return e_val pc')
+            | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
+                                " at " ^ (string_of_position p) ^ 
+                                ", but found something else.")
+        with Not_found ->
+          failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
+                       (string_of_position p))
+      end
       | _ -> failwith "[interp] not yet implemented"
 (*
-  | S.SetBang (p, x, e) -> begin
-      try
-        match IdMap.find x env with
-          | VarCell v -> v := eval e env; !v
-          | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
-                             " at " ^ (string_of_position p) ^ 
-                             ", but found something else.")
-      with Not_found ->
-        failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-                    (string_of_position p))
-    end
   | S.Object (p, attrs, props) -> 
     let attrsv = match attrs with
       | { S.primval = vexp;
