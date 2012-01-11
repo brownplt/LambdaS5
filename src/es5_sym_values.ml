@@ -15,7 +15,7 @@ type value =
       (* Objects shouldn't have VarCells in them, but can have any of
       the other kinds of values *)
   | ObjCell of (attrsv * (propv IdMap.t)) ref
-  | Closure of (value list -> sym_exp list -> result list)
+  | Closure of (value list -> sym_exp list -> int -> result list)
   | Fail of string
   | Sym of sym_exp (* symbolic expression *)
 and 
@@ -66,8 +66,9 @@ let rec pretty_value v = match v with
   | VarCell v -> "&<" ^ pretty_value !v ^ ">"
   | Fail s -> "[fail: " ^ s ^ "]"
   | Sym e -> "Sym(" ^ pretty_sym_exp e ^ ")"
+
 and pretty_sym_exp e = match e with
-  | Concrete v -> "Conc(" ^ pretty_value v ^ ")"
+  | Concrete v -> pretty_value v
   | SId x -> x
   | SOp1 (op, e) -> "(" ^ op ^ " " ^ (pretty_sym_exp e) ^ ")"
   | SOp2 (op, l, r) -> "(" ^ op ^ " " ^ (pretty_sym_exp l) 
@@ -78,4 +79,3 @@ and pretty_sym_exp e = match e with
 let rec pretty_value_list vs = match vs with
   | (v::vs) -> pretty_value v ^ ", " ^ pretty_value_list vs
   | [] -> ""
-

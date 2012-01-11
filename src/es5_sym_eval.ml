@@ -24,8 +24,8 @@ let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
  
-let rec apply p func args pcs = match func with
-  | Closure c -> c args pcs
+let rec apply p func args pcs depth = match func with
+  | Closure c -> c args pcs depth
   (* | ObjCell c -> begin match !c with *)
   (*     | ({ code = Some cvalue }, _) -> *)
   (*       apply p cvalue args pcs *)
@@ -33,7 +33,7 @@ let rec apply p func args pcs = match func with
   (* end *)
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
-		         pretty_value func))
+                         pretty_value func))
 (*
 let rec get_field p obj1 field getter_params result = match obj1 with
   | Null -> Undefined (* nothing found *)
@@ -45,13 +45,13 @@ let rec get_field p obj1 field getter_params result = match obj1 with
                apply p g getter_params
          (* Not_found means prototype lookup is necessary *)
          with Not_found ->
-	   get_field p pvalue field getter_params result
+           get_field p pvalue field getter_params result
   end
   | _ -> failwith (interp_error p 
-		     "get_field on a non-object.  The expression was (get-field " 
-		   ^ pretty_value obj1 
-		   ^ " " ^ pretty_value (List.nth getter_params 0)
-		   ^ " " ^ field ^ ")")
+                     "get_field on a non-object.  The expression was (get-field " 
+                   ^ pretty_value obj1 
+                   ^ " " ^ pretty_value (List.nth getter_params 0)
+                   ^ " " ^ field ^ ")")
 
 
 (* EUpdateField-Add *)
@@ -60,10 +60,10 @@ let rec add_field obj field newval result = match obj with
   | ObjCell c -> begin match !c with
       | { extensible = true; } as attrs, props ->
         begin
-	  c := (attrs, IdMap.add field 
+          c := (attrs, IdMap.add field 
             (Data ({ value = newval; writable = true; }, true, true))
-	    props);
-	  result newval
+            props);
+          result newval
         end
       | _ -> result Undefined(* TODO: Check error in case of non-extensible *)
   end
@@ -99,7 +99,7 @@ let rec update_field p obj1 obj2 field newval setter_args result = match obj1 wi
                 (* 8.12.5, step 3, changing the value of a field *)
                 c := (attrs, IdMap.add field
                   (Data ({ value = newval; writable = true }, enum, config))
-		  props);
+                  props);
                 result newval
               end
             | Accessor ({ setter = setterv; }, enum, config) ->
@@ -112,9 +112,9 @@ let rec update_field p obj1 obj2 field newval setter_args result = match obj1 wi
 let rec get_attr attr obj field = match obj, field with
   | ObjCell c, String s -> let (attrs, props) = !c in
       if (not (IdMap.mem s props)) then
-	undef
+        undef
       else
-	begin match (IdMap.find s props), attr with 
+        begin match (IdMap.find s props), attr with 
           | Data (_, _, config), S.Config
           | Accessor (_, _, config), S.Config -> bool config
           | Data (_, enum, _), S.Enum
@@ -169,10 +169,10 @@ let rec set_attr attr obj field newval = match obj, field with
           else
             failwith "[interp] Extending inextensible object ."
         else
-	(* 8.12.9: "If a field is absent, then its value is considered
-	to be false" -- we ensure that fields are present and
-	(and false, if they would have been absent). *)
-	  let newprop = match (IdMap.find f_str props), attr, newval with
+        (* 8.12.9: "If a field is absent, then its value is considered
+        to be false" -- we ensure that fields are present and
+        (and false, if they would have been absent). *)
+          let newprop = match (IdMap.find f_str props), attr, newval with
             (* S.Writable true -> false when configurable is false *)
             | Data ({ writable = true } as d, enum, config), S.Writable, new_w -> 
               Data ({ d with writable = unbool new_w }, enum, config)
@@ -210,10 +210,10 @@ let rec set_attr attr obj field newval = match obj, field with
             | Accessor (a, enum, false), S.Config, False ->
               Accessor (a, enum, false)
             | _ -> failwith "[interp] bad property set"
-	in begin
+        in begin
             c := (attrsv, IdMap.add f_str newprop props);
             true
-	end
+        end
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
@@ -227,7 +227,7 @@ and fun_obj value = match value with
   end
   | Undefined -> false
   | _ -> false
-	  
+          
 *)
 
 (* monad *)
@@ -236,113 +236,143 @@ let bind l f = List.concat (List.map f l)
 
 let val_sym v = match v with Sym x -> x | _ -> (Concrete v)
 
-let rec eval jsonPath exp env (pc : sym_exp list) : result list = 
-  let eval = eval jsonPath in
-  match exp with
-  | S.Hint (_, _, e) -> eval e env pc
-  | S.Undefined _ -> return Undefined pc 
-  | S.Null _ -> return Null pc 
-  | S.String (_, s) -> return (String s) pc
-  | S.Num (_, n) -> return (Num n) pc
-  | S.True _ -> return True pc
-  | S.False _ -> return False pc
-  | S.Id (p, x) -> 
-    if (String.length x > 2 && String.sub x 0 2 = "%%") then return (Sym (SId x)) pc
-    else begin
-      try
-	match IdMap.find x env with
-	  | VarCell v -> return !v pc
-	  | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
-			     " at " ^ (string_of_position p) ^ 
-			     ", but found something else: " ^ pretty_value (IdMap.find x env))
-      with Not_found ->
-	failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
-		    (string_of_position p))
-  end
-  | S.Lambda (p, xs, e) -> 
-      let set_arg arg x m = IdMap.add x (VarCell (ref arg)) m in
-      return (Closure (fun args pc' -> 
-	if (List.length args) != (List.length xs) then
-	  arity_mismatch_err p xs args
-	else
-	  eval e (List.fold_right2 set_arg args xs env) pc'))
-	pc
-  | S.Op1 (p, op, e) ->
-    bind 
-      (eval e env pc)
-      (fun (e_val, pc2) -> 
-	match e_val with
-	  | Sym e -> return (Sym (SOp1 (op, e))) pc2
-	  | _ -> return (op1 op e_val) pc2)
-  | S.Op2 (p, op, e1, e2) -> 
-    bind
-      (eval e1 env pc)
-      (fun (e1_val, pc1) ->
-	bind 
-	  (eval e2 env pc1)
-	  (fun (e2_val, pc2) -> 
-	    match e1_val, e2_val with
-	      | Sym e1, Sym e2 -> return (Sym (SOp2 (op, e1, e2))) pc2
-	      | Sym e1, _ -> return (Sym (SOp2 (op, e1, Concrete e2_val))) pc2
-	      | _, Sym e2 -> return (Sym (SOp2 (op, Concrete e1_val, e2))) pc2
-	      | _ ->  return (op2 op e1_val e2_val) pc2))
-  | S.If (p, c, t, f) ->
-    bind 
-      (eval c env pc)
-      (fun (c_val, pc2) -> 
-	match c_val with
-	  | True -> eval t env pc2
-	  | Sym e -> List.append (eval t env (e :: pc2))
-	                         (eval f env (SOp1 ("!", e) :: pc2))
-	  | _ -> eval f env pc2)
-      
-  | S.App (p, f, args) -> 
-    bind 
-      (eval f env pc)
-      (fun (f_val, pc_f) ->
-        let args_pc' =
-	  List.fold_left 
-	    (fun (argsvals_pcs : (value list * sym_exp list) list) (arg : S.exp) ->
-	      bind argsvals_pcs
-		(fun ((args_vals : value list), (pcs : sym_exp list)) -> 
-		  bind 
-		    (eval arg env pcs)
-		    (fun ((arg' : value), (pcs' : sym_exp list)) ->
-		      return (args_vals @ [arg']) pcs')))
-	    [([], pc_f)] args in
-	bind args_pc'
-	  (fun ((args' : value list), (pcs' : sym_exp list)) ->
-	    let all_conc : bool = List.for_all (fun v ->
-	      match v with Sym _ -> false | _ -> true) args' in
-	    match f_val, all_conc with
-	      | Sym _, _
-              | _, false -> return (Sym (SApp ((val_sym f_val),
-					       (List.map val_sym args')))) pcs'
-	      | _ -> apply p f_val args' pcs'))
+let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list = 
+  (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth (match exp with *)
+  (*   | S.Id (_, x) -> x *)
+  (*   | S.Hint (_, h, _) -> "Hint: " ^ h *)
+  (*   | S.Undefined _ -> "undef" *)
+  (*   | S.Null _ -> "null" *)
+  (*   | S.String (_, s) -> "\"" ^ s ^ "\"" *)
+  (*   | S.Num (_, n) -> (string_of_float n) *)
+  (*   | S.True _ -> "true" *)
+  (*   | S.False _ -> "false" *)
+  (*   | S.Let _ -> "let" *)
+  (*   | S.Rec _ -> "rec" *)
+  (*   | S.App _ -> "app" *)
+  (*   | S.Lambda _ -> "lambda" *)
+  (*   | S.Op1 (_, op, _) -> op *)
+  (*   | S.Op2 (_, op, _, _) -> op  *)
+  (*   | S.If _ -> "if" *)
+  (*   | _ -> "UNKNOWN" *)
+  (* ); *)
+  if (depth >= maxDepth) then []
+  else 
+    let nestedEval = eval jsonPath maxDepth in
+    let eval = eval jsonPath maxDepth depth in match exp with
+      | S.Hint (_, _, e) -> eval e env pc
+      | S.Undefined _ -> return Undefined pc 
+      | S.Null _ -> return Null pc 
+      | S.String (_, s) -> return (String s) pc
+      | S.Num (_, n) -> return (Num n) pc
+      | S.True _ -> return True pc
+      | S.False _ -> return False pc
+      | S.Id (p, x) -> 
+        if (String.length x > 2 && String.sub x 0 2 = "%%") then return (Sym (SId x)) pc
+        else begin
+          try
+            match IdMap.find x env with
+              | VarCell v -> return !v pc
+              | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
+                                  " at " ^ (string_of_position p) ^ 
+                                  ", but found something else: " ^ pretty_value (IdMap.find x env))
+          with Not_found ->
+            failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
+                         (string_of_position p))
+        end
+      | S.Lambda (p, xs, e) -> 
+        let set_arg arg x m = IdMap.add x (VarCell (ref arg)) m in
+        return (Closure (fun args pc' depth -> 
+          if (List.length args) != (List.length xs) then
+            arity_mismatch_err p xs args
+          else
+            nestedEval (depth+1) e (List.fold_right2 set_arg args xs env) pc'))
+          pc
+      | S.Op1 (p, op, e) ->
+        bind 
+          (eval e env pc)
+          (fun (e_val, pc') -> 
+            match e_val with
+              | Sym e -> return (Sym (SOp1 (op, e))) pc'
+              | _ -> return (op1 op e_val) pc')
+      | S.Op2 (p, op, e1, e2) -> 
+        bind
+          (eval e1 env pc)
+          (fun (e1_val, pc1) ->
+            bind 
+              (eval e2 env pc1)
+              (fun (e2_val, pc2) -> 
+                match e1_val, e2_val with
+                  | Sym e1, Sym e2 -> return (Sym (SOp2 (op, e1, e2))) pc2
+                  | Sym e1, _ -> return (Sym (SOp2 (op, e1, Concrete e2_val))) pc2
+                  | _, Sym e2 -> return (Sym (SOp2 (op, Concrete e1_val, e2))) pc2
+                  | _ ->  return (op2 op e1_val e2_val) pc2))
+      | S.If (p, c, t, f) ->
+        bind 
+          (eval c env pc)
+          (fun (c_val, pc') -> 
+            match c_val with
+              | True -> eval t env pc'
+              | Sym e -> 
+                let epc = (e :: pc') in
+                let nepc = (SOp1 ("not", e) :: pc') in
+                List.append 
+                  (if Es5_sym_z3.is_sat epc then (eval t env epc)
+                   else [])
+                  (if Es5_sym_z3.is_sat nepc then (eval f env nepc)
+                   else [])
+              | _ -> eval f env pc')
+          
+      | S.App (p, f, args) -> 
+        bind 
+          (eval f env pc)
+          (fun (f_val, pc_f) ->
+            let args_pcs : (value list * sym_exp list) list =
+              List.fold_left 
+                (fun avpcs arg ->
+                  bind avpcs
+                    (fun (argvs, pcs) -> 
+                      bind 
+                        (eval arg env pcs)
+                        (fun (argv, pcs') ->
+                          return (argvs @ [argv]) pcs')))
+                [([], pc_f)] args in
+            bind args_pcs
+              (fun (argvs, pcs) ->
+                match f_val with
+                  | Sym _ -> return (Sym (SApp ((val_sym f_val),
+                                                (List.map val_sym argvs)))) pcs
+                  | _ -> apply p f_val argvs pcs depth))
+          
+      | S.Seq (p, e1, e2) -> 
+        bind 
+          (eval e1 env pc) 
+          (fun (_, pc') -> eval e2 env pc')
+      | S.Let (p, x, e, body) ->
+        bind
+          (eval e env pc)
+          (fun (e_val, pc') -> 
+            eval body (IdMap.add x (VarCell (ref e_val)) env) pc')
+          
+      | S.Rec (p, x, e, body) ->
+        let x' = ref Undefined in
+        bind 
+          (eval e (IdMap.add x (VarCell x') env) pc)
+          (fun (ev_val, pc') -> 
+            x' := ev_val;
+            eval body (IdMap.add x (VarCell (ref ev_val)) env) pc')
 
-
-  | S.Seq (p, e1, e2) -> 
-    bind 
-      (eval e1 env pc) 
-      (fun (_, pc2) -> eval e2 env pc2)
-  | S.Let (p, x, e, body) ->
-    bind
-      (eval e env pc)
-      (fun (e_val, pc2) -> 
-	eval body (IdMap.add x (VarCell (ref e_val)) env) pc2)
-
-  | _ -> failwith "[interp] not yet implemented"
+      | _ -> failwith "[interp] not yet implemented"
 (*
   | S.SetBang (p, x, e) -> begin
       try
-	match IdMap.find x env with
-	  | VarCell v -> v := eval e env; !v
-	  | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
-			     " at " ^ (string_of_position p) ^ 
-			     ", but found something else.")
+        match IdMap.find x env with
+          | VarCell v -> v := eval e env; !v
+          | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
+                             " at " ^ (string_of_position p) ^ 
+                             ", but found something else.")
       with Not_found ->
-	failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-		    (string_of_position p))
+        failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
+                    (string_of_position p))
     end
   | S.Object (p, attrs, props) -> 
     let attrsv = match attrs with
@@ -370,26 +400,26 @@ let rec eval jsonPath exp env (pc : sym_exp list) : result list =
         Accessor ({ getter = eval ge env; setter = eval se env}, enum, config)
     in
       let eval_prop m (name, prop) = 
-	IdMap.add name (eval_prop prop) m in
-	ObjCell (ref (attrsv,
-		      fold_left eval_prop IdMap.empty props))
+        IdMap.add name (eval_prop prop) m in
+        ObjCell (ref (attrsv,
+                      fold_left eval_prop IdMap.empty props))
   | S.SetField (p, obj, f, v, args) ->
       let obj_value = eval obj env in
       let f_value = eval f env in
       let v_value = eval v env in
       let args_value = eval args env in begin
-	match (obj_value, f_value) with
-	  | (ObjCell o, String s) ->
-	      update_field p obj_value
-		obj_value 
-		s
-		v_value
-		[obj_value; args_value]
+        match (obj_value, f_value) with
+          | (ObjCell o, String s) ->
+              update_field p obj_value
+                obj_value 
+                s
+                v_value
+                [obj_value; args_value]
     (fun x -> x)
-	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
+          | _ -> failwith ("[interp] Update field didn't get an object and a string" 
+                           ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
-	end
+        end
   | S.GetField (p, obj, f, args) ->
       let obj_value = eval obj env in
       let f_value = eval f env in 
@@ -407,11 +437,11 @@ let rec eval jsonPath exp env (pc : sym_exp list) : result list =
   | S.DeleteField (p, obj, f) ->
       let obj_val = eval obj env in
       let f_val = eval f env in begin
-	match (obj_val, f_val) with
-	  | (ObjCell c, String s) -> 
+        match (obj_val, f_val) with
+          | (ObjCell c, String s) -> 
             begin match !c with
               | (attrs, props) -> begin try
-		match IdMap.find s props with
+                match IdMap.find s props with
                   | Data (_, _, true) 
                   | Accessor (_, _, true) ->
                     begin
@@ -422,33 +452,31 @@ let rec eval jsonPath exp env (pc : sym_exp list) : result list =
                 with Not_found -> False
               end
             end
-	  | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
-			   ^ string_of_position p 
-			   ^ ". Instead, it got " 
-			   ^ pretty_value obj_val
-			   ^ " and " 
-			   ^ pretty_value f_val)
-	end
+          | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
+                           ^ string_of_position p 
+                           ^ ". Instead, it got " 
+                           ^ pretty_value obj_val
+                           ^ " and " 
+                           ^ pretty_value f_val)
+        end
   | S.GetAttr (p, attr, obj, field) ->
       let obj_val = eval obj env in
       let f_val = eval field env in
-	get_attr attr obj_val f_val
+        get_attr attr obj_val f_val
   | S.SetAttr (p, attr, obj, field, newval) ->
       let obj_val = eval obj env in
       let f_val = eval field env in
       let v_val = eval newval env in
-      bool (set_attr attr obj_val f_val v_val)
-  | S.Rec (p, x, e, body) ->
-    let x' = ref Undefined in
-    let ev_val = eval e (IdMap.add x (VarCell x') env) in
-    x' := ev_val;
-    eval body (IdMap.add x (VarCell (ref ev_val)) env)
+      bool (set_attr attr obj_val f_val v_val) *)
+
+
+(*
   | S.Label (p, l, e) -> begin
       try
-	eval e env
+        eval e env
       with Break (l', v) ->
-	if l = l' then v
-	else raise (Break (l', v))
+        if l = l' then v
+        else raise (Break (l', v))
     end
   | S.Break (p, l, e) ->
       raise (Break (l, eval e env))
@@ -481,7 +509,7 @@ and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ strin
    only a single file works out. 
 
    TODO(joe): I have no idea what happens on windows. *)
-and eval_op str env jsonPath = 
+and eval_op str env jsonPath maxDepth = 
   let outchan = open_out "/tmp/curr_eval.js" in
   output_string outchan str;
   close_out outchan;
@@ -507,26 +535,27 @@ and eval_op str env jsonPath =
   let desugard = exprjs_to_ljs used_ids exprjsd in
   if (IdMap.mem "%global" env) then
     (Es5_pretty.exp desugard std_formatter; print_newline ();
-     eval jsonPath desugard env (* TODO: which env? *))
+     eval jsonPath maxDepth 0 desugard env (* TODO: which env? *))
   else
     (failwith "no global")
 
-let rec eval_expr expr jsonPath = try
-  eval jsonPath expr IdMap.empty
-with
-  | Throw v ->
+let rec eval_expr expr jsonPath maxDepth = 
+  try
+    eval jsonPath maxDepth 0 expr IdMap.empty
+  with
+    | Throw v ->
       let err_msg = 
         match v with
           | ObjCell c ->
-              let (attrs, props) = !c in
-                begin try
-                  match IdMap.find "message" props with
-                    | Data ({ value = msg_val; }, _, _) ->
+            let (attrs, props) = !c in
+            begin try
+                    match IdMap.find "message" props with
+                      | Data ({ value = msg_val; }, _, _) ->
                         (pretty_value msg_val)
-                    | _ -> (pretty_value v)
-                with Not_found -> (pretty_value v)
-                end
+                      | _ -> (pretty_value v)
+              with Not_found -> (pretty_value v)
+            end
           | v -> (pretty_value v) in
-        failwith ("Uncaught exception: " ^ err_msg)
-  | Break (l, v) -> failwith ("Broke to top of execution, missed label: " ^ l)
+      failwith ("Uncaught exception: " ^ err_msg)
+    | Break (l, v) -> failwith ("Broke to top of execution, missed label: " ^ l)
 

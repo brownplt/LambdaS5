@@ -42,11 +42,15 @@ module S5 = struct
     print_newline ()
 
   let sym_eval () : unit =
-    let vpcs = Es5_sym_eval.eval_expr !srcES5 !jsonPath [] in
-    List.iter (fun (v, pcs) -> printf "%s: " (Es5_sym_values.pretty_value v); 
-      List.iter (fun pc -> printf "%s, " (Es5_sym_values.pretty_sym_exp pc)) pcs;
+    (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
+    (* let (inch, outch) = z3 in begin *)
+    let vpcs = Es5_sym_eval.eval_expr !srcES5 !jsonPath 6 [] in
+    List.iter (fun (v, pcs) -> printf "%s:\n" (Es5_sym_values.pretty_value v);
+      List.iter (fun pc -> printf "(assert %s)\n" 
+        (Es5_sym_values.pretty_sym_exp pc)) pcs;
       print_newline())
       vpcs
+  (* close_in inch; close_out outch *)
 
   let env (path : string) : unit =
     let envFunc = Es5.parse_es5_env (open_in path) path in
