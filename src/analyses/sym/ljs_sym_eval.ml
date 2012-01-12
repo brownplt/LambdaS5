@@ -238,24 +238,8 @@ let bind l f = List.concat (List.map f l)
 let val_sym v = match v with Sym x -> x | _ -> (Concrete v)
 
 let rec eval jsonPath maxDepth depth exp env (pc : path) : result list = 
-  (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth (match exp with *)
-  (*   | S.Id (_, x) -> x *)
-  (*   | S.Hint (_, h, _) -> "Hint: " ^ h *)
-  (*   | S.Undefined _ -> "undef" *)
-  (*   | S.Null _ -> "null" *)
-  (*   | S.String (_, s) -> "\"" ^ s ^ "\"" *)
-  (*   | S.Num (_, n) -> (string_of_float n) *)
-  (*   | S.True _ -> "true" *)
-  (*   | S.False _ -> "false" *)
-  (*   | S.Let _ -> "let" *)
-  (*   | S.Rec _ -> "rec" *)
-  (*   | S.App _ -> "app" *)
-  (*   | S.Lambda _ -> "lambda" *)
-  (*   | S.Op1 (_, op, _) -> op *)
-  (*   | S.Op2 (_, op, _, _) -> op  *)
-  (*   | S.If _ -> "if" *)
-  (*   | _ -> "UNKNOWN" *)
-  (* ); *)
+  (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth  *)
+  (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if (depth >= maxDepth) then []
   else 
     let nestedEval = eval jsonPath maxDepth in
