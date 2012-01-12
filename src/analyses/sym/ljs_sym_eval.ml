@@ -19,7 +19,7 @@ let bool b = match b with
 let unbool b = match b with
   | True -> true
   | False -> false
-  | _ -> failwith ("tried to unbool a non-bool" ^ (pretty_value b))
+  | _ -> failwith ("tried to unbool a non-bool" ^ (Ljs_sym_pretty.to_string b))
 
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
@@ -34,7 +34,7 @@ let rec apply p func args pcs depth = match func with
   (* end *)
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
-                         pretty_value func))
+                         Ljs_sym_pretty.to_string func))
 (*
 let rec get_field p obj1 field getter_params result = match obj1 with
   | Null -> Undefined (* nothing found *)
@@ -50,8 +50,8 @@ let rec get_field p obj1 field getter_params result = match obj1 with
   end
   | _ -> failwith (interp_error p 
                      "get_field on a non-object.  The expression was (get-field " 
-                   ^ pretty_value obj1 
-                   ^ " " ^ pretty_value (List.nth getter_params 0)
+                   ^ Ljs_sym_pretty.to_string obj1 
+                   ^ " " ^ Ljs_sym_pretty.to_string (List.nth getter_params 0)
                    ^ " " ^ field ^ ")")
 
 
@@ -108,7 +108,7 @@ let rec update_field p obj1 obj2 field newval setter_args result = match obj1 wi
               apply p setterv setter_args
             | _ -> Fail "Field not writable!"
   end
-  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
+  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ Ljs_sym_pretty.to_string obj1 ^ " " ^ Ljs_sym_pretty.to_string obj2 ^ " " ^ field ^ " " ^ Ljs_sym_pretty.to_string newval ^ ")" )
 
 let rec get_attr attr obj field = match obj, field with
   | ObjCell c, String s -> let (attrs, props) = !c in
@@ -275,7 +275,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
               | VarCell v -> return !v pc
               | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
                                   " at " ^ (string_of_position p) ^ 
-                                  ", but found something else: " ^ pretty_value (IdMap.find x env))
+                                  ", but found something else: " ^ Ljs_sym_pretty.to_string (IdMap.find x env))
           with Not_found ->
             failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
                          (string_of_position p))
@@ -457,8 +457,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
                 [obj_value; args_value]
     (fun x -> x)
           | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-                           ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
-                             ", " ^ (pretty_value f_value))
+                           ^ string_of_position p ^ " : " ^ (Ljs_sym_pretty.to_string obj_value) ^ 
+                             ", " ^ (Ljs_sym_pretty.to_string f_value))
         end
   | S.GetField (p, obj, f, args) ->
       let obj_value = eval obj env in
@@ -470,9 +470,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
                  ^ string_of_position p 
                  ^ ". Instead, it got " 
-                 ^ pretty_value obj_value 
+                 ^ Ljs_sym_pretty.to_string obj_value 
                  ^ " and " 
-                 ^ pretty_value f_value)
+                 ^ Ljs_sym_pretty.to_string f_value)
       end
   | S.DeleteField (p, obj, f) ->
       let obj_val = eval obj env in
@@ -495,9 +495,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
           | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
                            ^ string_of_position p 
                            ^ ". Instead, it got " 
-                           ^ pretty_value obj_val
+                           ^ Ljs_sym_pretty.to_string obj_val
                            ^ " and " 
-                           ^ pretty_value f_val)
+                           ^ Ljs_sym_pretty.to_string f_val)
         end
   | S.GetAttr (p, attr, obj, field) ->
       let obj_val = eval obj env in
@@ -540,7 +540,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
       | v -> v
 *)
 
-and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
+and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ Ljs_sym_pretty.to_string v ^ " ") args) ""))
 
 (* This function is exactly as ridiculous as you think it is.  We read,
    parse, desugar, and evaluate the string, storing it to temp files along
@@ -591,11 +591,11 @@ let rec eval_expr expr jsonPath maxDepth =
             begin try
                     match IdMap.find "message" props with
                       | Data ({ value = msg_val; }, _, _) ->
-                        (pretty_value msg_val)
-                      | _ -> (pretty_value v)
-              with Not_found -> (pretty_value v)
+                        (Ljs_sym_pretty.to_string msg_val)
+                      | _ -> (Ljs_sym_pretty.to_string v)
+              with Not_found -> (Ljs_sym_pretty.to_string v)
             end
-          | v -> (pretty_value v) in
+          | v -> (Ljs_sym_pretty.to_string v) in
       failwith ("Uncaught exception: " ^ err_msg)
     | Break (l, v) -> failwith ("Broke to top of execution, missed label: " ^ l)
 

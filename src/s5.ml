@@ -46,9 +46,9 @@ module S5 = struct
     (* let (inch, outch) = z3 in begin *)
     let results = 
       Ljs_sym_eval.eval_expr !srcES5 !jsonPath 25 Ljs_sym_values.mtPath in
-    List.iter (fun (v, p) -> printf "%s:\n" (Ljs_sym_values.pretty_value v);
+    List.iter (fun (v, p) -> printf "%s:\n" (Ljs_sym_pretty.to_string v);
       List.iter (fun c -> printf "%s\n" 
-        (Ljs_sym_values.pretty_sym_exp c)) p.Ljs_sym_values.constraints;
+        (Ljs_sym_pretty.to_string (Ljs_sym_values.Sym c))) p.Ljs_sym_values.constraints;
       print_newline())
       results
   (* close_in inch; close_out outch *)

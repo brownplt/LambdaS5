@@ -12,7 +12,7 @@ let is_sat (p : path) : bool =
       
       List.iter
         (fun pc -> output_string outch 
-          (Printf.sprintf "(assert %s)" (pretty_sym_exp pc)))
+          (Printf.sprintf "(assert %s)" (Ljs_sym_pretty.to_string (Sym pc))))
         cs;
 
       output_string outch "(check-sat)";

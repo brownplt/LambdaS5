@@ -57,30 +57,4 @@ type label = string
 exception Break of label * value
 exception Throw of value
 
-let rec pretty_value v = match v with 
-  | Num d -> string_of_float d
-  | String s -> "\"" ^ s ^ "\""
-  | True -> "true"
-  | False -> "false"
-  | Undefined -> "undefined"
-  | Null -> "null"
-  | Closure c -> "function"
-  | ObjCell o -> "object"
-  | VarCell v -> "&<" ^ pretty_value !v ^ ">"
-  | Fail s -> "[fail: " ^ s ^ "]"
-  | Sym e -> "Sym(" ^ pretty_sym_exp e ^ ")"
-
-and pretty_sym_exp e = match e with
-  | Concrete v -> pretty_value v
-  | SId x -> x
-  | SOp1 (op, e) -> "(" ^ op ^ " " ^ (pretty_sym_exp e) ^ ")"
-  | SOp2 (op, l, r) -> "(" ^ op ^ " " ^ (pretty_sym_exp l) 
-    ^ " " ^ (pretty_sym_exp r) ^ ")"
-  | SApp (f, args) -> 
-    "(" ^ (pretty_sym_exp f) ^ " " ^ (String.concat " " (map pretty_sym_exp args)) ^ ")"
-
-let rec pretty_value_list vs = match vs with
-  | (v::vs) -> pretty_value v ^ ", " ^ pretty_value_list vs
-  | [] -> ""
-
 let mtPath = { constraints = []; vars = []; }

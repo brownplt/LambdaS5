@@ -13,7 +13,7 @@ let bool b = match b with
 
 let to_int v = match v with
   | Num x -> int_of_float x
-  | _ -> raise (Throw (str ("expected number, got " ^ pretty_value v)))
+  | _ -> raise (Throw (str ("expected number, got " ^ Ljs_sym_pretty.to_string v)))
 
 let typeof v = str begin match v with
   | Undefined -> "undefined"
@@ -127,7 +127,7 @@ let print v = match v with
       printf "%S\n%!" s; Undefined
   | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
+  | _ -> failwith ("[interp] Print received non-string: " ^ Ljs_sym_pretty.to_string v)
 
 let is_extensible obj = match obj with
   | ObjCell o -> begin match !o with
@@ -159,7 +159,7 @@ let get_proto obj = match obj with
       | ({ proto = pvalue; }, _) -> pvalue
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | v -> raise (Throw (str ("get-proto got: " ^ pretty_value v)))
+  | v -> raise (Throw (str ("get-proto got: " ^ Ljs_sym_pretty.to_string v)))
 
 let get_primval obj = match obj with
   | ObjCell o -> begin match !o with
@@ -272,7 +272,7 @@ let nnot e = match e with
   | ObjCell _ -> False
   | Closure _ -> False
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> failwith ("Fatal: ! operator on " ^ (pretty_value e))
+  | _ -> failwith ("Fatal: ! operator on " ^ (Ljs_sym_pretty.to_string e))
 
 let void v = Undefined
 
@@ -367,7 +367,7 @@ let op1 op = match op with
 let arith s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
   | v1, v2 -> raise (Throw (str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
-                                 (pretty_value v1) ^ ", " ^ (pretty_value v2) ^
+                                 (Ljs_sym_pretty.to_string v1) ^ ", " ^ (Ljs_sym_pretty.to_string v2) ^
                                    "perhaps something wasn't desugared fully?")))
 
 let arith_sum = arith "+" (+) (+.)
