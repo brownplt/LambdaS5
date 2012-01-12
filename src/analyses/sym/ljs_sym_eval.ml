@@ -384,9 +384,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
                        (string_of_position p))
       end
 
-(* let return v pc = [(v,pc)] *)
-(* let bind l f = List.concat (List.map f l) *)
-
       | S.Object (p, attrs, props) -> begin 
         match attrs with
           | { S.primval = valexp;
@@ -394,76 +391,56 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
               S.code = codexp;
               S.extensible = ext;
               S.klass = kls; } ->
-        (* { primval = (match vexp with *)
-        (*   | Some vexp -> Some (eval vexp env) *)
-        (*   | None -> None); *)
-        (*   proto = (match protoexp with  *)
-        (*   | Some pexp -> eval pexp env  *)
-        (*   | None -> Undefined); *)
-        (*   code = (match codexp with *)
-        (*     | Some cexp -> Some (eval cexp env) *)
-        (*     | None -> None); *)
-        (*   extensible = ext; *)
-        (*   klass = kls}  *)
 
-            return Undefined pc
-      (*       let opt_lift results = map (fun (v, pc) -> (Some v, pc)) results in *)
-      (*       bind          *)
-      (*         (match valexp with *)
-      (*           | None -> return None pc *)
-      (*           | Some vexp -> opt_lift (eval vexp env pc)) *)
-      (*         (fun (v, pc_v) -> *)
-      (*           bind *)
-      (*             (match protoexp with  *)
-      (*               | None -> return Undefined pc_v *)
-      (*               | Some pexp -> eval pexp env pc_v) *)
-      (*             (fun (p, pc_p) -> *)
-      (*               bind  *)
-      (*                 (match codexp with *)
-      (*                   | None -> return None pc_p *)
-      (*                   | Some cexp -> opt_lift (eval cexp env pc_p)) *)
-      (*                 (fun (c, pc_c) -> *)
-      (*                   let attrsv = *)
-      (*                     { primval = v; proto = p; code = c;  *)
-      (*                       extensible = ext; klass = kls } *)
-      (*                   in *)
-      (*                   let eval_prop prop pc = match prop with *)
-      (*                     | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) -> *)
-      (*                       bind (eval vexp env pc) *)
-      (*                         (fun (v2, pc_v2) ->  *)
-      (*                           return (Data ({ value = v2; writable = w; }, enum, config)) pc_v2) *)
-      (*                     | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) -> *)
-      (*                       bind (eval ge env pc) *)
-      (*                         (fun (v2, pc_v2) ->  *)
-      (*                           bind (eval se env pc_v2) *)
-      (*                             (fun (v3, pc_v3) ->  *)
-      (*                               return (Accessor ({ getter = v2; setter = v3}, enum, config)) pc_v3)) *)
-      (*                   in *)
-      (*                   let eval_prop pc m (name, prop) =  *)
-      (*                     bind  *)
-      (*                       (eval_prop prop pc) *)
-      (*                       (fun (propv, pc_propv) ->  *)
-      (*                         return (IdMap.add name propv m) pc_propv)   *)
-      (*                   in *)
-      (*                   bind  *)
-      (*                     (return (fold_left (eval_prop pc_c) IdMap.empty props) pc_c) *)
-      (*                     (fun (propsv, pc_ps) ->  *)
-      (*                       return (ObjCell (ref (attrsv, propsv))) pc_ps)))) *)
-    end
+            let opt_lift results = map (fun (v, pc) -> (Some v, pc)) results in
+            bind
+              (match valexp with
+                | None -> return None pc
+                | Some vexp -> opt_lift (eval vexp env pc))
+              (fun (v, pc_v) ->
+                bind
+                  (match protoexp with
+                    | None -> return Undefined pc_v
+                    | Some pexp -> eval pexp env pc_v)
+                  (fun (p, pc_p) ->
+                    bind
+                      (match codexp with
+                        | None -> return None pc_p
+                        | Some cexp -> opt_lift (eval cexp env pc_p))
+                      (fun (c, pc_c) ->
+                        let attrsv =
+                          { primval = v; proto = p; code = c;
+                            extensible = ext; klass = kls }
+                        in
+                        let eval_prop prop pc = match prop with
+                          | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
+                            bind (eval vexp env pc)
+                              (fun (v2, pc_v2) ->
+                                return (Data ({ value = v2; writable = w; }, enum, config)) pc_v2)
+                          | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
+                            bind (eval ge env pc)
+                              (fun (v2, pc_v2) ->
+                                bind (eval se env pc_v2)
+                                  (fun (v3, pc_v3) ->
+                                    return (Accessor ({ getter = v2; setter = v3}, enum, config)) pc_v3))
+                        in
+                        let propvs_pcs  = 
+                          List.fold_left
+                            (fun maps_pcs (name, prop) -> 
+                              bind maps_pcs
+                                (fun (map, pc) ->
+                                  bind 
+                                    (eval_prop prop pc)
+                                    (fun (propv, pc_v) -> 
+                                      return (IdMap.add name propv map) pc_v)))
+                            [(IdMap.empty, pc_c)] props in
+                        bind propvs_pcs
+                          (fun (propvs, pc_psv) -> 
+                            return (ObjCell (ref (attrsv, propvs))) pc_psv))))
+      end
 
       | _ -> failwith "[interp] not yet implemented"
 
-    (* in *)
-    (* let eval_prop prop = match prop with *)
-    (*   | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) -> *)
-    (*     Data ({ value = eval vexp env; writable = w; }, enum, config) *)
-    (*   | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) -> *)
-    (*     Accessor ({ getter = eval ge env; setter = eval se env}, enum, config) *)
-    (* in *)
-    (*   let eval_prop m (name, prop) =  *)
-    (*     IdMap.add name (eval_prop prop) m in *)
-    (*     ObjCell (ref (attrsv, *)
-    (*                   fold_left eval_prop IdMap.empty props)) *)
 
 (*
   | S.SetField (p, obj, f, v, args) ->
