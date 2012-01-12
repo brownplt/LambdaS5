@@ -1,9 +1,7 @@
-open Prelude
 open Es5_sym_values
-open Unix
 
 let is_sat (p : path) : bool =
-  let (inch, outch) = open_process "z3 -smt2 -in" in 
+  let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   match p with
     | { constraints = cs; vars = vs; } -> 
       
