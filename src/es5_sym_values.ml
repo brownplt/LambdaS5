@@ -45,8 +45,6 @@ and
 and datav = { value : value; writable : bool; }
 and accessorv = { getter : value; setter : value; }
 
-let mtPath = { constraints = []; vars = []; }
-
 let d_attrsv = { primval = None;
                  code = None; 
                  proto = Undefined; 
@@ -84,3 +82,5 @@ and pretty_sym_exp e = match e with
 let rec pretty_value_list vs = match vs with
   | (v::vs) -> pretty_value v ^ ", " ^ pretty_value_list vs
   | [] -> ""
+
+let mtPath = { constraints = []; vars = []; }
