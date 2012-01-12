@@ -1,11 +1,11 @@
 open Prelude
-module S = Es5_syntax
+module S = Ljs_syntax
 open Format
-open Es5
-open Es5_sym_values
-open Es5_sym_delta
-open Es5_sym_z3
-open Es5_pretty
+open Ljs
+open Ljs_sym_values
+open Ljs_sym_delta
+open Ljs_sym_z3
+open Ljs_pretty
 open Unix
 open SpiderMonkey
 open Exprjs_to_ljs
@@ -597,7 +597,7 @@ and eval_op str env jsonPath maxDepth =
     in
   let desugard = exprjs_to_ljs used_ids exprjsd in
   if (IdMap.mem "%global" env) then
-    (Es5_pretty.exp desugard std_formatter; print_newline ();
+    (Ljs_pretty.exp desugard std_formatter; print_newline ();
      eval jsonPath maxDepth 0 desugard env (* TODO: which env? *))
   else
     (failwith "no global")
