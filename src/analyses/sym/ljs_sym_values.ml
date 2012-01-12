@@ -16,7 +16,6 @@ type value =
       the other kinds of values *)
   | ObjCell of (attrsv * (propv IdMap.t)) ref
   | Closure of (value list -> path -> int -> result list)
-  | Fail of string
   | Sym of sym_exp (* symbolic expression *)
 and 
   sym_exp =

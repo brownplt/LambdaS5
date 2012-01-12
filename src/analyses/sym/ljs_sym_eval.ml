@@ -30,7 +30,7 @@ let rec apply p func args pcs depth = match func with
   (* | ObjCell c -> begin match !c with *)
   (*     | ({ code = Some cvalue }, _) -> *)
   (*       apply p cvalue args pcs *)
-  (*     | _ -> Fail "Applied an object without a code attribute" *)
+  (*     | _ -> failwith "Applied an object without a code attribute" *)
   (* end *)
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
@@ -106,7 +106,7 @@ let rec update_field p obj1 obj2 field newval setter_args result = match obj1 wi
             | Accessor ({ setter = setterv; }, enum, config) ->
               (* 8.12.5, step 5 *)
               apply p setterv setter_args
-            | _ -> Fail "Field not writable!"
+            | _ -> failwith "Field not writable!"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ Ljs_sym_pretty.to_string obj1 ^ " " ^ Ljs_sym_pretty.to_string obj2 ^ " " ^ field ^ " " ^ Ljs_sym_pretty.to_string newval ^ ")" )
 

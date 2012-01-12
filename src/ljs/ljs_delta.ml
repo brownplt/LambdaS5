@@ -28,8 +28,6 @@ let typeof v = str begin match v with
   end
   | Closure _ -> "lambda"
   | VarCell _ -> failwith "[delta] typeof got a variable"
-  | Fail s -> 
-    failwith (sprintf "[delta] typeof got a fail: %s" s)
 end
 
 let surface_typeof v = begin match v with
@@ -236,10 +234,6 @@ let to_int32 v = match v with
   | Num d -> Num (float_of_int (int_of_float d))
   | _ -> raise (Throw (str "to-int"))
 
-let fail v = match v with
-  | Fail _ -> True
-  | _ -> False
-
 let nnot e = match e with
   | Undefined -> True
   | Null -> True
@@ -310,7 +304,6 @@ let op1 op = match op with
   | "strlen" -> strlen
   | "is-array" -> is_array
   | "to-int32" -> to_int32
-  | "fail?" -> fail
   | "!" -> nnot
   | "void" -> void
   | "floor" -> floor'

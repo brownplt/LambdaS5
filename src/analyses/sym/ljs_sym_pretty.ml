@@ -24,7 +24,6 @@ let rec value v =
                                            vert (vert_intersperse (text ",") 
                                                    (map prop (IdMap.bindings props)))]))]]
   | Closure func -> text "(closure)"
-  | Fail s -> horz [text "Fail"; text s]
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)

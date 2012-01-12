@@ -27,7 +27,7 @@ let apply p func args = match func with
   | Closure c -> c args
   | ObjCell c -> begin match !c with
       | ({ code = Some (Closure c) }, _) -> c args
-      | _ -> Fail "Applied an object without a code attribute"
+      | _ -> failwith "Applied an object without a code attribute"
   end
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
@@ -103,7 +103,7 @@ let rec update_field p obj1 obj2 field newval setter_args result = match obj1 wi
             | Accessor ({ setter = setterv; }, enum, config) ->
               (* 8.12.5, step 5 *)
               apply p setterv setter_args
-            | _ -> Fail "Field not writable!"
+            | _ -> failwith "Field not writable!"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
 
