@@ -256,15 +256,15 @@ type localState =
   | CApply of C.Label.t * C.cps_ret * D.ValueLattice.t * localStack * localHeap
   (* | ... more to come *)
 
-let analyze exp =
-  let labelVarMap = partition_vars exp in
+(* let analyze exp = *)
+(*   let labelVarMap = partition_vars exp in *)
 
-  let localNextState state = match state with
-    | UEval (l, f, r, e, args, tf, h) ->
-      begin match f with
-      | C.Lambda (_, _, r, e, args, body) -> D.ClosureSet.singleton (r, e, args, body, IdMap.empty, IdMap.empty, IdMap.empty)
-      | 
-      if stack_ref
+(*   let localNextState state = match state with *)
+(*     | UEval (l, f, r, e, args, tf, h) -> *)
+(*       begin match f with *)
+(*       | C.Lambda (_, _, r, e, args, body) -> D.ClosureSet.singleton (r, e, args, body, IdMap.empty, IdMap.empty, IdMap.empty) *)
+(*       |  *)
+(*       if stack_ref *)
 
 
 
