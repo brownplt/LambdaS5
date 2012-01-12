@@ -1,9 +1,9 @@
 open Prelude
-module C = Es5_cps
-module D = Es5_cps_delta
-module E = Es5_syntax
-module V = Es5_cps_values
-module A = Es5_cps_absdelta
+module C = Ljs_cps
+module D = Ljs_cps_delta
+module E = Ljs_syntax
+module V = Ljs_cps_values
+module A = Ljs_cps_absdelta
 open Graph
 open Format
 open FormatExt
@@ -231,19 +231,19 @@ let print_bindings env store =
   let rec addReachable obj = match obj with
     | V.VarCell (_, _, a) ->
       reachableAddrs := a::!reachableAddrs;
-      addReachable (Es5_cps_values.Store.find a store)
+      addReachable (Ljs_cps_values.Store.find a store)
     | _ -> () in
   IdMap.iter (fun id addr ->
     rootAddrs := addr::!rootAddrs;
     try 
-      let lookup = Es5_cps_values.Store.find addr store in
+      let lookup = Ljs_cps_values.Store.find addr store in
       addReachable lookup;
       printf "  %s -> %s -> %s\n" id (V.ADDRESS.toString addr) (V.pretty_bind lookup)
     with _ -> printf "  %s -> %s -> XXX dangling pointer XXX\n" id (V.ADDRESS.toString addr)) env;
   List.iter (fun addr ->
     if List.mem addr !rootAddrs then ()
     else (printf "  ** -> %s -> %s\n" (V.ADDRESS.toString addr) 
-            (V.pretty_bind (Es5_cps_values.Store.find addr store));
+            (V.pretty_bind (Ljs_cps_values.Store.find addr store));
           rootAddrs := addr::!rootAddrs))
     !reachableAddrs
 
@@ -251,19 +251,19 @@ let print_all_bindings env store =
   printf "Binding Env:\n";
   IdMap.iter (fun id addr -> printf "  %s -> %s\n" id (V.ADDRESS.toString addr)) env;
   printf "Binding Store:\n";
-  Es5_cps_values.Store.iter (fun addr value -> printf "  %s -> %s\n" (V.ADDRESS.toString addr) (V.pretty_bind value)) store
+  Ljs_cps_values.Store.iter (fun addr value -> printf "  %s -> %s\n" (V.ADDRESS.toString addr) (V.pretty_bind value)) store
 
 let print_rets env store = 
   printf "Condensed returns:\n";
   IdMap.iter (fun id addr -> printf "  %s -> %s" id (V.ADDRESS.toString addr);
-    match (Es5_cps_values.Store.find addr store) with
+    match (Ljs_cps_values.Store.find addr store) with
     | V.Answer -> printf " -> ANS\n"
     | V.RetCont(l, arg, _, _,_,_) -> printf " -> RET(%s->...)[...]\n" arg) env
 let print_all_rets env store = 
   printf "Return Env:\n";
   IdMap.iter (fun id addr -> printf "  %s -> %s\n" id (V.ADDRESS.toString addr)) env;
   printf "Return Store:\n";
-  Es5_cps_values.Store.iter (fun addr ret ->
+  Ljs_cps_values.Store.iter (fun addr ret ->
     match ret with
     | V.Answer -> printf "  %s -> ANS\n" (V.ADDRESS.toString addr)
     | V.RetCont(l, arg, body, _,_,_) -> printf "  %s -> RET(%s->...)\n" (V.ADDRESS.toString addr) arg
@@ -273,7 +273,7 @@ let print_exns env store =
   printf "Error Env:\n";
   IdMap.iter (fun id addr -> printf "  %s -> %s\n" id (V.ADDRESS.toString addr)) env;
   printf "Error Store:\n";
-  Es5_cps_values.Store.iter (fun addr ret ->
+  Ljs_cps_values.Store.iter (fun addr ret ->
     match ret with
     | V.Error -> printf "  %s -> ERR\n" (V.ADDRESS.toString addr)
     | V.ExnCont(l, arg, lbl, body, _,_,_) -> printf "  %s -> RET(%s, %s->...)\n" (V.ADDRESS.toString addr) arg lbl
@@ -291,16 +291,16 @@ let dump_heap_as_dot prefix bindingEnv bindingStore retEnv retStore exnEnv exnSt
   (*   let gt = Str.global_replace (Str.regexp ">") "&gt;" in *)
   (*   let amp = Str.global_replace (Str.regexp "&") "&amp;" in *)
   (*   text (lt (gt (amp str))) in *)
-  let bindMap = Es5_cps_values.Store.fold (fun addr value acc -> 
+  let bindMap = Ljs_cps_values.Store.fold (fun addr value acc -> 
     let (b,r,e) = match value with
     | V.Closure(_, _, _, _, _, _, binds, rets, exns) -> (binds, rets, exns)
     | V.VarCell (_, _, ptr) -> (IdMap.singleton "dummy" ptr, IdMap.empty, IdMap.empty)
     | _ -> (IdMap.empty, IdMap.empty, IdMap.empty) in
     (addr, V.pretty_bind value, b,r,e)::acc) bindingStore [] in
-  let retsMap = Es5_cps_values.Store.fold (fun addr ret acc -> match ret with 
+  let retsMap = Ljs_cps_values.Store.fold (fun addr ret acc -> match ret with 
     | V.Answer -> (addr, "ANSWER", IdMap.empty, IdMap.empty, IdMap.empty)::acc
     | V.RetCont(_, arg, _, b, r, s) -> (addr, "RET("^arg^"->...)", b, r, s)::acc) retStore [] in
-  let exnsMap = Es5_cps_values.Store.fold (fun addr ret acc -> match ret with 
+  let exnsMap = Ljs_cps_values.Store.fold (fun addr ret acc -> match ret with 
     | V.Error -> (addr, "ERROR", IdMap.empty, IdMap.empty, IdMap.empty)::acc
     | V.ExnCont(_, arg, lbl, _, b, r, s) -> (addr, "RET("^arg^", "^lbl^"->...)", b, r, s)::acc) exnStore [] in
   (* let fmt_bindings name env envName = *)

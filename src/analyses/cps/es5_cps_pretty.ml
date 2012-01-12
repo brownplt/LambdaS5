@@ -1,5 +1,5 @@
 open Prelude
-open Es5_cps
+open Ljs_cps
 
 open Format
 open FormatExt
@@ -32,10 +32,10 @@ and prim verbose p =
   match p with
   | GetAttr (p,lbl, a, o, f) ->
     label verbose lbl (squish [value o;
-                               brackets (horz [value f; angles (horz [text (Es5_syntax.string_of_attr a)])])])
+                               brackets (horz [value f; angles (horz [text (Ljs_syntax.string_of_attr a)])])])
   | SetAttr (p,lbl, a, o, f, v) ->
     label verbose lbl (squish [value o;
-                               brackets (squish [value f; angles (horz [text (Es5_syntax.string_of_attr a)]);
+                               brackets (squish [value f; angles (horz [text (Ljs_syntax.string_of_attr a)]);
                                                  text "="; value v])])
   | SetBang (p,lbl, x, e) ->
     label verbose lbl (horz [text x; text "<-"; value e])
@@ -125,5 +125,5 @@ and prop (f, prop) = match prop with
                                           text "#setter";
                                           text s])]
 ;;
-Es5_cps.pretty_print := (fun e fmt -> exp false e fmt)
+Ljs_cps.pretty_print := (fun e fmt -> exp false e fmt)
 let cps_value_to_string v = value false v Format.str_formatter; Format.flush_str_formatter(); 

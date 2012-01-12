@@ -1,5 +1,5 @@
 open Prelude
-open Es5_syntax
+open Ljs_syntax
 open Lexing
 
 let parse_es5 cin name =
@@ -7,7 +7,7 @@ let parse_es5 cin name =
     try 
       (* Set the correct filename in lexbuf (for source-tracking). *)
       lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
-      Es5_parser.prog Es5_lexer.token lexbuf
+      Ljs_parser.prog Ljs_lexer.token lexbuf
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"
@@ -26,7 +26,7 @@ let parse_es5_env cin name =
     try 
       (* Set the correct filename in lexbuf (for source-tracking). *)
       lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
-      Es5_parser.env Es5_lexer.token lexbuf
+      Ljs_parser.env Ljs_lexer.token lexbuf
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"

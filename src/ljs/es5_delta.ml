@@ -1,6 +1,6 @@
 open Prelude
-open Es5_syntax
-open Es5_values
+open Ljs_syntax
+open Ljs_values
 
 let undef = Undefined
 let null = Null

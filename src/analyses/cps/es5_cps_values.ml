@@ -1,5 +1,5 @@
 open Prelude
-open Es5_cps
+open Ljs_cps
 module F = Format
 module FX = FormatExt
 

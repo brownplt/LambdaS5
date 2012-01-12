@@ -1,5 +1,5 @@
 open Prelude
-open Es5_syntax
+open Ljs_syntax
 
 type value =
   | Null

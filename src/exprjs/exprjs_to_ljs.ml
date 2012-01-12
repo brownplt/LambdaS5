@@ -1,7 +1,7 @@
 open Prelude
 
 module E = Exprjs_syntax
-module S = Es5_syntax
+module S = Ljs_syntax
 
 let idx = ref 0
 

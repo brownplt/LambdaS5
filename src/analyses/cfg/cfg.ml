@@ -1,10 +1,10 @@
 open Prelude
-module C = Es5_cps
-module D = Es5_cps_delta
-module A = Es5_cps_absdelta
-module E = Es5_syntax
-module V = Es5_cps_values
-module U = Es5_cps_util
+module C = Ljs_cps
+module D = Ljs_cps_delta
+module A = Ljs_cps_absdelta
+module E = Ljs_syntax
+module V = Ljs_cps_values
+module U = Ljs_cps_util
 open Graph
 open Format
 open FormatExt
@@ -17,16 +17,16 @@ module Vert_COMPARABLE = struct
   let equal t1 t2 = (t1 = t2)
 end
 
-module Es5_ORDERED_TYPE_DFT = struct
+module Ljs_ORDERED_TYPE_DFT = struct
   type t = Jump | IfTrue | IfFalse | Prim (* get/set field?? *)
   let default = Prim
   let compare t1 t2 = Pervasives.compare t1 t2
 end
 
-module G = Persistent.Digraph.ConcreteBidirectionalLabeled (Vert_COMPARABLE) (Es5_ORDERED_TYPE_DFT)
+module G = Persistent.Digraph.ConcreteBidirectionalLabeled (Vert_COMPARABLE) (Ljs_ORDERED_TYPE_DFT)
 
 type complete = Ans of V.bind_value | Err of V.bind_value
-module AddrSet = Set.Make (Es5_cps_values.ADDRESS)
+module AddrSet = Set.Make (Ljs_cps_values.ADDRESS)
 
 
 
@@ -45,7 +45,7 @@ let eval (exp : C.cps_exp) =
    * no garbage.
    *)
   let garbage_collect
-      bindingEnv (bindingStore : V.bind_value Es5_cps_values.Store.t)
+      bindingEnv (bindingStore : V.bind_value Ljs_cps_values.Store.t)
       retContEnv retContStore
       exnContEnv exnContStore =
     (* (U.dump_heap_as_dot "before_" bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore) Format.str_formatter; *)
@@ -55,7 +55,7 @@ let eval (exp : C.cps_exp) =
     let add addr = AddrSet.add addr in
     let (++) l1 l2 = AddrSet.union l1 l2 in
     let join (b1, r1, e1) (b2, r2, e2) = (b1++b2, r1++r2, e1++e2) in
-    let lookup addr store = try Some (Es5_cps_values.Store.find addr store) with _ -> None in
+    let lookup addr store = try Some (Ljs_cps_values.Store.find addr store) with _ -> None in
     let rec reachable_retContEnv_addrs (retContEnv : V.retContEnv) =
       IdMap.fold (fun _ rAddr (b, r, e) ->
         match (lookup rAddr retContStore) with
@@ -120,27 +120,27 @@ let eval (exp : C.cps_exp) =
       else 
         (
           (* print_string ("discarding " ^ (string_of_int addr) ^ "->" ^ (pretty value) ^ " from store " ^ stoName ^ "\n"); *)
-          Es5_cps_values.Store.remove addr acc)
+          Ljs_cps_values.Store.remove addr acc)
     ) in
     let (newBindings, newRets, newExns) =
-      (Es5_cps_values.Store.fold (filter_sto "bindings" V.pretty_bind reachable_bind_addrs) 
+      (Ljs_cps_values.Store.fold (filter_sto "bindings" V.pretty_bind reachable_bind_addrs) 
          bindingStore bindingStore,
-       Es5_cps_values.Store.fold (filter_sto "retconts" V.pretty_retcont reachable_ret_addrs) 
+       Ljs_cps_values.Store.fold (filter_sto "retconts" V.pretty_retcont reachable_ret_addrs) 
          retContStore retContStore,
-       Es5_cps_values.Store.fold (filter_sto "exnconts" V.pretty_exncont reachable_exn_addrs) 
+       Ljs_cps_values.Store.fold (filter_sto "exnconts" V.pretty_exncont reachable_exn_addrs) 
          exnContStore exnContStore) in
     (* (U.dump_heap_as_dot "after_" bindingEnv newBindings retContEnv newRets exnContEnv newExns) Format.str_formatter; *)
     (newBindings, newRets, newExns) in
 
   let eval_ret ret bindingEnv retContEnv exnContEnv retContStore = match ret with
-    | C.RetId(_, id) -> Es5_cps_values.Store.find (IdMap.find id retContEnv) retContStore
+    | C.RetId(_, id) -> Ljs_cps_values.Store.find (IdMap.find id retContEnv) retContStore
     | C.RetLam(label, arg, body) -> V.RetCont(label, arg, body, bindingEnv, retContEnv, exnContEnv) in
   let eval_exn exn bindingEnv retContEnv exnContEnv exnContStore = match exn with
-    | C.ExnId(_, id) -> Es5_cps_values.Store.find (IdMap.find id exnContEnv) exnContStore
+    | C.ExnId(_, id) -> Ljs_cps_values.Store.find (IdMap.find id exnContEnv) exnContStore
     | C.ExnLam(label, arg, lbl, body) -> V.ExnCont(label, arg, lbl, body, bindingEnv, retContEnv, exnContEnv) in
   let rec eval_exp exp 
       bindingEnv retContEnv exnContEnv 
-      (bindingStore : V.bind_value Es5_cps_values.Store.t) retContStore exnContStore = 
+      (bindingStore : V.bind_value Ljs_cps_values.Store.t) retContStore exnContStore = 
     (* print_string "In eval_exp for "; *)
     (* (match exp with *)
     (* | C.LetValue (_, l, id, _, _) -> printf "%s" ("LetValue " ^ (string_of_int l) ^ "," ^ id ^ "\n") *)
@@ -151,7 +151,7 @@ let eval (exp : C.cps_exp) =
     (* | C.AppRetCont (l, id, _) -> printf "%s" ("AppRetCont " ^ (string_of_int l) ^ "," ^ id ^ "\n") *)
     (* | C.AppExnCont (l, id, _, _) -> printf "%s" ("AppExnCont " ^ (string_of_int l) ^ "," ^ id ^ "\n") *)
     (* | C.AppFun (_, l, f, r, e, a) -> printf "%s %s(Ret %s, Exn %s; %s)\n" ("AppFun " ^ (string_of_int l)) *)
-    (*   (Es5_cps_pretty.cps_value_to_string f) r e (String.concat ", " (List.map Es5_cps_pretty.cps_value_to_string a)) *)
+    (*   (Ljs_cps_pretty.cps_value_to_string f) r e (String.concat ", " (List.map Ljs_cps_pretty.cps_value_to_string a)) *)
     (* | C.If(_, l, _, _, _) -> printf "%s" ("If " ^ (string_of_int l) ^ "\n") *)
     (* | C.Eval(_, l, _) -> printf "%s" ("Eval " ^ (string_of_int l) ^ "\n") *)
     (* ); *)
@@ -163,29 +163,29 @@ let eval (exp : C.cps_exp) =
       let addr = V.ADDRESS.newAddr() in
       eval_exp body 
         (IdMap.add id addr bindingEnv) retContEnv exnContEnv 
-        (Es5_cps_values.Store.add addr value bindingStore) retContStore exnContStore
+        (Ljs_cps_values.Store.add addr value bindingStore) retContStore exnContStore
     | C.RecValue(pos, label, id, value, body) ->
       let addr = V.ADDRESS.newAddr() in
       let bindingEnv' = IdMap.add id addr bindingEnv in
       let (value', bindingStore, retContStore, exnContStore) = 
-        eval_val value bindingEnv' (Es5_cps_values.Store.add addr (V.Undefined(dummy_pos, newLabel())) bindingStore)
+        eval_val value bindingEnv' (Ljs_cps_values.Store.add addr (V.Undefined(dummy_pos, newLabel())) bindingStore)
           retContEnv retContStore exnContEnv exnContStore in
       eval_exp body 
         bindingEnv' retContEnv exnContEnv 
-        (Es5_cps_values.Store.add addr value' bindingStore) retContStore exnContStore
+        (Ljs_cps_values.Store.add addr value' bindingStore) retContStore exnContStore
     | C.LetPrim(pos, label, id, prim, body) ->
       let (value, bindingStore', retContStore, exnContStore) = eval_prim prim bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in
       let addr = V.ADDRESS.newAddr() in
       eval_exp body 
         (IdMap.add id addr bindingEnv) retContEnv exnContEnv 
-        (Es5_cps_values.Store.add addr value bindingStore') retContStore exnContStore
+        (Ljs_cps_values.Store.add addr value bindingStore') retContStore exnContStore
     | C.LetRetCont(label, id, r, exp) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
       (*   garbage_collect bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in *)
       let ret = eval_ret r bindingEnv retContEnv exnContEnv retContStore in
       let addr = V.ADDRESS.newAddr() in
       let retEnv' = (IdMap.add id addr retContEnv) in
-      let retStore' = (Es5_cps_values.Store.add addr ret retContStore) in
+      let retStore' = (Ljs_cps_values.Store.add addr ret retContStore) in
       (* print_rets retEnv' retStore'; *)
       eval_exp exp
         bindingEnv retEnv' exnContEnv
@@ -199,14 +199,14 @@ let eval (exp : C.cps_exp) =
       | V.Answer -> 
         (match value' with
         | V.VarCell (_, _, a) -> 
-          (Ans (Es5_cps_values.Store.find a bindingStore), bindingStore, retContStore, exnContStore)
+          (Ans (Ljs_cps_values.Store.find a bindingStore), bindingStore, retContStore, exnContStore)
         | _ ->
           (Ans value', bindingStore, retContStore, exnContStore))
       | V.RetCont (_, arg, body, bindingEnv, retContEnv, exnContEnv) ->
         let addr = V.ADDRESS.newAddr() in
         eval_exp body
           (IdMap.add arg addr bindingEnv) retContEnv exnContEnv
-          (Es5_cps_values.Store.add addr value' bindingStore) retContStore exnContStore
+          (Ljs_cps_values.Store.add addr value' bindingStore) retContStore exnContStore
       end
     | C.LetExnCont(label, id, e, exp) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
@@ -214,7 +214,7 @@ let eval (exp : C.cps_exp) =
       let exn = eval_exn e bindingEnv retContEnv exnContEnv exnContStore in
       let addr = V.ADDRESS.newAddr() in
       let exnEnv' = (IdMap.add id addr exnContEnv) in
-      let exnStore' = (Es5_cps_values.Store.add addr exn exnContStore) in
+      let exnStore' = (Ljs_cps_values.Store.add addr exn exnContStore) in
       (* print_exns exnEnv' exnStore'; *)
       eval_exp exp
         bindingEnv retContEnv exnEnv'
@@ -230,7 +230,7 @@ let eval (exp : C.cps_exp) =
       | V.Error -> 
         (match arg' with
         | V.VarCell (_, _, a) -> 
-          (Err (Es5_cps_values.Store.find a bindingStore), bindingStore, retContStore, exnContStore)
+          (Err (Ljs_cps_values.Store.find a bindingStore), bindingStore, retContStore, exnContStore)
         | _ ->
           (Err arg', bindingStore, retContStore, exnContStore))
       | V.ExnCont(_, arg, lbl, body, bindingEnv, retContEnv, exnContEnv) ->
@@ -238,7 +238,7 @@ let eval (exp : C.cps_exp) =
         let lblAddr = V.ADDRESS.newAddr() in
         eval_exp body
           (IdMap.add arg argAddr (IdMap.add lbl lblAddr bindingEnv)) retContEnv exnContEnv
-          (Es5_cps_values.Store.add argAddr arg' (Es5_cps_values.Store.add lblAddr lbl' bindingStore)) retContStore exnContStore
+          (Ljs_cps_values.Store.add argAddr arg' (Ljs_cps_values.Store.add lblAddr lbl' bindingStore)) retContStore exnContStore
       end
     | C.If(pos, label, cond, left, right) ->
       let (cond', bindingStore, retContStore, exnContStore) = 
@@ -269,15 +269,15 @@ let eval (exp : C.cps_exp) =
       let argAddrs = List.map (fun _ -> V.ADDRESS.newAddr()) argNames in
       let bindingEnv' = List.fold_left (fun env (name, addr) -> IdMap.add name addr env)
         cBindingEnv (List.combine argNames argAddrs) in (* NEED THE CLOSURE ENVIRONMENTS *)
-      let bindingStore' = List.fold_left (fun store (addr, value) -> Es5_cps_values.Store.add addr value store)
+      let bindingStore' = List.fold_left (fun store (addr, value) -> Ljs_cps_values.Store.add addr value store)
         bindingStore (List.combine argAddrs args') in
       eval_exp body
         bindingEnv' (IdMap.add retArg retAddr cRetEnv) (IdMap.add exnArg exnAddr cExnEnv)
-        bindingStore' (Es5_cps_values.Store.add retAddr ret' retContStore) (Es5_cps_values.Store.add exnAddr exn' exnContStore)
+        bindingStore' (Ljs_cps_values.Store.add retAddr ret' retContStore) (Ljs_cps_values.Store.add exnAddr exn' exnContStore)
     | C.Eval _ ->
       (Err (V.Undefined(dummy_pos, newLabel())), bindingStore, retContStore, exnContStore)
-  and eval_val (value : C.cps_value) env bindingStore retEnv retStore exnEnv exnStore : (V.bind_value * Es5_cps_values.bindingStore * Es5_cps_values.retContStore * Es5_cps_values.exnContStore) = match value with
-    | C.Id(_, _, id) -> ((Es5_cps_values.Store.find (IdMap.find id env) bindingStore), bindingStore, retStore, exnStore)
+  and eval_val (value : C.cps_value) env bindingStore retEnv retStore exnEnv exnStore : (V.bind_value * Ljs_cps_values.bindingStore * Ljs_cps_values.retContStore * Ljs_cps_values.exnContStore) = match value with
+    | C.Id(_, _, id) -> ((Ljs_cps_values.Store.find (IdMap.find id env) bindingStore), bindingStore, retStore, exnStore)
     | C.Null(p,l) -> (V.Null(p,l), bindingStore, retStore, exnStore)
     | C.Undefined(p,l) -> (V.Undefined(p,l), bindingStore, retStore, exnStore)
     | C.String(p,l,s) -> (V.String(p,l,s), bindingStore, retStore, exnStore)
@@ -298,24 +298,24 @@ let eval (exp : C.cps_exp) =
                  V.klass = a.C.klass; V.extensible = a.C.extensible } in
       let prop (props, bindingStore,retStore,exnStore) (str, p) = (match p with
         | C.Data({C.value = v; C.writable = w}, enum, config) ->
-          let v = (Es5_cps_values.Store.find (IdMap.find v env) bindingStore) in
+          let v = (Ljs_cps_values.Store.find (IdMap.find v env) bindingStore) in
           (str, V.Data({V.value = v; V.writable = w}, enum, config))::props, bindingStore,retStore,exnStore
         | C.Accessor({C.getter = g; C.setter = s}, enum, config) -> 
-          let g = (Es5_cps_values.Store.find (IdMap.find g env) bindingStore) in
-          let s = (Es5_cps_values.Store.find (IdMap.find s env) bindingStore) in
+          let g = (Ljs_cps_values.Store.find (IdMap.find g env) bindingStore) in
+          let s = (Ljs_cps_values.Store.find (IdMap.find s env) bindingStore) in
           (str, V.Accessor({V.getter = g; V.setter = s}, enum, config))::props, bindingStore,retStore,exnStore) in
       let (ps', bindingStore,retStore,exnStore) = List.fold_left prop ([], bindingStore,retStore,exnStore) ps in
       let ps' = List.rev ps' in
       let addr = V.ADDRESS.newAddr() in
       (V.VarCell(dummy_pos,newLabel(),addr), 
-       Es5_cps_values.Store.add addr (V.Object(p,l,a',ps')) bindingStore, retStore, exnStore)
+       Ljs_cps_values.Store.add addr (V.Object(p,l,a',ps')) bindingStore, retStore, exnStore)
     | C.Lambda(p,l,r,e,a,b) -> 
       let (bindingStore, retStore, exnStore) =
         garbage_collect env bindingStore retEnv retStore exnEnv exnStore in
       (V.Closure(p,l,r,e,a,b,env, retEnv, exnEnv), bindingStore, retStore, exnStore)
   and eval_prim (prim : C.cps_prim) env bindingStore retEnv retStore exnEnv exnStore = 
     (* U.print_bindings env bindingStore; *)
-    (* (let pretty_val v = Es5_cps_pretty.value v Format.str_formatter; Format.flush_str_formatter() in *)
+    (* (let pretty_val v = Ljs_cps_pretty.value v Format.str_formatter; Format.flush_str_formatter() in *)
     (*   match prim with *)
     (* | C.GetAttr(_, l, a, o, f) -> printf "%d GetAttr %s[%s<%s>]\n" l (pretty_val o) (E.string_of_attr a) (pretty_val f) *)
     (* | C.SetAttr(_, l, a, o, f, v) -> printf "%d SetAttr %s[%s<%s> = %s]\n" l (pretty_val o) (E.string_of_attr a) (pretty_val f) (pretty_val v) *)
@@ -330,7 +330,7 @@ let eval (exp : C.cps_exp) =
       let (obj', bindingStore, retStore, exnStore) = 
         eval_val obj env bindingStore retEnv retStore exnEnv exnStore in
       let obj' = match obj' with
-        | V.VarCell (_, _, a) -> Es5_cps_values.Store.find a bindingStore
+        | V.VarCell (_, _, a) -> Ljs_cps_values.Store.find a bindingStore
         | _ -> failwith "[cps-interp] set-attr didn't get a VarCell" in
       let (field', bindingStore, retStore, exnStore) = 
         eval_val field env bindingStore retEnv retStore exnEnv exnStore in
@@ -356,7 +356,7 @@ let eval (exp : C.cps_exp) =
       let (obj', bindingStore, retStore, exnStore) = 
         eval_val obj env bindingStore retEnv retStore exnEnv exnStore in
       let (obj', addr) = match obj' with
-        | V.VarCell (_, _, a) -> (Es5_cps_values.Store.find a bindingStore, a)
+        | V.VarCell (_, _, a) -> (Ljs_cps_values.Store.find a bindingStore, a)
         | _ -> failwith ("[cps-interp] set-attr didn't get a VarCell: " ^ (V.pretty_bind obj')) in
       let (field', bindingStore, retStore, exnStore) = 
         eval_val field env bindingStore retEnv retStore exnEnv exnStore in
@@ -426,7 +426,7 @@ let eval (exp : C.cps_exp) =
               else help props' (oldProp::acc) in
           help props [] in
         let newobj = V.Object(pos, label, attrs, replaceProp (s, newprop) props) in
-        (bool true pos, (Es5_cps_values.Store.add addr newobj bindingStore), retStore, exnStore)
+        (bool true pos, (Ljs_cps_values.Store.add addr newobj bindingStore), retStore, exnStore)
       | V.Object(pos, label, {V.extensible = false}, props), V.String (_, _, s) -> 
         failwith "[cps-interp] extending inextensible object"
       | _ -> failwith "[cps-interp] set-attr didn't get an object and a string"
@@ -445,7 +445,7 @@ let eval (exp : C.cps_exp) =
     | C.DeleteField(pos, _, obj, field) -> 
       let (obj', bindingStore, retStore, exnStore) = eval_val obj env bindingStore retEnv retStore exnEnv exnStore in
       let (obj', addr, retStore, exnStore) = match obj' with
-        | V.VarCell (_, _, a) -> ((Es5_cps_values.Store.find a bindingStore), a, retStore, exnStore)
+        | V.VarCell (_, _, a) -> ((Ljs_cps_values.Store.find a bindingStore), a, retStore, exnStore)
         | _ -> failwith "[cps-interp] set-attr didn't get a VarCell" in
       let (field', bindingStore, retStore, exnStore) = eval_val field env bindingStore retEnv retStore exnEnv exnStore in
       begin match obj', field' with
@@ -456,7 +456,7 @@ let eval (exp : C.cps_exp) =
             | V.Data (_, _, true)
             | V.Accessor (_, _, true) ->
               let newObj = V.Object(pos, label, attrs, List.remove_assoc s props) in
-              (bool true pos, Es5_cps_values.Store.add addr newObj bindingStore, retStore, exnStore)
+              (bool true pos, Ljs_cps_values.Store.add addr newObj bindingStore, retStore, exnStore)
             | _ -> (bool false pos, bindingStore, retStore, exnStore)
           with Not_found -> (bool false pos, bindingStore, retStore, exnStore)
         end
@@ -470,15 +470,15 @@ let eval (exp : C.cps_exp) =
          if (BindingSet.cardinal bindings == 1) 
          then (value', IdMap.add addr (BindingSet.singleton value') bindingStore)
          else (value', IdMap.add addr (BindingSet.add value' bindings) bindingStore) *)
-      (value', Es5_cps_values.Store.add addr value' bindingStore, retStore, exnStore) in
+      (value', Ljs_cps_values.Store.add addr value' bindingStore, retStore, exnStore) in
   let bindingEnv = IdMap.empty in
-  let bindingStore = Es5_cps_values.Store.empty in
+  let bindingStore = Ljs_cps_values.Store.empty in
   let answerAddr = V.ADDRESS.newAddr() in
   let retContEnv = IdMap.add "%answer" answerAddr IdMap.empty in
-  let retContStore = Es5_cps_values.Store.add answerAddr V.Answer Es5_cps_values.Store.empty in
+  let retContStore = Ljs_cps_values.Store.add answerAddr V.Answer Ljs_cps_values.Store.empty in
   let errorAddr = V.ADDRESS.newAddr() in
   let exnContEnv = IdMap.add "%error" errorAddr IdMap.empty in
-  let exnContStore = Es5_cps_values.Store.add errorAddr V.Error Es5_cps_values.Store.empty in
+  let exnContStore = Ljs_cps_values.Store.add errorAddr V.Error Ljs_cps_values.Store.empty in
   let (ans, _, _, _) = (eval_exp exp bindingEnv retContEnv exnContEnv bindingStore retContStore exnContStore) in
   ans
 
@@ -511,7 +511,7 @@ let eval (exp : C.cps_exp) =
 (*   type t =  *)
 (*     | RetCont of label * id * cps_exp *)
 (*     | ExnCont of label * id * id * cps_exp *)
-(*     | Value of Es5_cps.cps_value *)
+(*     | Value of Ljs_cps.cps_value *)
 (*   let compare = Pervasives.compare *)
 (*   let equal t1 t2 = match (t1, t2) with *)
 (*     | RetCont(l1, _, _), RetCont(l2, _, _) -> l1 = l2 *)
@@ -678,7 +678,7 @@ type env = C.cps_exp IdMap.t
 let build expr =
   let v = expr in
   let cfg = G.add_vertex G.empty v in
-  let rec build_exp (g : G.t) (env : env) (entry : vert) (exp : Es5_cps.cps_exp) : (G.t * vert) =
+  let rec build_exp (g : G.t) (env : env) (entry : vert) (exp : Ljs_cps.cps_exp) : (G.t * vert) =
     match exp with
   | C.LetValue(pos,l, id, value, exp) -> (g, entry)
   | C.RecValue(pos,l, id, value, exp) -> (g, entry)
@@ -693,7 +693,7 @@ let build expr =
   fst (build_exp cfg IdMap.empty v expr)
 
 let cpsv_to_string cps_value =
-  Es5_cps_pretty.value false cps_value Format.str_formatter;
+  Ljs_cps_pretty.value false cps_value Format.str_formatter;
   Format.flush_str_formatter()
 module Display = struct
   include G

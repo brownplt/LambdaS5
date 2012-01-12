@@ -1,5 +1,5 @@
 open Prelude
-module E = Es5_syntax
+module E = Ljs_syntax
 
 module Label : sig 
   type t

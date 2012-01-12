@@ -1,7 +1,7 @@
 open Prelude
-open Es5_cps_values
+open Ljs_cps_values
 
-let newLabel = Es5_cps.Label.newLabel
+let newLabel = Ljs_cps.Label.newLabel
 let str s = String (dummy_pos, newLabel(), s)
 let num f = Num (dummy_pos, newLabel(), f)
 

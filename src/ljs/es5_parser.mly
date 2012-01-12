@@ -1,6 +1,6 @@
 %{
 open Prelude
-open Es5_syntax
+open Ljs_syntax
 
 let true_c p = True p
 let false_c p = False p
@@ -76,8 +76,8 @@ let with_pos exp pos = match exp with
 %left ELSE
 %left LPAREN
 
-%type <Es5_syntax.exp> prog
-%type <Es5_syntax.exp -> Es5_syntax.exp> env
+%type <Ljs_syntax.exp> prog
+%type <Ljs_syntax.exp -> Ljs_syntax.exp> env
 
 %start prog
 %start env

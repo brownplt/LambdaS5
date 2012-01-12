@@ -1,6 +1,6 @@
 open Prelude
-module E = Es5_cps
-module V = Es5_cps_values
+module E = Ljs_cps
+module V = Ljs_cps_values
 open Format
 open FormatExt
 
@@ -1165,7 +1165,7 @@ let is_callable obj store =
   let module OL = ObjLattice in
   match (ValueLattice.addrsOf obj) with
   | ASL.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (ASL.elements addrs)) in
     (match (VL.objOf value) with
     | OL.Bot -> VL.injectBool (BoolLattice._Bot ())
@@ -1183,7 +1183,7 @@ let is_extensible obj store =
   let module OL = ObjLattice in
   match (ValueLattice.addrsOf obj) with
   | ASL.Set addrs ->
-    let value = VL.meet (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.meet (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (ASL.elements addrs)) in
     (match (VL.objOf value) with
     | OL.Bot -> VL.injectBool (BoolLattice._Bot ())
@@ -1196,7 +1196,7 @@ let prevent_extensions label getStore updateValue obj store = match (ValueLattic
     let strongUpdate = AddressSet.cardinal addrs = 1 in
     let (store, modified) = AddressSet.fold (fun addr (store, modified) ->
       let (bindingStore, _, _) = getStore label store in
-      let value = Es5_cps_values.Store.find addr bindingStore in
+      let value = Ljs_cps_values.Store.find addr bindingStore in
       let o = ValueLattice.objOf value in
       let o' = ObjLattice.setExtensible strongUpdate o BoolLattice.False in
       (updateValue true label addr (ValueLattice.injectObj o') store, modified || o' <> o)
@@ -1209,7 +1209,7 @@ let get_code obj store =
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1224,7 +1224,7 @@ let get_proto obj store =
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1239,7 +1239,7 @@ let get_primval obj store =
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1254,7 +1254,7 @@ let get_class obj store =
   let module OL = ObjLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1273,7 +1273,7 @@ let rec get_property_names label getStore updateValue obj store =
     match (VL.addrsOf obj) with
     | AddressSetLattice.Set addrs ->
       let (bindingStore, _, _) = getStore label store in
-      let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr bindingStore)
+      let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr bindingStore)
                              (AddressSetLattice.elements addrs)) in
       let o = VL.objOf value in
       (match o with
@@ -1303,7 +1303,7 @@ let rec get_property_names label getStore updateValue obj store =
                          OL.extensible = BL.inject false; OL.klass = StringLattice.inject "LambdaJS interal" }
         in 
         let newAddr = V.ADDRESS.addrForContour [label] in
-        let oldObj = Es5_cps_values.Store.find newAddr bindingStore in
+        let oldObj = Ljs_cps_values.Store.find newAddr bindingStore in
         let newObj = VL.injectObj (OL.Obj(d_attrsv, name_props)) in
         (VL.injectAddrs (AddressSetLattice.inject newAddr), 
          updateValue true label newAddr (VL.join [newObj; oldObj]) store, 
@@ -1323,7 +1323,7 @@ and all_protos o store : ObjLattice.t list =
     | _ -> None in
   let fromAddrs = match (VL.addrsOf o) with
     | ASL.Set addrs ->
-      let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+      let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                              (ASL.elements addrs)) in
       (match (VL.objOf value) with
       | OL.Obj ({ OL.proto = Some p }, _) -> Some p
@@ -1355,7 +1355,7 @@ let get_own_property_names label getStore updateValue obj store =
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
     let (bindingStore, _, _) = getStore label store in
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr bindingStore)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr bindingStore)
                            (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1377,7 +1377,7 @@ let get_own_property_names label getStore updateValue obj store =
                        OL.extensible = BL.inject false; OL.klass = StringLattice.inject "LambdaJS interal" }
       in
       let newAddr = V.ADDRESS.addrForContour [label] in
-      let oldObj = Es5_cps_values.Store.find newAddr bindingStore in
+      let oldObj = Ljs_cps_values.Store.find newAddr bindingStore in
       let newObj = VL.injectObj (OL.Obj(d_attrsv, final_props)) in
       (VL.injectAddrs (AddressSetLattice.inject newAddr), 
        updateValue true label newAddr (VL.join [newObj; oldObj]) store, 
@@ -1395,7 +1395,7 @@ let object_to_string obj store =
   let module SL = StringLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1417,7 +1417,7 @@ let is_array obj store =
   let module SL = StringLattice in
   match (VL.addrsOf obj) with
   | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                      (AddressSetLattice.elements addrs)) in
     let o = VL.objOf value in
     (match o with
@@ -1539,7 +1539,7 @@ let mutableOp1 label getStore updateValue op = match op with
   | _ -> failwith ("Not a mutable op1: " ^ op)
 
 
-let op1 op : ValueLattice.t -> ValueLattice.t Es5_cps_values.Store.t -> ValueLattice.t = match op with
+let op1 op : ValueLattice.t -> ValueLattice.t Ljs_cps_values.Store.t -> ValueLattice.t = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
   | "primitive?" -> is_primitive
@@ -1734,7 +1734,7 @@ let has_property obj field store =
     let rec checkObj obj =
       match (VL.addrsOf obj) with
       | AddressSetLattice.Set addrs ->
-        let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+        let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                (AddressSetLattice.elements addrs)) in
         let o = VL.objOf value in
         (match o with
@@ -1763,7 +1763,7 @@ let has_own_property obj field store =
     let rec checkObj obj =
       match (VL.addrsOf obj) with
       | AddressSetLattice.Set addrs ->
-        let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+        let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                (AddressSetLattice.elements addrs)) in
         let o = VL.objOf value in
         (match o with
@@ -1854,7 +1854,7 @@ let is_accessor a b store =
     let rec checkObj obj =
       match (VL.addrsOf obj) with
       | AddressSetLattice.Set addrs ->
-        let value = VL.join (List.map (fun addr -> Es5_cps_values.Store.find addr store)
+        let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
                                (AddressSetLattice.elements addrs)) in
         let o = VL.objOf value in
         (match o with
@@ -1871,7 +1871,7 @@ let is_accessor a b store =
     checkObj a
   with Pointy e -> e
        
-let op2 op : ValueLattice.t -> ValueLattice.t -> ValueLattice.t Es5_cps_values.Store.t -> ValueLattice.t = match op with
+let op2 op : ValueLattice.t -> ValueLattice.t -> ValueLattice.t Ljs_cps_values.Store.t -> ValueLattice.t = match op with
   | "+" -> arith_sum
   | "-" -> arith_sub
   | "/" -> arith_div

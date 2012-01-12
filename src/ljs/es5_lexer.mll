@@ -1,8 +1,8 @@
 {
 open Prelude
 open Lexing
-open Es5_syntax
-open Es5_parser
+open Ljs_syntax
+open Ljs_parser
 
 module S = String
 

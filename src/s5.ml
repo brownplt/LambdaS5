@@ -1,10 +1,10 @@
 open Prelude
-open Es5
-open Es5_eval
-open Es5_syntax
-open Es5_parser
-open Es5_pretty
-open Es5_values
+open Ljs
+open Ljs_eval
+open Ljs_syntax
+open Ljs_parser
+open Ljs_pretty
+open Ljs_values
 open Exprjs_pretty
 
 module S5 = struct
@@ -14,15 +14,15 @@ module S5 = struct
   open Exprjs_to_ljs
   open Exprjs_syntax
 
-  let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
+  let srcES5 = ref (Ljs_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Es5_cps.AppRetCont(Es5_cps.Label.dummy, Es5_cps.RetId(Es5_cps.Label.dummy,"fake"), Es5_cps.Id(dummy_pos,Es5_cps.Label.dummy,"fake")))
+  let cpsES5 = ref (Ljs_cps.AppRetCont(Ljs_cps.Label.dummy, Ljs_cps.RetId(Ljs_cps.Label.dummy,"fake"), Ljs_cps.Id(dummy_pos,Ljs_cps.Label.dummy,"fake")))
 
   let jsonPath = ref ""
 
   let load_s5 (path : string) : unit =
-    srcES5 := Es5_syntax.Seq (dummy_pos, !srcES5,
-		              Es5.parse_es5 (open_in path) path)
+    srcES5 := Ljs_syntax.Seq (dummy_pos, !srcES5,
+		              Ljs.parse_es5 (open_in path) path)
 
   let set_json (path : string) : unit =
     jsonPath := path
@@ -31,18 +31,18 @@ module S5 = struct
 
   let print_s5 (choice : string) : unit =
     match choice with 
-    | "es5" -> Es5_pretty.exp !srcES5 std_formatter; print_newline ()
+    | "es5" -> Ljs_pretty.exp !srcES5 std_formatter; print_newline ()
     | "exprjs" -> Exprjs_pretty.exp !srcEJS std_formatter; print_newline ()
-    | "cps5" -> Es5_cps_pretty.exp true !cpsES5 std_formatter; print_newline ()
+    | "cps5" -> Ljs_cps_pretty.exp true !cpsES5 std_formatter; print_newline ()
     | _ -> failwith "bad option string"
 
   let eval () : unit =
-    let v = Es5_eval.eval_expr !srcES5 !jsonPath in
+    let v = Ljs_eval.eval_expr !srcES5 !jsonPath in
     printf "%s" (pretty_value v);
     print_newline ()
 
   let env (path : string) : unit =
-    let envFunc = Es5.parse_es5_env (open_in path) path in
+    let envFunc = Ljs.parse_es5_env (open_in path) path in
     srcES5 := envFunc !srcES5
 
   let desugar_spidermonkey_js (path : string) : unit = 
@@ -64,29 +64,29 @@ module S5 = struct
   (*   print_newline () *)
 
   let cps () =
-    cpsES5 := Es5_cps.cps_tail !srcES5 
+    cpsES5 := Ljs_cps.cps_tail !srcES5 
       "%error"
-      (Es5_cps.RetId(Es5_cps.Label.dummy,"%answer"))
+      (Ljs_cps.RetId(Ljs_cps.Label.dummy,"%answer"))
   let alphatize () = 
-    cpsES5 := fst (Es5_cps_util.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) 
+    cpsES5 := fst (Ljs_cps_util.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) 
   let uncps () =
-    srcES5 := Es5_cps.de_cps !cpsES5
+    srcES5 := Ljs_cps.de_cps !cpsES5
 
   let cps_eval () =
     let v = Cfg.eval !cpsES5 in
     (match v with
-    | Cfg.Ans v -> printf "ANSWER %s" (Es5_cps_values.pretty_bind v)
-    | Cfg.Err v -> printf "ERROR %s" (Es5_cps_values.pretty_bind v));
+    | Cfg.Ans v -> printf "ANSWER %s" (Ljs_cps_values.pretty_bind v)
+    | Cfg.Err v -> printf "ERROR %s" (Ljs_cps_values.pretty_bind v));
     print_newline ()
 
   let cps_abs_eval () =
     let module FX = FormatExt in
     let (finalEnv, finalStore, finalLab) = Cfg_abs.eval !cpsES5 in
-    printf "Finished evaling...finalLab is %s\n" (Es5_cps.Label.toString finalLab);
+    printf "Finished evaling...finalLab is %s\n" (Ljs_cps.Label.toString finalLab);
     let ans = Cfg_abs.getBinding finalLab "%%ANSWER" finalEnv finalStore in
     let err = Cfg_abs.getBinding finalLab "%%ERROR" finalEnv finalStore in
-    FX.vert [FX.horz [FX.text "ANSWER <="; Es5_cps_absdelta.ValueLattice.pretty ans];
-             FX.horz [FX.text "ERROR  <="; Es5_cps_absdelta.ValueLattice.pretty err]] Format.str_formatter;
+    FX.vert [FX.horz [FX.text "ANSWER <="; Ljs_cps_absdelta.ValueLattice.pretty ans];
+             FX.horz [FX.text "ERROR  <="; Ljs_cps_absdelta.ValueLattice.pretty err]] Format.str_formatter;
     printf "%s\n" (Format.flush_str_formatter ())
 
   let main () : unit =
