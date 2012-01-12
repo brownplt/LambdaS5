@@ -15,7 +15,7 @@ type value =
       (* Objects shouldn't have VarCells in them, but can have any of
       the other kinds of values *)
   | ObjCell of (attrsv * (propv IdMap.t)) ref
-  | Closure of (value list -> sym_exp list -> int -> result list)
+  | Closure of (value list -> path -> int -> result list)
   | Fail of string
   | Sym of sym_exp (* symbolic expression *)
 and 
@@ -25,7 +25,12 @@ and
   | SOp1 of string * sym_exp
   | SOp2 of string * sym_exp * sym_exp
   | SApp of sym_exp * sym_exp list
-and result = value * sym_exp list
+and result = value * path
+
+and path = { constraints : sym_exp list;
+             vars : var list; }
+
+and var = id * string
 
 and
   attrsv = { code : value option;
@@ -40,7 +45,7 @@ and
 and datav = { value : value; writable : bool; }
 and accessorv = { getter : value; setter : value; }
 
-
+let mtPath = { constraints = []; vars = []; }
 
 let d_attrsv = { primval = None;
                  code = None; 

@@ -4,6 +4,7 @@ open Format
 open Es5
 open Es5_sym_values
 open Es5_sym_delta
+open Es5_sym_z3
 open Es5_pretty
 open Unix
 open SpiderMonkey
@@ -236,7 +237,7 @@ let bind l f = List.concat (List.map f l)
 
 let val_sym v = match v with Sym x -> x | _ -> (Concrete v)
 
-let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list = 
+let rec eval jsonPath maxDepth depth exp env (pc : path) : result list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth (match exp with *)
   (*   | S.Id (_, x) -> x *)
   (*   | S.Hint (_, h, _) -> "Hint: " ^ h *)
@@ -279,6 +280,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list =
             failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
                          (string_of_position p))
         end
+
       | S.Lambda (p, xs, e) -> 
         let set_arg arg x m = IdMap.add x (VarCell (ref arg)) m in
         return (Closure (fun args pc' depth -> 
@@ -287,6 +289,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list =
           else
             nestedEval (depth+1) e (List.fold_right2 set_arg args xs env) pc'))
           pc
+
       | S.Op1 (p, op, e) ->
         bind 
           (eval e env pc)
@@ -294,6 +297,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list =
             match e_val with
               | Sym e -> return (Sym (SOp1 (op, e))) pc'
               | _ -> return (op1 op e_val) pc')
+
       | S.Op2 (p, op, e1, e2) -> 
         bind
           (eval e1 env pc)
@@ -306,19 +310,21 @@ let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list =
                   | Sym e1, _ -> return (Sym (SOp2 (op, e1, Concrete e2_val))) pc2
                   | _, Sym e2 -> return (Sym (SOp2 (op, Concrete e1_val, e2))) pc2
                   | _ ->  return (op2 op e1_val e2_val) pc2))
+
       | S.If (p, c, t, f) ->
         bind 
           (eval c env pc)
           (fun (c_val, pc') -> 
-            match c_val with
-              | True -> eval t env pc'
-              | Sym e -> 
-                let epc = (e :: pc') in
-                let nepc = (SOp1 ("not", e) :: pc') in
+            match c_val, pc' with
+              | True, _ -> eval t env pc'
+              | Sym e, { constraints = cs; vars = vs; } -> 
+                let vs' = collect_vars vs e in 
+                let true_pc  = { constraints = (e :: cs); vars = vs'; } in
+                let false_pc = { constraints = (SOp1 ("not", e) :: cs); vars = vs';} in
                 List.append 
-                  (if Es5_sym_z3.is_sat epc then (eval t env epc)
+                  (if is_sat true_pc then (eval t env true_pc)
                    else [])
-                  (if Es5_sym_z3.is_sat nepc then (eval f env nepc)
+                  (if is_sat false_pc then (eval f env false_pc)
                    else [])
               | _ -> eval f env pc')
           
@@ -326,7 +332,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list =
         bind 
           (eval f env pc)
           (fun (f_val, pc_f) ->
-            let args_pcs : (value list * sym_exp list) list =
+            let args_pcs : (value list * path) list =
               List.fold_left 
                 (fun avpcs arg ->
                   bind avpcs
@@ -347,6 +353,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : sym_exp list) : result list =
         bind 
           (eval e1 env pc) 
           (fun (_, pc') -> eval e2 env pc')
+
       | S.Let (p, x, e, body) ->
         bind
           (eval e env pc)

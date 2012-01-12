@@ -44,12 +44,13 @@ module S5 = struct
   let sym_eval () : unit =
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
     (* let (inch, outch) = z3 in begin *)
-    let vpcs = Es5_sym_eval.eval_expr !srcES5 !jsonPath 25 [] in
-    List.iter (fun (v, pcs) -> printf "%s:\n" (Es5_sym_values.pretty_value v);
-      List.iter (fun pc -> printf "(assert %s)\n" 
-        (Es5_sym_values.pretty_sym_exp pc)) pcs;
+    let results = 
+      Es5_sym_eval.eval_expr !srcES5 !jsonPath 25 Es5_sym_values.mtPath in
+    List.iter (fun (v, p) -> printf "%s:\n" (Es5_sym_values.pretty_value v);
+      List.iter (fun c -> printf "%s\n" 
+        (Es5_sym_values.pretty_sym_exp c)) p.Es5_sym_values.constraints;
       print_newline())
-      vpcs
+      results
   (* close_in inch; close_out outch *)
 
   let env (path : string) : unit =
