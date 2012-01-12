@@ -32,6 +32,242 @@ type abstractEnv = (V.ADDRESS.t IdMap.t * V.retContEnv * V.exnContEnv) C.LabelMa
 type abstractStore = (D.ValueLattice.t Es5_cps_values.Store.t * V.retContStore * V.exnContStore) C.LabelMap.t
 
 
+module ImperativeUnionFind = struct
+  module type OrderedType = sig
+    type t
+    val compare : t -> t -> int
+    val toString : t -> string
+  end
+  module type S = 
+    functor (Ord : OrderedType) -> 
+      functor (EltMap : Map.S with type key = Ord.t) -> functor (EltSet : Set.S with type elt = Ord.t) -> sig
+    type elt = Ord.t
+    type t
+    val empty : unit -> t
+    val find : t -> elt -> elt
+    val union : t -> elt -> elt -> unit
+    val toEquivClasses : t -> EltSet.t EltMap.t
+  end
+  module Make (Ord : OrderedType)
+    (EltMap : Map.S with type key = Ord.t) (EltSet : Set.S with type elt = Ord.t) = struct
+    type elt = Ord.t
+    type t = elt EltMap.t ref
+    let empty () = ref EltMap.empty
+    let find (m : t) (i : elt) =
+      let rec find_aux i = 
+        try begin
+          let link = EltMap.find i !m in
+          if link <> i then 
+            let rep = find_aux link in
+            m := EltMap.add i rep !m;
+            rep
+          else
+            i
+        end with Not_found ->
+          m := EltMap.add i i !m;
+          i in
+      find_aux i
+    let union m i j =
+      let ri = find m i in
+      let rj = find m j in
+      if ri <> rj then m := EltMap.add ri rj !m;
+      ()
+    let toEquivClasses m =
+      EltMap.fold (fun i _ acc ->
+        let ri = find m i in
+        let curClass = 
+          try EltMap.find ri acc
+          with Not_found -> EltSet.empty in
+        EltMap.add ri (EltSet.add i curClass) acc) !m EltMap.empty
+  end
+end
+
+
+
+module LabelSet = Set.Make(C.Label) 
+module LabelUF = ImperativeUnionFind.Make(C.Label) (C.LabelMap) (LabelSet)
+let print_labelmap map = C.LabelMap.iter (fun l set ->
+  printf "%s -> \n\t" (C.Label.toString l);
+  IdSet.iter (printf "%s ") set;
+  printf "\n") map;;
+let print_labelmap2 map = C.LabelMap.iter (fun l set ->
+  printf "%s -> \n\t" (C.Label.toString l);
+  LabelSet.iter (fun x -> printf "%s " (C.Label.toString x)) set;
+  printf "\n") map;;
+let print_labelmap3 map = C.LabelMap.iter (fun l m ->
+  printf "%s -> %s\n" (C.Label.toString l) (C.Label.toString m)) !map;;
+
+
+let partition_vars e =
+  let labelSets = LabelUF.empty () in
+  let rec part_exp curL e = match e with
+    | C.LetValue (_, l, i, v, b) 
+    | C.RecValue (_, l, i, v, b) ->
+      part_val curL v;      part_exp curL b;
+      LabelUF.union labelSets curL l
+    | C.LetPrim (_, l, i, p, b) ->
+      part_prim curL p;     part_exp curL b;
+      LabelUF.union labelSets curL l
+    | C.LetRetCont (l, i, r, b) ->
+      part_ret curL r;      part_exp curL b;
+      LabelUF.union labelSets curL l
+    | C.LetExnCont (l, i, e, b) -> (* only care about user lambda, not continuations *)
+      part_exn curL e;      part_exp curL b;
+      LabelUF.union labelSets curL l;
+    | C.If (_, l, c, t, f) ->
+      part_val curL c;      part_exp curL t;      part_exp curL f;
+      LabelUF.union labelSets curL l
+    | C.AppFun (_, l, f, r, e, args) ->
+      part_val curL f; part_ret curL r; part_exn curL e;
+      List.iter (part_val curL) args;
+      begin match f with
+      | C.Lambda _ -> ()
+      | _ -> LabelUF.union labelSets curL l
+      end
+    | C.AppRetCont(l, r, a) ->
+      part_val curL a;      part_ret curL r;
+      LabelUF.union labelSets curL l
+    | C.AppExnCont(l, e, a, lbl) ->
+      part_exn curL e;      part_val curL a;      part_val curL lbl;
+      LabelUF.union labelSets curL l
+    | C.Eval _ -> ()
+  and part_ret curL r = match r with
+    | C.RetId(l, _) -> LabelUF.union labelSets curL l
+    | C.RetLam(l, arg, b) -> part_exp curL b; LabelUF.union labelSets curL l
+  and part_exn curL r = match r with
+    | C.ExnId(l, _) -> LabelUF.union labelSets curL l
+    | C.ExnLam(l, arg, lbl, b) -> part_exp curL b; LabelUF.union labelSets curL l
+  and part_val curL v = match v with
+    | C.Lambda(_, l, _, _, _, b) ->
+      part_exp l b (* ignoring curL, because labels inside lambdas are separate *)
+    | C.Object(_, l, attrs, _) ->
+      let optval o = match o with
+        | None -> ()
+        | Some v -> part_val curL v in
+      optval attrs.C.primval;      optval attrs.C.code;      optval attrs.C.proto;
+      LabelUF.union labelSets curL l
+    | C.Null(_, l)
+    | C.Undefined(_, l)
+    | C.String(_, l, _)
+    | C.Num(_, l, _)
+    | C.True(_, l)
+    | C.False(_, l)
+    | C.Id(_, l, _) ->
+      LabelUF.union labelSets curL l
+  and part_prim curL p = match p with
+    | C.GetAttr(_, l, _, o, f) ->
+      part_val curL o;      part_val curL f;
+      LabelUF.union labelSets curL l
+    | C.SetAttr (_, l, _, o, f, v) ->
+      part_val curL o;      part_val curL f;      part_val curL v;
+      LabelUF.union labelSets curL l
+    | C.Op1 (_, l, _, v) ->
+      part_val curL v;
+      LabelUF.union labelSets curL l
+    | C.Op2 (_, l, _, u, v) ->
+      part_val curL u;      part_val curL v;
+      LabelUF.union labelSets curL l
+    | C.MutableOp1 (_, l, _, v) ->
+      part_val curL v;
+      LabelUF.union labelSets curL l
+    | C.DeleteField(_, l, o, f) ->
+      part_val curL o;      part_val curL f;
+      LabelUF.union labelSets curL l
+    | C.SetBang (_, l, _, v) ->
+      part_val curL v;
+      LabelUF.union labelSets curL l
+  in 
+
+  let rec vars_at_exp e acc = match e with
+    | C.LetValue (_, l, i, v, b)
+    | C.RecValue (_, l, i, v, b) ->
+      vars_at_exp b (vars_at_val v (C.LabelMap.add l (IdSet.singleton i) acc))
+    | C.LetPrim (_, l, i, p, b) ->
+      vars_at_exp b (vars_at_prim p (C.LabelMap.add l (IdSet.singleton i) acc))
+    | C.LetRetCont (l, ret, r, b) -> 
+      vars_at_exp b (vars_at_ret r (C.LabelMap.add l (IdSet.singleton ret) acc))
+    | C.LetExnCont (l, exn, e, b) ->
+      vars_at_exp b (vars_at_exn e (C.LabelMap.add l (IdSet.singleton exn) acc))
+    | C.If (_, _, c, t, f) ->
+      vars_at_exp f (vars_at_exp t (vars_at_val c acc))
+    | C.AppFun (_, _, f, r, e, args) ->
+      let flip f x y = f y x in 
+      List.fold_left (flip vars_at_val) (vars_at_val f (vars_at_ret r (vars_at_exn e acc))) args
+    | C.AppRetCont (_, r, v) -> vars_at_val v (vars_at_ret r acc)
+    | C.AppExnCont (_, e, a, l) -> vars_at_val l (vars_at_val a (vars_at_exn e acc))
+    | C.Eval _ -> acc
+  and vars_at_ret r acc = match r with
+    | C.RetId _ -> acc
+    | C.RetLam(l, arg, b) -> vars_at_exp b (C.LabelMap.add l (IdSet.singleton arg) acc)
+  and vars_at_exn e acc = match e with
+    | C.ExnId _ -> acc
+    | C.ExnLam(l, arg, lbl, b) -> vars_at_exp b (C.LabelMap.add l (IdSet.add lbl (IdSet.singleton arg)) acc)
+  and vars_at_prim p acc = match p with
+    | C.GetAttr (_, _, _, o, f) -> vars_at_val f (vars_at_val o acc)
+    | C.SetAttr (_, _, _, o, f, v) -> vars_at_val v (vars_at_val f (vars_at_val o acc))
+    | C.Op1 (_, _, _, v) -> vars_at_val v acc
+    | C.Op2 (_, _, _, l, r) -> vars_at_val r (vars_at_val l acc)
+    | C.MutableOp1 (_, _, _, v) -> vars_at_val v acc
+    | C.DeleteField (_, _, o, f) -> vars_at_val f (vars_at_val o acc)
+    | C.SetBang (_, _, _, v) -> vars_at_val v acc
+  and vars_at_val v acc = match v with
+    | C.Lambda (_, l, ret, exn, args, b) -> 
+      let flip f x y = f y x in 
+      vars_at_exp b (C.LabelMap.add l
+                       (List.fold_left (flip IdSet.add) (IdSet.add exn (IdSet.singleton ret)) args) acc)
+    | C.Object (_, _, attrs, _) ->
+      let optval o acc = match o with
+        | None -> acc
+        | Some v -> vars_at_val v acc in
+      optval attrs.C.primval (optval attrs.C.code (optval attrs.C.proto acc))
+    | _ -> acc in
+
+  let equivClasses_to_idSets e =
+    (* map from labels that define ids to the set of ids they define*)
+    let (labels_to_idSets : IdSet.t C.LabelMap.t) = vars_at_exp e C.LabelMap.empty in
+    (* map from each label to the set of ids defined in the equivalence class *)
+    C.LabelMap.fold (fun (label : C.Label.t) (set : LabelSet.t) (acc : IdSet.t C.LabelMap.t) ->
+      let ids_in_class = (LabelSet.fold (fun label acc ->
+        try
+          IdSet.union acc (C.LabelMap.find label labels_to_idSets)
+        with Not_found -> acc) set IdSet.empty) in
+      LabelSet.fold (fun label acc -> C.LabelMap.add label ids_in_class acc) set acc)
+      (LabelUF.toEquivClasses labelSets) C.LabelMap.empty in
+  part_exp (C.label_of_exp e) e; 
+  equivClasses_to_idSets e
+
+let stack_ref var label labelVarMap =
+  try
+    IdSet.mem var (C.LabelMap.find label labelVarMap)
+  with Not_found -> failwith ("Label " ^ (C.Label.toString label) ^ " not found in map!")
+let heap_ref var label labelVarMap = not (stack_ref var label labelVarMap)
+
+
+
+type userValueMap = D.ValueLattice.t IdMap.t
+type localFrame = userValueMap
+type localStack = localFrame
+type localHeap = userValueMap
+
+type localState =
+  | UEval of C.Label.t * C.cps_value * C.cps_ret * C.cps_exn * C.cps_value list * localStack * localHeap
+  | UApply of C.Label.t * D.CLOSURE.t * D.ValueLattice.t * D.ValueLattice.t * D.ValueLattice.t list * localStack * localHeap
+  | CEval of C.Label.t * C.cps_ret * C.cps_value * localStack * localHeap
+  | CApply of C.Label.t * C.cps_ret * D.ValueLattice.t * localStack * localHeap
+  (* | ... more to come *)
+
+let analyze exp =
+  let labelVarMap = partition_vars exp in
+
+  let localNextState state = match state with
+    | UEval (l, f, r, e, args, tf, h) ->
+      begin match f with
+      | C.Lambda (_, _, r, e, args, body) -> D.ClosureSet.singleton (r, e, args, body, IdMap.empty, IdMap.empty, IdMap.empty)
+      | 
+      if stack_ref
+
+
+
 (* **************************************** *)
 let print_abs_bindings label env store =
   let (bE, rE, eE) = C.LabelMap.find label env in
@@ -158,6 +394,16 @@ let getBinding label id env store =
       Es5_cps_values.Store.find addr b
     with Not_found -> D.ValueLattice._Bot ()
   with Not_found -> D.ValueLattice._Bot ()
+let getRet label id env store = 
+  let (b, r, e) = getEnv label env in
+  let addr = IdMap.find id r in
+  let (b, r, e) = getStore label store in
+  V.Store.find addr r
+let getExn label id env store = 
+  let (b, r, e) = getEnv label env in
+  let addr = IdMap.find id e in
+  let (b, r, e) = getStore label store in
+  V.Store.find addr e
 
 let updateRet label addr v store =
   try
@@ -340,12 +586,12 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
     | C.LetValue (_, l, id, _, _) -> printf "%s" ("LetValue " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
     | C.RecValue (_, l, id, _, _) -> printf "%s" ("RecValue " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
     | C.LetPrim (_, l, id, _, _) -> printf "%s" ("LetPrim " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
-    | C.LetRetCont (l, id, _, _, _) -> printf "%s" ("LetRetCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
-    | C.LetExnCont (l, id, _, _, _, _) -> printf "%s" ("LetExnCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
-    | C.AppRetCont (l, id, _) -> printf "%s" ("AppRetCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
-    | C.AppExnCont (l, id, _, _) -> printf "%s" ("AppExnCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
-    | C.AppFun (_, l, f, r, e, a) -> printf "%s %s(Ret %s, Exn %s; %s)\n" ("AppFun " ^ (C.Label.toString l))
-      (Es5_cps_pretty.cps_value_to_string f) r e (String.concat ", " (List.map Es5_cps_pretty.cps_value_to_string a)); l
+    | C.LetRetCont (l, id, _, _) -> printf "%s" ("LetRetCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.LetExnCont (l, id, _, _) -> printf "%s" ("LetExnCont " ^ (C.Label.toString l) ^ "," ^ id ^ "\n"); l
+    | C.AppRetCont (l, _, _) -> printf "%s" ("AppRetCont " ^ (C.Label.toString l) ^ "\n"); l
+    | C.AppExnCont (l, _, _, _) -> printf "%s" ("AppExnCont " ^ (C.Label.toString l) ^ "\n"); l
+    | C.AppFun (_, l, f, r, e, a) -> printf "%s %s(Ret XXX, Exn XXX; %s)\n" ("AppFun " ^ (C.Label.toString l))
+      (Es5_cps_pretty.cps_value_to_string f) (String.concat ", " (List.map Es5_cps_pretty.cps_value_to_string a)); l
     | C.If(_, l, _, _, _) -> printf "%s" ("If " ^ (C.Label.toString l) ^ "\n"); l
     | C.Eval(_, l, _) -> printf "%s" ("Eval " ^ (C.Label.toString l) ^ "\n"); l
     ) in
@@ -417,18 +663,21 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let (env3, store4, bodyMod) = eval_exp body exitLab env'' store3 in
       printModReasons label ["bodyMod", bodyMod; "primMod", primMod; "value' <> oldValue", value' <> oldValue];
       ((joinEnvs env'' env3), (joinStores store3 store4), (primMod || bodyMod || (oldValue <> value')))
-    | C.LetRetCont(label, id, arg, body, exp) ->
+    | C.LetRetCont(label, id, ret, exp) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
       (*   garbage_collect bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in *)
       let elab = C.label_of_exp exp in
-      let (b, r, e) = getEnv label env in
-      let ret = V.RetCont(label, arg, body, b, r, e) in
+      let ret = match ret with
+        | C.RetId(_, r) -> getRet label r env store
+        | C.RetLam(_, arg, body) -> 
+          let (b, r, e) = getEnv label env in
+          V.RetCont(label, arg, body, b, r, e) in
       let addr = V.ADDRESS.newAddr() in (* Choose not to lose any precision on ret-cont allocation *)
       let env' = (addRet elab id addr (copyEnv label elab env)) in
       let store' = (updateRet elab addr ret (pushStore label elab store)) in
       (* print_rets retEnv' retStore'; *)
       eval_exp exp exitLab env' store'
-    | C.AppRetCont(label, id, value) ->
+    | C.AppRetCont(label, r, value) ->
       (* print_rets retContEnv retContStore; *)
       let oldValue = eval_val value env store in
       let store' = pushStore label (C.label_of_val value) store in
@@ -436,7 +685,9 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let value' = eval_val value env' store' in
       let (bindingEnv, retContEnv, _) = getEnv label env in
       let (bindingStore, retContStore, _) = getStore label store in
-      let ret = V.Store.find (IdMap.find id retContEnv) retContStore in
+      let ret = match r with
+        | C.RetId(_, id) -> V.Store.find (IdMap.find id retContEnv) retContStore 
+        | C.RetLam(_, arg, body) -> let (b, r, e) = getEnv label env in V.RetCont(label, arg, body, b, r, e) in
       begin match ret with
       | V.Answer -> 
         let finalAns = (match (D.ValueLattice.addrsOf value') with
@@ -461,18 +712,21 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let (env3, store3, modRet) = eval_exp body exitLab env'' store'' in
         ((joinEnvs env'' env3), (joinStores store'' store3), (modRet || value' <> oldValue))
       end
-    | C.LetExnCont(label, id, arg, lbl, body, exp) ->
+    | C.LetExnCont(label, id, exn, exp) ->
       (* let (bindingStore, retContStore, exnContStore) = *)
       (*   garbage_collect bindingEnv bindingStore retContEnv retContStore exnContEnv exnContStore in *)
       let elab = C.label_of_exp exp in
-      let (b, r, e) = getEnv label env in
-      let exn = V.ExnCont(label, arg, lbl, body, b, r, e) in
+      let exn = match exn with
+        | C.ExnId(_, id) -> getExn label id env store
+        | C.ExnLam(_, arg, lbl, body) ->
+          let (b, r, e) = getEnv label env in
+          V.ExnCont(label, arg, lbl, body, b, r, e) in
       let addr = V.ADDRESS.newAddr() in (* Choose not to lose any precision on exn-cont allocation *)
       let env' = (addExn elab id addr (copyEnv label elab env)) in
       let store' = (updateExn elab addr exn (pushStore label elab store)) in
       (* print_exns retEnv' retStore'; *)
       eval_exp exp exitLab env' store'
-    | C.AppExnCont(label, id, arg, lbl) ->
+    | C.AppExnCont(label, e, arg, lbl) ->
       (* print_exns exnContEnv exnContStore; *)
       let oldArg = eval_val arg env store in
       let oldLbl = eval_val lbl env store in
@@ -484,7 +738,10 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let lbl' = eval_val lbl envLbl storeLbl in
       let (bindingEnv, _, exnContEnv) = getEnv label env in
       let (bindingStore, _, exnContStore) = getStore label store in
-      let exn = V.Store.find (IdMap.find id exnContEnv) exnContStore in
+      let exn = match e with
+        | C.ExnId(_, id) -> V.Store.find (IdMap.find id exnContEnv) exnContStore 
+        | C.ExnLam(_, arg, lbl, body) -> let (b, r, e) = getEnv label env in 
+                                         V.ExnCont(label, arg, lbl, body, b, r, e) in
       begin match exn with
       | V.Error -> 
         let oldFinalErr = getBinding exitLab "%%ERROR" env store in
@@ -555,8 +812,15 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         let args' = List.rev args' in
         let (bindingEnv, retContEnv, exnContEnv) = getEnv label env in
         let (bindingStore, retContStore, exnContStore) = getStore label store in
-        let ret' = V.Store.find (IdMap.find ret retContEnv) retContStore in
-        let exn' = V.Store.find (IdMap.find exn exnContEnv) exnContStore in
+        let ret' = match ret with
+          | C.RetId(_, r) -> getRet label r env store
+          | C.RetLam(_, arg, body) -> 
+            let (b, r, e) = getEnv label env in
+            V.RetCont(label, arg, body, b, r, e) in
+        let exn' = match exn with
+          | C.ExnId(_, id) -> V.Store.find (IdMap.find id exnContEnv) exnContStore 
+          | C.ExnLam(_, arg, lbl, body) -> let (b, r, e) = getEnv label env in 
+                                           V.ExnCont(label, arg, lbl, body, b, r, e) in
         let getLambda fobj = 
           let closures = D.ValueLattice.closureOf fobj in
           let obj = D.ValueLattice.objOf fobj in
@@ -1025,8 +1289,8 @@ let build expr =
   | C.LetValue(pos,l, id, value, exp) -> (g, entry)
   | C.RecValue(pos,l, id, value, exp) -> (g, entry)
   | C.LetPrim(pos,l, id, prim, exp) -> (g, entry)
-  | C.LetRetCont(l,ret, arg, retBody, exp) -> (g, entry)
-  | C.LetExnCont(l,exn, arg, label, exnBody, exp) -> (g, entry)
+  | C.LetRetCont(l,ret, _, exp) -> (g, entry)
+  | C.LetExnCont(l,exn, _, exp) -> (g, entry)
   | C.If(pos,l, cond, trueBranch, falseBranch) -> (g, entry)
   | C.AppFun(pos,l, func, ret, exn, args) -> (g, entry)
   | C.AppRetCont(l,ret, arg) -> (g, entry)
@@ -1043,12 +1307,12 @@ module Display = struct
   | C.LetValue(pos,l, id, value, exp) -> "LetValue(" ^ id ^ ")"
   | C.RecValue(pos,l, id, value, exp) -> "RecValue(" ^ id ^ ")"
   | C.LetPrim(pos,l, id, prim, exp) -> "LetPrim(" ^ id ^ ")"
-  | C.LetRetCont(l,ret, arg, retBody, exp) -> "LetRet(" ^ ret ^ ")"
-  | C.LetExnCont(l,exn, arg, label, exnBody, exp) -> "LetExn(" ^ exn ^ ")"
+  | C.LetRetCont(l,ret, _, exp) -> "LetRet(" ^ ret ^ ")"
+  | C.LetExnCont(l,exn, _, exp) -> "LetExn(" ^ exn ^ ")"
   | C.If(pos,l, cond, trueBranch, falseBranch) -> "If(" ^ (cpsv_to_string cond) ^ ")"
   | C.AppFun(pos,l, func, ret, exn, args) -> "App(" ^ (cpsv_to_string func) ^ ")"
-  | C.AppRetCont(l,ret, arg) -> "Ret(" ^ ret ^ ")"
-  | C.AppExnCont(l,exn, arg, label) -> "Exn(" ^ exn ^ ", " ^ (cpsv_to_string label) ^ ")"
+  | C.AppRetCont(l,ret, arg) -> "Ret()"
+  | C.AppExnCont(l,exn, arg, label) -> "Exn(" ^ (cpsv_to_string label) ^ ")"
   | C.Eval(pos,l, eval) -> "Eval"
   let graph_attributes _ = []
   let default_vertex_attributes _ = []

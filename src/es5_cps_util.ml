@@ -31,21 +31,30 @@ let no_free_vars exp (env : unit IdMap.t) : bool =
     | C.MutableOp1 (_,_, _, arg) -> free_val env arg
     | C.DeleteField (_,_, obj, field) -> List.for_all (free_val env) [obj; field]
     | C.SetBang (_,_, id, value) -> (env $$ [id]) && free_val env value
+  and free_ret env ret =
+    match ret with
+    | C.RetId(_, id) -> env $$ [id]
+    | C.RetLam(_, arg, body) -> free_exp (env ++ [arg]) body
+  and free_exn env exn =
+    match exn with
+    | C.ExnId(_, id) -> env $$ [id]
+    | C.ExnLam(_, arg, lbl, body) -> free_exp (env ++ [arg; lbl]) body
   and free_exp env exp =
     match exp with
     | C.LetValue(_,_, id, value, exp) -> free_val env value && free_exp (env ++ [id]) exp
     | C.RecValue(_,_, id, value, exp) -> let env' = env ++ [id] in
                                      free_val env' value && free_exp env' exp
     | C.LetPrim(_,_, id, prim, exp) -> free_prim env prim && free_exp (env ++ [id]) exp
-    | C.LetRetCont(_,ret, arg, retBody, exp) -> free_exp (env ++ [arg]) retBody && free_exp (env ++ [ret]) exp
-    | C.LetExnCont(_,exn, arg, lbl, exnBody, exp) -> free_exp (env ++ [arg;lbl]) exnBody && free_exp (env ++ [exn]) exp
+    | C.LetRetCont(_,ret, r, exp) -> free_ret env r && free_exp (env ++ [ret]) exp
+    | C.LetExnCont(_,exn, e, exp) -> free_exn env e && free_exp (env ++ [exn]) exp
     | C.If(_,_, cond, trueBranch, falseBranch) ->
       free_val env cond && List.for_all (free_exp env) [trueBranch; falseBranch]
     | C.AppFun(_,_, func, ret, exn, args) ->
-      (env $$ [ret;exn])
+      free_ret env ret
+      && free_exn env exn
       && List.for_all (free_val env) (func::args)
-    | C.AppRetCont(_,ret, arg) -> (env $$ [ret]) && free_val env arg
-    | C.AppExnCont(_,exn, arg, label) -> (env $$ [exn]) && List.for_all (free_val env) [arg;label]
+    | C.AppRetCont(_,ret, arg) -> free_ret env ret && free_val env arg
+    | C.AppExnCont(_,exn, arg, label) -> free_exn env exn && List.for_all (free_val env) [arg;label]
     | C.Eval(_,_, eval) -> true in
   free_exp env exp
 
@@ -133,6 +142,36 @@ let alphatize allowUnbound (exp, env) =
       let (value', env1) = alph_val (value, env) in
       (C.SetBang(p,l, lookup (id, env), value'), env1)
 
+  and alph_ret (ret, env) =
+    match ret with
+    | C.RetId(p, id) -> 
+      let (id', env') = update (id, env) in
+      (C.RetId(p, id'), env')
+    | C.RetLam(p, arg, body) ->
+      let (arg', env1) = update (arg, env) in
+      let (body', env2) = alph_exp (body, env1) in
+      (C.RetLam(p, arg', body'), env2)
+
+  and alph_exn (exn, env) =
+    match exn with
+    | C.ExnId(p, id) -> 
+      let (id', env') = update (id, env) in
+      (C.ExnId(p, id'), env')
+    | C.ExnLam(p, arg, lbl, body) ->
+      let (arg', env1) = update (arg, env) in
+      let (lbl', env2) = update (lbl, env1) in
+      let (body', env3) = alph_exp (body, env2) in
+      (C.ExnLam(p, arg', lbl', body'), env3)
+
+  and lookup_ret (ret, env) =
+    match ret with
+    | C.RetId(p, id) -> (C.RetId(p, lookup (id, env)), env)
+    | _ -> alph_ret (ret, env)
+  and lookup_exn (exn, env) =
+    match exn with
+    | C.ExnId(p, id) -> (C.ExnId(p, lookup (id, env)), env)
+    | _ -> alph_exn (exn, env)
+
   and alph_exp (exp, env) =
     match exp with
     | C.LetValue (p,l, id, value, exp) ->
@@ -150,40 +189,37 @@ let alphatize allowUnbound (exp, env) =
       let (id', env2) = update (id, env1) in (* let binding happens after value *)
       let (exp', env3) = alph_exp (exp, env2) in
       (C.LetPrim(p,l, id', prim', exp'), env3)
-    | C.LetRetCont (l,ret, arg, retBody, exp) ->
-      let (arg', env1) = update (arg, env) in
-      let (retBody', env2) = alph_exp (retBody, env1) in
+    | C.LetRetCont (l,ret, r, exp) ->
+      let (r', env1) = alph_ret (r, env) in
       let (ret', env3) = update (ret, env) in
       let (exp', env4) = alph_exp (exp, env3) in
-      (C.LetRetCont(l,ret', arg', retBody', exp'), merge env2 env4)
-    | C.LetExnCont (l,exn, arg, label, exnBody, exp) ->
-      let (arg', env1) = update (arg, env) in
-      let (label', env2) = update (label, env1) in
-      let (exnBody', env3) = alph_exp (exnBody, env2) in
+      (C.LetRetCont(l,ret', r', exp'), merge env1 env4)
+    | C.LetExnCont (l,exn, e, exp) ->
+      let (e', env1) = alph_exn (e, env) in
       let (exn', env4) = update (exn, env) in
       let (exp', env5) = alph_exp (exp, env4) in
-      (C.LetExnCont(l,exn', arg', label', exnBody', exp'), merge env3 env5)
+      (C.LetExnCont(l,exn', e', exp'), merge env1 env5)
     | C.If(p,l, cond, trueBranch, falseBranch) ->
       let (cond', env1) = alph_val (cond, env) in
       let (true', env2) = alph_exp (trueBranch, env1) in
       let (false', env3) = alph_exp (falseBranch, env2) in
       (C.If(p,l, cond', true', false'), env3)
     | C.AppFun(p,l, func, ret, exn, args) ->
-      let ret' = lookup (ret, env) in
-      let exn' = lookup (exn, env) in
-      let (func', env1) = alph_val (func, env) in
-      let (revArgs', env2) = List.fold_left (fun (revArgs, env) arg ->
-        let (arg', env') = alph_val (arg,env) in (arg'::revArgs, env')) ([],env1) args in
-      (C.AppFun(p,l, func', ret', exn', List.rev revArgs'), env2)
+      let (ret', env1) = lookup_ret (ret, env) in
+      let (exn', env2) = lookup_exn (exn, env1) in
+      let (func', env3) = alph_val (func, env2) in
+      let (revArgs', env4) = List.fold_left (fun (revArgs, env) arg ->
+        let (arg', env') = alph_val (arg,env) in (arg'::revArgs, env')) ([],env3) args in
+      (C.AppFun(p,l, func', ret', exn', List.rev revArgs'), env4)
     | C.AppRetCont(l,ret, arg) ->
-      let ret' = lookup (ret, env) in
-      let (arg', env1) = alph_val (arg, env) in
-      (C.AppRetCont(l,ret', arg'), env1)
+      let (ret', env1) = lookup_ret (ret, env) in
+      let (arg', env2) = alph_val (arg, env1) in
+      (C.AppRetCont(l,ret', arg'), env2)
     | C.AppExnCont(l,exn, arg, label) ->
-      let exn' = lookup (exn, env) in
-      let (arg', env1) = alph_val (arg, env) in
-      let (label', env2) = alph_val (label, env1) in
-      (C.AppExnCont(l,exn', arg', label'), env2)
+      let (exn', env1) = lookup_exn (exn, env) in
+      let (arg', env2) = alph_val (arg, env1) in
+      let (label', env3) = alph_val (label, env2) in
+      (C.AppExnCont(l,exn', arg', label'), env3)
     | C.Eval(p,l, eval) -> (C.Eval(p,l, eval), env)
   in alph_exp (exp, env)
 

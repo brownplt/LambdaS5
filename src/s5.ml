@@ -16,7 +16,7 @@ module S5 = struct
 
   let srcES5 = ref (Es5_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Es5_cps.AppRetCont(Es5_cps.Label.dummy, "fake", Es5_cps.Id(dummy_pos,Es5_cps.Label.dummy,"fake")))
+  let cpsES5 = ref (Es5_cps.AppRetCont(Es5_cps.Label.dummy, Es5_cps.RetId(Es5_cps.Label.dummy,"fake"), Es5_cps.Id(dummy_pos,Es5_cps.Label.dummy,"fake")))
 
   let jsonPath = ref ""
 
@@ -64,7 +64,9 @@ module S5 = struct
   (*   print_newline () *)
 
   let cps () =
-    cpsES5 := Es5_cps.cps_tail !srcES5 "%error" "%answer"
+    cpsES5 := Es5_cps.cps_tail !srcES5 
+      "%error"
+      (Es5_cps.RetId(Es5_cps.Label.dummy,"%answer"))
   let alphatize () = 
     cpsES5 := fst (Es5_cps_util.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) 
   let uncps () =
