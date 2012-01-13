@@ -1,0 +1,126 @@
+// let (ans = {[#proto : null, #class: "Array", #extensible : false,]})
+// let (calls = 0)
+// let (f = func(a, b) { a["1" = "5"] ; b := "10" })
+// let (bar = 6)
+// {
+//   f(ans, bar);
+//   prim("print", ans["1"]);
+//   prim("print", bar);
+//   ans
+// }
+// rec (fib = func(n) {
+//   calls := prim("+", calls, 1);
+//   if (prim("<", n, 3)) { ans[prim("prim->str", n) = 1]; 1 }
+//   else {
+//     let (nStr = prim("prim->str", n)) {
+//       if (prim("prim->bool", ans[nStr])) { ans[nStr] }
+//       else {
+//         ans[nStr = prim("+", fib(prim("-", n, 1)), fib(prim("-",n, 2)))];
+//         ans[nStr]
+//       }
+//     }
+//   }
+// })
+// let (loop = func(min, max, f) {
+//   rec (iter = func(i) {
+//     if (prim("<", i, max)) {
+//       f(i);
+//       iter(prim("+", i, 1))
+//     } else { undefined }
+//   })
+//   iter(min)
+// })
+// let (printFib = func(i) { prim("print", fib(i)) })
+// {
+//   loop(1,15,printFib);
+//   ans["calls" = calls];
+//   throw ans // just checking that we get ERR(the object)
+// }
+
+
+
+
+// let (foo = 5) bar
+
+// {[#proto: null,]
+//  'field1' : {#value true , #writable false},
+//  'field2' : {#value true , #writable false},
+// }
+
+// let (w = 5)
+// //let (w = func (x) { prim("*", w, x) })
+// rec (y = func (z) { if(prim(">", z, 100)) { z } else { y(prim("*", z, 2)) } })
+// y(1)
+// prim("+", w, w)
+
+
+// let (apply = func (f, z) { f(z) })
+// let (id = func (w) { w })
+// let (x = apply(id, 1))
+// let (y = apply(id, 2))
+// prim("+", x, y)
+//5
+
+
+// TESTING symbolic
+
+// let (f = func (a, b) { prim("+", a, b) })
+// if (prim(">", f(1, %%x), 2)) { "yes" } else { "no" }
+
+
+// BROKEN UNTIL WE GET TYPES PROPERLY
+//if (prim(">", %%f(), 0)) { 1 } else { 3 }
+
+// if(prim("<", %%f(%%z), 0)) {
+//     if(prim(">", %%x, 2)) { 1 } else { 2 }
+// } else { 3 }
+
+// let (f = func (x) { prim("+", x, 1) })
+// if (f(10)) { %%g(f) } else { %%h(f(3)) }
+
+// let (calls = 0)
+// rec (fib = func(n) {
+//     calls := prim("+", calls, 1);
+//     if (prim("<", n, 3)) { 1 }
+//     else {
+//         prim("+", fib(prim("-", n, 1)), fib(prim("-",n, 2)))
+//     }
+// })
+// let (dummy = fib(7))
+// calls
+
+
+
+
+let (obj = {[#proto: %%p,]
+            'field1' : {#value 10 , #writable false},
+            'field2' : {#value true , #writable false},
+           }        )  
+let (calls = 0)
+rec (fib = func(n) {
+  calls := prim("+", calls, 1);
+  if (prim("<", n, 3)) { 1 }
+  else {
+      prim("+", fib(prim("-", n, 1)), fib(prim("-",n, 2)))
+  }
+})
+let (loop = func(min, max, f) {
+    rec (iter = func(i) {
+        if (prim("<", i, max)) {
+            calls := 0;
+            f(i);
+            prim("print", prim("prim->str", calls));
+            iter(prim("+", i, 1))
+        } else // { calls }
+        { //calls :=  ;  %%x["x"] 
+          if (prim("<", 5 , 11)) {
+              calls
+          } else { obj["field2"] }}
+    })
+    iter(min)
+})
+let (printFib = func(i) { prim("print", fib(i)) })
+{
+  loop(1,%%z,printFib)
+}
+
