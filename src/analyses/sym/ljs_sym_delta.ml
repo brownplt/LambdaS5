@@ -7,13 +7,15 @@ let null = Null
 let str s = String s
 let num f = Num f
 
+exception PrimError of string
+
 let bool b = match b with
   | true -> True
   | false -> False
 
 let to_int v = match v with
   | Num x -> int_of_float x
-  | _ -> raise (Throw (str ("expected number, got " ^ Ljs_sym_pretty.to_string v)))
+  | _ -> raise (PrimError ("expected number, got " ^ Ljs_sym_pretty.to_string v))
 
 let typeof v = str begin match v with
   | Undefined -> "undefined"
@@ -32,7 +34,7 @@ let typeof v = str begin match v with
 end
 
 let surface_typeof v = begin match v with
-  | Closure _ -> raise (Throw (str "surface_typeof got lambda"))
+  | Closure _ -> raise (PrimError "surface_typeof got lambda")
   | Null -> str "object"
   | _ -> typeof v
 end
@@ -77,13 +79,13 @@ let prim_to_str v = str begin match v with
   | True -> "true"
   | False -> "false"
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "prim_to_num"))
+  | _ -> raise (PrimError "prim_to_num")
 end
 
 let strlen s = match s with
   | String s -> Num (float_of_int (String.length s))
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "strlen"))
+  | _ -> raise (PrimError "strlen")
 
 (* Section 9.3, excluding objects *)
 let prim_to_num v = num begin match v with
@@ -96,7 +98,7 @@ let prim_to_num v = num begin match v with
   | String s -> begin try float_of_string s
     with Failure _ -> nan end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "prim_to_num"))
+  | _ -> raise (PrimError "prim_to_num")
 end
   
 let prim_to_bool v = bool begin match v with
@@ -133,7 +135,7 @@ let is_extensible obj = match obj with
       | _ -> False
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "is-extensible"))
+  | _ -> raise (PrimError "is-extensible")
 
 let prevent_extensions obj = match obj with
   | ObjCell o -> 
@@ -142,7 +144,7 @@ let prevent_extensions obj = match obj with
 	  obj
 	end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "prevent-extensions"))
+  | _ -> raise (PrimError "prevent-extensions")
       
 let get_code obj = match obj with
   | ObjCell o -> begin match !o with
@@ -150,29 +152,29 @@ let get_code obj = match obj with
       | ({ code = None; }, _) -> Null
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "get-code"))
+  | _ -> raise (PrimError "get-code")
 
 let get_proto obj = match obj with
   | ObjCell o -> begin match !o with 
       | ({ proto = pvalue; }, _) -> pvalue
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | v -> raise (Throw (str ("get-proto got: " ^ Ljs_sym_pretty.to_string v)))
+  | v -> raise (PrimError ("get-proto got: " ^ Ljs_sym_pretty.to_string v))
 
 let get_primval obj = match obj with
   | ObjCell o -> begin match !o with
       | ({ primval = Some v; }, _) -> v
-      | _ -> raise (Throw (str "get-primval on an object with no prim val"))
+      | _ -> raise (PrimError "get-primval on an object with no prim val")
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "get-primval"))
+  | _ -> raise (PrimError "get-primval")
 
 let get_class obj = match obj with
   | ObjCell o -> begin match !o with
       | ({ klass = s; }, _) -> String (s)
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "get-class"))
+  | _ -> raise (PrimError "get-class")
 
 (* All the enumerable property names of an object *)
 let rec get_property_names obj = match obj with
@@ -197,7 +199,7 @@ let rec get_property_names obj = match obj with
         IdMap.empty in
         ObjCell (ref (d_attrsv, name_props))
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "get-property-names"))
+  | _ -> raise (PrimError "get-property-names")
 
 and all_protos o = 
   match o with
@@ -230,7 +232,7 @@ let get_own_property_names obj = match obj with
         in
 	ObjCell (ref (d_attrsv, final_props))
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "own-property-names"))
+  | _ -> raise (PrimError "own-property-names")
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
@@ -239,7 +241,7 @@ let object_to_string obj = match obj with
       | ({ klass = s }, _) -> str ("[object " ^ s ^ "]")
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "object-to-string, wasn't given object"))	
+  | _ -> raise (PrimError "object-to-string, wasn't given object")
 
 let is_array obj = match obj with
   | ObjCell o -> begin match !o with
@@ -247,13 +249,13 @@ let is_array obj = match obj with
       | _ -> False
   end
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "is-array"))	
+  | _ -> raise (PrimError "is-array")
 
 
 let to_int32 v = match v with
   | Num d -> Num (float_of_int (int_of_float d))
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "to-int"))
+  | _ -> raise (PrimError "to-int")
 
 let nnot e = match e with
   | Undefined -> True
@@ -271,54 +273,54 @@ let void v = Undefined
 
 let floor' = function Num d -> num (floor d) 
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "floor"))
+  | _ -> raise (PrimError "floor")
 
 let ceil' = function Num d -> num (ceil d) 
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "ceil"))
+  | _ -> raise (PrimError "ceil")
 
 let absolute = function Num d -> num (abs_float d)   
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "abs"))
+  | _ -> raise (PrimError "abs")
 
 let log' = function Num d -> num (log d ) 
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "log"))
+  | _ -> raise (PrimError "log")
 
 let ascii_ntoc n = match n with
   | Num d -> str (String.make 1 (Char.chr (int_of_float d)))
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "ascii_ntoc"))
+  | _ -> raise (PrimError "ascii_ntoc")
 
 let ascii_cton c = match c with
   | String s -> Num (float_of_int (Char.code (String.get s 0)))
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "ascii_cton"))
+  | _ -> raise (PrimError "ascii_cton")
 
 let to_lower = function
   | String s -> String (String.lowercase s)
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "to_lower"))
+  | _ -> raise (PrimError "to_lower")
 
 let to_upper = function
   | String s -> String (String.uppercase s)
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "to_lower"))
+  | _ -> raise (PrimError "to_lower")
 
 let bnot = function
   | Num d -> Num (float_of_int (lnot (int_of_float d)))
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "bnot"))
+  | _ -> raise (PrimError "bnot")
 
 let sine = function
   | Num d -> Num (sin d)
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "sin"))
+  | _ -> raise (PrimError "sin")
 
 let numstr = function
   | String s -> Num (try float_of_string s with Failure _ -> nan)
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "numstr"))
+  | _ -> raise (PrimError "numstr")
 
 let op1 op = match op with
   | "typeof" -> typeof
@@ -358,9 +360,9 @@ let op1 op = match op with
 
 let arith s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
-  | v1, v2 -> raise (Throw (str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
-                                 (Ljs_sym_pretty.to_string v1) ^ ", " ^ (Ljs_sym_pretty.to_string v2) ^
-                                   "perhaps something wasn't desugared fully?")))
+  | v1, v2 -> raise (PrimError ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
+                                   (Ljs_sym_pretty.to_string v1) ^ ", " ^ (Ljs_sym_pretty.to_string v2) ^
+                                   "perhaps something wasn't desugared fully?"))
 
 let arith_sum = arith "+" (+) (+.)
 
@@ -400,13 +402,13 @@ let string_plus v1 v2 = match v1, v2 with
       String (s1 ^ s2)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "string concatenation"))
+  | _ -> raise (PrimError "string concatenation")
 
 let string_lessthan v1 v2 = match v1, v2 with
   | String s1, String s2 -> bool (s1 < s2)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "string less than"))
+  | _ -> raise (PrimError "string less than")
 
 let stx_eq v1 v2 = bool begin match v1, v2 with
   | Num x1, Num x2 -> x1 = x2
@@ -453,11 +455,11 @@ let has_own_property obj field = match obj, field with
   | ObjCell o, String s -> 
       let (attrs, props) = !o in
         bool (IdMap.mem s props)
-  | ObjCell o, _ -> raise (Throw (str "has-own-property: field not a string"))
-  | _, String s -> raise (Throw (str ("has-own-property: obj not an object for field " ^ s)))
+  | ObjCell o, _ -> raise (PrimError "has-own-property: field not a string")
+  | _, String s -> raise (PrimError ("has-own-property: obj not an object for field " ^ s))
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "has-own-property: neither an object nor a string"))
+  | _ -> raise (PrimError "has-own-property: neither an object nor a string")
 
 let base n r = 
   let rec get_digits n l = match n with
@@ -491,27 +493,27 @@ let get_base n r = match n, r with
     str (if x < 0.0 then "-" ^ result else result)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "base got non-numbers"))
+  | _ -> raise (PrimError "base got non-numbers")
 
 let char_at a b  = match a, b with
   | String s, Num n ->
     String (String.make 1 (String.get s (int_of_float n)))
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "char_at didn't get a string and a number"))
+  | _ -> raise (PrimError "char_at didn't get a string and a number")
 
 let locale_compare a b = match a, b with
   | String r, String s ->
     Num (float_of_int (String.compare r s))
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "locale_compare didn't get 2 strings"))
+  | _ -> raise (PrimError "locale_compare didn't get 2 strings")
 
 let pow a b = match a, b with
   | Num base, Num exp -> Num (base ** exp)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "pow didn't get 2 numbers"))
+  | _ -> raise (PrimError "pow didn't get 2 numbers")
 
 let to_fixed a b = match a, b with
   | Num x, Num f -> 
@@ -531,7 +533,7 @@ let to_fixed a b = match a, b with
         String (s ^ suffix)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "to-fixed didn't get 2 numbers"))
+  | _ -> raise (PrimError "to-fixed didn't get 2 numbers")
 
 let rec is_accessor a b = match a, b with
   | ObjCell o, String s ->
@@ -543,10 +545,10 @@ let rec is_accessor a b = match a, b with
         | Accessor _ -> True
     else let pr = match attrs with { proto = p } -> p in
       is_accessor pr b
-  | Null, String s -> raise (Throw (str "isAccessor topped out"))
+  | Null, String s -> raise (PrimError "isAccessor topped out")
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (Throw (str "isAccessor"))
+  | _ -> raise (PrimError "isAccessor")
 
 let op2 op = match op with
   | "+" -> arith_sum

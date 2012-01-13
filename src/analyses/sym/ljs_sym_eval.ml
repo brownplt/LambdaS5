@@ -15,13 +15,26 @@ open Str
 
 (* monad *)
 let return v pc = ([(v,pc)], [])
-let return_many r = (r, [])
 let throw v pc = ([], [(v, pc)])
-let throw_many e = ([], e)
-let bind (ret,exn) f = 
+(* usually, the types are
+   bind_both ((ret : result list), (exn : exresult list)) 
+    (f : result -> (result list * exresult list))
+    (g : exresult -> (result list * exresult list)) 
+    : (result list * exresult list)
+   but in fact the function is slightly more polymorphic than that *)
+
+let bind_both (ret, exn) f g =
   let f_ret = List.map f ret in
-  List.fold_left (fun (ret',exn') (rets,exns) -> (List.rev_append ret' rets, List.rev_append exn' exns))
-    ([], exn) f_ret
+  let g_exn = List.map g exn in
+  List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
+    (List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
+       ([], []) f_ret)
+    g_exn
+let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
+let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
+
+
+
 
 let val_sym v = match v with Sym x -> x | _ -> (Concrete v)
 
@@ -250,7 +263,7 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
 (*   | _ -> false *)
           
 
-let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result list = 
+let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth  *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if (depth >= maxDepth) then ([], [])
@@ -293,7 +306,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result 
           (fun (e_val, pc') -> 
             match e_val with
               | Sym e -> return (Sym (SOp1 (op, e))) pc'
-              | _ -> return (op1 op e_val) pc')
+              | _ -> 
+                try
+                  return (op1 op e_val) pc'
+                with PrimError msg -> throw (Throw (String msg)) pc')
 
       | S.Op2 (p, op, e1, e2) -> 
         bind
@@ -303,10 +319,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result 
               (eval e2 env pc1)
               (fun (e2_val, pc2) -> 
                 match e1_val, e2_val with
-                  | Sym e1, Sym e2 -> return (Sym (SOp2 (op, e1, e2))) pc2
-                  | Sym e1, _ -> return (Sym (SOp2 (op, e1, Concrete e2_val))) pc2
-                  | _, Sym e2 -> return (Sym (SOp2 (op, Concrete e1_val, e2))) pc2
-                  | _ ->  return (op2 op e1_val e2_val) pc2))
+                | Sym e1, Sym e2 -> return (Sym (SOp2 (op, e1, e2))) pc2
+                | Sym e1, _ -> return (Sym (SOp2 (op, e1, Concrete e2_val))) pc2
+                | _, Sym e2 -> return (Sym (SOp2 (op, Concrete e1_val, e2))) pc2
+                | _ -> 
+                  try
+                    return (op2 op e1_val e2_val) pc2
+                  with PrimError msg -> throw (Throw (String msg)) pc2))
+          
 
       | S.If (p, c, t, f) ->
         bind 
@@ -329,11 +349,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result 
         bind 
           (eval f env pc)
           (fun (f_val, pc_f) ->
-            let args_pcs : (value list * path) list * (value * path) list =
+            let args_pcs : (value list * path) list * (exval * path) list =
               List.fold_left 
                 (fun avpcs arg ->
                   bind avpcs
-                    (fun (argvs, pcs) -> 
+                    (fun ((argvs : value list), (pcs : path)) -> 
                       bind 
                         (eval arg env pcs)
                         (fun (argv, pcs') ->
@@ -435,7 +455,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result 
                           (fun (propvs, pc_psv) -> 
                             return (ObjCell (ref (attrsv, propvs))) pc_psv))))
       end
-
+        
       | S.GetField (p, obj, f, args) ->
         bind (eval obj env pc)
           (fun (objv, pc_o) -> 
@@ -467,8 +487,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result 
                                        ^ Ljs_sym_pretty.to_string fv)
                   )))
                                        
-
-      | _ -> failwith "[interp] not yet implemented"
 
 
 (*
@@ -527,35 +545,51 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result 
       bool (set_attr attr obj_val f_val v_val) *)
 
 
+          
+      | S.Label (p, l, e) -> begin
+        bind_exn
+          (eval e env pc)
+          (fun (e, pc') ->
+            match e with
+            | Break (l', v) -> if (l = l') then return v pc' else throw e pc'
+            | _ -> throw e pc')
+      end
+      | S.Break (p, l, e) ->
+        bind 
+          (eval e env pc)
+          (fun (v, pc') -> throw (Break (l, v)) pc')
+      | S.TryCatch (p, body, catch) -> begin
+        bind_exn
+          (eval body env pc)
+          (fun (e, pc') -> match e with
+          | Throw v -> 
+            bind
+              (eval catch env pc')
+              (fun (c, pc'') -> apply p c [v] pc'' depth)
+          | _ -> throw e pc')
+      end
+      | S.TryFinally (p, body, fin) -> 
+        bind_both
+          (eval body env pc)
+          (fun (_, pc') -> eval fin env pc')
+          (fun (e, pc') -> 
+            bind 
+              (eval fin env pc')
+              (fun (_, pc'') -> throw e pc''))
+      | S.Throw (p, e) -> 
+        bind
+          (eval e env pc)
+          (fun (v, pc') -> throw (Throw v) pc')
 (*
-  | S.Label (p, l, e) -> begin
-      try
-        eval e env
-      with Break (l', v) ->
-        if l = l' then v
-        else raise (Break (l', v))
-    end
-  | S.Break (p, l, e) ->
-      raise (Break (l, eval e env))
-  | S.TryCatch (p, body, catch) -> begin
-      try
-        eval body env
-      with Throw v -> apply p (eval catch env) [v]
-    end
-  | S.TryFinally (p, body, fin) -> begin
-      try
-        ignore (eval body env)
-      with
-        | Throw v -> ignore (eval fin env); raise (Throw v)
-        | Break (l, v) -> ignore (eval fin env); raise (Break (l, v))
-      end;
-      eval fin env
-  | S.Throw (p, e) -> raise (Throw (eval e env))
   | S.Eval (p, e) ->
     match eval e env with
       | String s -> eval_op s env jsonPath
       | v -> v
 *)
+
+      | _ -> failwith "[interp] not yet implemented"
+
+
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ Ljs_sym_pretty.to_string v ^ " ") args) ""))
 
@@ -566,7 +600,7 @@ and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ strin
    only a single file works out. 
 
    TODO(joe): I have no idea what happens on windows. *)
-and eval_op str env jsonPath maxDepth = 
+and eval_op str env jsonPath maxDepth pc = 
   let outchan = open_out "/tmp/curr_eval.js" in
   output_string outchan str;
   close_out outchan;
@@ -577,29 +611,28 @@ and eval_op str env jsonPath maxDepth =
   let buf = String.create (in_channel_length inchan) in
   really_input inchan buf 0 (in_channel_length inchan);
   let json_err = regexp (quote "SyntaxError") in
-  begin try
-    ignore (search_forward json_err buf 0);
-    raise (Throw (String "EvalError"))
-    with Not_found -> ()
-  end;
-  let ast =
-    parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
-  let (used_ids, exprjsd) = 
-    try
-      js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
-    with ParseError _ -> raise (Throw (String "EvalError"))
-    in
-  let desugard = exprjs_to_ljs used_ids exprjsd in
-  if (IdMap.mem "%global" env) then
-    (Ljs_pretty.exp desugard std_formatter; print_newline ();
-     eval jsonPath maxDepth 0 desugard env (* TODO: which env? *))
-  else
-    (failwith "no global")
-
-let rec eval_expr expr jsonPath maxDepth = 
   try
-    eval jsonPath maxDepth 0 expr IdMap.empty
-  with
+    ignore (search_forward json_err buf 0);
+    throw (Throw (String "EvalError")) pc
+  with Not_found -> begin
+    let ast =
+      parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
+    try
+      let (used_ids, exprjsd) = 
+        js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global")) in
+      let desugard = exprjs_to_ljs used_ids exprjsd in
+      if (IdMap.mem "%global" env) then
+        (Ljs_pretty.exp desugard std_formatter; print_newline ();
+         eval jsonPath maxDepth 0 desugard env pc (* TODO: which env? *))
+      else
+        (failwith "no global")
+    with ParseError _ -> throw (Throw (String "EvalError")) pc
+  end
+
+let rec eval_expr expr jsonPath maxDepth pc = 
+  bind_exn
+    (eval jsonPath maxDepth 0 expr IdMap.empty pc)
+    (fun (e, pc) -> match e with
     | Throw v ->
       let err_msg = 
         match v with
@@ -613,6 +646,6 @@ let rec eval_expr expr jsonPath maxDepth =
               with Not_found -> (Ljs_sym_pretty.to_string v)
             end
           | v -> (Ljs_sym_pretty.to_string v) in
-      failwith ("Uncaught exception: " ^ err_msg)
-    | Break (l, v) -> failwith ("Broke to top of execution, missed label: " ^ l)
+      throw (str ("Uncaught exception: " ^ err_msg)) pc
+    | Break (l, v) -> throw (str ("Broke to top of execution, missed label: " ^ l)) pc)
 

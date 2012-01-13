@@ -15,7 +15,7 @@ type value =
       (* Objects shouldn't have VarCells in them, but can have any of
       the other kinds of values *)
   | ObjCell of (attrsv * (propv IdMap.t)) ref
-  | Closure of (value list -> path -> int -> (result list * result list))
+  | Closure of (value list -> path -> int -> (result list * exresult list))
   | Sym of sym_exp (* symbolic expression *)
 and 
   sym_exp =
@@ -25,6 +25,12 @@ and
   | SOp2 of string * sym_exp * sym_exp
   | SApp of sym_exp * sym_exp list
 and result = value * path
+and exval = 
+  | Break of label * value
+  | Throw of value
+and label = string
+and exresult = exval * path
+
 
 and path = { constraints : sym_exp list;
              vars : var list; }
@@ -51,9 +57,6 @@ let d_attrsv = { primval = None;
                  klass = "LambdaJS internal"; }
 
 type env = value IdMap.t
-type label = string
 
-exception Break of label * value
-exception Throw of value
 
 let mtPath = { constraints = []; vars = []; }
