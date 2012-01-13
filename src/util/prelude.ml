@@ -12,6 +12,12 @@ module IdOrderedType = struct
   let compare = Pervasives.compare
 end
 
+module IdHashedType = struct
+  type t = id
+  let equal t1 t2 = t1 = t2
+  let hash = Hashtbl.hash
+end
+
 module Pos = struct
 
   type t = pos
@@ -47,6 +53,8 @@ module PosMapExt = MapExt.Make (Pos) (PosMap)
 module IdMap = Map.Make (IdOrderedType)
 
 module IdMapExt = MapExt.Make (IdOrderedType) (IdMap)
+
+module IdHashtbl = Hashtbl.Make(IdHashedType)
 
 let fold_left = List.fold_left
 

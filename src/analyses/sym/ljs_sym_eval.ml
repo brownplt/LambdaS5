@@ -280,7 +280,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
       | S.False _ -> return False pc
       | S.Id (p, x) -> 
         if (String.length x > 2 && String.sub x 0 2 = "%%") then 
-          return (Sym (SId x)) (set_type x "JS" pc)
+          return (Sym (SId x)) (add_var x TAny pc)
         else begin
           try
             match IdMap.find x env with
@@ -350,18 +350,17 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
         bind 
           (eval c env pc)
           (fun (c_val, pc') -> 
-            match c_val, pc' with
-              | True, _ -> eval t env pc'
-              | Sym e, { constraints = cs; vars = vs; } -> 
-                (* FIX: check collect_vars needed *)
-                let vs' = collect_vars vs e in 
-                let true_pc  = { constraints = (e :: cs); vars = vs'; } in
-                let false_pc = { constraints = (SOp1 ("not", e) :: cs); vars = vs';} in
-                (fun (r1, e1) (r2, e2) -> (List.rev_append r1 r2, List.rev_append e1 e2))
-                  (if is_sat true_pc then (eval t env true_pc)
-                   else ([], []))
-                  (if is_sat false_pc then (eval f env false_pc)
-                   else ([], []))
+            match c_val with
+              | True -> eval t env pc'
+              | Sym e -> let nvar = fresh_id "IF" in
+                         let npc = add_var nvar TBool pc' in
+                         let true_pc  = add_constraint (SOp1 ("not", SId nvar)) npc in
+                         let false_pc = add_constraint (SId nvar) npc in
+                         (fun (r1, e1) (r2, e2) -> (List.rev_append r1 r2, List.rev_append e1 e2))
+                           (if is_sat true_pc then (eval t env true_pc)
+                            else ([], []))
+                           (if is_sat false_pc then (eval f env false_pc)
+                            else ([], []))
               | _ -> eval f env pc')
           
       | S.App (p, f, args) -> 
@@ -500,7 +499,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                         let nvar = fresh_id "FD" in
                         let ncons = (* (= nvar (select (obj, f))) *)
                           SOp2 ("=", SId nvar, SOp2 ("select", obj, SId f)) in                        
-                        return (Sym (SId nvar)) (set_type nvar "JS" 
+                        return (Sym (SId nvar)) (add_var nvar TAny
                                                    (add_constraint ncons pc_g))
                           
                       | ObjCell c, Sym f -> failwith "[interp] not yet implemented (Get Obj Sym)"

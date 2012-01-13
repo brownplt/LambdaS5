@@ -1,6 +1,8 @@
 open Prelude
 open Ljs_syntax
 
+
+
 type jsType = 
   | TNull
   | TUndef
@@ -11,6 +13,8 @@ type jsType =
   | TFun of int (* arity *)
   | TAny
 
+type typeEnv = jsType IdHashtbl.t
+    
 type value =
   | Null
   | Undefined
@@ -44,7 +48,7 @@ and exresult = exval * path
 
 
 and path = { constraints : sym_exp list;
-             vars : var list; }
+             vars : typeEnv ; }
 
 and var = id * string
 
@@ -70,14 +74,15 @@ let d_attrsv = { primval = None;
 type env = value IdMap.t
 
 
-let mtPath = { constraints = []; vars = []; }
+let mtPath = { constraints = []; vars = IdHashtbl.create 50; }
 
-let set_type id ty p = 
+let add_var id ty p = 
   let { constraints = cs ; vars = vs } = p in
-  { constraints = cs; vars = (id, ty) :: vs }
+  IdHashtbl.add vs id ty;
+  p
 
 let add_constraint c p =
   let { constraints = cs ; vars = vs } = p in
   { constraints = c :: cs; vars = vs }
 
-      
+     

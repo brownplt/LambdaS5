@@ -59,6 +59,9 @@ and exp e =
                                         exp e1; text ","; exp e2])])
   | SApp (f, args) ->
     (squish [exp f; parens (squish (intersperse (text ", ") (map exp args)))])
+  | SLet (id, e1, e2) -> 
+    vert [squish [text "let"; text id; text "="; exp e1];
+          exp e2]
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in

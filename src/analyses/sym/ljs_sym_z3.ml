@@ -101,11 +101,12 @@ let to_string v = value v Format.str_formatter; Format.flush_str_formatter()
 let is_sat (p : path) : bool =
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   let { constraints = cs; vars = vs; } = p in      
-  List.iter
+(*  List.iter
     (fun (id, tp) -> 
       Printf.printf "(declare-const %s %s)\n" id tp;
       output_string outch (Printf.sprintf "(declare-const %s %s)" id tp))
-    vs;
+    vs; *)
+  
   
   List.iter
     (fun pc -> 

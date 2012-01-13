@@ -24,6 +24,9 @@ module IdSetExt : SetExt.S
   with type elt = id 
   and type t = IdSet.t
 
+module IdHashtbl : Hashtbl.S
+  with type key = id
+
 module PosSet : Set.S 
   with type elt = pos
 
