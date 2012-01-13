@@ -14,8 +14,14 @@ open Str
 
 
 (* monad *)
-let return v pc = [(v,pc)]
-let bind l f = List.concat (List.map f l)
+let return v pc = ([(v,pc)], [])
+let return_many r = (r, [])
+let throw v pc = ([], [(v, pc)])
+let throw_many e = ([], e)
+let bind (ret,exn) f = 
+  let f_ret = List.map f ret in
+  List.fold_left (fun (ret',exn') (rets,exns) -> (List.rev_append ret' rets, List.rev_append exn' exns))
+    ([], exn) f_ret
 
 let val_sym v = match v with Sym x -> x | _ -> (Concrete v)
 
@@ -244,10 +250,10 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
 (*   | _ -> false *)
           
 
-let rec eval jsonPath maxDepth depth exp env (pc : path) : result list = 
+let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * result list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth  *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
-  if (depth >= maxDepth) then []
+  if (depth >= maxDepth) then ([], [])
   else 
     let nestedEval = eval jsonPath maxDepth in
     let eval = eval jsonPath maxDepth depth in match exp with
@@ -312,18 +318,18 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
                 let vs' = collect_vars vs e in 
                 let true_pc  = { constraints = (e :: cs); vars = vs'; } in
                 let false_pc = { constraints = (SOp1 ("not", e) :: cs); vars = vs';} in
-                List.append 
+                (fun (r1, e1) (r2, e2) -> (List.rev_append r1 r2, List.rev_append e1 e2))
                   (if is_sat true_pc then (eval t env true_pc)
-                   else [])
+                   else ([], []))
                   (if is_sat false_pc then (eval f env false_pc)
-                   else [])
+                   else ([], []))
               | _ -> eval f env pc')
           
       | S.App (p, f, args) -> 
         bind 
           (eval f env pc)
           (fun (f_val, pc_f) ->
-            let args_pcs : (value list * path) list =
+            let args_pcs : (value list * path) list * (value * path) list =
               List.fold_left 
                 (fun avpcs arg ->
                   bind avpcs
@@ -332,7 +338,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
                         (eval arg env pcs)
                         (fun (argv, pcs') ->
                           return (argvs @ [argv]) pcs')))
-                [([], pc_f)] args in
+                ([([], pc_f)], []) args in
             bind args_pcs
               (fun (argvs, pcs) ->
                 match f_val with
@@ -383,7 +389,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
               S.extensible = ext;
               S.klass = kls; } ->
 
-            let opt_lift results = map (fun (v, pc) -> (Some v, pc)) results in
+            let opt_lift (results, exns) = (map (fun (v, pc) -> (Some v, pc)) results, exns) in
             bind
               (match valexp with
                 | None -> return None pc
@@ -424,7 +430,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list =
                                     (eval_prop prop pc)
                                     (fun (propv, pc_v) -> 
                                       return (IdMap.add name propv map) pc_v)))
-                            [(IdMap.empty, pc_c)] props in
+                            ([(IdMap.empty, pc_c)], []) props in
                         bind propvs_pcs
                           (fun (propvs, pc_psv) -> 
                             return (ObjCell (ref (attrsv, propvs))) pc_psv))))
