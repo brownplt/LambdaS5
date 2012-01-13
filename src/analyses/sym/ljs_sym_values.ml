@@ -1,7 +1,7 @@
 open Prelude
 open Ljs_syntax
 
-type JSType = 
+type jsType = 
   | TNull
   | TUndef
   | TString
