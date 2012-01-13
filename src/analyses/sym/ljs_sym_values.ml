@@ -18,9 +18,10 @@ type value =
   | Closure of (value list -> path -> int -> (result list * exresult list))
   | Sym of sym_exp (* symbolic expression *)
 and 
-  sym_exp =
+  sym_exp = (* a-normal form: nested sym_exp are only SId or Concrete *)
   | Concrete of value 
   | SId of id
+  | SLet of id * sym_exp * sym_exp
   | SOp1 of string * sym_exp
   | SOp2 of string * sym_exp * sym_exp
   | SApp of sym_exp * sym_exp list
@@ -60,3 +61,13 @@ type env = value IdMap.t
 
 
 let mtPath = { constraints = []; vars = []; }
+
+let set_type id ty p = 
+  let { constraints = cs ; vars = vs } = p in
+  { constraints = cs; vars = (id, ty) :: vs }
+
+let add_constraint c p =
+  let { constraints = cs ; vars = vs } = p in
+  { constraints = c :: cs; vars = vs }
+
+      

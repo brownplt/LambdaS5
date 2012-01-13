@@ -60,6 +60,10 @@ and exp e =
     parens (horz [text op; exp e1; exp e2])
   | SApp (f, args) ->
     parens (horz ((exp f) :: (map exp args)))
+  | SLet (id, e1, e2) ->
+    vert [parens(horz [text "declare-const"; text id; text "JS"; exp e1]);
+          exp e2]
+    
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in
@@ -99,23 +103,23 @@ let is_sat (p : path) : bool =
   let { constraints = cs; vars = vs; } = p in      
   List.iter
     (fun (id, tp) -> 
-      (* Printf.printf "(declare-const %s %s)\n" id tp; *)
+      Printf.printf "(declare-const %s %s)\n" id tp;
       output_string outch (Printf.sprintf "(declare-const %s %s)" id tp))
     vs;
   
   List.iter
     (fun pc -> 
-      (* Printf.printf "(assert %s)\n" (to_string (Sym pc)); *)
+      Printf.printf "(assert %s)\n" (to_string (Sym pc));
       output_string outch 
         (Printf.sprintf "(assert %s)" (to_string (Sym pc))))
     cs;
   
   output_string outch "(check-sat)";
   close_out outch;
-  (* flush stdout; *)
+  flush stdout;
   let res = input_line inch in
   close_in inch; 
-  (* Printf.printf "z3 said: %s" res; *)
+  Printf.printf "z3 said: %s\n" res;
   (res = "sat")
     
 let rec collect_vars vars exp : var list =
@@ -123,7 +127,8 @@ let rec collect_vars vars exp : var list =
   | Concrete(_) -> vars
   | SId(id) -> 
     if List.mem_assoc id vars then vars 
-    else ((id,"Real") :: vars) (* no type info! *)
+    else ((id,"JS") :: vars) (* no type info! *)
   | SOp1(op, e) -> collect_vars vars e
   | SOp2(op, e1, e2) -> collect_vars (collect_vars vars e1) e2
   | SApp(e1, e2s) -> List.fold_left collect_vars (collect_vars vars e1) e2s
+  | _ -> vars

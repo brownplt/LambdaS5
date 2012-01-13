@@ -16,6 +16,7 @@ open Str
 (* monad *)
 let return v pc = ([(v,pc)], [])
 let throw v pc = ([], [(v, pc)])
+
 (* usually, the types are
    bind_both ((ret : result list), (exn : exresult list)) 
     (f : result -> (result list * exresult list))
@@ -51,7 +52,7 @@ let unbool b = match b with
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
-let newVar = 
+let fresh_id = 
   let varIdx = ref 0 in
   (fun prefix ->
     incr varIdx;
@@ -264,7 +265,7 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
           
 
 let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresult list = 
-  (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth  *)
+  (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if (depth >= maxDepth) then ([], [])
   else 
@@ -278,7 +279,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
       | S.True _ -> return True pc
       | S.False _ -> return False pc
       | S.Id (p, x) -> 
-        if (String.length x > 2 && String.sub x 0 2 = "%%") then return (Sym (SId x)) pc
+        if (String.length x > 2 && String.sub x 0 2 = "%%") then 
+          return (Sym (SId x)) (set_type x "JS" pc)
         else begin
           try
             match IdMap.find x env with
@@ -305,7 +307,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
           (eval e env pc)
           (fun (e_val, pc') -> 
             match e_val with
-              | Sym e -> return (Sym (SOp1 (op, e))) pc'
+              | Sym (SId id) -> return (Sym (SOp1 (op, SId id))) pc' (* + type *)
+              | Sym e -> let nvar = fresh_id ("P1(" ^ op ^")") in
+                         return (Sym (SLet (nvar, e, 
+                                            (SOp1 (op, SId nvar))))) pc' (* + type *)
               | _ -> 
                 try
                   return (op1 op e_val) pc'
@@ -319,13 +324,26 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
               (eval e2 env pc1)
               (fun (e2_val, pc2) -> 
                 match e1_val, e2_val with
-                | Sym e1, Sym e2 -> return (Sym (SOp2 (op, e1, e2))) pc2
-                | Sym e1, _ -> return (Sym (SOp2 (op, e1, Concrete e2_val))) pc2
-                | _, Sym e2 -> return (Sym (SOp2 (op, Concrete e1_val, e2))) pc2
-                | _ -> 
-                  try
-                    return (op2 op e1_val e2_val) pc2
-                  with PrimError msg -> throw (Throw (String msg)) pc2))
+                  (* add cases for ids *)
+                  (* type *)
+                  | Sym e1, Sym e2 -> let nvar1 = fresh_id ("P2(" ^ op ^ ")") in
+                                      let nvar2 = fresh_id ("P2(" ^ op ^ ")") in
+                                      return (Sym  (SLet (nvar1, e1,
+                                                          (SLet (nvar2, e2,
+                                                                 (SOp2 (op, SId nvar1, SId nvar2)))))))
+                                        pc2
+                  | Sym e1, _ -> let nvar = fresh_id ("P2(" ^ op ^ ")") in
+                                 return (Sym (SLet (nvar, e1,
+                                                    (SOp2 (op, SId nvar, Concrete e2_val)))))
+                                   pc2
+                  | _, Sym e2 -> let nvar = fresh_id ("P2(" ^ op ^ ")") in
+                                 return (Sym (SLet (nvar, e2, 
+                                                    (SOp2 (op, Concrete e1_val, SId nvar)))))
+                                   pc2
+                  | _ ->
+                    try
+                      return (op2 op e1_val e2_val) pc2
+                    with PrimError msg -> throw (Throw (String msg)) pc2))
           
 
       | S.If (p, c, t, f) ->
@@ -335,6 +353,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
             match c_val, pc' with
               | True, _ -> eval t env pc'
               | Sym e, { constraints = cs; vars = vs; } -> 
+                (* FIX: check collect_vars needed *)
                 let vs' = collect_vars vs e in 
                 let true_pc  = { constraints = (e :: cs); vars = vs'; } in
                 let false_pc = { constraints = (SOp1 ("not", e) :: cs); vars = vs';} in
@@ -362,8 +381,19 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
             bind args_pcs
               (fun (argvs, pcs) ->
                 match f_val with
-                  | Sym _ -> return (Sym (SApp ((val_sym f_val),
-                                                (List.map val_sym argvs)))) pcs
+                  | Sym e -> let fid = fresh_id "F" in
+                             let argvs = List.map val_sym argvs in
+                             let (ft, vs) = List.fold_left
+                               (fun (term, vals) exp ->
+                                 match exp with 
+                                   | Concrete _  
+                                   | SId _ -> (term, vals@[exp])
+                                   | _ -> let aid = fresh_id "FA" in
+                                          ((fun t -> (SLet (aid, exp, t))), vals@[SId aid]))
+                               ((fun t -> t),[]) argvs in
+                             return (Sym (SLet (fid, e, 
+                                                ft (SApp (SId fid, vs)))))
+                               pcs
                   | _ -> apply p f_val argvs pcs depth))
           
       | S.Seq (p, e1, e2) -> 
@@ -464,21 +494,21 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                 bind (eval args env pc_f)
                   (fun (argsv, pc_g) ->
                     match objv, fv with
-                      | Sym obj, Sym f -> failwith "[interp] not yet implemented"
+                      | Sym obj, Sym f -> failwith "[interp] not yet implemented (Get Sym Sym)"
                         
                       | Sym obj, String f -> 
-                        let nvar = newVar "FD" in
-                        let ncons : sym_exp = SOp2 ("=", SId nvar, SOp2 ("select", obj, SId f)) in
-                        (* (= nvar (select (obj, f))) *)
-                        let { constraints = cs; vars = vs } = pc_g in
-                        return (Sym (SId nvar)) { constraints = (ncons :: cs); 
-                                                  vars = ((nvar, "Real") :: vs); }
+                        let nvar = fresh_id "FD" in
+                        let ncons = (* (= nvar (select (obj, f))) *)
+                          SOp2 ("=", SId nvar, SOp2 ("select", obj, SId f)) in                        
+                        return (Sym (SId nvar)) (set_type nvar "JS" 
+                                                   (add_constraint ncons pc_g))
                           
-                      | ObjCell c, Sym f -> failwith "[interp] not yet implemented"
+                      | ObjCell c, Sym f -> failwith "[interp] not yet implemented (Get Obj Sym)"
                         
                       | ObjCell o, String s -> 
+                        printf "getting field %s" s;
                         get_field p objv s [objv; argsv] (fun x -> x) pc depth
-                        
+                          
                       | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
                                        ^ string_of_position p 
                                        ^ ". Instead, it got " 
@@ -580,14 +610,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
         bind
           (eval e env pc)
           (fun (v, pc') -> throw (Throw v) pc')
-(*
-  | S.Eval (p, e) ->
-    match eval e env with
-      | String s -> eval_op s env jsonPath
-      | v -> v
-*)
+      (*
+        | S.Eval (p, e) ->
+        match eval e env with
+        | String s -> eval_op s env jsonPath
+        | v -> v
+      *)
 
-      | _ -> failwith "[interp] not yet implemented"
+      | _ -> failwith "[interp] not yet implemented (all eval)"
 
 
 
