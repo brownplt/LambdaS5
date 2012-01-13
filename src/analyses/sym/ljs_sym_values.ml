@@ -1,6 +1,16 @@
 open Prelude
 open Ljs_syntax
 
+type jsType = 
+  | TNull
+  | TUndef
+  | TString
+  | TBool
+  | TNum
+  | TObj
+  | TFun of int (* arity *)
+  | TAny
+
 type value =
   | Null
   | Undefined
