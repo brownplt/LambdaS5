@@ -14,14 +14,15 @@ open Str
 
 
 (* monad *)
+let none = ([],[])
 let return v pc = ([(v,pc)], [])
 let throw v pc = ([], [(v, pc)])
 
 (* usually, the types are
    bind_both ((ret : result list), (exn : exresult list)) 
-    (f : result -> (result list * exresult list))
-    (g : exresult -> (result list * exresult list)) 
-    : (result list * exresult list)
+   (f : result -> (result list * exresult list))
+   (g : exresult -> (result list * exresult list)) 
+   : (result list * exresult list)
    but in fact the function is slightly more polymorphic than that *)
 
 let bind_both (ret, exn) f g =
@@ -29,12 +30,10 @@ let bind_both (ret, exn) f g =
   let g_exn = List.map g exn in
   List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
     (List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
-       ([], []) f_ret)
+       none f_ret)
     g_exn
 let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
-
-
 
 
 let val_sym v = match v with Sym x -> x | _ -> (Concrete v)
@@ -267,7 +266,7 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
 let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
-  if (depth >= maxDepth) then ([], [])
+  if (depth >= maxDepth) then none
   else 
     let nestedEval = eval jsonPath maxDepth in
     let eval = eval jsonPath maxDepth depth in match exp with
@@ -306,16 +305,23 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
         bind 
           (eval e env pc)
           (fun (e_val, pc') -> 
-            match e_val with
-              | Sym (SId id) -> return (Sym (SOp1 (op, SId id))) pc' (* + type *)
-              | Sym e -> let nvar = fresh_id ("P1(" ^ op ^")") in
-                         return (Sym (SLet (nvar, e, 
-                                            (SOp1 (op, SId nvar))))) pc' (* + type *)
-              | _ -> 
-                try
-                  return (op1 op e_val) pc'
-                with PrimError msg -> throw (Throw (String msg)) pc')
-
+            let (t,_) = typeofOp1 op in 
+            try 
+              match e_val with
+                | Sym (SId id) -> 
+                  check_type id t pc';
+                  return (Sym (SOp1 (op, SId id))) pc'
+                | Sym e -> let nvar = fresh_id ("P1(" ^ op ^")") in
+                           return (Sym (SLet (nvar, e, 
+                                              (SOp1 (op, SId nvar))))) 
+                             (add_var nvar t pc')
+                | _ -> 
+                  try
+                    return (op1 op e_val) pc'
+                  with PrimError msg -> throw (Throw (String msg)) pc'
+            with 
+              | TypeError id -> none)
+          
       | S.Op2 (p, op, e1, e2) -> 
         bind
           (eval e1 env pc)
@@ -323,23 +329,26 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
             bind 
               (eval e2 env pc1)
               (fun (e2_val, pc2) -> 
+                let (t1, t2, _) = typeofOp2 op in
                 match e1_val, e2_val with
                   (* add cases for ids *)
-                  (* type *)
+                  (* | Sym (SId id1), Sym (SId id2) -> *)
+                  (*   check_type id1 t1 pc2; *)
+                  (*   return (Sym (SOp2 (op, SId id1, SId id2))) *)                      
                   | Sym e1, Sym e2 -> let nvar1 = fresh_id ("P2(" ^ op ^ ")") in
                                       let nvar2 = fresh_id ("P2(" ^ op ^ ")") in
-                                      return (Sym  (SLet (nvar1, e1,
-                                                          (SLet (nvar2, e2,
-                                                                 (SOp2 (op, SId nvar1, SId nvar2)))))))
-                                        pc2
+                                      return (Sym (SLet (nvar1, e1,
+                                                         (SLet (nvar2, e2,
+                                                                (SOp2 (op, SId nvar1, SId nvar2)))))))
+                                        (add_var nvar2 t2 (add_var nvar1 t1 pc2))
                   | Sym e1, _ -> let nvar = fresh_id ("P2(" ^ op ^ ")") in
                                  return (Sym (SLet (nvar, e1,
                                                     (SOp2 (op, SId nvar, Concrete e2_val)))))
-                                   pc2
+                                   (add_var nvar t1 pc2)
                   | _, Sym e2 -> let nvar = fresh_id ("P2(" ^ op ^ ")") in
                                  return (Sym (SLet (nvar, e2, 
                                                     (SOp2 (op, Concrete e1_val, SId nvar)))))
-                                   pc2
+                                   (add_var nvar t2 pc2)
                   | _ ->
                     try
                       return (op2 op e1_val e2_val) pc2
@@ -354,13 +363,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
               | True -> eval t env pc'
               | Sym e -> let nvar = fresh_id "IF" in
                          let npc = add_var nvar TBool pc' in
-                         let true_pc  = add_constraint (SOp1 ("not", SId nvar)) npc in
-                         let false_pc = add_constraint (SId nvar) npc in
+                         let true_pc  = add_constraint (SLet (nvar, e, 
+                                                              (SOp1 ("not", SId nvar)))) npc in
+                         let false_pc = add_constraint (SLet (nvar, e,
+                                                              (SId nvar))) npc in
                          (fun (r1, e1) (r2, e2) -> (List.rev_append r1 r2, List.rev_append e1 e2))
                            (if is_sat true_pc then (eval t env true_pc)
-                            else ([], []))
+                            else none)
                            (if is_sat false_pc then (eval f env false_pc)
-                            else ([], []))
+                            else none)
               | _ -> eval f env pc')
           
       | S.App (p, f, args) -> 
@@ -382,17 +393,18 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                 match f_val with
                   | Sym e -> let fid = fresh_id "F" in
                              let argvs = List.map val_sym argvs in
-                             let (ft, vs) = List.fold_left
-                               (fun (term, vals) exp ->
+                             let (ft, vs, pcs') = List.fold_left
+                               (fun (term, vals, p) exp ->
                                  match exp with 
                                    | Concrete _  
-                                   | SId _ -> (term, vals@[exp])
+                                   | SId _ -> (term, vals@[exp], p)
                                    | _ -> let aid = fresh_id "FA" in
-                                          ((fun t -> (SLet (aid, exp, t))), vals@[SId aid]))
-                               ((fun t -> t),[]) argvs in
+                                          ((fun t -> (SLet (aid, exp, t))), 
+                                           vals@[SId aid], (add_var aid TAny p)))
+                               ((fun t -> t),[], (add_var fid (TFun (List.length argvs)) pcs)) argvs in
                              return (Sym (SLet (fid, e, 
                                                 ft (SApp (SId fid, vs)))))
-                               pcs
+                               pcs'
                   | _ -> apply p f_val argvs pcs depth))
           
       | S.Seq (p, e1, e2) -> 

@@ -13,8 +13,9 @@ type jsType =
   | TFun of int (* arity *)
   | TAny
 
-type typeEnv = jsType IdHashtbl.t
-    
+type typeEnv = jsType IdMap.t
+exception TypeError of string
+
 type value =
   | Null
   | Undefined
@@ -74,12 +75,18 @@ let d_attrsv = { primval = None;
 type env = value IdMap.t
 
 
-let mtPath = { constraints = []; vars = IdHashtbl.create 50; }
+let mtPath = { constraints = []; vars = IdMap.empty; }
 
 let add_var id ty p = 
   let { constraints = cs ; vars = vs } = p in
-  IdHashtbl.add vs id ty;
-  p
+  { constraints = cs ; vars = IdMap.add id ty vs }
+
+let check_type id t p =
+  let { constraints = cs ; vars = vs } = p in
+  try 
+    if (IdMap.find id vs) = t then ()
+    else raise (TypeError id)
+  with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
 
 let add_constraint c p =
   let { constraints = cs ; vars = vs } = p in
