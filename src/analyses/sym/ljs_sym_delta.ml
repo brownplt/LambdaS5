@@ -358,6 +358,7 @@ let op1 op = match op with
   | "numstr->num" -> numstr
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 let typeofOp1 op = match op with
+  | "NOT" -> (TBool, TBool)
   | "typeof" -> (TAny, TString)
   | "surface-typeof" -> (TAny, TString)
   | "primitive?" -> (TAny, TBool)

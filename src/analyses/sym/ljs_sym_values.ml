@@ -36,7 +36,9 @@ and
   sym_exp = (* a-normal form: nested sym_exp are only SId or Concrete *)
   | Concrete of value 
   | SId of id
-  | SLet of id * sym_exp * sym_exp
+  | SLet of id * sym_exp
+  | SIsTrue of sym_exp
+  | SIsFalse of sym_exp
   | SOp1 of string * sym_exp
   | SOp2 of string * sym_exp * sym_exp
   | SApp of sym_exp * sym_exp list
@@ -81,11 +83,26 @@ let add_var id ty p =
   let { constraints = cs ; vars = vs } = p in
   { constraints = cs ; vars = IdMap.add id ty vs }
 
+let ty_to_string t = match t with
+  | TNull -> "TNull"
+  | TUndef -> "TUndef"
+  | TString -> "TString"
+  | TBool -> "TBool"
+  | TNum -> "TNum"
+  | TObj -> "TObj"
+  | TFun arity -> "TFun(" ^ (string_of_int arity) ^ ")"
+  | TAny -> "TAny"
+
+
 let check_type id t p =
   let { constraints = cs ; vars = vs } = p in
   try 
-    if (IdMap.find id vs) = t then ()
-    else raise (TypeError id)
+    let found = IdMap.find id vs in
+    if found = TAny || found = t then () (* simple subtyping from Any down to whatever *)
+    else begin 
+      Printf.printf "Known type of %s is %s, wanted %s\n" id (ty_to_string found) (ty_to_string t);
+      raise (TypeError id)
+    end
   with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
 
 let add_constraint c p =
