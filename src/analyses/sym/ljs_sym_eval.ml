@@ -14,9 +14,9 @@ open Str
 
 
 (* monad *)
-let none = ([],[])
 let return v pc = ([(v,pc)], [])
 let throw v pc = ([], [(v, pc)])
+let none = ([],[])
 
 (* usually, the types are
    bind_both ((ret : result list), (exn : exresult list)) 
@@ -24,7 +24,6 @@ let throw v pc = ([], [(v, pc)])
    (g : exresult -> (result list * exresult list)) 
    : (result list * exresult list)
    but in fact the function is slightly more polymorphic than that *)
-
 let bind_both (ret, exn) f g =
   let f_ret = List.map f ret in
   let g_exn = List.map g exn in
@@ -51,11 +50,12 @@ let unbool b = match b with
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
-let fresh_id = 
-  let varIdx = ref 0 in
-  (fun prefix ->
-    incr varIdx;
-    "%%" ^ prefix ^ (string_of_int !varIdx))
+let fresh_var = 
+  let count = ref 0 in
+  (fun prefix t pc ->
+    incr count;
+    let nvar = "%%" ^ prefix ^ (string_of_int !count) in
+    (nvar, (add_var nvar t pc)))
 
  
 let rec apply p func args pc depth = match func with
@@ -311,48 +311,49 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                 | Sym (SId id) -> 
                   check_type id t pc';
                   return (Sym (SOp1 (op, SId id))) pc'
-                | Sym e -> let nvar = fresh_id ("P1(" ^ op ^")") in
-                           return (Sym (SLet (nvar, e, 
-                                              (SOp1 (op, SId nvar))))) 
-                             (add_var nvar t pc')
+                | Sym e -> let (nvar, pc'')  = fresh_var ("P1(" ^ op ^")") t pc' in
+                           return (Sym (SLet (nvar, e, (SOp1 (op, SId nvar))))) pc''
                 | _ -> 
                   try
                     return (op1 op e_val) pc'
                   with PrimError msg -> throw (Throw (String msg)) pc'
-            with 
-              | TypeError id -> none)
+            with TypeError _ -> none)
           
       | S.Op2 (p, op, e1, e2) -> 
         bind
           (eval e1 env pc)
-          (fun (e1_val, pc1) ->
+          (fun (e1_val, pc') ->
             bind 
-              (eval e2 env pc1)
-              (fun (e2_val, pc2) -> 
+              (eval e2 env pc')
+              (fun (e2_val, pc'') -> 
                 let (t1, t2, _) = typeofOp2 op in
                 match e1_val, e2_val with
-                  (* add cases for ids *)
-                  (* | Sym (SId id1), Sym (SId id2) -> *)
-                  (*   check_type id1 t1 pc2; *)
-                  (*   return (Sym (SOp2 (op, SId id1, SId id2))) *)                      
-                  | Sym e1, Sym e2 -> let nvar1 = fresh_id ("P2(" ^ op ^ ")") in
-                                      let nvar2 = fresh_id ("P2(" ^ op ^ ")") in
-                                      return (Sym (SLet (nvar1, e1,
-                                                         (SLet (nvar2, e2,
-                                                                (SOp2 (op, SId nvar1, SId nvar2)))))))
-                                        (add_var nvar2 t2 (add_var nvar1 t1 pc2))
-                  | Sym e1, _ -> let nvar = fresh_id ("P2(" ^ op ^ ")") in
-                                 return (Sym (SLet (nvar, e1,
-                                                    (SOp2 (op, SId nvar, Concrete e2_val)))))
-                                   (add_var nvar t1 pc2)
-                  | _, Sym e2 -> let nvar = fresh_id ("P2(" ^ op ^ ")") in
-                                 return (Sym (SLet (nvar, e2, 
-                                                    (SOp2 (op, Concrete e1_val, SId nvar)))))
-                                   (add_var nvar t2 pc2)
+                  | Sym _, Sym _
+                  | Sym _, _
+                  | _, Sym _ -> begin 
+                    try 
+                      let pack_id e pc = (e, (fun x -> x), pc) in
+                      let pack_nv e t pc = let (nv, pc') = fresh_var ("P2(" ^ op ^ ")") t pc in
+                                           (SId nv, (fun x -> SLet (nv, e, x)), pc') in
+                      
+                      let (exp1, th1, pc1) = match e1_val with
+                        | Sym (SId id1) -> check_type id1 t1 pc''; pack_id (SId id1) pc''
+                        | Sym e1 -> pack_nv e1 t1 pc''
+                        | _ -> pack_id (Concrete e1_val) pc'' in
+                      
+                      let (exp2, th2, pc2) = match e2_val with
+                        | Sym (SId id2) -> check_type id2 t2 pc1; pack_id (SId id2) pc1
+                        | Sym e2 -> pack_nv e2 t2 pc1
+                        | _ -> pack_id (Concrete e2_val) pc1 in
+                      
+                      return (Sym (th1 (th2 (SOp2 (op, exp1, exp2))))) pc2
+
+                    with TypeError _ -> none 
+                  end
                   | _ ->
                     try
-                      return (op2 op e1_val e2_val) pc2
-                    with PrimError msg -> throw (Throw (String msg)) pc2))
+                      return (op2 op e1_val e2_val) pc''
+                    with PrimError msg -> throw (Throw (String msg)) pc''))
           
 
       | S.If (p, c, t, f) ->
@@ -361,8 +362,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
           (fun (c_val, pc') -> 
             match c_val with
               | True -> eval t env pc'
-              | Sym e -> let nvar = fresh_id "IF" in
-                         let npc = add_var nvar TBool pc' in
+              | Sym e -> let (nvar, npc) = fresh_var "IF" TBool pc' in
                          let true_pc  = add_constraint (SLet (nvar, e, 
                                                               (SOp1 ("not", SId nvar)))) npc in
                          let false_pc = add_constraint (SLet (nvar, e,
@@ -391,17 +391,16 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
             bind args_pcs
               (fun (argvs, pcs) ->
                 match f_val with
-                  | Sym e -> let fid = fresh_id "F" in
+                  | Sym e -> let (fid, fpc) = fresh_var "F" (TFun (List.length argvs)) pcs in
                              let argvs = List.map val_sym argvs in
                              let (ft, vs, pcs') = List.fold_left
                                (fun (term, vals, p) exp ->
                                  match exp with 
                                    | Concrete _  
                                    | SId _ -> (term, vals@[exp], p)
-                                   | _ -> let aid = fresh_id "FA" in
-                                          ((fun t -> (SLet (aid, exp, t))), 
-                                           vals@[SId aid], (add_var aid TAny p)))
-                               ((fun t -> t),[], (add_var fid (TFun (List.length argvs)) pcs)) argvs in
+                                   | _ -> let (aid, apc) = fresh_var "FA" TAny p in
+                                          ((fun t -> (SLet (aid, exp, t))), vals@[SId aid], apc))
+                               ((fun t -> t),[], fpc) argvs in
                              return (Sym (SLet (fid, e, 
                                                 ft (SApp (SId fid, vs)))))
                                pcs'
@@ -508,11 +507,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                       | Sym obj, Sym f -> failwith "[interp] not yet implemented (Get Sym Sym)"
                         
                       | Sym obj, String f -> 
-                        let nvar = fresh_id "FD" in
-                        let ncons = (* (= nvar (select (obj, f))) *)
-                          SOp2 ("=", SId nvar, SOp2 ("select", obj, SId f)) in                        
-                        return (Sym (SId nvar)) (add_var nvar TAny
-                                                   (add_constraint ncons pc_g))
+                        let (nvar, npc) = fresh_var "FD" TAny pc_g in
+                        (* (= nvar (select (obj, f))) *)
+                        let ncons = SOp2 ("=", SId nvar, SOp2 ("select", obj, SId f)) in
+                        return (Sym (SId nvar)) (add_constraint ncons npc)
                           
                       | ObjCell c, Sym f -> failwith "[interp] not yet implemented (Get Obj Sym)"
                         
@@ -525,8 +523,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                                        ^ ". Instead, it got " 
                                        ^ Ljs_sym_pretty.to_string objv
                                        ^ " and " 
-                                       ^ Ljs_sym_pretty.to_string fv)
-                  )))
+                                       ^ Ljs_sym_pretty.to_string fv))))
                                        
 
 
