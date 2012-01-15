@@ -509,7 +509,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                     let rec sym_get_field p obj1 field getter_params result pc depth = 
                       try
                         match obj1, field with
-                        | Null, _ -> return Undefined pc (* nothing found *)
+                        | Null, _ -> return Undefined pc' (* nothing found *)
                         | Sym obj, String f -> begin
                           match obj with 
                           | SId id -> check_type id TObj pc';
@@ -526,16 +526,16 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                           let (o_id, f_id, pc') = match obj, f with
                             | SId o_id, SId f_id -> (o_id, f_id, pc)
                             | SId o_id, field -> 
-                              let (f_id, pc') = fresh_var "FN_" TString pc in
-                              (o_id, f_id, add_constraint (SLet (f_id, field)) pc')
+                              let (f_id, pc'') = fresh_var "FN_" TString pc' in
+                              (o_id, f_id, add_constraint (SLet (f_id, field)) pc'')
                             | obj, SId f_id ->
-                              let (o_id, pc') = fresh_var "OB_" TObj pc' in
-                              (o_id, f_id, add_constraint (SLet (o_id, obj)) pc')
-                            | obj, field ->
-                              let (f_id, pc') = fresh_var "FN_" TString pc in
                               let (o_id, pc'') = fresh_var "OB_" TObj pc' in
+                              (o_id, f_id, add_constraint (SLet (o_id, obj)) pc'')
+                            | obj, field ->
+                              let (f_id, pc'') = fresh_var "FN_" TString pc' in
+                              let (o_id, pc''') = fresh_var "OB_" TObj pc'' in
                               (o_id, f_id, add_constraint (SLet (f_id, field))
-                                (add_constraint (SLet (o_id, obj)) pc'))
+                                (add_constraint (SLet (o_id, obj)) pc'''))
                           in
                           let (ret_gf, pc'') = fresh_var "GF_" TAny pc' in
                           return (Sym (SId ret_gf))
@@ -545,20 +545,20 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                           let ({proto = pvalue; }, props) = !c in
                           combine
                             (IdMap.fold (fun fieldName value results ->
-                              let pc' = add_constraint (SIsTrue(SOp2("stx=", 
-                                                                     f, Concrete (String fieldName)))) pc in
+                              let pc'' = add_constraint (SIsTrue(SOp2("stx=", 
+                                                                     f, Concrete (String fieldName)))) pc' in
                               match value with
-                              | Data ({ value = v; }, _, _) -> also_return (result v) pc' results
+                              | Data ({ value = v; }, _, _) -> also_return (result v) pc'' results
                               | Accessor ({ getter = g; }, _, _) ->
-                                combine (apply p g getter_params pc' depth) results) props none)
+                                combine (apply p g getter_params pc'' depth) results) props none)
                             (let none_of = IdMap.fold 
                                (fun fieldName _ pc ->
-                                 add_constraint (SOp1("!", SOp2("stx=", f, Concrete (String fieldName)))) pc)
-                               props pc in
+                                 add_constraint (SIsFalse(SOp2("stx=", f, Concrete (String fieldName)))) pc)
+                               props pc' in
                              sym_get_field p pvalue field getter_params result none_of depth)
                         end
                         | ObjCell c, String f ->
-                          get_field p obj1 f [obj1; argsv] (fun x -> x) pc depth
+                          get_field p obj1 f [obj1; argsv] (fun x -> x) pc' depth
                         | _ -> failwith (interp_error p
                                            "get_field on a non-object.  The expression was (get-field "
                                          ^ Ljs_sym_pretty.to_string obj1
@@ -566,7 +566,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                                          ^ " " ^ Ljs_sym_pretty.to_string field ^ ")")
                       with TypeError _ -> none
                     in
-                    sym_get_field p objv fv [objv; argsv] (fun x -> x) pc depth)))
+                    sym_get_field p objv fv [objv; argsv] (fun x -> x) pc' depth)))
                                        
 
 

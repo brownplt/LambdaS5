@@ -13,7 +13,7 @@ let rec vert_intersperse a lst = match lst with
 
 let prim_to_z3 op = match op with
   | "NOT" -> "not"
-  | "EQ" -> "="
+  | "stx=" -> "="
   | _ -> op
 
 let rec value v = 
