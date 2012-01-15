@@ -36,12 +36,13 @@ and
   sym_exp = (* a-normal form: nested sym_exp are only SId or Concrete *)
   | Concrete of value 
   | SId of id
-  | SLet of id * sym_exp
-  | SIsTrue of sym_exp
-  | SIsFalse of sym_exp
   | SOp1 of string * sym_exp
   | SOp2 of string * sym_exp * sym_exp
   | SApp of sym_exp * sym_exp list
+  | SLet of id * sym_exp
+  | SIsTrue of sym_exp
+  | SIsFalse of sym_exp
+  | SGetField of id * id
 and result = value * path
 and exval = 
   | Break of label * value

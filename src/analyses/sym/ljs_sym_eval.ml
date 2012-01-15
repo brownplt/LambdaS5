@@ -347,22 +347,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                       let (ret_op, pc''') = fresh_var ("P2_" ^ op ^ "_") ret_ty pc'' in
                       return (Sym (SId ret_op)) 
                         (add_constraint (SLet (ret_op, SOp2(op, sym_e1, sym_e2))) pc''')
-                      (* let pack_id e pc = (e, (fun x -> x), pc) in *)
-                      (* let pack_nv e t pc = let (nv, pc') = fresh_var ("P2_" ^ op ^ "_") t pc in *)
-                      (*                      (SId nv, (fun x -> SLet (nv, e, x)), pc') in *)
-                      
-                      (* let (exp1, th1, pc1) = match e1_val with *)
-                      (*   | Sym (SId id1) -> check_type id1 t1 pc''; pack_id (SId id1) pc'' *)
-                      (*   | Sym e1 -> pack_nv e1 t1 pc'' *)
-                      (*   | _ -> pack_id (Concrete e1_val) pc'' in *)
-                      
-                      (* let (exp2, th2, pc2) = match e2_val with *)
-                      (*   | Sym (SId id2) -> check_type id2 t2 pc1; pack_id (SId id2) pc1 *)
-                      (*   | Sym e2 -> pack_nv e2 t2 pc1 *)
-                      (*   | _ -> pack_id (Concrete e2_val) pc1 in *)
-                      
-                      (* return (Sym (th2 (th1 (SOp2 (op, exp1, exp2))))) pc2 *)
-
                     with TypeError id -> Printf.printf "Check_type couldn't find %s" id; none 
                   end
                   | _ ->
@@ -370,7 +354,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                       return (op2 op e1_val e2_val) pc''
                     with PrimError msg -> throw (Throw (String msg)) pc''))
           
-
       | S.If (p, c, t, f) ->
         bind 
           (eval c env pc)
@@ -414,32 +397,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                     let ((vs : sym_exp list), (pcs' : path)) = List.fold_left
                       (fun (vals, p) exp ->
                         match exp with 
-                        | Concrete _  
-                        | SId _ -> (vals@[exp], p)
-                        | _ -> let (aid, apc) = fresh_var "FA" TAny p in
-                               (vals@[SId aid], add_constraint (SLet (aid, exp)) apc))
+                          | Concrete _  
+                          | SId _ -> (vals@[exp], p)
+                          | _ -> let (aid, apc) = fresh_var "FA" TAny p in
+                                 (vals@[SId aid], add_constraint (SLet (aid, exp)) apc))
                       ([], fpc) argvs in
                     let (ret : value) = Sym (SApp (SId fid, vs)) in
                     return ret (add_constraint (SLet (fid, f)) pcs')
                   | _ -> apply p f_val argvs pcs depth))
-
-
-              (* (fun (argvs, pcs) -> *)
-              (*   match f_val with *)
-              (*     | Sym e -> let (fid, fpc) = fresh_var "F" (TFun (List.length argvs)) pcs in *)
-              (*                let argvs = List.map val_sym argvs in *)
-              (*                let (ft, vs, pcs') = List.fold_left *)
-              (*                  (fun (term, vals, p) exp -> *)
-              (*                    match exp with  *)
-              (*                      | Concrete _   *)
-              (*                      | SId _ -> (term, vals@[exp], p) *)
-              (*                      | _ -> let (aid, apc) = fresh_var "FA" TAny p in *)
-              (*                             ((fun t -> (SLet (aid, exp, t))), vals@[SId aid], apc)) *)
-              (*                  ((fun t -> t),[], fpc) argvs in *)
-              (*                return (Sym (SLet (fid, e,  *)
-              (*                                   ft (SApp (SId fid, vs))))) *)
-              (*                  pcs' *)
-              (*     | _ -> apply p f_val argvs pcs depth)) *)
           
       | S.Seq (p, e1, e2) -> 
         bind 
@@ -537,28 +502,38 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
             bind (eval f env pc_o) 
               (fun (fv, pc_f) -> 
                 bind (eval args env pc_f)
-                  (fun (argsv, pc_g) ->
-                    match objv, fv with
-                      | Sym obj, Sym f -> failwith "[interp] not yet implemented (Get Sym Sym)"
-                        
-                      | Sym obj, String f -> 
-                        let (nvar, npc) = fresh_var "FD" TAny pc_g in
-                        (* (= nvar (select (obj, f))) *)
-                        let ncons = SOp2 ("=", SId nvar, SOp2 ("select", obj, SId f)) in
-                        return (Sym (SId nvar)) (add_constraint ncons npc)
+                  (fun (argsv, pc') ->
+                    try
+                      match objv, fv with
+                        | Sym obj, Sym f -> failwith "[interp] not yet implemented (Get Sym Sym)"
                           
-                      | ObjCell c, Sym f -> failwith "[interp] not yet implemented (Get Obj Sym)"
-                        
-                      | ObjCell o, String s -> 
-                        printf "getting field %s" s;
-                        get_field p objv s [objv; argsv] (fun x -> x) pc depth
+                        | Sym obj, String f -> begin
+                          let (f_id, pc'') = fresh_var "FN_" TString pc' in
+                          match obj with 
+                            | SId id -> check_type id TObj pc'';
+                              let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
+                              return (Sym (SId ret_gf))
+                                (add_constraint (SLet (ret_gf, SGetField (id, f_id))) pc''')
+                            | e -> let (obj_id, pc''') = fresh_var "OB_" TObj pc'' in
+                                   let (ret_gf, pc'''') = fresh_var "GF_" TAny pc''' in
+                                   return (Sym (SId ret_gf))
+                                     (add_constraint (SLet (ret_gf, SGetField (obj_id, f_id)))
+                                        (add_constraint (SLet (obj_id, e)) pc''''))
+                        end
                           
-                      | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
-                                       ^ string_of_position p 
-                                       ^ ". Instead, it got " 
-                                       ^ Ljs_sym_pretty.to_string objv
-                                       ^ " and " 
-                                       ^ Ljs_sym_pretty.to_string fv))))
+                        | ObjCell c, Sym f -> failwith "[interp] not yet implemented (Get Obj Sym)"
+                          
+                        | ObjCell o, String s -> 
+                          printf "getting field %s" s;
+                          get_field p objv s [objv; argsv] (fun x -> x) pc depth
+                            
+                        | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
+                                         ^ string_of_position p 
+                                         ^ ". Instead, it got " 
+                                         ^ Ljs_sym_pretty.to_string objv
+                                         ^ " and " 
+                                         ^ Ljs_sym_pretty.to_string fv)
+                    with TypeError _ -> none)))
                                        
 
 

@@ -88,63 +88,55 @@ and exp e =
     | TObj -> parens (horz [text "OBJ"; e])
     | _ -> e in
   match e with
-  | Concrete v -> value v
-  | SId id -> text id
-  | SOp1 (op, e) -> 
-    let (t, ret) = Ljs_sym_delta.typeofOp1 op in
-    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t (exp e)]))
-  | SOp2 (op, e1, e2) ->
-    let (t1, t2, ret) = Ljs_sym_delta.typeofOp2 op in
-    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t1 (exp e1); castFn t2 (exp e2)]))
-  | SApp (f, args) ->
-    parens (horz ((exp f) :: (map exp args)))
-  | SLet (id, e1) ->
-    parens(horz [text "assert"; parens(horz[text "="; text id; exp e1])])
-  | SIsTrue e ->
-    parens(horz [text "assert"; parens(horz[text "b"; exp e])])
-  | SIsFalse e ->
-    parens(horz [text "assert"; parens(horz[text "not"; parens(horz[text "b"; exp e])])])
+    | Concrete v -> value v
+    | SId id -> text id
+    | SOp1 (op, e) -> 
+      let (t, ret) = Ljs_sym_delta.typeofOp1 op in
+      uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t (exp e)]))
+    | SOp2 (op, e1, e2) ->
+      let (t1, t2, ret) = Ljs_sym_delta.typeofOp2 op in
+      uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t1 (exp e1); castFn t2 (exp e2)]))
+    | SApp (f, args) ->
+      parens (horz ((exp f) :: (map exp args)))
+    | SLet (id, e1) ->
+      parens(horz [text "assert"; parens(horz[text "="; text id; exp e1])])
+    | SIsTrue e ->
+      parens(horz [text "assert"; parens(horz[text "b"; exp e])])
+    | SIsFalse e ->
+      parens(horz [text "assert"; parens(horz[text "not"; parens(horz[text "b"; exp e])])])
+    | SGetField (id, f) ->
+      uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in
   let code = match c with None -> [] 
     | Some e -> [horz [text "#code:"; value e]] in
   brackets (vert (map (fun x -> squish [x; (text ",")])
-                  (proto@
-                    code@
-                    [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
-                     horz [text "#extensible:"; text (string_of_bool b)]])))
-              
+                    (proto@
+                       code@
+                       [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
+                        horz [text "#extensible:"; text (string_of_bool b)]])))
+    
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                          value v; text ","; 
-                                          text "#writable";  
-                                          text (string_of_bool w);
-                                          text ",";
-                                          text "#configurable";
-                                          text (string_of_bool config)])]
+                                                        value v; text ","; 
+                                                        text "#writable";  
+                                                        text (string_of_bool w);
+                                                        text ",";
+                                                        text "#configurable";
+                                                        text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                          value g; text ",";
-                                          text "#setter";
-                                          value s])]
+                                                        value g; text ",";
+                                                        text "#setter";
+                                                        value s])]
 ;;
 let to_string v = value v Format.str_formatter; Format.flush_str_formatter() 
-
-let rec collect_vars vars exp : var list =
-  match exp with
-  | Concrete(_) -> vars
-  | SId(id) -> 
-    if List.mem_assoc id vars then vars 
-    else ((id,"JS") :: vars) (* no type info! *)
-  | SOp1(op, e) -> collect_vars vars e
-  | SOp2(op, e1, e2) -> collect_vars (collect_vars vars e1) e2
-  | SApp(e1, e2s) -> List.fold_left collect_vars (collect_vars vars e1) e2s
-  | _ -> vars
-    
-
+  
+   
+let log_z3 = true
 
 (* communicating with Z3 *)
 let is_sat (p : path) : bool =
@@ -160,7 +152,7 @@ let is_sat (p : path) : bool =
    (NULL)\n\
    (ABSENT)\n\
    (BOOL (b Bool))\n\
-   (STRING (s Str))\n\
+   (STR (s Str))\n\
    (CLOSURE (f Fun))\n\
    (OBJ (fields Fields)))))\n\
 (declare-fun js2Field ((Array Str JS)) Fields)\n\
@@ -170,7 +162,7 @@ let is_sat (p : path) : bool =
 (assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))" in
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   let { constraints = cs; vars = vs; } = p in      
-  (* Printf.printf "%s\n" z3prelude; *)
+  if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
   IdMap.iter
     (fun id tp -> 
@@ -185,16 +177,16 @@ let is_sat (p : path) : bool =
       | TFun arity -> Printf.sprintf "(assert (exists ((f Fun)) (= %s (FUN f))))\n" id
       | TAny -> ""
       in
-      (* Printf.printf "(declare-const %s JS)\n" id; *)
+      if log_z3 then Printf.printf "(declare-const %s JS)\n" id;
       output_string outch (Printf.sprintf "(declare-const %s JS)\n" id);
-      (* Printf.printf "%s" assertion; *)
+      if log_z3 then Printf.printf "%s" assertion;
       output_string outch assertion;
     )
     vs; 
   
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc pc = 
-      (* Printf.printf "%s\n" (to_string (Sym pc)); *)
+      if log_z3 then Printf.printf "%s\n" (to_string (Sym pc));
       output_string outch 
         (Printf.sprintf "%s\n" (to_string (Sym pc))) in
   List.iter print_pc lets;
@@ -205,7 +197,7 @@ let is_sat (p : path) : bool =
   flush stdout;
   let res = input_line inch in
   close_in inch; 
-  (* Printf.printf "z3 said: %s\n" res; *)
+  if log_z3 then Printf.printf "z3 said: %s\n" res;
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
   (res = "sat")
     
