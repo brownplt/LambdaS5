@@ -105,7 +105,7 @@ and exp e =
     | SIsFalse e ->
       parens(horz [text "assert"; parens(horz[text "not"; parens(horz[text "b"; exp e])])])
     | SGetField (id, f) ->
-      uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
+      uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (exp f)]))
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in

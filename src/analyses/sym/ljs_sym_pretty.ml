@@ -66,7 +66,7 @@ and exp e =
   | SIsFalse e ->
     horz [exp e; text "IS FALSE"]
   | SGetField (id, f) ->
-    horz [text (id ^ "." ^ f)]
+    squish [text id; text "."; exp f]
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in

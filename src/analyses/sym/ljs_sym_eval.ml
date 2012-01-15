@@ -515,11 +515,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                           | SId id -> check_type id TObj pc';
                             let (ret_gf, pc'') = fresh_var "GF_" TAny pc' in
                             return (Sym (SId ret_gf))
-                              (add_constraint (SLet (ret_gf, SGetField (id, f))) pc'')
+                              (add_constraint (SLet (ret_gf, SGetField (id, Concrete field))) pc'')
                           | e -> let (obj_id, pc'') = fresh_var "OB_" TObj pc' in
                                  let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
                                  return (Sym (SId ret_gf))
-                                   (add_constraint (SLet (ret_gf, SGetField (obj_id, f)))
+                                   (add_constraint (SLet (ret_gf, SGetField (obj_id, Concrete field)))
                                       (add_constraint (SLet (obj_id, e)) pc'''))
                         end
                         | Sym obj, Sym f -> begin
@@ -539,7 +539,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                           in
                           let (ret_gf, pc'') = fresh_var "GF_" TAny pc' in
                           return (Sym (SId ret_gf))
-                            (add_constraint (SLet (ret_gf, SGetField (o_id, f_id))) pc'')
+                            (add_constraint (SLet (ret_gf, SGetField (o_id, SId f_id))) pc'')
                         end
                         | ObjCell c, Sym f -> begin
                           let ({proto = pvalue; }, props) = !c in

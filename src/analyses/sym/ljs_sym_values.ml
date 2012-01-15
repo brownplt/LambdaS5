@@ -42,7 +42,7 @@ and
   | SLet of id * sym_exp
   | SIsTrue of sym_exp
   | SIsFalse of sym_exp
-  | SGetField of id * id
+  | SGetField of id * sym_exp
 and result = value * path
 and exval = 
   | Break of label * value
