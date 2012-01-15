@@ -86,8 +86,9 @@
 //         prim("+", fib(prim("-", n, 1)), fib(prim("-",n, 2)))
 //     }
 // })
-// let (dummy = fib(7))
+// let (dummy = fib(%%n))
 // calls
+
 
 
 
@@ -95,32 +96,33 @@
 let (obj = {[#proto: %%p,]
             'field1' : {#value 10 , #writable false},
             'field2' : {#value true , #writable false},
-           }        )  
-let (calls = 0)
-rec (fib = func(n) {
-  calls := prim("+", calls, 1);
-  if (prim("<", n, 3)) { 1 }
-  else {
-      prim("+", fib(prim("-", n, 1)), fib(prim("-",n, 2)))
-  }
-})
-let (loop = func(min, max, f) {
-    rec (iter = func(i) {
-        if (prim("<", i, max)) {
-            calls := 0;
-            f(i);
-            prim("print", prim("prim->str", calls));
-            iter(prim("+", i, 1))
-        } else // { calls }
-        { //calls :=  ;  %%x["x"] 
-          if (prim("<", 5 , 11)) {
-              calls
-          } else { obj["field2"] }}
-    })
-    iter(min)
-})
-let (printFib = func(i) { prim("print", fib(i)) })
-{
-  loop(1,%%z,printFib)
-}
+           }        )
+obj[%%s]  
+// let (calls = 0)
+// rec (fib = func(n) {
+//   calls := prim("+", calls, 1);
+//   if (prim("<", n, 3)) { 1 }
+//   else {
+//       prim("+", fib(prim("-", n, 1)), fib(prim("-",n, 2)))
+//   }
+// })
+// let (loop = func(min, max, f) {
+//     rec (iter = func(i) {
+//         if (prim("<", i, max)) {
+//             calls := 0;
+//             f(i);
+//             prim("print", prim("prim->str", calls));
+//             iter(prim("+", i, 1))
+//         } else // { calls }
+//         { //calls :=  ;  %%x["x"] 
+//           if (prim("<", 5 , 11)) {
+//               calls
+//           } else { obj["field2"] }}
+//     })
+//     iter(min)
+// })
+// let (printFib = func(i) { prim("print", fib(i)) })
+// {
+//   loop(1,%%z,printFib)
+// }
 
