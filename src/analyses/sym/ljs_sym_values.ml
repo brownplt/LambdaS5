@@ -42,7 +42,7 @@ and
   | SLet of id * sym_exp
   | SIsTrue of sym_exp
   | SIsFalse of sym_exp
-  | SGetField of id * sym_exp
+  | SGetField of id * id
 and result = value * path
 and exval = 
   | Break of label * value
@@ -99,7 +99,9 @@ let check_type id t p =
   let { constraints = cs ; vars = vs } = p in
   try 
     let found = IdMap.find id vs in
-    if found = TAny || found = t then () (* simple subtyping from Any down to whatever *)
+    if found = t then p
+    else if found = TAny then
+      { constraints = cs ; vars = IdMap.add id t vs }
     else begin 
       Printf.printf "Known type of %s is %s, wanted %s\n" id (ty_to_string found) (ty_to_string t);
       raise (TypeError id)

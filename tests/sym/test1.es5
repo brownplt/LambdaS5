@@ -94,11 +94,15 @@
 
 
 let (obj = {[#proto: %%p,]
-            'field1' : {#value 10 , #writable false},
+            'field1' : {#value 12 , #writable false},
             'field2' : {#value true , #writable false},
            }        )
-obj[%%s]  
-// let (calls = 0)
+//obj[%%s]  
+//%%o["f"]
+//if(prim("<", 10, obj[%%s])){ 1 } else { 2 }
+if(prim("<", 10, %%s["f"])){ 1 } else { 2 }
+
+// (calls = 0)
 // rec (fib = func(n) {
 //   calls := prim("+", calls, 1);
 //   if (prim("<", n, 3)) { 1 }

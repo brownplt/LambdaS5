@@ -105,7 +105,7 @@ and exp e =
     | SIsFalse e ->
       parens(horz [text "assert"; parens(horz[text "not"; parens(horz[text "b"; exp e])])])
     | SGetField (id, f) ->
-      uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (exp f)]))
+      uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in
@@ -139,6 +139,8 @@ let to_string v = value v Format.str_formatter; Format.flush_str_formatter()
 let log_z3 = true
 
 (* communicating with Z3 *)
+
+
 let is_sat (p : path) : bool =
   let z3prelude = "\
 (declare-sort Str)\n\
@@ -157,9 +159,11 @@ let is_sat (p : path) : bool =
    (OBJ (fields Fields)))))\n\
 (declare-fun js2Field ((Array Str JS)) Fields)\n\
 (declare-fun field2js (Fields) (Array Str JS))\n\
-(assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))\n\
-(declare-const mtObj Fields)\n\
-(assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))" in
+(assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))\n" in
+
+(* (declare-const mtObj Fields)\n\
+(assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))  *)
+
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   let { constraints = cs; vars = vs; } = p in      
   if log_z3 then Printf.printf "%s\n" z3prelude;
