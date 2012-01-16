@@ -559,10 +559,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                                 let pc'' = add_constraint 
                                   (SIsTrue(SOp2("stx=", 
                                                 f, SId fn_id))) pc' in
+                                let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
                                 match value with
-                                  | Data ({ value = v; }, _, _) -> also_return (result v) pc'' results
+                                  | Data ({ value = v; }, _, _) -> 
+                                    (* also_return (result v) pc'' results *)
+                                    also_return (Sym (SId ret_gf))
+                                      (add_constraint (SLet (ret_gf, Concrete (result v))) pc''') results
                                   | Accessor ({ getter = g; }, _, _) ->
-                                    combine (apply p g getter_params pc'' depth) results) props none)
+                                    combine (apply p g getter_params pc''' depth) results) props none)
                               (let none_of = IdMap.fold 
                                  (fun fieldName _ pc ->
                                    let (fn_id, pc) = fresh_var ("FN_" ^ fieldName) TString pc in
