@@ -99,20 +99,20 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
                    ^ " " ^ field ^ ")")
 
 
-(* (\* EUpdateField-Add *\) *)
-(* (\* ES5 8.12.5, step 6 *\) *)
-(* let rec add_field obj field newval result = match obj with *)
-(*   | ObjCell c -> begin match !c with *)
-(*       | { extensible = true; } as attrs, props -> *)
-(*         begin *)
-(*           c := (attrs, IdMap.add field  *)
-(*             (Data ({ value = newval; writable = true; }, true, true)) *)
-(*             props); *)
-(*           result newval *)
-(*         end *)
-(*       | _ -> result Undefined(\* TODO: Check error in case of non-extensible *\) *)
-(*   end *)
-(*   | _ -> failwith ("[interp] add_field given non-object.") *)
+(* EUpdateField-Add *)
+(* ES5 8.12.5, step 6 *)
+let rec add_field obj field newval result = match obj with
+  | ObjCell c -> begin match !c with
+      | { extensible = true; } as attrs, props ->
+        begin
+          c := (attrs, IdMap.add field
+            (Data ({ value = newval; writable = true; }, true, true))
+            props);
+          result newval
+        end
+      | _ -> result Undefined(* TODO: Check error in case of non-extensible *)
+  end
+  | _ -> failwith ("[interp] add_field given non-object.")
 
 (* (\* Both functions (because a property can satisfy writable and not_writable) *\) *)
 (* let rec writable prop = match prop with *)
@@ -123,36 +123,36 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
 (*   | Data ({ writable = false; }, _, _) -> true *)
 (*   | _ -> false *)
 
-(* (\* EUpdateField *\) *)
-(* (\* ES5 8.12.4, 8.12.5 *\) *)
-(* let rec update_field p obj1 obj2 field newval setter_args result = match obj1 with *)
-(*     (\* 8.12.4, step 4 *\) *)
-(*   | Null -> add_field obj2 field newval result *)
-(*   | ObjCell c -> begin match !c with *)
-(*       | { proto = pvalue; } as attrs, props -> *)
-(*         if (not (IdMap.mem field props)) then *)
-(*           (\* EUpdateField-Proto *\) *)
-(*           update_field p pvalue obj2 field newval setter_args result *)
-(*         else *)
-(*           match (IdMap.find field props) with *)
-(*             | Data ({ writable = true; }, enum, config) -> *)
-(*             (\* This check asks how far down we are in searching *\) *)
-(*               if (not (obj1 == obj2)) then *)
-(*                 (\* 8.12.4, last step where inherited.[[writable]] is true *\) *)
-(*                 add_field obj2 field newval result *)
-(*               else begin *)
-(*                 (\* 8.12.5, step 3, changing the value of a field *\) *)
-(*                 c := (attrs, IdMap.add field *)
-(*                   (Data ({ value = newval; writable = true }, enum, config)) *)
-(*                   props); *)
-(*                 result newval *)
-(*               end *)
-(*             | Accessor ({ setter = setterv; }, enum, config) -> *)
-(*               (\* 8.12.5, step 5 *\) *)
-(*               apply p setterv setter_args *)
-(*             | _ -> failwith "Field not writable!" *)
-(*   end *)
-(*   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ Ljs_sym_pretty.to_string obj1 ^ " " ^ Ljs_sym_pretty.to_string obj2 ^ " " ^ field ^ " " ^ Ljs_sym_pretty.to_string newval ^ ")" ) *)
+(* EUpdateField *)
+(* ES5 8.12.4, 8.12.5 *)
+let rec update_field p obj1 obj2 field newval setter_args result = match obj1 with
+    (* 8.12.4, step 4 *)
+  | Null -> add_field obj2 field newval result
+  | ObjCell c -> begin match !c with
+      | { proto = pvalue; } as attrs, props ->
+        if (not (IdMap.mem field props)) then
+          (* EUpdateField-Proto *)
+          update_field p pvalue obj2 field newval setter_args result
+        else
+          match (IdMap.find field props) with
+            | Data ({ writable = true; }, enum, config) ->
+            (* This check asks how far down we are in searching *)
+              if (not (obj1 == obj2)) then
+                (* 8.12.4, last step where inherited.[[writable]] is true *)
+                add_field obj2 field newval result
+              else begin
+                (* 8.12.5, step 3, changing the value of a field *)
+                c := (attrs, IdMap.add field
+                  (Data ({ value = newval; writable = true }, enum, config))
+                  props);
+                result newval
+              end
+            | Accessor ({ setter = setterv; }, enum, config) ->
+              (* 8.12.5, step 5 *)
+              apply p setterv setter_args
+            | _ -> failwith "Field not writable!"
+  end
+  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ Ljs_sym_pretty.to_string obj1 ^ " " ^ Ljs_sym_pretty.to_string obj2 ^ " " ^ field ^ " " ^ Ljs_sym_pretty.to_string newval ^ ")" )
 
 (* let rec get_attr attr obj field = match obj, field with *)
 (*   | ObjCell c, String s -> let (attrs, props) = !c in *)
@@ -324,10 +324,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                   let (ret_op1, pc''') = fresh_var ("P1_" ^ op ^ "_") ret_ty pc'' in
                   return (Sym (SId ret_op1))
                     (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc''')
-                | Sym e -> 
-                  let (ret_op1, pc'') = fresh_var ("P1_" ^ op ^ "_") ret_ty pc' in
-                  return (Sym (SId ret_op1))
-                    (add_constraint (SLet (ret_op1, SOp1 (op, e))) pc'')
+                (* | Sym e ->  *)
+                (*   let (ret_op1, pc'') = fresh_var ("P1_" ^ op ^ "_") ret_ty pc' in *)
+                (*   return (Sym (SId ret_op1)) *)
+                (*     (add_constraint (SLet (ret_op1, SOp1 (op, e))) pc'') *)
                 | _ -> 
                   try
                     return (op1 op e_val) pc'
@@ -349,11 +349,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                     try 
                       let (sym_e1, pc1) = match e1_val with
                         | Sym(SId id) -> (SId id, check_type id t1 pc'')
-                        | Sym e -> (e, pc'')
+                        (* | Sym e -> (e, pc'') *)
                         | _ -> (Concrete e1_val, pc'') in
                       let (sym_e2, pc2) = match e2_val with
                         | Sym(SId id) -> (SId id, check_type id t2 pc1)
-                        | Sym e -> (e, pc1)
+                        (* | Sym e -> (e, pc1) *)
                         | _ -> (Concrete e2_val, pc1) in
                       let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty pc2 in
                       return (Sym (SId ret_op)) 
@@ -374,8 +374,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
               | Sym e -> 
                 let (sym_e, pc'') = match e with
                   | SId id -> (e, pc')
-                  | _ -> let (nvar, npc) = fresh_var "IF" TBool pc' in
-                         (SId nvar, add_constraint (SLet (nvar, e)) npc) in
+                  (* | _ -> let (nvar, npc) = fresh_var "IF" TBool pc' in *)
+                  (*        (SId nvar, add_constraint (SLet (nvar, e)) npc) in *) in
                 let true_pc = add_constraint (SIsTrue sym_e) pc'' in
                 let false_pc  = add_constraint (SIsFalse sym_e) pc'' in
                 (fun (r1, e1) (r2, e2) -> (List.rev_append r1 r2, List.rev_append e1 e2))
@@ -413,8 +413,12 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                           | _ -> let (aid, apc) = fresh_var "FA" TAny p in
                                  (vals@[SId aid], add_constraint (SLet (aid, exp)) apc))
                       ([], fpc) argvs in
-                    let (ret : value) = Sym (SApp (SId fid, vs)) in
-                    return ret (add_constraint (SLet (fid, f)) pcs')
+                    let (res_id, res_pc) = fresh_var "AP" TAny pcs' in 
+                    return (Sym (SId res_id)) 
+                      (add_constraint (SLet (res_id, (SApp (SId fid, vs))))
+                         (add_constraint (SLet (fid, f)) res_pc))
+                    (* let (ret : value) = Sym (SApp (SId fid, vs)) in *)
+                    (* return ret (add_constraint (SLet (fid, f)) pcs') *)
                   | _ -> apply p f_val argvs pcs depth))
           
       | S.Seq (p, e1, e2) -> 
@@ -535,17 +539,17 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                           | Sym obj, Sym f -> begin
                             let (o_id, f_id, pc') = match obj, f with
                               | SId o_id, SId f_id -> (o_id, f_id, pc)
-                              | SId o_id, field -> 
-                                let (f_id, pc'') = fresh_var "FN_" TString pc' in
-                                (o_id, f_id, add_constraint (SLet (f_id, field)) pc'')
-                              | obj, SId f_id ->
-                                let (o_id, pc'') = fresh_var "OB_" TObj pc' in
-                                (o_id, f_id, add_constraint (SLet (o_id, obj)) pc'')
-                              | obj, field ->
-                                let (f_id, pc'') = fresh_var "FN_" TString pc' in
-                                let (o_id, pc''') = fresh_var "OB_" TObj pc'' in
-                                (o_id, f_id, add_constraint (SLet (f_id, field))
-                                  (add_constraint (SLet (o_id, obj)) pc'''))
+                              (* | SId o_id, field ->  *)
+                              (*   let (f_id, pc'') = fresh_var "FN_" TString pc' in *)
+                              (*   (o_id, f_id, add_constraint (SLet (f_id, field)) pc'') *)
+                              (* | obj, SId f_id -> *)
+                              (*   let (o_id, pc'') = fresh_var "OB_" TObj pc' in *)
+                              (*   (o_id, f_id, add_constraint (SLet (o_id, obj)) pc'') *)
+                              (* | obj, field -> *)
+                              (*   let (f_id, pc'') = fresh_var "FN_" TString pc' in *)
+                              (*   let (o_id, pc''') = fresh_var "OB_" TObj pc'' in *)
+                              (*   (o_id, f_id, add_constraint (SLet (f_id, field)) *)
+                              (*     (add_constraint (SLet (o_id, obj)) pc''')) *)
                             in
                             let (ret_gf, pc'') = fresh_var "GF_" TAny pc' in
                             return (Sym (SId ret_gf))
@@ -586,8 +590,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                     in
                     sym_get_field p objv fv [objv; argsv] (fun x -> x) pc' depth)))
                                        
-
-
 (*
   | S.SetField (p, obj, f, v, args) ->
       let obj_value = eval obj env in
@@ -596,16 +598,16 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
       let args_value = eval args env in begin
         match (obj_value, f_value) with
           | (ObjCell o, String s) ->
-              update_field p obj_value
-                obj_value 
-                s
-                v_value
-                [obj_value; args_value]
-    (fun x -> x)
+            update_field p obj_value
+              obj_value 
+              s
+              v_value
+              [obj_value; args_value]
+              (fun x -> x)
           | _ -> failwith ("[interp] Update field didn't get an object and a string" 
                            ^ string_of_position p ^ " : " ^ (Ljs_sym_pretty.to_string obj_value) ^ 
                              ", " ^ (Ljs_sym_pretty.to_string f_value))
-        end
+      end
 *)
 (*
   | S.DeleteField (p, obj, f) ->

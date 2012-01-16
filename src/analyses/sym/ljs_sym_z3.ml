@@ -155,7 +155,7 @@ let is_sat (p : path) : bool =
    (ABSENT)\n\
    (BOOL (b Bool))\n\
    (STR (s Str))\n\
-   (CLOSURE (f Fun))\n\
+   (FUN (f Fun))\n\
    (OBJ (fields Fields)))))\n\
 (declare-fun js2Field ((Array Str JS)) Fields)\n\
 (declare-fun field2js (Fields) (Array Str JS))\n\
