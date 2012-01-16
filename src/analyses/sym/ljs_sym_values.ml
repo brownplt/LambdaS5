@@ -31,7 +31,7 @@ type value =
       the other kinds of values *)
   | ObjCell of (attrsv * (propv IdMap.t)) ref
   | Closure of (value list -> path -> int -> (result list * exresult list))
-  | Sym of sym_exp (* symbolic expression *)
+  | Sym of id (* symbolic expression *)
 and 
   sym_exp = (* a-normal form: nested sym_exp are only SId or Concrete *)
   | Concrete of value 

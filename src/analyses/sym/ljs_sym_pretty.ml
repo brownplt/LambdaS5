@@ -29,7 +29,7 @@ let rec value v =
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)
   (*                                                                (intersperse (text ",") (map text xs))))]; *)
   (*                            braces (exp e)]) *)
-  | Sym e -> exp e
+  | Sym id -> text id
 
 (* and prim verbose p =  *)
 (*   let value = value verbose in *)

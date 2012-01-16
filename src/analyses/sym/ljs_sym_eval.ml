@@ -38,7 +38,7 @@ let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
 
-let val_sym v = match v with Sym x -> x | _ -> (Concrete v)
+let val_sym v = match v with Sym x -> (SId x) | _ -> (Concrete v)
 
 
 let bool b = match b with
@@ -290,7 +290,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
       | S.False _ -> return False pc
       | S.Id (p, x) -> 
         if (String.length x > 2 && String.sub x 0 2 = "%%") then 
-          return (Sym (SId x)) (add_var x TAny pc)
+          return (Sym x) (add_var x TAny pc)
         else begin
           try
             match IdMap.find x env with
@@ -319,15 +319,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
             let (t,ret_ty) = typeofOp1 op in 
             try 
               match e_val with
-                | Sym (SId id) -> 
+                | Sym id -> 
                   let pc'' = check_type id t pc' in
                   let (ret_op1, pc''') = fresh_var ("P1_" ^ op ^ "_") ret_ty pc'' in
-                  return (Sym (SId ret_op1))
+                  return (Sym ret_op1)
                     (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc''')
-                (* | Sym e ->  *)
-                (*   let (ret_op1, pc'') = fresh_var ("P1_" ^ op ^ "_") ret_ty pc' in *)
-                (*   return (Sym (SId ret_op1)) *)
-                (*     (add_constraint (SLet (ret_op1, SOp1 (op, e))) pc'') *)
                 | _ -> 
                   try
                     return (op1 op e_val) pc'
@@ -348,15 +344,13 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                   | _, Sym _ -> begin 
                     try 
                       let (sym_e1, pc1) = match e1_val with
-                        | Sym(SId id) -> (SId id, check_type id t1 pc'')
-                        (* | Sym e -> (e, pc'') *)
+                        | Sym id -> (SId id, check_type id t1 pc'')
                         | _ -> (Concrete e1_val, pc'') in
                       let (sym_e2, pc2) = match e2_val with
-                        | Sym(SId id) -> (SId id, check_type id t2 pc1)
-                        (* | Sym e -> (e, pc1) *)
+                        | Sym id -> (SId id, check_type id t2 pc1)
                         | _ -> (Concrete e2_val, pc1) in
                       let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty pc2 in
-                      return (Sym (SId ret_op)) 
+                      return (Sym ret_op)
                         (add_constraint (SLet (ret_op, SOp2(op, sym_e1, sym_e2))) pc3)
                     with TypeError id -> Printf.printf "Check_type couldn't find %s" id; none 
                   end
@@ -371,13 +365,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
           (fun (c_val, pc') -> 
             match c_val with
               | True -> eval t env pc'
-              | Sym e -> 
-                let (sym_e, pc'') = match e with
-                  | SId id -> (e, pc')
-                  (* | _ -> let (nvar, npc) = fresh_var "IF" TBool pc' in *)
-                  (*        (SId nvar, add_constraint (SLet (nvar, e)) npc) in *) in
-                let true_pc = add_constraint (SIsTrue sym_e) pc'' in
-                let false_pc  = add_constraint (SIsFalse sym_e) pc'' in
+              | Sym id -> 
+                let true_pc = add_constraint (SIsTrue (SId id)) pc' in
+                let false_pc  = add_constraint (SIsFalse (SId id)) pc' in
                 (fun (r1, e1) (r2, e2) -> (List.rev_append r1 r2, List.rev_append e1 e2))
                   (if is_sat true_pc then (eval t env true_pc)
                    else none)
@@ -406,19 +396,12 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                     let ((fid : string), (fpc : path)) = fresh_var "F" (TFun (List.length argvs)) pcs in
                     let (argvs : sym_exp list) = List.map val_sym argvs in
                     let ((vs : sym_exp list), (pcs' : path)) = List.fold_left
-                      (fun (vals, p) exp ->
-                        match exp with 
-                          | Concrete _  
-                          | SId _ -> (vals@[exp], p)
-                          | _ -> let (aid, apc) = fresh_var "FA" TAny p in
-                                 (vals@[SId aid], add_constraint (SLet (aid, exp)) apc))
+                      (fun (vals, p) exp -> (vals@[exp], p))
                       ([], fpc) argvs in
                     let (res_id, res_pc) = fresh_var "AP" TAny pcs' in 
-                    return (Sym (SId res_id)) 
+                    return (Sym res_id)
                       (add_constraint (SLet (res_id, (SApp (SId fid, vs))))
-                         (add_constraint (SLet (fid, f)) res_pc))
-                    (* let (ret : value) = Sym (SApp (SId fid, vs)) in *)
-                    (* return ret (add_constraint (SLet (fid, f)) pcs') *)
+                         (add_constraint (SLet (fid, (SId f))) res_pc))
                   | _ -> apply p f_val argvs pcs depth))
           
       | S.Seq (p, e1, e2) -> 
@@ -522,39 +505,18 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                       try
                         match obj1, field with
                           | Null, _ -> return Undefined pc' (* nothing found *)
-                          | Sym obj, String f -> begin
+                          | Sym id, String f -> begin
                             let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc' in
-                            match obj with 
-                              | SId id -> 
-                                let pc_obj = check_type id TObj pc' in
-                                let (ret_gf, pc'') = fresh_var "GF_" TAny pc_obj in
-                                return (Sym (SId ret_gf))
-                                  (add_constraint (SLet (ret_gf, SGetField (id, fn_id))) pc'')
-                              | e -> let (obj_id, pc'') = fresh_var "OB_" TObj pc' in
-                                     let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
-                                     return (Sym (SId ret_gf))
-                                       (add_constraint (SLet (ret_gf, SGetField (obj_id, fn_id)))
-                                          (add_constraint (SLet (obj_id, e)) pc'''))
+                            let pc_obj = check_type id TObj pc' in
+                            let (ret_gf, pc'') = fresh_var "GF_" TAny pc_obj in
+                            return (Sym ret_gf)
+                              (add_constraint (SLet (ret_gf, SGetField (id, fn_id))) pc'')
                           end
-                          | Sym obj, Sym f -> begin
-                            let (o_id, f_id, pc') = match obj, f with
-                              | SId o_id, SId f_id -> (o_id, f_id, pc)
-                              (* | SId o_id, field ->  *)
-                              (*   let (f_id, pc'') = fresh_var "FN_" TString pc' in *)
-                              (*   (o_id, f_id, add_constraint (SLet (f_id, field)) pc'') *)
-                              (* | obj, SId f_id -> *)
-                              (*   let (o_id, pc'') = fresh_var "OB_" TObj pc' in *)
-                              (*   (o_id, f_id, add_constraint (SLet (o_id, obj)) pc'') *)
-                              (* | obj, field -> *)
-                              (*   let (f_id, pc'') = fresh_var "FN_" TString pc' in *)
-                              (*   let (o_id, pc''') = fresh_var "OB_" TObj pc'' in *)
-                              (*   (o_id, f_id, add_constraint (SLet (f_id, field)) *)
-                              (*     (add_constraint (SLet (o_id, obj)) pc''')) *)
-                            in
+                          | Sym o_id, Sym f_id -> 
+                            (* TODO: This is wrong and should be an uninterpreted function *)
                             let (ret_gf, pc'') = fresh_var "GF_" TAny pc' in
-                            return (Sym (SId ret_gf))
+                            return (Sym ret_gf)
                               (add_constraint (SLet (ret_gf, SGetField (o_id, f_id))) pc'')
-                          end
                           | ObjCell c, Sym f -> begin
                             let ({proto = pvalue; }, props) = !c in
                             combine
@@ -562,12 +524,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                                 let (fn_id, pc') = fresh_var ("FN_" ^ fieldName) TString pc' in
                                 let pc'' = add_constraint 
                                   (SIsTrue(SOp2("stx=", 
-                                                f, SId fn_id))) pc' in
+                                               SId f, SId fn_id))) pc' in
                                 let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
                                 match value with
                                   | Data ({ value = v; }, _, _) -> 
-                                    (* also_return (result v) pc'' results *)
-                                    also_return (Sym (SId ret_gf))
+                                    also_return (Sym ret_gf)
                                       (add_constraint (SLet (ret_gf, Concrete (result v))) pc''') results
                                   | Accessor ({ getter = g; }, _, _) ->
                                     combine (apply p g getter_params pc''' depth) results) props none)
@@ -575,7 +536,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                                  (fun fieldName _ pc ->
                                    let (fn_id, pc) = fresh_var ("FN_" ^ fieldName) TString pc in
                                    add_constraint 
-                                     (SIsFalse(SOp2("stx=", f, SId fn_id))) pc)
+                                     (SIsFalse(SOp2("stx=", SId f, SId fn_id))) pc)
                                  props pc' in
                                sym_get_field p pvalue field getter_params result none_of depth)
                           end

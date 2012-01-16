@@ -53,7 +53,7 @@ let rec value v =
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)
   (*                                                                (intersperse (text ",") (map text xs))))]; *)
   (*                            braces (exp e)]) *)
-  | Sym e -> exp e
+  | Sym id -> text id
 
 (* and prim verbose p =  *)
 (*   let value = value verbose in *)
@@ -133,7 +133,7 @@ and prop (f, prop) = match prop with
                                                         text "#setter";
                                                         value s])]
 ;;
-let to_string v = value v Format.str_formatter; Format.flush_str_formatter() 
+let to_string v = exp v Format.str_formatter; Format.flush_str_formatter() 
   
    
 let log_z3 = true
@@ -190,10 +190,10 @@ let is_sat (p : path) : bool =
   
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc pc = 
-      if log_z3 then Printf.printf "%s\n" (to_string (Sym pc));
+      if log_z3 then Printf.printf "%s\n" (to_string pc);
       output_string outch 
-        (Printf.sprintf "%s\n" (to_string (Sym pc))) in
-  List.iter print_pc lets;
+        (Printf.sprintf "%s\n" (to_string pc)) in
+  List.iter print_pc lets; 
   List.iter print_pc rest;
 
   output_string outch "(check-sat)";
