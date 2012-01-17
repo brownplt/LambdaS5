@@ -73,25 +73,25 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let code = match c with None -> [] 
     | Some e -> [horz [text "#code:"; value e]] in
   brackets (vert (map (fun x -> squish [x; (text ",")])
-                  (proto@
-                    code@
-                    [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
-                     horz [text "#extensible:"; text (string_of_bool b)]])))
-              
+                    (proto@
+                       code@
+                       [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
+                        horz [text "#extensible:"; text (string_of_bool b)]])))
+    
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                          value v; text ","; 
-                                          text "#writable";  
-                                          text (string_of_bool w);
-                                          text ",";
-                                          text "#configurable";
-                                          text (string_of_bool config)])]
+                                                        value v; text ","; 
+                                                        text "#writable";  
+                                                        text (string_of_bool w);
+                                                        text ",";
+                                                        text "#configurable";
+                                                        text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                          value g; text ",";
-                                          text "#setter";
-                                          value s])]
+                                                        value g; text ",";
+                                                        text "#setter";
+                                                        value s])]
 ;;
 let to_string v = value v Format.str_formatter; Format.flush_str_formatter(); 

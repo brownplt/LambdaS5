@@ -25,8 +25,8 @@ let typeof v = str begin match v with
   | True 
   | False -> "boolean"
   | ObjCell o -> begin match !o with
-      | ({ code = Some cexp }, _) -> "function"
-      | _ -> "object"
+    | ({ code = Some cexp }, _) -> "function"
+    | _ -> "object"
   end
   | Closure _ -> "lambda"
   | VarCell _ -> failwith "[delta] typeof got a variable"
@@ -63,19 +63,19 @@ let prim_to_str v = str begin match v with
   | Null -> "null"
   | String s -> s
   | Num n -> let fs = float_str n in let fslen = String.length fs in
-    if String.get fs (fslen - 1) = '.' then String.sub fs 0 (fslen - 1) else
+                                     if String.get fs (fslen - 1) = '.' then String.sub fs 0 (fslen - 1) else
       (* This is because we don't want leading zeroes in the "-e" part.
        * For example, OCaml says 1.2345e-07, but ES5 wants 1.2345e-7 *)
-      if String.contains fs '-'
-        then let indx = String.index fs '-' in 
-          let prefix = String.sub fs 0 (indx + 1) in
-          let suffix = String.sub fs (indx + 1) (fslen - (String.length prefix)) in
-          let slen = String.length suffix in
-          let fixed = if slen > 1 && (String.get suffix 0 = '0') 
-            then String.sub suffix 1 (slen - 1)
-            else suffix in
-          prefix ^ fixed 
-        else fs
+                                       if String.contains fs '-'
+                                       then let indx = String.index fs '-' in 
+                                            let prefix = String.sub fs 0 (indx + 1) in
+                                            let suffix = String.sub fs (indx + 1) (fslen - (String.length prefix)) in
+                                            let slen = String.length suffix in
+                                            let fixed = if slen > 1 && (String.get suffix 0 = '0') 
+                                              then String.sub suffix 1 (slen - 1)
+                                              else suffix in
+                                            prefix ^ fixed 
+                                       else fs
   | True -> "true"
   | False -> "false"
   | Sym _ -> failwith "prim got a symbolic exp"
@@ -114,9 +114,9 @@ end
 
 let is_callable obj = bool begin match obj with
   | ObjCell o -> begin match !o with
-      | ({ code = Some (Closure c); }, _) -> true
-      | ({ code = Some (Sym _); }, _) -> failwith "prim got a symbolic exp"
-      | _ -> false
+    | ({ code = Some (Closure c); }, _) -> true
+    | ({ code = Some (Sym _); }, _) -> failwith "prim got a symbolic exp"
+    | _ -> false
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> false
@@ -124,54 +124,54 @@ end
 
 let print v = match v with
   | String s -> 
-      printf "%S\n%!" s; Undefined
+    printf "%S\n%!" s; Undefined
   | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> failwith ("[interp] Print received non-string: " ^ Ljs_sym_pretty.to_string v)
 
 let is_extensible obj = match obj with
   | ObjCell o -> begin match !o with
-      | ({ extensible = true; }, _) -> True
-      | _ -> False
+    | ({ extensible = true; }, _) -> True
+    | _ -> False
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-extensible")
 
 let prevent_extensions obj = match obj with
   | ObjCell o -> 
-      let (attrs, props) = !o in begin
-	  o := ({attrs with extensible = false}, props);
-	  obj
-	end
+    let (attrs, props) = !o in begin
+      o := ({attrs with extensible = false}, props);
+      obj
+    end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "prevent-extensions")
-      
+    
 let get_code obj = match obj with
   | ObjCell o -> begin match !o with
-      | ({ code = Some v; }, _) -> v
-      | ({ code = None; }, _) -> Null
+    | ({ code = Some v; }, _) -> v
+    | ({ code = None; }, _) -> Null
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "get-code")
 
 let get_proto obj = match obj with
   | ObjCell o -> begin match !o with 
-      | ({ proto = pvalue; }, _) -> pvalue
+    | ({ proto = pvalue; }, _) -> pvalue
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | v -> raise (PrimError ("get-proto got: " ^ Ljs_sym_pretty.to_string v))
 
 let get_primval obj = match obj with
   | ObjCell o -> begin match !o with
-      | ({ primval = Some v; }, _) -> v
-      | _ -> raise (PrimError "get-primval on an object with no prim val")
+    | ({ primval = Some v; }, _) -> v
+    | _ -> raise (PrimError "get-primval on an object with no prim val")
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "get-primval")
 
 let get_class obj = match obj with
   | ObjCell o -> begin match !o with
-      | ({ klass = s; }, _) -> String (s)
+    | ({ klass = s; }, _) -> String (s)
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "get-class")
@@ -179,35 +179,35 @@ let get_class obj = match obj with
 (* All the enumerable property names of an object *)
 let rec get_property_names obj = match obj with
   | ObjCell o ->
-      let protos = obj::(all_protos obj) in
-      let folder o set = begin match o with
-	| ObjCell o' ->
-	    let (attrs, props) = !o' in
-	      IdMap.fold (fun k v s -> 
-			    if enum v then IdSet.add k s else s) props set
-	| _ -> set (* non-object prototypes don't contribute *) 
-      end in
-      let name_set = List.fold_right folder protos IdSet.empty in
-      let name_list= IdSet.elements name_set in
-      let prop_folder num name props = 
-	IdMap.add (string_of_int num) 
-          (Data ({ value = String name; writable = false; }, false, false))
-          props in
-      let name_props = List.fold_right2 prop_folder 
-        (iota (List.length name_list))
-        name_list
-        IdMap.empty in
-        ObjCell (ref (d_attrsv, name_props))
+    let protos = obj::(all_protos obj) in
+    let folder o set = begin match o with
+      | ObjCell o' ->
+	let (attrs, props) = !o' in
+	IdMap.fold (fun k v s -> 
+	  if enum v then IdSet.add k s else s) props set
+      | _ -> set (* non-object prototypes don't contribute *) 
+    end in
+    let name_set = List.fold_right folder protos IdSet.empty in
+    let name_list= IdSet.elements name_set in
+    let prop_folder num name props = 
+      IdMap.add (string_of_int num) 
+        (Data ({ value = String name; writable = false; }, false, false))
+        props in
+    let name_props = List.fold_right2 prop_folder 
+      (iota (List.length name_list))
+      name_list
+      IdMap.empty in
+    ObjCell (ref (d_attrsv, name_props))
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "get-property-names")
 
 and all_protos o = 
   match o with
-    | ObjCell c -> begin match !c with 
-        | ({ proto = pvalue; }, _) -> pvalue::(all_protos pvalue)
-    end
-    | Sym _ -> failwith "prim got a symbolic exp"
-    | _ -> []
+  | ObjCell c -> begin match !c with 
+    | ({ proto = pvalue; }, _) -> pvalue::(all_protos pvalue)
+  end
+  | Sym _ -> failwith "prim got a symbolic exp"
+  | _ -> []
 
 and enum prop = match prop with
   | Accessor (_, b, _)
@@ -215,22 +215,22 @@ and enum prop = match prop with
 
 let get_own_property_names obj = match obj with
   | ObjCell o ->
-      let (_, props) = !o in
-      let add_name n x m = 
-	IdMap.add (string_of_int x) 
-          (Data ({ value = String n; writable = false; }, false, false)) 
-          m in
-      let namelist = IdMap.fold (fun k v l -> (k :: l)) props [] in
-      let props = 
-	List.fold_right2 add_name namelist (iota (List.length namelist)) IdMap.empty
-      in
-        let d = (float_of_int (List.length namelist)) in
-        let final_props = 
-          IdMap.add "length" 
-            (Data ({ value = Num d; writable = false; }, false, false))
-            props 
-        in
-	ObjCell (ref (d_attrsv, final_props))
+    let (_, props) = !o in
+    let add_name n x m = 
+      IdMap.add (string_of_int x) 
+        (Data ({ value = String n; writable = false; }, false, false)) 
+        m in
+    let namelist = IdMap.fold (fun k v l -> (k :: l)) props [] in
+    let props = 
+      List.fold_right2 add_name namelist (iota (List.length namelist)) IdMap.empty
+    in
+    let d = (float_of_int (List.length namelist)) in
+    let final_props = 
+      IdMap.add "length" 
+        (Data ({ value = Num d; writable = false; }, false, false))
+        props 
+    in
+    ObjCell (ref (d_attrsv, final_props))
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "own-property-names")
 
@@ -238,15 +238,15 @@ let get_own_property_names obj = match obj with
    property outside of the delta function *)
 let object_to_string obj = match obj with
   | ObjCell o -> begin match !o with
-      | ({ klass = s }, _) -> str ("[object " ^ s ^ "]")
+    | ({ klass = s }, _) -> str ("[object " ^ s ^ "]")
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
 
 let is_array obj = match obj with
   | ObjCell o -> begin match !o with
-      | ({ klass = "Array"; }, _) -> True
-      | _ -> False
+    | ({ klass = "Array"; }, _) -> True
+    | _ -> False
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")
@@ -409,10 +409,10 @@ let arith_sub = arith "-" (-) (-.)
 let arith_mul = arith "*" (fun m n -> m * n) (fun x y -> x *. y)
 
 let arith_div x y = try arith "/" (/) (/.) x y
-with Division_by_zero -> Num infinity
+  with Division_by_zero -> Num infinity
 
 let arith_mod x y = try arith "mod" (mod) mod_float x y
-with Division_by_zero -> Num nan
+  with Division_by_zero -> Num nan
 
 let arith_lt x y = bool (x < y)
 
@@ -436,7 +436,7 @@ let bitwise_shiftr v1 v2 = Num (float_of_int ((to_int v1) asr (to_int v2)))
 
 let string_plus v1 v2 = match v1, v2 with
   | String s1, String s2 ->
-      String (s1 ^ s2)
+    String (s1 ^ s2)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "string concatenation")
@@ -465,24 +465,24 @@ let abs_eq v1 v2 = bool begin
   if v1 = v2 then (* works correctly on floating point values *)
     true
   else match v1, v2 with
-    | Null, Undefined
-    | Undefined, Null -> true
-    | String s, Num x
-    | Num x, String s ->
-          (try x = float_of_string s with Failure _ -> false)
-    | Num x, True | True, Num x -> x = 1.0
-    | Num x, False | False, Num x -> x = 0.0
-    | Sym _, _ 
-    | _, Sym _ -> failwith "prim got a symbolic exp"
-    | _ -> false
+  | Null, Undefined
+  | Undefined, Null -> true
+  | String s, Num x
+  | Num x, String s ->
+    (try x = float_of_string s with Failure _ -> false)
+  | Num x, True | True, Num x -> x = 1.0
+  | Num x, False | False, Num x -> x = 0.0
+  | Sym _, _ 
+  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | _ -> false
 (* TODO: are these all the cases? *)
 end
 
 let rec has_property obj field = match obj, field with
   | ObjCell o, String s -> begin match !o, s with
-      ({ proto = pvalue; }, props), s ->
-        if (IdMap.mem s props) then bool true
-        else has_property pvalue field
+    ({ proto = pvalue; }, props), s ->
+      if (IdMap.mem s props) then bool true
+      else has_property pvalue field
   end
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
@@ -490,8 +490,8 @@ let rec has_property obj field = match obj, field with
 
 let has_own_property obj field = match obj, field with
   | ObjCell o, String s -> 
-      let (attrs, props) = !o in
-        bool (IdMap.mem s props)
+    let (attrs, props) = !o in
+    bool (IdMap.mem s props)
   | ObjCell o, _ -> raise (PrimError "has-own-property: field not a string")
   | _, String s -> raise (PrimError ("has-own-property: obj not an object for field " ^ s))
   | Sym _, _ 
@@ -557,17 +557,17 @@ let to_fixed a b = match a, b with
     let s = string_of_float x
     and fint = int_of_float f in
     if fint = 0 
-      then String (string_of_int (int_of_float x)) 
-      else let dot_index = String.index s '.'
-      and len = String.length s in
-      let prefix_chars = dot_index in
-      let decimal_chars = len - (prefix_chars + 1) in
-      if decimal_chars = fint then String s
-      else if decimal_chars > fint
-        then let fixed_s = String.sub s 0 (fint - prefix_chars) in
-        String (fixed_s)
-      else let suffix = String.make (fint - decimal_chars) '0' in
-        String (s ^ suffix)
+    then String (string_of_int (int_of_float x)) 
+    else let dot_index = String.index s '.'
+    and len = String.length s in
+         let prefix_chars = dot_index in
+         let decimal_chars = len - (prefix_chars + 1) in
+         if decimal_chars = fint then String s
+         else if decimal_chars > fint
+         then let fixed_s = String.sub s 0 (fint - prefix_chars) in
+              String (fixed_s)
+         else let suffix = String.make (fint - decimal_chars) '0' in
+              String (s ^ suffix)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "to-fixed didn't get 2 numbers")
@@ -577,11 +577,11 @@ let rec is_accessor a b = match a, b with
     let (attrs, props) = !o in
     if IdMap.mem s props
     then let prop = IdMap.find s props in
-      match prop with
-        | Data _ -> False
-        | Accessor _ -> True
+         match prop with
+         | Data _ -> False
+         | Accessor _ -> True
     else let pr = match attrs with { proto = p } -> p in
-      is_accessor pr b
+         is_accessor pr b
   | Null, String s -> raise (PrimError "isAccessor topped out")
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"

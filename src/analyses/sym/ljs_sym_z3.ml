@@ -27,24 +27,24 @@ let rec value v =
   | VarCell v -> horz [squish [text "&<"; value (!v); text ">"]]
   | ObjCell o ->
     let (avs, props) = !o in
-(*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
+    (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
     parens (horz [text "OBJ";
                   List.fold_left (fun acc (f, p) ->
                     let value = 
                       match p with
                       | Data ({value=v; writable=w}, enum, config) -> value v
                       (* horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value";  *)
-        (*                                                     value v; text ",";  *)
-        (*                                                     text "#writable";   *)
-        (*                                                     text (string_of_bool w); *)
-        (*                                                     text ","; *)
-        (*                                                     text "#configurable"; *)
-        (*                                                     text (string_of_bool config)])] *)
+                      (*                                                     value v; text ",";  *)
+                      (*                                                     text "#writable";   *)
+                      (*                                                     text (string_of_bool w); *)
+                      (*                                                     text ","; *)
+                      (*                                                     text "#configurable"; *)
+                      (*                                                     text (string_of_bool config)])] *)
                       | Accessor ({getter=g; setter=s}, enum, config) -> text "DUMMY" 
-      (* horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter"; *)
-      (*                                                     value g; text ","; *)
-      (*                                                     text "#setter"; *)
-      (*                                                     value s])] *)
+                    (* horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter"; *)
+                    (*                                                     value g; text ","; *)
+                    (*                                                     text "#setter"; *)
+                    (*                                                     value s])] *)
                     in parens (vert [horz[text "store"; acc]; horz[text f; value]])) 
                     (text "mtObj") (IdMap.bindings props)])
   | Closure func -> text "(FUN closure)"
@@ -88,24 +88,24 @@ and exp e =
     | TObj -> parens (horz [text "OBJ"; e])
     | _ -> e in
   match e with
-    | Concrete v -> value v
-    | SId id -> text id
-    | SOp1 (op, e) -> 
-      let (t, ret) = Ljs_sym_delta.typeofOp1 op in
-      uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t (exp e)]))
-    | SOp2 (op, e1, e2) ->
-      let (t1, t2, ret) = Ljs_sym_delta.typeofOp2 op in
-      uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t1 (exp e1); castFn t2 (exp e2)]))
-    | SApp (f, args) ->
-      parens (horz ((exp f) :: (map exp args)))
-    | SLet (id, e1) ->
-      parens(horz [text "assert"; parens(horz[text "="; text id; exp e1])])
-    | SIsTrue e ->
-      parens(horz [text "assert"; parens(horz[text "b"; exp e])])
-    | SIsFalse e ->
-      parens(horz [text "assert"; parens(horz[text "not"; parens(horz[text "b"; exp e])])])
-    | SGetField (id, f) ->
-      uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
+  | Concrete v -> value v
+  | SId id -> text id
+  | SOp1 (op, e) -> 
+    let (t, ret) = Ljs_sym_delta.typeofOp1 op in
+    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t (exp e)]))
+  | SOp2 (op, e1, e2) ->
+    let (t1, t2, ret) = Ljs_sym_delta.typeofOp2 op in
+    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t1 (exp e1); castFn t2 (exp e2)]))
+  | SApp (f, args) ->
+    parens (horz ((exp f) :: (map exp args)))
+  | SLet (id, e1) ->
+    parens(horz [text "assert"; parens(horz[text "="; text id; exp e1])])
+  | SIsTrue e ->
+    parens(horz [text "assert"; parens(horz[text "b"; exp e])])
+  | SIsFalse e ->
+    parens(horz [text "assert"; parens(horz[text "not"; parens(horz[text "b"; exp e])])])
+  | SGetField (id, f) ->
+    uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
 
 and attrsv { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in
@@ -135,7 +135,7 @@ and prop (f, prop) = match prop with
 ;;
 let to_string v = exp v Format.str_formatter; Format.flush_str_formatter() 
   
-   
+  
 let log_z3 = true
 
 (* communicating with Z3 *)
@@ -161,8 +161,8 @@ let is_sat (p : path) : bool =
 (declare-fun field2js (Fields) (Array Str JS))\n\
 (assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))\n" in
 
-(* (declare-const mtObj Fields)\n\
-(assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))  *)
+  (* (declare-const mtObj Fields)\n\
+     (assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))  *)
 
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   let { constraints = cs; vars = vs; } = p in      
@@ -171,15 +171,15 @@ let is_sat (p : path) : bool =
   IdMap.iter
     (fun id tp -> 
       let assertion =
-      match tp with
-      | TNull -> Printf.sprintf "(assert (= %s NULL))\n" id
-      | TUndef -> Printf.sprintf "(assert (= %s UNDEF))\n" id
-      | TString -> Printf.sprintf "(assert (exists ((s Str))(= %s (STR s))))\n" id
-      | TBool -> Printf.sprintf "(assert (exists ((b Bool)) (= %s (BOOL b))))\n" id
-      | TNum -> Printf.sprintf "(assert (exists ((n Real)) (= %s (NUM n))))\n" id
-      | TObj -> Printf.sprintf "(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id
-      | TFun arity -> Printf.sprintf "(assert (exists ((f Fun)) (= %s (FUN f))))\n" id
-      | TAny -> ""
+        match tp with
+        | TNull -> Printf.sprintf "(assert (= %s NULL))\n" id
+        | TUndef -> Printf.sprintf "(assert (= %s UNDEF))\n" id
+        | TString -> Printf.sprintf "(assert (exists ((s Str))(= %s (STR s))))\n" id
+        | TBool -> Printf.sprintf "(assert (exists ((b Bool)) (= %s (BOOL b))))\n" id
+        | TNum -> Printf.sprintf "(assert (exists ((n Real)) (= %s (NUM n))))\n" id
+        | TObj -> Printf.sprintf "(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id
+        | TFun arity -> Printf.sprintf "(assert (exists ((f Fun)) (= %s (FUN f))))\n" id
+        | TAny -> ""
       in
       if log_z3 then Printf.printf "(declare-const %s JS)\n" id;
       output_string outch (Printf.sprintf "(declare-const %s JS)\n" id);
@@ -190,9 +190,9 @@ let is_sat (p : path) : bool =
   
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc pc = 
-      if log_z3 then Printf.printf "%s\n" (to_string pc);
-      output_string outch 
-        (Printf.sprintf "%s\n" (to_string pc)) in
+    if log_z3 then Printf.printf "%s\n" (to_string pc);
+    output_string outch 
+      (Printf.sprintf "%s\n" (to_string pc)) in
   List.iter print_pc lets; 
   List.iter print_pc rest;
 
