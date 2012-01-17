@@ -151,8 +151,9 @@ let is_sat (p : path) : bool =
 (declare-sort Str)
 (declare-sort Fun)
 (declare-sort Fields)
-(declare-datatypes
- ()
+(declare-datatypes ()
+ ((Attr Config Enum Writable Value Getter Setter)))
+(declare-datatypes ()
  ((JS
    (NUM (n Real))
    (UNDEF)
@@ -161,12 +162,16 @@ let is_sat (p : path) : bool =
    (BOOL (b Bool))
    (STR (s Str))
    (FUN (f Fun))
-   (OBJ (fields Fields)))))
-(declare-fun js2Field ((Array Str JS)) Fields)
-(declare-fun field2js (Fields) (Array Str JS))
+   (OBJ (fields Fields)))
+  (Prop
+   (Data (value JS) (writable Bool) (enumerable Bool) (config Bool))
+   (Accessor (getter JS) (setter JS) (enumerable Bool) (config Bool)))))
+(declare-fun js2Field ((Array Str Prop)) Fields)
+(declare-fun field2js (Fields) (Array Str Prop))
 (assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))
-(declare-fun get_field (Fields Str) JS)
-;; line 20 begins below ;;" in
+(declare-fun get_field (Fields Str) Prop)
+(declare-fun get_attr (Fields Str Attr) JS)
+" in
 
   (* (declare-const mtObj Fields)\n\
      (assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))  *)
@@ -181,12 +186,16 @@ let is_sat (p : path) : bool =
         match tp with
         | TNull -> Printf.sprintf "(assert (= %s NULL))\n" id
         | TUndef -> Printf.sprintf "(assert (= %s UNDEF))\n" id
-        | TString -> Printf.sprintf "(assert (exists ((s Str))(= %s (STR s))))\n" id
+        | TString -> Printf.sprintf "(assert (exists ((s Str)) (= %s (STR s))))\n" id
         | TBool -> Printf.sprintf "(assert (exists ((b Bool)) (= %s (BOOL b))))\n" id
         | TNum -> Printf.sprintf "(assert (exists ((n Real)) (= %s (NUM n))))\n" id
         | TObj -> Printf.sprintf "(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id
         | TFun arity -> Printf.sprintf "(assert (exists ((f Fun)) (= %s (FUN f))))\n" id
         | TAny -> ""
+        | TData -> Printf.sprintf 
+          "(assert (exists ((v JS) (w Bool) (e Bool) (c Bool)) (= %s (Data v w e c))))\n" id
+        | TAccessor -> Printf.sprintf
+          "(assert (exists ((g JS) (s JS) (e Bool) (c Bool)) (= %s (Accessor g s e c))))\n" id
       in
       if log_z3 then Printf.printf "(declare-const %s JS)\n" id;
       output_string outch (Printf.sprintf "(declare-const %s JS)\n" id);

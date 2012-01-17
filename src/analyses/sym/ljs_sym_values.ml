@@ -12,6 +12,8 @@ type jsType =
   | TObj
   | TFun of int (* arity *)
   | TAny
+  | TData
+  | TAccessor
 
 type typeEnv = jsType IdMap.t
 exception TypeError of string
@@ -99,6 +101,8 @@ let ty_to_string t = match t with
   | TObj -> "TObj"
   | TFun arity -> "TFun(" ^ (string_of_int arity) ^ ")"
   | TAny -> "TAny"
+  | TData -> "TData"
+  | TAccessor -> "TAccessor"
 
 
 let check_type id t p =
