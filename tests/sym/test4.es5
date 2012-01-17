@@ -1,0 +1,74 @@
+%defineGlobalAccessors("ob");
+let (%context = {[#proto: %global,
+                  #class: "Object",
+                  #extensible: true,]
+                 })
+    let (%this = %context)
+        let (%fun2 = let (%prototype5 = {[#proto: %ObjectProto,
+                                          #class: "Object",
+                                          #extensible: true,]
+                                         'constructor' : {#value undefined , #writable true , #configurable false}})
+                         let (%parent = %context)
+                             let (%thisfunc6 = {[#proto: %FunctionProto,
+                                                 #code: func(%this , %args)
+                                                        {label %ret :
+                                                         {let (%context = let (%ob4 = %args
+                                                                    ["0" , null])
+                                                                    {[#proto: %parent,
+                                                                    #class: "Object",
+                                                                    #extensible: true,]
+                                                                    'ob' : {#getter func
+                                                                    (this , args)
+                                                                    {label %ret :
+                                                                    {break %ret %ob4}} ,
+                                                                    #setter func
+                                                                    (this , args)
+                                                                    {label %ret :
+                                                                    {break %ret %ob4 := args
+                                                                    ["0" , {[#proto: %ArrayProto,
+                                                                    #class: "Array",
+                                                                    #extensible: true,]
+                                                                    }]}}}})
+                                                              {%context
+                                                                 ["arguments" = %args , {[#proto: %ArrayProto,
+                                                                    #class: "Array",
+                                                                    #extensible: true,]
+                                                                    '0' : {#value %args , #writable true , #configurable true}}];
+                                                               break %ret %PrimAdd
+                                                                    (%PropAccessorCheck
+                                                                    (%EnvLookup
+                                                                    (%context,
+                                                                    "ob"))
+                                                                    ["x" , {[#proto: null,
+                                                                    #class: "Object",
+                                                                    #extensible: true,]
+                                                                    }],
+                                                                    %PropAccessorCheck
+                                                                    (%EnvLookup
+                                                                    (%context,
+                                                                    "ob"))
+                                                                    ["y" , {[#proto: null,
+                                                                    #class: "Object",
+                                                                    #extensible: true,]
+                                                                    }]);
+                                                               undefined}}},
+                                                 #class: "Function",
+                                                 #extensible: true,]
+                                                'prototype' : {#value %prototype5 , #writable true , #configurable true},
+                                                'length' : {#value 1. , #writable true , #configurable true}})
+                                 {%prototype5["constructor" = %thisfunc6 , null];
+                                  %thisfunc6})
+            let (%ftype3 = prim("typeof", %fun2))
+                if (prim("!", prim("stx=", %ftype3 , "function")))
+                   {%ThrowTypeError(null,
+                                    null)}
+                   else
+                   {%fun2(undefined,
+                          %mkArgsObj({[#proto: null,
+                                       #class: "Object",
+                                       #extensible: true,]
+                                      '0' : {#value {[#proto: %ObjectProto,
+                                                      #class: "Object",
+                                                      #extensible: true,]
+                                                     'x' : {#value 1. , #writable true , #configurable true},
+                                                     'y' : {#value 2. , #writable true , #configurable true}} , #writable true , #configurable true}}))}

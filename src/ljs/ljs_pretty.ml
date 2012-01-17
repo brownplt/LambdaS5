@@ -100,8 +100,8 @@ and prop (f, prop) = match prop with
                                           text "#configurable";
                                           text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                          exp g; text ",";
-                                          text "#setter";
-                                          exp s])]
+    horz [text ("'" ^ f ^ "'"); text ":"; braces (vert [horz [text "#getter";
+                                          exp g; text ","];
+                                          horz[text "#setter";
+                                               exp s]])]
 

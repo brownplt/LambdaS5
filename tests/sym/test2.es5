@@ -5,11 +5,10 @@ let (%context = let (%ob1 = undefined)
                       #extensible: true,]
                      'ob' : {#getter func(this , args)
                                      {label %ret :
-                                      {break %ret %ob1}} , #setter func
-                                                                    (this , args)
-                                                                   {label %ret :
-                                                                    {break %ret %ob1 := args
-                                                                    ["0" , {[#proto: %ArrayProto,
+                                      {break %ret %ob1}} ,
+                             #setter func(this , args)
+                                     {label %ret :
+                                      {break %ret %ob1 := args["0" , {[#proto: %ArrayProto,
                                                                     #class: "Array",
                                                                     #extensible: true,]
                                                                     }]}}}})
