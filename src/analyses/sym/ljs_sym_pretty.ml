@@ -47,6 +47,20 @@ let rec value v =
 (*     label verbose lbl (squish [text "mutPrim"; parens (horz [text ("\"" ^ op ^ "\","); value e])]) *)
 (*   | DeleteField (p,lbl, o, f) -> *)
 (*     label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])]) *)
+and castFn t e = match t with
+    | TNum -> parens (horz [text "num"; exp e])
+    | TBool -> parens (horz [text "bool"; exp e])
+    | TString -> parens (horz [text "string"; exp e])
+    | TFun _ -> parens (horz [text "fun"; exp e])
+    | TObj -> parens (horz [text "fields"; exp e])
+    | _ -> exp e
+and uncastFn t e = match t with
+    | TNum -> parens (horz [text "NUM"; exp e])
+    | TBool -> parens (horz [text "BOOL"; exp e])
+    | TString -> parens (horz [text "STR"; exp e])
+    | TFun _ -> parens (horz [text "FUN"; exp e])
+    | TObj -> parens (horz [text "OBJ"; exp e])
+    | _ -> exp e 
 
 and exp e = 
   match e with
@@ -61,10 +75,15 @@ and exp e =
     (squish [exp f; parens (squish (intersperse (text ", ") (map exp args)))])
   | SLet (id, e1) -> 
     squish [text "let"; text id; text "="; exp e1]
-  | SIsTrue e ->
-    horz [exp e; text "IS TRUE"]
-  | SIsFalse e ->
-    horz [exp e; text "IS FALSE"]
+  | SCastJS (t, e) -> castFn t e
+  | SUncastJS (t, e) -> uncastFn t e
+  | SNot e -> parens (horz [text "!"; exp e])
+  | SAnd es -> parens (horz (text "&&" :: (map exp es)))
+  | SOr es -> parens (horz (text "||" :: (map exp es)))
+  | SAssert e -> parens (horz [text "ASSERT"; exp e])
+  | SImplies (pre, post) -> parens (horz [exp pre; text "=>"; exp post])
+  | SIsMissing e ->
+    horz [exp e; text "IS MISSING"]
   | SGetField (id, f) ->
     squish [text id; text "."; text f]
 

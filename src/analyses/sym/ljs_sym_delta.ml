@@ -617,6 +617,7 @@ let op2 op = match op with
   | "isAccessor" -> is_accessor
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 let typeofOp2 op = match op with
+  | "get_field" -> (TObj, TString, TAny)
   | "+" -> (TNum, TNum, TNum)
   | "-" -> (TNum, TNum, TNum)
   | "/" -> (TNum, TNum, TNum)

@@ -366,8 +366,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
             match c_val with
             | True -> eval t env pc'
             | Sym id -> 
-              let true_pc = add_constraint (SIsTrue (SId id)) pc' in
-              let false_pc  = add_constraint (SIsFalse (SId id)) pc' in
+              let true_pc = add_constraint (SAssert (SCastJS (TBool, SId id))) pc' in
+              let false_pc  = add_constraint (SAssert (SNot (SCastJS (TBool, SId id)))) pc' in
               (fun (r1, e1) (r2, e2) -> (List.rev_append r1 r2, List.rev_append e1 e2))
                 (if is_sat true_pc then (eval t env true_pc)
                  else none)
@@ -504,39 +504,45 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                     let rec sym_get_field p obj1 field getter_params result pc depth = 
                       try
                         match obj1, field with
-                        | Null, _ -> return Undefined pc' (* nothing found *)
+                        | Null, _ -> return Undefined pc (* nothing found *)
                         | Sym id, String f -> begin
-                          let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc' in
-                          let pc_obj = check_type id TObj pc' in
-                          let (ret_gf, pc'') = fresh_var "GF_" TAny pc_obj in
-                          return (Sym ret_gf)
-                            (add_constraint (SLet (ret_gf, SGetField (id, fn_id))) pc'')
+                          let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc in
+                          (* todo: assert that (SId fn_id) = (Concrete f) *)
+                          sym_get_field p obj1 (Sym fn_id) getter_params result pc' depth
                         end
-                        | Sym o_id, Sym f_id -> 
-                            (* TODO: This is wrong and should be an uninterpreted function *)
-                          let (ret_gf, pc'') = fresh_var "GF_" TAny pc' in
-                          return (Sym ret_gf)
-                            (add_constraint (SLet (ret_gf, SGetField (o_id, f_id))) pc'')
+                        | Sym o_id, Sym f_id ->
+                          let pc_types = check_type o_id TObj (check_type f_id TString pc) in
+                          let (ret_gf, pc'') = fresh_var "GF_" TAny pc_types in
+                          let true_pc =
+                            add_constraints [(SAssert (SNot (SIsMissing (SGetField (o_id, f_id)))));
+                                             (SLet (ret_gf, SGetField (o_id, f_id)))] pc'' in
+                          let false_pc =
+                            add_constraints [(SAssert (SIsMissing (SGetField (o_id, f_id))));
+                                             (SLet (ret_gf, SOp2 ("get_field", SId o_id, SId f_id)))] pc''
+                          in
+                          also_return (Sym ret_gf) true_pc
+                            (return (Sym ret_gf)  false_pc)
                         | ObjCell c, Sym f -> begin
                           let ({proto = pvalue; }, props) = !c in
                           combine
                             (IdMap.fold (fun fieldName value results ->
-                              let (fn_id, pc') = fresh_var ("FN_" ^ fieldName) TString pc' in
-                              let pc'' = add_constraint 
-                                (SIsTrue(SOp2("stx=", 
-                                              SId f, SId fn_id))) pc' in
+                              let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                              let pc'' = add_constraint
+                                (SAssert (SApp(SId "=",
+                                              [SId f; SId fn_id]))) pc' in
                               let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
                               match value with
-                              | Data ({ value = v; }, _, _) -> 
+                              | Data ({ value = v; }, _, _) ->
                                 also_return (Sym ret_gf)
                                   (add_constraint (SLet (ret_gf, Concrete (result v))) pc''') results
                               | Accessor ({ getter = g; }, _, _) ->
                                 combine (apply p g getter_params pc''' depth) results) props none)
-                            (let none_of = IdMap.fold 
+                            (let none_of = IdMap.fold
                                (fun fieldName _ pc ->
-                                 let (fn_id, pc) = fresh_var ("FN_" ^ fieldName) TString pc in
-                                 add_constraint 
-                                   (SIsFalse(SOp2("stx=", SId f, SId fn_id))) pc)
+                                 let (fn_id, pc) = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                                 add_constraint
+                                   (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f); 
+                                                                   SCastJS (TString, SId fn_id)])))) pc)
                                props pc' in
                              sym_get_field p pvalue field getter_params result none_of depth)
                         end

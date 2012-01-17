@@ -100,10 +100,15 @@ and exp e =
     parens (horz ((exp f) :: (map exp args)))
   | SLet (id, e1) ->
     parens(horz [text "assert"; parens(horz[text "="; text id; exp e1])])
-  | SIsTrue e ->
-    parens(horz [text "assert"; parens(horz[text "b"; exp e])])
-  | SIsFalse e ->
-    parens(horz [text "assert"; parens(horz[text "not"; parens(horz[text "b"; exp e])])])
+  | SCastJS (t, e) -> castFn t (exp e)
+  | SUncastJS (t, e) -> uncastFn t (exp e)
+  | SNot e -> parens (horz [text "not"; exp e])
+  | SAnd es -> parens (horz (text "and" :: (map exp es)))
+  | SOr es -> parens (horz (text "or" :: (map exp es)))
+  | SImplies (pre, post) -> parens (horz [text "=>"; exp pre; exp post])
+  | SAssert e -> parens (horz [text "assert"; exp e])
+  | SIsMissing e ->
+    parens (horz [text "="; exp e; text "ABSENT"])
   | SGetField (id, f) ->
     uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
 
@@ -143,23 +148,25 @@ let log_z3 = true
 
 let is_sat (p : path) : bool =
   let z3prelude = "\
-(declare-sort Str)\n\
-(declare-sort Fun)\n\
-(declare-sort Fields)\n\
-(declare-datatypes\n\
- ()\n\
- ((JS\n\
-   (NUM (n Real))\n\
-   (UNDEF)\n\
-   (NULL)\n\
-   (ABSENT)\n\
-   (BOOL (b Bool))\n\
-   (STR (s Str))\n\
-   (FUN (f Fun))\n\
-   (OBJ (fields Fields)))))\n\
-(declare-fun js2Field ((Array Str JS)) Fields)\n\
-(declare-fun field2js (Fields) (Array Str JS))\n\
-(assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))\n" in
+(declare-sort Str)
+(declare-sort Fun)
+(declare-sort Fields)
+(declare-datatypes
+ ()
+ ((JS
+   (NUM (n Real))
+   (UNDEF)
+   (NULL)
+   (ABSENT)
+   (BOOL (b Bool))
+   (STR (s Str))
+   (FUN (f Fun))
+   (OBJ (fields Fields)))))
+(declare-fun js2Field ((Array Str JS)) Fields)
+(declare-fun field2js (Fields) (Array Str JS))
+(assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))
+(declare-fun get_field (Fields Str) JS)
+;; line 20 begins below ;;" in
 
   (* (declare-const mtObj Fields)\n\
      (assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))  *)

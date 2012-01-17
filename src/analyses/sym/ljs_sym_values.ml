@@ -40,8 +40,14 @@ and
   | SOp2 of string * sym_exp * sym_exp
   | SApp of sym_exp * sym_exp list
   | SLet of id * sym_exp
-  | SIsTrue of sym_exp
-  | SIsFalse of sym_exp
+  | SCastJS of jsType * sym_exp
+  | SUncastJS of jsType * sym_exp
+  | SAssert of sym_exp
+  | SAnd of sym_exp list
+  | SOr of sym_exp list
+  | SNot of sym_exp
+  | SImplies of sym_exp * sym_exp
+  | SIsMissing of sym_exp
   | SGetField of id * id
 and result = value * path
 and exval = 
@@ -113,3 +119,6 @@ let add_constraint c p =
   { constraints = c :: cs; vars = vs }
 
      
+let add_constraints cs p = 
+  let { constraints = cs'; vars = vs } = p in
+  { constraints = List.rev_append cs cs'; vars = vs }
