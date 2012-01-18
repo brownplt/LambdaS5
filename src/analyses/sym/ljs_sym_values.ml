@@ -124,3 +124,16 @@ let add_constraint c p =
 let add_constraints cs p = 
   let { constraints = cs'; vars = vs ; store = s; } = p in
   { constraints = List.rev_append cs cs'; vars = vs; store = s; }
+
+
+let sto_alloc v ctx = 
+  let { constraints = cs; vars = vs ; store = sto; } = ctx in
+  let (loc, sto') = Store.alloc v sto in
+  (loc, { constraints = cs; vars = vs ; store = sto'; })
+
+let sto_update loc v ctx = 
+  let { constraints = cs; vars = vs ; store = sto; } = ctx in
+  let sto' = Store.update loc v sto in
+  { constraints = cs; vars = vs ; store = sto'; }
+
+let sto_lookup loc ctx = Store.lookup loc ctx.store

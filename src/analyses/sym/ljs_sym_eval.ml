@@ -82,8 +82,8 @@ let rec apply p func args pc depth = match func with
 
 let rec get_field p obj1 field getter_params result pc depth = match obj1 with
   | Null -> return Undefined pc (* nothing found *)
-  | ObjCell c -> begin
-    let ({proto = pvalue; }, props) = !c in
+  | ObjCell loc -> begin
+    let ({proto = pvalue; }, props) = sto_lookup loc pc in
     try match IdMap.find field props with
     | Data ({ value = v; }, _, _) -> return (result v) pc
     | Accessor ({ getter = g; }, _, _) ->
@@ -101,8 +101,8 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
 
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
-let rec add_field obj field newval result = match obj with
-  | ObjCell c -> begin match !c with
+let rec add_field obj field newval pc result = match obj with
+  | ObjCell loc -> begin match sto_lookup loc pc with
     | { extensible = true; } as attrs, props ->
       begin
         c := (attrs, IdMap.add field
@@ -125,21 +125,21 @@ let rec add_field obj field newval result = match obj with
 
 (* EUpdateField *)
 (* ES5 8.12.4, 8.12.5 *)
-let rec update_field p obj1 obj2 field newval setter_args result = match obj1 with
+let rec update_field p obj1 obj2 field newval setter_args pc result = match obj1 with
   (* 8.12.4, step 4 *)
-  | Null -> add_field obj2 field newval result
-  | ObjCell c -> begin match !c with
+  | Null -> add_field obj2 field newval pc result
+  | ObjCell loc -> begin match sto_lookup loc pc with
     | { proto = pvalue; } as attrs, props ->
       if (not (IdMap.mem field props)) then
         (* EUpdateField-Proto *)
-        update_field p pvalue obj2 field newval setter_args result
+        update_field p pvalue obj2 field newval setter_args pc result
       else
         match (IdMap.find field props) with
         | Data ({ writable = true; }, enum, config) ->
           (* This check asks how far down we are in searching *)
           if (not (obj1 == obj2)) then
             (* 8.12.4, last step where inherited.[[writable]] is true *)
-            add_field obj2 field newval result
+            add_field obj2 field newval pc result
           else begin
             (* 8.12.5, step 3, changing the value of a field *)
             c := (attrs, IdMap.add field
@@ -154,8 +154,8 @@ let rec update_field p obj1 obj2 field newval setter_args result = match obj1 wi
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ Ljs_sym_pretty.to_string obj1 ^ " " ^ Ljs_sym_pretty.to_string obj2 ^ " " ^ field ^ " " ^ Ljs_sym_pretty.to_string newval ^ ")" )
 
-let get_attr attr obj field = match obj, field with
-  | ObjCell c, String s -> let (attrs, props) = !c in
+let get_attr attr obj field pc = match obj, field with
+  | ObjCell loc, String s -> let (attrs, props) = sto_lookup loc pc in
       if (not (IdMap.mem s props)) then
         undef
       else
@@ -294,7 +294,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         else begin
           try
             match IdMap.find x env with
-            | VarCell v -> return !v pc
+            | VarCell loc -> return (sto_lookup loc pc) pc
             | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
                                 " at " ^ (string_of_position p) ^ 
                                 ", but found something else: " ^ Ljs_sym_pretty.to_string (IdMap.find x env))
@@ -304,12 +304,17 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         end
 
       | S.Lambda (p, xs, e) -> 
-        let set_arg arg x m = IdMap.add x (VarCell (ref arg)) m in
-        return (Closure (fun args pc' depth -> 
-          if (List.length args) != (List.length xs) then
-            arity_mismatch_err p xs args
-          else
-            nestedEval (depth+1) e (List.fold_right2 set_arg args xs env) pc'))
+        let bind_arg arg x (m, pc) = 
+          let (loc, pc') = sto_alloc arg pc in 
+          (IdMap.add x (VarCell loc) m, pc')
+        in
+        return 
+          (Closure (fun args pc' depth -> 
+            if (List.length args) != (List.length xs) then
+              arity_mismatch_err p xs args
+            else
+              let (env_xs, pc_xs) = (List.fold_right2 bind_arg args xs (env, pc')) in
+              nestedEval (depth+1) e env_xs pc_xs))
           pc
 
       | S.Op1 (p, op, e) ->
@@ -413,24 +418,27 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         bind
           (eval e env pc)
           (fun (e_val, pc') -> 
-            eval body (IdMap.add x (VarCell (ref e_val)) env) pc')
+            let (loc, pc'') = sto_alloc e_val pc' in 
+            eval body (IdMap.add x (VarCell loc) env) pc'')
           
       | S.Rec (p, x, e, body) ->
-        let x' = ref Undefined in
-        bind 
-          (eval e (IdMap.add x (VarCell x') env) pc)
+        let (loc, pc') = sto_alloc Undefined pc in
+        let env' = IdMap.add x (VarCell loc) env in
+        bind
+          (eval e env' pc')
           (fun (ev_val, pc') -> 
-            x' := ev_val;
-            eval body (IdMap.add x (VarCell (ref ev_val)) env) pc')
+            let pc'' = sto_update loc ev_val pc' in 
+            eval body env' pc'')
 
       | S.SetBang (p, x, e) -> begin
         try
           match IdMap.find x env with
-          | VarCell v -> 
+          | VarCell loc -> 
             bind 
               (eval e env pc)
               (fun (e_val, pc') ->
-                v := e_val; return e_val pc')
+                let pc'' = sto_update loc e_val pc' in
+                return e_val pc'')
           | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
                               " at " ^ (string_of_position p) ^ 
                               ", but found something else.")
@@ -491,20 +499,21 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                           ([(IdMap.empty, pc_c)], []) props in
                       bind propvs_pcs
                         (fun (propvs, pc_psv) -> 
-                          return (ObjCell (ref (attrsv, propvs))) pc_psv))))
+                          let (loc, pc_obj) = sto_alloc (attrsv, provs) pc_psv in
+                          return (ObjCell loc) pc_obj))))
       end
         
       | S.GetAttr (p, attr, obj, field) ->
         let rec sym_get_attr attr obj field pc = 
           try
             match (obj, field) with
-            | ObjCell _, String _ -> return (get_attr attr obj field) pc
+            | ObjCell _, String _ -> return (get_attr attr obj field pc) pc
             | Sym o_id, String f ->
               let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc in
               (* todo: assert that (SId fn_id) = (Concrete f) *)
               sym_get_attr attr obj (Sym fn_id) pc'
-            | ObjCell c, Sym f_id ->
-              let (_, props) = !c in
+            | ObjCell loc, Sym f_id ->
+              let (_, props) = sto_lookup loc pc in
               combine
                 (IdMap.fold (fun fieldName _ results ->
                   let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
@@ -513,7 +522,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                                    [SId f_id; SId fn_id]))) pc' in
                   let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
                   also_return (Sym ret_gf)
-                    (add_constraint (SLet (ret_gf, Concrete (get_attr attr obj (String fieldName)))) pc''') results)
+                    (add_constraint (SLet (ret_gf, Concrete (get_attr attr obj (String fieldName) pc'''))) pc''') 
+                    results)
                    props none)
                 (let none_of = IdMap.fold
                    (fun fieldName _ pc ->
@@ -596,8 +606,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               in
               also_return (Sym ret_gf) true_pc
                 (return (Sym ret_gf)  false_pc)
-            | ObjCell c, Sym f -> begin
-              let ({proto = pvalue; }, props) = !c in
+            | ObjCell loc, Sym f -> begin
+              let ({proto = pvalue; }, props) = sto_lookup loc pc in
               combine
                 (IdMap.fold (fun fieldName value results ->
                   let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
@@ -620,7 +630,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                    props pc in
                  sym_get_field p pvalue field getter_params result none_of depth)
             end
-            | ObjCell c, String f ->
+            | ObjCell _, String f ->
               get_field p obj1 f getter_params (fun x -> x) pc depth
             | _ -> failwith (interp_error p
                                "get_field on a non-object.  The expression was (get-field "
@@ -782,8 +792,8 @@ let rec eval_expr expr jsonPath maxDepth pc =
     | Throw v ->
       let err_msg = 
         match v with
-        | ObjCell c ->
-          let (attrs, props) = !c in
+        | ObjCell loc ->
+          let (attrs, props) = sto_lookup loc pc in
           begin try
                   match IdMap.find "message" props with
                   | Data ({ value = msg_val; }, _, _) ->
