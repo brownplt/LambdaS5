@@ -26,10 +26,11 @@ type value =
   | String of string
   | True
   | False
-  | VarCell of value ref 
-  | ObjCell of (attrsv * (propv IdMap.t)) ref
+  | VarCell of Store.loc (* can only point to a Value (see below) *)
+  | ObjCell of Store.loc (* can only point to ObjLit (see below) *)
   | Closure of (value list -> ctx -> int -> (result list * exresult list))
   | Sym of id (* symbolic value *)
+and cell = Value of value | ObjLit of (attrsv * (propv IdMap.t))
 and
   attrsv = { code : value option;
              proto : value;
@@ -50,8 +51,10 @@ and label = string
 
 and result = value * ctx
 and exresult = exval * ctx
+
 and ctx = { constraints : sym_exp list;
-            vars : typeEnv ; }
+            vars : typeEnv ;
+            store : (cell Store.t) }
 
 (* language of constraints *)
 and sym_exp =
@@ -81,11 +84,11 @@ let d_attrsv = { primval = None;
 type env = value IdMap.t
 
 
-let mtPath = { constraints = []; vars = IdMap.empty; }
+let mtPath = { constraints = []; vars = IdMap.empty; store = Store.empty; }
 
 let add_var id ty p = 
-  let { constraints = cs ; vars = vs } = p in
-  { constraints = cs ; vars = IdMap.add id ty vs }
+  let { constraints = cs ; vars = vs ; store = s; } = p in
+  { constraints = cs ; vars = IdMap.add id ty vs ; store = s; }
 
 let ty_to_string t = match t with
   | TNull -> "TNull"
@@ -101,12 +104,12 @@ let ty_to_string t = match t with
 
 
 let check_type id t p =
-  let { constraints = cs ; vars = vs } = p in
+  let { constraints = cs ; vars = vs; store = s; } = p in
   try 
     let found = IdMap.find id vs in
     if found = t then p
     else if found = TAny then
-      { constraints = cs ; vars = IdMap.add id t vs }
+      { constraints = cs ; vars = IdMap.add id t vs ; store = s; }
     else begin 
       Printf.printf "Known type of %s is %s, wanted %s\n" id (ty_to_string found) (ty_to_string t);
       raise (TypeError id)
@@ -114,10 +117,10 @@ let check_type id t p =
   with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
 
 let add_constraint c p =
-  let { constraints = cs ; vars = vs } = p in
-  { constraints = c :: cs; vars = vs }
+  let { constraints = cs ; vars = vs ; store = s; } = p in
+  { constraints = c :: cs; vars = vs ; store = s; }
 
      
 let add_constraints cs p = 
-  let { constraints = cs'; vars = vs } = p in
-  { constraints = List.rev_append cs cs'; vars = vs }
+  let { constraints = cs'; vars = vs ; store = s; } = p in
+  { constraints = List.rev_append cs cs'; vars = vs; store = s; }
