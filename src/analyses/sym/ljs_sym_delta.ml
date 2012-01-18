@@ -370,7 +370,7 @@ let numstr store = function
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "numstr")
 
-let op1 (op : string) (store : cell Store.t) : value -> value * cell Store.t = match op with
+let op1 store op : value -> value * cell Store.t = match op with
   | "typeof" -> typeof store
   | "surface-typeof" -> surface_typeof store
   | "primitive?" -> is_primitive store

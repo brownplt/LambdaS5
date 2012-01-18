@@ -322,12 +322,17 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         end
 
       | S.Lambda (p, xs, e) -> 
-        let set_arg arg x m = IdMap.add x (VarCell (ref arg)) m in
-        return (Closure (fun args pc' depth -> 
-          if (List.length args) != (List.length xs) then
-            arity_mismatch_err p xs args
-          else
-            nestedEval (depth+1) e (List.fold_right2 set_arg args xs env) pc'))
+        let bind_arg arg x (m, pc) = 
+          let (loc, pc') = sto_alloc (Value arg) pc in 
+          (IdMap.add x (VarCell loc) m, pc')
+        in
+        return 
+          (Closure (fun args pc' depth -> 
+            if (List.length args) != (List.length xs) then
+              arity_mismatch_err p xs args pc
+            else
+              let (env_xs, pc_xs) = (List.fold_right2 bind_arg args xs (env, pc')) in
+              nestedEval (depth+1) e env_xs pc_xs))
           pc
 
       | S.Op1 (p, op, e) ->
@@ -344,7 +349,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc''')
               | _ -> 
                 try
-                  return (op1 op e_val) pc'
+                  let (ret, store') = op1 pc'.store op e_val in
+                  return ret {pc' with store = store'}
                 with PrimError msg -> throw (Throw (String msg)) pc'
             with TypeError _ -> none)
           
@@ -374,7 +380,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 end
                 | _ ->
                   try
-                    return (op2 op e1_val e2_val) pc''
+                    let (ret, store') = op2 pc''.store op e1_val e2_val in
+                    return ret {pc'' with store = store'}
                   with PrimError msg -> throw (Throw (String msg)) pc''))
           
       | S.If (p, c, t, f) ->
@@ -431,24 +438,27 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         bind
           (eval e env pc)
           (fun (e_val, pc') -> 
-            eval body (IdMap.add x (VarCell (ref e_val)) env) pc')
+            let (loc, pc'') = sto_alloc (Value e_val) pc' in 
+            eval body (IdMap.add x (VarCell loc) env) pc'')
           
       | S.Rec (p, x, e, body) ->
-        let x' = ref Undefined in
-        bind 
-          (eval e (IdMap.add x (VarCell x') env) pc)
+        let (loc, pc') = sto_alloc (Value Undefined) pc in
+        let env' = IdMap.add x (VarCell loc) env in
+        bind
+          (eval e env' pc')
           (fun (ev_val, pc') -> 
-            x' := ev_val;
-            eval body (IdMap.add x (VarCell (ref ev_val)) env) pc')
+            let pc'' = sto_update loc (Value ev_val) pc' in 
+            eval body env' pc'')
 
       | S.SetBang (p, x, e) -> begin
         try
           match IdMap.find x env with
-          | VarCell v -> 
+          | VarCell loc -> 
             bind 
               (eval e env pc)
               (fun (e_val, pc') ->
-                v := e_val; return e_val pc')
+                let pc'' = sto_update loc (Value e_val) pc' in
+                return e_val pc'')
           | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
                               " at " ^ (string_of_position p) ^ 
                               ", but found something else.")
@@ -509,40 +519,46 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                           ([(IdMap.empty, pc_c)], []) props in
                       bind propvs_pcs
                         (fun (propvs, pc_psv) -> 
-                          return (ObjCell (ref (attrsv, propvs))) pc_psv))))
+                          let (loc, pc_obj) = sto_alloc (ObjLit (attrsv, propvs)) pc_psv in
+                          return (ObjCell loc) pc_obj))))
       end
         
       | S.GetAttr (p, attr, obj, field) ->
         let rec sym_get_attr attr obj field pc = 
           try
             match (obj, field) with
-            | ObjCell _, String _ -> return (get_attr attr obj field) pc
+            | ObjCell _, String _ -> return (get_attr pc attr obj field) pc
             | Sym o_id, String f ->
               let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc in
               (* todo: assert that (SId fn_id) = (Concrete f) *)
               sym_get_attr attr obj (Sym fn_id) pc'
-            | ObjCell c, Sym f_id ->
-              let (_, props) = !c in
-              combine
-                (IdMap.fold (fun fieldName _ results ->
-                  let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
-                  let pc'' = add_constraint
-                    (SAssert (SApp(SId "=",
-                                   [SId f_id; SId fn_id]))) pc' in
-                  let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
-                  also_return (Sym ret_gf)
-                    (add_constraint (SLet (ret_gf, Concrete (get_attr attr obj (String fieldName)))) pc''') results)
-                   props none)
-                (let none_of = IdMap.fold
-                   (fun fieldName _ pc ->
-                     let (fn_id, pc) = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
-                     add_constraint
-                       (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id);
-                                                       SCastJS (TString, SId fn_id)])))) pc)
-                   props pc in
-                 let (ret_gf, pc''') = fresh_var "GF_" TAny none_of in
-                 return (Sym ret_gf)
-                   (add_constraint (SLet (ret_gf, Concrete undef)) pc'''))
+            | ObjCell loc, Sym f_id -> begin
+              match sto_lookup loc pc with
+              | ObjLit (_, props) ->
+                combine
+                  (IdMap.fold (fun fieldName _ results ->
+                    let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                    let pc'' = add_constraint
+                      (SAssert (SApp(SId "=",
+                                     [SId f_id; SId fn_id]))) pc' in
+                    let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
+                    also_return (Sym ret_gf)
+                      (add_constraint 
+                         (SLet (ret_gf, Concrete (get_attr pc''' attr obj (String fieldName)))) pc''')
+                      results)
+                     props none)
+                  (let none_of = IdMap.fold
+                     (fun fieldName _ pc ->
+                       let (fn_id, pc) = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                       add_constraint
+                         (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id);
+                                                         SCastJS (TString, SId fn_id)])))) pc)
+                     props pc in
+                   let (ret_gf, pc''') = fresh_var "GF_" TAny none_of in
+                   return (Sym ret_gf)
+                     (add_constraint (SLet (ret_gf, Concrete undef)) pc'''))
+              | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+            end
             | Sym o_id, Sym f_id ->
               let pc_types = check_type o_id TObj (check_type f_id TString pc) in
               let (fn_id, pc') = fresh_var ("FN_" ^ f_id ^ "_") TString pc_types in
@@ -583,8 +599,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 let pc' = add_constraint (SLet (ret_gf, SApp(SId "setter", [SId fn_id]))) pc_present in
                 also_return (Sym ret_gf) pc' missing)
             | _ -> failwith ("[interp] GetAttr got a non-object or a non-string field name: (get-attr "
-                             ^ Ljs_sym_pretty.to_string obj ^ " "
-                             ^  Ljs_sym_pretty.to_string field ^ ")")
+                             ^ Ljs_sym_pretty.to_string obj pc.store ^ " "
+                             ^  Ljs_sym_pretty.to_string field pc.store ^ ")")
           with TypeError _ -> none
         in
         bind (eval obj env pc)
@@ -614,37 +630,39 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               in
               also_return (Sym ret_gf) true_pc
                 (return (Sym ret_gf)  false_pc)
-            | ObjCell c, Sym f -> begin
-              let ({proto = pvalue; }, props) = !c in
-              combine
-                (IdMap.fold (fun fieldName value results ->
-                  let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
-                  let pc'' = add_constraint
-                    (SAssert (SApp(SId "=",
-                                   [SId f; SId fn_id]))) pc' in
-                  let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
-                  match value with
-                  | Data ({ value = v; }, _, _) ->
-                    also_return (Sym ret_gf)
-                      (add_constraint (SLet (ret_gf, Concrete (result v))) pc''') results
-                  | Accessor ({ getter = g; }, _, _) ->
-                    combine (apply p g getter_params pc''' depth) results) props none)
-                (let none_of = IdMap.fold
-                   (fun fieldName _ pc ->
-                     let (fn_id, pc) = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
-                     add_constraint
-                       (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f); 
-                                                       SCastJS (TString, SId fn_id)])))) pc)
-                   props pc in
-                 sym_get_field p pvalue field getter_params result none_of depth)
+            | ObjCell loc, Sym f -> begin
+              match sto_lookup loc pc with
+              | ObjLit ({proto = pvalue; }, props) ->
+                combine
+                  (IdMap.fold (fun fieldName value results ->
+                    let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                    let pc'' = add_constraint
+                      (SAssert (SApp(SId "=",
+                                     [SId f; SId fn_id]))) pc' in
+                    let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
+                    match value with
+                    | Data ({ value = v; }, _, _) ->
+                      also_return (Sym ret_gf)
+                        (add_constraint (SLet (ret_gf, Concrete (result v))) pc''') results
+                    | Accessor ({ getter = g; }, _, _) ->
+                      combine (apply p g getter_params pc''' depth) results) props none)
+                  (let none_of = IdMap.fold
+                     (fun fieldName _ pc ->
+                       let (fn_id, pc) = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                       add_constraint
+                         (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f); 
+                                                         SCastJS (TString, SId fn_id)])))) pc)
+                     props pc in
+                   sym_get_field p pvalue field getter_params result none_of depth)
+              | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
             end
-            | ObjCell c, String f ->
+            | ObjCell _, String f ->
               get_field p obj1 f getter_params (fun x -> x) pc depth
             | _ -> failwith (interp_error p
                                "get_field on a non-object.  The expression was (get-field "
-                             ^ Ljs_sym_pretty.to_string obj1
-                             ^ " " ^ Ljs_sym_pretty.to_string (List.nth getter_params 0)
-                             ^ " " ^ Ljs_sym_pretty.to_string field ^ ")")
+                             ^ Ljs_sym_pretty.to_string obj1 pc.store
+                             ^ " " ^ Ljs_sym_pretty.to_string (List.nth getter_params 0) pc.store
+                             ^ " " ^ Ljs_sym_pretty.to_string field pc.store ^ ")")
           with TypeError _ -> none
         in
         bind (eval obj env pc)
@@ -755,7 +773,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
 
 
-and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ Ljs_sym_pretty.to_string v ^ " ") args) ""))
+and arity_mismatch_err p xs args pc =
+  failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ 
+               " arguments and expected " ^ string_of_int (List.length xs) ^ 
+               " at " ^ string_of_position p ^ ". Arg names were: " ^ 
+               (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ 
+               ". Values were: " ^ 
+               (List.fold_right (^) (map (fun v -> " " ^ 
+                 Ljs_sym_pretty.to_string v pc.store ^ " ") args) ""))
 
 (* This function is exactly as ridiculous as you think it is.  We read,
    parse, desugar, and evaluate the string, storing it to temp files along
@@ -800,16 +825,19 @@ let rec eval_expr expr jsonPath maxDepth pc =
     | Throw v ->
       let err_msg = 
         match v with
-        | ObjCell c ->
-          let (attrs, props) = !c in
-          begin try
-                  match IdMap.find "message" props with
-                  | Data ({ value = msg_val; }, _, _) ->
-                    (Ljs_sym_pretty.to_string msg_val)
-                  | _ -> (Ljs_sym_pretty.to_string v)
-            with Not_found -> (Ljs_sym_pretty.to_string v)
-          end
-        | v -> (Ljs_sym_pretty.to_string v) in
+        | ObjCell loc -> begin
+          match sto_lookup loc pc with
+          | ObjLit (attrs, props) ->
+            begin try
+                    match IdMap.find "message" props with
+                    | Data ({ value = msg_val; }, _, _) ->
+                      (Ljs_sym_pretty.to_string msg_val pc.store)
+                    | _ -> (Ljs_sym_pretty.to_string v pc.store)
+              with Not_found -> (Ljs_sym_pretty.to_string v pc.store)
+            end
+          | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+        end
+        | v -> (Ljs_sym_pretty.to_string v pc.store) in
       throw (str ("Uncaught exception: " ^ err_msg)) pc
     | Break (l, v) -> throw (str ("Broke to top of execution, missed label: " ^ l)) pc)
 
