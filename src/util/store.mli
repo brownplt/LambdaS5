@@ -8,6 +8,7 @@ val distinct : loc -> loc -> bool
 val print_loc : loc -> string
 val empty : 'a t
 val alloc : 'a -> 'a t -> loc * 'a t
+val update : loc -> 'a -> 'a t -> 'a t
 val free : loc -> 'a t -> 'a t
 val mem : loc -> 'a t -> bool
 val lookup : loc -> 'a t -> 'a

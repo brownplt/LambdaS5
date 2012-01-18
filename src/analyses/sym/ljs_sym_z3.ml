@@ -16,7 +16,7 @@ let prim_to_z3 op = match op with
   | "stx=" -> "="
   | _ -> op
 
-let rec value v = 
+let rec value v store = 
   match v with
   | Null -> text "NULL"
   | Undefined -> text "UNDEF"
@@ -24,15 +24,27 @@ let rec value v =
   | String s -> parens (horz [text "STR"; text ("\"" ^ s ^ "\"")])
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
-  | VarCell v -> horz [squish [text "&<"; value (!v); text ">"]]
-  | ObjCell o ->
-    let (avs, props) = !o in
+  | VarCell v -> cell (Store.lookup v store) store
+  | ObjCell o -> cell (Store.lookup o store) store
+  | Closure func -> text "(FUN closure)"
+  (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
+  (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
+  (*                                                                text "Exn" :: text exn :: text ";" ::  *)
+  (*                                                                (intersperse (text ",") (map text xs))))]; *)
+  (*                            braces (exp e)]) *)
+  | Sym id -> text id
+
+and cell c store = 
+  match c with
+  | Value v -> horz [squish [text "&<"; value v store; text ">"]]
+  | ObjLit o ->
+    let (avs, props) = o in
     (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
     parens (horz [text "OBJ";
                   List.fold_left (fun acc (f, p) ->
                     let value = 
                       match p with
-                      | Data ({value=v; writable=w}, enum, config) -> value v
+                      | Data ({value=v; writable=w}, enum, config) -> value v store
                       (* horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value";  *)
                       (*                                                     value v; text ",";  *)
                       (*                                                     text "#writable";   *)
@@ -47,13 +59,7 @@ let rec value v =
                     (*                                                     value s])] *)
                     in parens (vert [horz[text "store"; acc]; horz[text f; value]])) 
                     (text "mtObj") (IdMap.bindings props)])
-  | Closure func -> text "(FUN closure)"
-  (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
-  (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
-  (*                                                                text "Exn" :: text exn :: text ";" ::  *)
-  (*                                                                (intersperse (text ",") (map text xs))))]; *)
-  (*                            braces (exp e)]) *)
-  | Sym id -> text id
+
 
 (* and prim verbose p =  *)
 (*   let value = value verbose in *)
@@ -72,7 +78,7 @@ let rec value v =
 (*   | DeleteField (p,lbl, o, f) -> *)
 (*     label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])]) *)
 
-and exp e = 
+and exp e store = 
   let castFn t e = match t with
     | TNum -> parens (horz [text "n"; e])
     | TBool -> parens (horz [text "b"; e])
@@ -88,34 +94,34 @@ and exp e =
     | TObj -> parens (horz [text "OBJ"; e])
     | _ -> e in
   match e with
-  | Concrete v -> value v
+  | Concrete v -> value v store
   | SId id -> text id
   | SOp1 (op, e) -> 
     let (t, ret) = Ljs_sym_delta.typeofOp1 op in
-    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t (exp e)]))
+    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t (exp e store)]))
   | SOp2 (op, e1, e2) ->
     let (t1, t2, ret) = Ljs_sym_delta.typeofOp2 op in
-    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t1 (exp e1); castFn t2 (exp e2)]))
+    uncastFn ret (parens (horz [text (prim_to_z3 op); castFn t1 (exp e1 store); castFn t2 (exp e2 store)]))
   | SApp (f, args) ->
-    parens (horz ((exp f) :: (map exp args)))
+    parens (horz ((exp f store) :: (map (fun a -> exp a store) args)))
   | SLet (id, e1) ->
-    parens(horz [text "assert"; parens(horz[text "="; text id; exp e1])])
-  | SCastJS (t, e) -> castFn t (exp e)
-  | SUncastJS (t, e) -> uncastFn t (exp e)
-  | SNot e -> parens (horz [text "not"; exp e])
-  | SAnd es -> parens (horz (text "and" :: (map exp es)))
-  | SOr es -> parens (horz (text "or" :: (map exp es)))
-  | SImplies (pre, post) -> parens (horz [text "=>"; exp pre; exp post])
-  | SAssert e -> parens (horz [text "assert"; exp e])
+    parens(horz [text "assert"; parens(horz[text "="; text id; exp e1 store])])
+  | SCastJS (t, e) -> castFn t (exp e store)
+  | SUncastJS (t, e) -> uncastFn t (exp e store)
+  | SNot e -> parens (horz [text "not"; exp e store])
+  | SAnd es -> parens (horz (text "and" :: (map (fun e -> exp e store) es)))
+  | SOr es -> parens (horz (text "or" :: (map (fun e -> exp e store) es)))
+  | SImplies (pre, post) -> parens (horz [text "=>"; exp pre store; exp post store])
+  | SAssert e -> parens (horz [text "assert"; exp e store])
   | SIsMissing e ->
-    parens (horz [text "="; exp e; text "ABSENT"])
+    parens (horz [text "="; exp e store; text "ABSENT"])
   | SGetField (id, f) ->
     uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
 
-and attrsv { proto = p; code = c; extensible = b; klass = k } =
-  let proto = [horz [text "#proto:"; value p]] in
+and attrsv store { proto = p; code = c; extensible = b; klass = k } =
+  let proto = [horz [text "#proto:"; value p store]] in
   let code = match c with None -> [] 
-    | Some e -> [horz [text "#code:"; value e]] in
+    | Some e -> [horz [text "#code:"; value e store]] in
   brackets (vert (map (fun x -> squish [x; (text ",")])
                     (proto@
                        code@
@@ -123,10 +129,10 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
                         horz [text "#extensible:"; text (string_of_bool b)]])))
     
 (* TODO: print and parse enum and config *)
-and prop (f, prop) = match prop with
+and prop store (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                                        value v; text ","; 
+                                                        value v store; text ","; 
                                                         text "#writable";  
                                                         text (string_of_bool w);
                                                         text ",";
@@ -134,11 +140,11 @@ and prop (f, prop) = match prop with
                                                         text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                                        value g; text ",";
+                                                        value g store; text ",";
                                                         text "#setter";
-                                                        value s])]
+                                                        value s store])]
 ;;
-let to_string v = exp v Format.str_formatter; Format.flush_str_formatter() 
+let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
   
   
 let log_z3 = true
@@ -177,7 +183,7 @@ let is_sat (p : ctx) : bool =
      (assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))  *)
 
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
-  let { constraints = cs; vars = vs; } = p in      
+  let { constraints = cs; vars = vs; store = store } = p in      
   if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
   IdMap.iter
@@ -206,9 +212,9 @@ let is_sat (p : ctx) : bool =
   
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc pc = 
-    if log_z3 then Printf.printf "%s\n" (to_string pc);
+    if log_z3 then Printf.printf "%s\n" (to_string pc store);
     output_string outch 
-      (Printf.sprintf "%s\n" (to_string pc)) in
+      (Printf.sprintf "%s\n" (to_string pc store)) in
   List.iter print_pc lets; 
   List.iter print_pc rest;
 

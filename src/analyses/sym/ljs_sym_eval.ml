@@ -45,10 +45,10 @@ let bool b = match b with
   | true -> True
   | false -> False
     
-let unbool b = match b with
+let unbool b store = match b with
   | True -> true
   | False -> false
-  | _ -> failwith ("tried to unbool a non-bool" ^ (Ljs_sym_pretty.to_string b))
+  | _ -> failwith ("tried to unbool a non-bool" ^ (Ljs_sym_pretty.to_string b store))
 
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
@@ -78,39 +78,43 @@ let rec apply p func args pc depth = match func with
   (* end *)
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
-                         Ljs_sym_pretty.to_string func))
+                         Ljs_sym_pretty.to_string func pc.store))
 
 let rec get_field p obj1 field getter_params result pc depth = match obj1 with
   | Null -> return Undefined pc (* nothing found *)
   | ObjCell c -> begin
-    let ({proto = pvalue; }, props) = !c in
-    try match IdMap.find field props with
-    | Data ({ value = v; }, _, _) -> return (result v) pc
-    | Accessor ({ getter = g; }, _, _) ->
-      apply p g getter_params pc depth
-    (* Not_found means prototype lookup is necessary *)
-    with Not_found ->
-      get_field p pvalue field getter_params result pc depth
+    match Store.lookup c pc.store with
+    | ObjLit ({proto = pvalue; }, props) -> begin
+      try match IdMap.find field props with
+      | Data ({ value = v; }, _, _) -> return (result v) pc
+      | Accessor ({ getter = g; }, _, _) ->
+        apply p g getter_params pc depth
+      (* Not_found means prototype lookup is necessary *)
+      with Not_found ->
+        get_field p pvalue field getter_params result pc depth
+    end
+    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith (interp_error p
                      "get_field on a non-object.  The expression was (get-field "
-                   ^ Ljs_sym_pretty.to_string obj1
-                   ^ " " ^ Ljs_sym_pretty.to_string (List.nth getter_params 0)
+                   ^ Ljs_sym_pretty.to_string obj1 pc.store
+                   ^ " " ^ Ljs_sym_pretty.to_string (List.nth getter_params 0) pc.store
                    ^ " " ^ field ^ ")")
 
 
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
-let rec add_field obj field newval result = match obj with
-  | ObjCell c -> begin match !c with
-    | { extensible = true; } as attrs, props ->
+let rec add_field ctx obj field newval result = match obj with
+  | ObjCell c -> begin match Store.lookup c ctx.store with
+    | ObjLit ({ extensible = true; } as attrs, props) ->
       begin
-        c := (attrs, IdMap.add field
+        let newO = ObjLit (attrs, IdMap.add field
           (Data ({ value = newval; writable = true; }, true, true))
-          props);
-        result newval
+          props) in
+        result newval ({ctx with store = Store.update c newO ctx.store})
       end
-    | _ -> result Undefined(* TODO: Check error in case of non-extensible *)
+    | ObjLit _ -> result Undefined ctx(* TODO: Check error in case of non-extensible *)
+    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith ("[interp] add_field given non-object.")
 
@@ -125,51 +129,60 @@ let rec add_field obj field newval result = match obj with
 
 (* EUpdateField *)
 (* ES5 8.12.4, 8.12.5 *)
-let rec update_field p obj1 obj2 field newval setter_args result = match obj1 with
+let rec update_field ctx p obj1 obj2 field newval setter_args result depth = match obj1 with
   (* 8.12.4, step 4 *)
-  | Null -> add_field obj2 field newval result
-  | ObjCell c -> begin match !c with
-    | { proto = pvalue; } as attrs, props ->
+  | Null -> add_field ctx obj2 field newval result
+  | ObjCell c -> begin match Store.lookup c ctx.store with
+    | ObjLit ({ proto = pvalue; } as attrs, props) ->
       if (not (IdMap.mem field props)) then
         (* EUpdateField-Proto *)
-        update_field p pvalue obj2 field newval setter_args result
-      else
+        update_field ctx p pvalue obj2 field newval setter_args result depth
+      else begin
         match (IdMap.find field props) with
         | Data ({ writable = true; }, enum, config) ->
           (* This check asks how far down we are in searching *)
           if (not (obj1 == obj2)) then
             (* 8.12.4, last step where inherited.[[writable]] is true *)
-            add_field obj2 field newval result
+            add_field ctx obj2 field newval result
           else begin
             (* 8.12.5, step 3, changing the value of a field *)
-            c := (attrs, IdMap.add field
+            let newO = ObjLit (attrs, IdMap.add field
               (Data ({ value = newval; writable = true }, enum, config))
-              props);
-            result newval
+              props) in
+            result newval {ctx with store = Store.update c newO ctx.store}
           end
         | Accessor ({ setter = setterv; }, enum, config) ->
           (* 8.12.5, step 5 *)
-          apply p setterv setter_args
+          apply p setterv setter_args ctx depth
         | _ -> failwith "Field not writable!"
+      end
+    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
   end
-  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ Ljs_sym_pretty.to_string obj1 ^ " " ^ Ljs_sym_pretty.to_string obj2 ^ " " ^ field ^ " " ^ Ljs_sym_pretty.to_string newval ^ ")" )
+  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ 
+                      Ljs_sym_pretty.to_string obj1 ctx.store ^ " " ^ 
+                      Ljs_sym_pretty.to_string obj2 ctx.store ^ " " ^ field ^ " " ^ 
+                      Ljs_sym_pretty.to_string newval ctx.store ^ ")" )
 
-let get_attr attr obj field = match obj, field with
-  | ObjCell c, String s -> let (attrs, props) = !c in
+let get_attr ctx attr obj field = match obj, field with
+  | ObjCell c, String s -> begin
+    match Store.lookup c ctx.store with
+    | ObjLit (attrs, props) ->
       if (not (IdMap.mem s props)) then
         undef
       else
         begin match (IdMap.find s props), attr with
-          | Data (_, _, config), S.Config
-          | Accessor (_, _, config), S.Config -> bool config
-          | Data (_, enum, _), S.Enum
-          | Accessor (_, enum, _), S.Enum -> bool enum
-          | Data ({ writable = b; }, _, _), S.Writable -> bool b
-          | Data ({ value = v; }, _, _), S.Value -> v
-          | Accessor ({ getter = gv; }, _, _), S.Getter -> gv
-          | Accessor ({ setter = sv; }, _, _), S.Setter -> sv
-          | _ -> failwith "bad access of attribute"
+        | Data (_, _, config), S.Config
+        | Accessor (_, _, config), S.Config -> bool config
+        | Data (_, enum, _), S.Enum
+        | Accessor (_, enum, _), S.Enum -> bool enum
+        | Data ({ writable = b; }, _, _), S.Writable -> bool b
+        | Data ({ value = v; }, _, _), S.Value -> v
+        | Accessor ({ getter = gv; }, _, _), S.Getter -> gv
+        | Accessor ({ setter = sv; }, _, _), S.Setter -> sv
+        | _ -> failwith "bad access of attribute"
         end
+    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+  end
   | _ -> failwith ("[interp] get-attr didn't get an object and a string.")
 
 (* (\*  *)
@@ -294,10 +307,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         else begin
           try
             match IdMap.find x env with
-            | VarCell v -> return !v pc
+            | VarCell v -> begin
+              match Store.lookup v pc.store with
+              | Value v -> return v pc
+              | ObjLit _ -> failwith "[eval] Somehow storing a ObjLit through a Varcell"
+            end
             | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
                                 " at " ^ (string_of_position p) ^ 
-                                ", but found something else: " ^ Ljs_sym_pretty.to_string (IdMap.find x env))
+                                ", but found something else: " ^ 
+                                Ljs_sym_pretty.to_string (IdMap.find x env) pc.store)
           with Not_found ->
             failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
                          (string_of_position p))

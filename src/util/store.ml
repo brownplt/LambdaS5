@@ -20,6 +20,7 @@ let empty = LocMap.empty
 let alloc valu store = 
   let loc = newLoc () in 
   (loc, LocMap.add loc valu store)
+let update = LocMap.add
 let free = LocMap.remove 
 let mem = LocMap.mem
 let lookup = LocMap.find 

@@ -9,7 +9,7 @@ let rec vert_intersperse a lst = match lst with
   | [x] -> [x]
   | x :: xs -> squish [x; a] :: (vert_intersperse a xs)
 
-let rec value v = 
+let rec value v store = 
   match v with
   | Null -> text "null"
   | Undefined -> text "undefined"
@@ -17,12 +17,8 @@ let rec value v =
   | String s -> text ("\"" ^ s ^ "\"")
   | True -> text "true"
   | False -> text "false"
-  | VarCell v -> horz [squish [text "&<"; value (!v); text ">"]]
-  | ObjCell o ->
-    let (avs, props) = !o in
-    horz [squish [text "@"; (braces (vert [attrsv avs; 
-                                           vert (vert_intersperse (text ",") 
-                                                   (map prop (IdMap.bindings props)))]))]]
+  | VarCell v -> cell (Store.lookup v store) store
+  | ObjCell o -> cell (Store.lookup o store) store
   | Closure func -> text "(closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
@@ -30,6 +26,16 @@ let rec value v =
   (*                                                                (intersperse (text ",") (map text xs))))]; *)
   (*                            braces (exp e)]) *)
   | Sym id -> text id
+
+and cell c store = 
+  match c with
+  | Value v -> horz [squish [text "&<"; value v store; text ">"]]
+  | ObjLit o ->
+    let (avs, props) = o in
+    horz [squish [text "@"; (braces (vert [attrsv store avs; 
+                                           vert (vert_intersperse (text ",") 
+                                                   (map (prop store) (IdMap.bindings props)))]))]]
+
 
 (* and prim verbose p =  *)
 (*   let value = value verbose in *)
@@ -47,50 +53,50 @@ let rec value v =
 (*     label verbose lbl (squish [text "mutPrim"; parens (horz [text ("\"" ^ op ^ "\","); value e])]) *)
 (*   | DeleteField (p,lbl, o, f) -> *)
 (*     label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])]) *)
-and castFn t e = match t with
-    | TNum -> parens (horz [text "num"; exp e])
-    | TBool -> parens (horz [text "bool"; exp e])
-    | TString -> parens (horz [text "string"; exp e])
-    | TFun _ -> parens (horz [text "fun"; exp e])
-    | TObj -> parens (horz [text "fields"; exp e])
-    | _ -> exp e
-and uncastFn t e = match t with
-    | TNum -> parens (horz [text "NUM"; exp e])
-    | TBool -> parens (horz [text "BOOL"; exp e])
-    | TString -> parens (horz [text "STR"; exp e])
-    | TFun _ -> parens (horz [text "FUN"; exp e])
-    | TObj -> parens (horz [text "OBJ"; exp e])
-    | _ -> exp e 
+and castFn t e store = match t with
+    | TNum -> parens (horz [text "num"; exp e store])
+    | TBool -> parens (horz [text "bool"; exp e store])
+    | TString -> parens (horz [text "string"; exp e store])
+    | TFun _ -> parens (horz [text "fun"; exp e store])
+    | TObj -> parens (horz [text "fields"; exp e store])
+    | _ -> exp e store
+and uncastFn t e store = match t with
+    | TNum -> parens (horz [text "NUM"; exp e store])
+    | TBool -> parens (horz [text "BOOL"; exp e store])
+    | TString -> parens (horz [text "STR"; exp e store])
+    | TFun _ -> parens (horz [text "FUN"; exp e store])
+    | TObj -> parens (horz [text "OBJ"; exp e store])
+    | _ -> exp e store 
 
-and exp e = 
+and exp e store = 
   match e with
-  | Concrete v -> value v
+  | Concrete v -> value v store
   | SId id -> text id
   | SOp1 (op, e) -> 
-    (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exp e])])
+    (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exp e store])])
   | SOp2 (op, e1, e2) ->
     (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); 
-                                        exp e1; text ","; exp e2])])
+                                        exp e1 store; text ","; exp e2 store])])
   | SApp (f, args) ->
-    (squish [exp f; parens (squish (intersperse (text ", ") (map exp args)))])
+    (squish [exp f store; parens (squish (intersperse (text ", ") (map (fun a -> exp a store) args)))])
   | SLet (id, e1) -> 
-    squish [text "let"; text id; text "="; exp e1]
-  | SCastJS (t, e) -> castFn t e
-  | SUncastJS (t, e) -> uncastFn t e
-  | SNot e -> parens (horz [text "!"; exp e])
-  | SAnd es -> parens (horz (text "&&" :: (map exp es)))
-  | SOr es -> parens (horz (text "||" :: (map exp es)))
-  | SAssert e -> parens (horz [text "ASSERT"; exp e])
-  | SImplies (pre, post) -> parens (horz [exp pre; text "=>"; exp post])
+    squish [text "let"; text id; text "="; exp e1 store]
+  | SCastJS (t, e) -> castFn t e store
+  | SUncastJS (t, e) -> uncastFn t e store
+  | SNot e -> parens (horz [text "!"; exp e store])
+  | SAnd es -> parens (horz (text "&&" :: (map (fun e -> exp e store) es)))
+  | SOr es -> parens (horz (text "||" :: (map (fun e -> exp e store) es)))
+  | SAssert e -> parens (horz [text "ASSERT"; exp e store])
+  | SImplies (pre, post) -> parens (horz [exp pre store; text "=>"; exp post store])
   | SIsMissing e ->
-    horz [exp e; text "IS MISSING"]
+    horz [exp e store; text "IS MISSING"]
   | SGetField (id, f) ->
     squish [text id; text "."; text f]
 
-and attrsv { proto = p; code = c; extensible = b; klass = k } =
-  let proto = [horz [text "#proto:"; value p]] in
+and attrsv store { proto = p; code = c; extensible = b; klass = k } =
+  let proto = [horz [text "#proto:"; value p store]] in
   let code = match c with None -> [] 
-    | Some e -> [horz [text "#code:"; value e]] in
+    | Some e -> [horz [text "#code:"; value e store]] in
   brackets (vert (map (fun x -> squish [x; (text ",")])
                     (proto@
                        code@
@@ -98,10 +104,10 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
                         horz [text "#extensible:"; text (string_of_bool b)]])))
     
 (* TODO: print and parse enum and config *)
-and prop (f, prop) = match prop with
+and prop store (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                                        value v; text ","; 
+                                                        value v store; text ","; 
                                                         text "#writable";  
                                                         text (string_of_bool w);
                                                         text ",";
@@ -109,8 +115,8 @@ and prop (f, prop) = match prop with
                                                         text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                                        value g; text ",";
+                                                        value g store; text ",";
                                                         text "#setter";
-                                                        value s])]
+                                                        value s store])]
 ;;
-let to_string v = value v Format.str_formatter; Format.flush_str_formatter(); 
+let to_string v store = value v store Format.str_formatter; Format.flush_str_formatter(); 
