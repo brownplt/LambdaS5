@@ -1,0 +1,11 @@
+let (obj = {[#proto: %%p,]
+            'field1' : {#value 8 , #writable false},
+            'field2' : {#value true , #writable false},
+           }        )
+// obj[%%f]  
+// %%o["f"]
+// %%o[%%f]
+if(prim("<", 10, obj[%%f])){ 1 } else { 2 }
+// if(prim("<", 10, %%s["f"])){ 1 } else { 2 }
+// if(prim("<", 10, %%o[%%f])){ 1 } else { 2 }
+// if(prim("<", 10, %%f())){ 1 } else { 2 }
