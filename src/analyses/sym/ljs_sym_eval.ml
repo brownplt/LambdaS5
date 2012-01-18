@@ -82,8 +82,8 @@ let rec apply p func args pc depth = match func with
 
 let rec get_field p obj1 field getter_params result pc depth = match obj1 with
   | Null -> return Undefined pc (* nothing found *)
-  | ObjCell c -> begin
-    match Store.lookup c pc.store with
+  | ObjCell loc -> begin
+    match sto_lookup loc pc with
     | ObjLit ({proto = pvalue; }, props) -> begin
       try match IdMap.find field props with
       | Data ({ value = v; }, _, _) -> return (result v) pc
@@ -101,19 +101,18 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
                    ^ " " ^ Ljs_sym_pretty.to_string (List.nth getter_params 0) pc.store
                    ^ " " ^ field ^ ")")
 
-
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
-let rec add_field ctx obj field newval result = match obj with
-  | ObjCell c -> begin match Store.lookup c ctx.store with
+let rec add_field obj field newval result pc = match obj with
+  | ObjCell loc -> begin match sto_lookup loc pc with
     | ObjLit ({ extensible = true; } as attrs, props) ->
       begin
         let newO = ObjLit (attrs, IdMap.add field
           (Data ({ value = newval; writable = true; }, true, true))
           props) in
-        result newval ({ctx with store = Store.update c newO ctx.store})
+        result newval (sto_update loc newO pc)
       end
-    | ObjLit _ -> result Undefined ctx(* TODO: Check error in case of non-extensible *)
+    | ObjLit _ -> result Undefined pc(* TODO: Check error in case of non-extensible *)
     | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith ("[interp] add_field given non-object.")
@@ -129,43 +128,43 @@ let rec add_field ctx obj field newval result = match obj with
 
 (* EUpdateField *)
 (* ES5 8.12.4, 8.12.5 *)
-let rec update_field ctx p obj1 obj2 field newval setter_args result depth = match obj1 with
+let rec update_field p obj1 obj2 field newval setter_args result depth pc = match obj1 with
   (* 8.12.4, step 4 *)
-  | Null -> add_field ctx obj2 field newval result
-  | ObjCell c -> begin match Store.lookup c ctx.store with
+  | Null -> add_field obj2 field newval result pc
+  | ObjCell loc -> begin match sto_lookup loc pc with
     | ObjLit ({ proto = pvalue; } as attrs, props) ->
       if (not (IdMap.mem field props)) then
         (* EUpdateField-Proto *)
-        update_field ctx p pvalue obj2 field newval setter_args result depth
+        update_field p pvalue obj2 field newval setter_args result depth pc 
       else begin
         match (IdMap.find field props) with
         | Data ({ writable = true; }, enum, config) ->
           (* This check asks how far down we are in searching *)
           if (not (obj1 == obj2)) then
             (* 8.12.4, last step where inherited.[[writable]] is true *)
-            add_field ctx obj2 field newval result
+            add_field obj2 field newval result pc
           else begin
             (* 8.12.5, step 3, changing the value of a field *)
             let newO = ObjLit (attrs, IdMap.add field
               (Data ({ value = newval; writable = true }, enum, config))
               props) in
-            result newval {ctx with store = Store.update c newO ctx.store}
+            result newval (sto_update loc newO pc)
           end
         | Accessor ({ setter = setterv; }, enum, config) ->
           (* 8.12.5, step 5 *)
-          apply p setterv setter_args ctx depth
+          apply p setterv setter_args pc depth
         | _ -> failwith "Field not writable!"
       end
     | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ 
-                      Ljs_sym_pretty.to_string obj1 ctx.store ^ " " ^ 
-                      Ljs_sym_pretty.to_string obj2 ctx.store ^ " " ^ field ^ " " ^ 
-                      Ljs_sym_pretty.to_string newval ctx.store ^ ")" )
+                      Ljs_sym_pretty.to_string obj1 pc.store ^ " " ^ 
+                      Ljs_sym_pretty.to_string obj2 pc.store ^ " " ^ field ^ " " ^ 
+                      Ljs_sym_pretty.to_string newval pc.store ^ ")" )
 
-let get_attr ctx attr obj field = match obj, field with
-  | ObjCell c, String s -> begin
-    match Store.lookup c ctx.store with
+let get_attr attr obj field pc = match obj, field with
+  | ObjCell loc, String s -> begin
+    match sto_lookup loc pc with
     | ObjLit (attrs, props) ->
       if (not (IdMap.mem s props)) then
         undef
@@ -307,8 +306,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         else begin
           try
             match IdMap.find x env with
-            | VarCell v -> begin
-              match Store.lookup v pc.store with
+            | VarCell loc -> begin
+              match sto_lookup loc pc with
               | Value v -> return v pc
               | ObjLit _ -> failwith "[eval] Somehow storing a ObjLit through a Varcell"
             end
@@ -527,7 +526,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         let rec sym_get_attr attr obj field pc = 
           try
             match (obj, field) with
-            | ObjCell _, String _ -> return (get_attr pc attr obj field) pc
+            | ObjCell _, String _ -> return (get_attr attr obj field pc) pc
             | Sym o_id, String f ->
               let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc in
               (* todo: assert that (SId fn_id) = (Concrete f) *)
@@ -544,7 +543,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
                     also_return (Sym ret_gf)
                       (add_constraint 
-                         (SLet (ret_gf, Concrete (get_attr pc''' attr obj (String fieldName)))) pc''')
+                         (SLet (ret_gf, Concrete (get_attr attr obj (String fieldName) pc'''))) pc''')
                       results)
                      props none)
                   (let none_of = IdMap.fold

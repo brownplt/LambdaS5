@@ -86,10 +86,6 @@ type env = value IdMap.t
 
 let mtPath = { constraints = []; vars = IdMap.empty; store = Store.empty; }
 
-let add_var id ty p = 
-  let { constraints = cs ; vars = vs ; store = s; } = p in
-  { constraints = cs ; vars = IdMap.add id ty vs ; store = s; }
-
 let ty_to_string t = match t with
   | TNull -> "TNull"
   | TUndef -> "TUndef"
@@ -116,24 +112,20 @@ let check_type id t p =
     end
   with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
 
-let add_constraint c p =
-  let { constraints = cs ; vars = vs ; store = s; } = p in
-  { constraints = c :: cs; vars = vs ; store = s; }
-
+let add_var id ty ctx = 
+  { ctx with vars = IdMap.add id ty ctx.vars }
+    
+let add_constraint c ctx =
+  { ctx with constraints = c :: ctx.constraints }
      
-let add_constraints cs p = 
-  let { constraints = cs'; vars = vs ; store = s; } = p in
-  { constraints = List.rev_append cs cs'; vars = vs; store = s; }
-
+let add_constraints cs ctx =
+  { ctx with constraints = List.rev_append cs ctx.constraints }
 
 let sto_alloc v ctx = 
-  let { constraints = cs; vars = vs ; store = sto; } = ctx in
-  let (loc, sto') = Store.alloc v sto in
-  (loc, { constraints = cs; vars = vs ; store = sto'; })
+  let (loc, sto) = Store.alloc v ctx.store in
+  (loc, { ctx with store = sto })
 
 let sto_update loc v ctx = 
-  let { constraints = cs; vars = vs ; store = sto; } = ctx in
-  let sto' = Store.update loc v sto in
-  { constraints = cs; vars = vs ; store = sto'; }
+  { ctx with store = Store.update loc v ctx.store }
 
 let sto_lookup loc ctx = Store.lookup loc ctx.store

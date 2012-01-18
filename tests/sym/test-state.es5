@@ -4,3 +4,5 @@ let (ob = {[#proto: %%p,]
 let (z = true)
 {z := ob[%%f];
  z}
+// { ob["x" = 10];
+//   ob["x"] }
