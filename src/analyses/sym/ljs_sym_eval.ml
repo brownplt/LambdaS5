@@ -14,8 +14,8 @@ open Str
 
 
 (* monad *)
-let return v (pc : path) = ([(v,pc)], [])
-let throw v (pc : path) = ([], [(v, pc)])
+let return v (pc : ctx) = ([(v,pc)], [])
+let throw v (pc : ctx) = ([], [(v, pc)])
 let also_return v pc (rets,exns) = ((v,pc)::rets,exns)
 let also_throw v pc (rets,exns) = (rets,(v,pc)::exns)
 let combine (r1,e1) (r2,e2) = (List.rev_append r1 r2, List.rev_append e1 e2)
@@ -274,7 +274,7 @@ let get_attr attr obj field = match obj, field with
 (*   | _ -> false *)
     
 
-let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresult list = 
+let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if (depth >= maxDepth) then none
@@ -379,11 +379,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
         bind 
           (eval f env pc)
           (fun (f_val, pc_f) ->
-            let args_pcs : (value list * path) list * (exval * path) list =
+            let args_pcs : (value list * ctx) list * (exval * ctx) list =
               List.fold_left 
                 (fun avpcs arg ->
                   bind avpcs
-                    (fun ((argvs : value list), (pcs : path)) -> 
+                    (fun ((argvs : value list), (pcs : ctx)) -> 
                       bind 
                         (eval arg env pcs)
                         (fun (argv, pcs') ->
@@ -393,9 +393,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
               (fun (argvs, pcs) ->
                 match f_val with
                 | Sym f -> 
-                  let ((fid : string), (fpc : path)) = fresh_var "F" (TFun (List.length argvs)) pcs in
+                  let ((fid : string), (fpc : ctx)) = fresh_var "F" (TFun (List.length argvs)) pcs in
                   let (argvs : sym_exp list) = List.map val_sym argvs in
-                  let ((vs : sym_exp list), (pcs' : path)) = List.fold_left
+                  let ((vs : sym_exp list), (pcs' : ctx)) = List.fold_left
                     (fun (vals, p) exp -> (vals@[exp], p))
                     ([], fpc) argvs in
                   let (res_id, res_pc) = fresh_var "AP" TAny pcs' in 
@@ -495,36 +495,37 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
       end
         
       | S.GetAttr (p, attr, obj, field) ->
-        let rec sym_get_attr attr obj field pc =
-          match (obj, field) with
-          | ObjCell _, String _ -> return (get_attr attr obj field) pc
-          | Sym o_id, String f ->
-            let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc in
-            (* todo: assert that (SId fn_id) = (Concrete f) *)
-            sym_get_attr attr obj (Sym fn_id) pc'
-          | ObjCell c, Sym f_id ->
-            let (_, props) = !c in
-            combine
-              (IdMap.fold (fun fieldName _ results ->
-                let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
-                let pc'' = add_constraint
-                  (SAssert (SApp(SId "=",
-                                 [SId f_id; SId fn_id]))) pc' in
-                let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
-                also_return (Sym ret_gf)
-                  (add_constraint (SLet (ret_gf, Concrete (get_attr attr obj field))) pc''') results)
-                 props none)
-              (let none_of = IdMap.fold
-                 (fun fieldName _ pc ->
-                   let (fn_id, pc) = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
-                   add_constraint
-                     (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id);
-                                                     SCastJS (TString, SId fn_id)])))) pc)
-                 props pc in
-               let (ret_gf, pc''') = fresh_var "GF_" TAny none_of in
-               return (Sym ret_gf)
-                 (add_constraint (SLet (ret_gf, Concrete undef)) pc'''))
-          | Sym o_id, Sym f_id ->
+        let rec sym_get_attr attr obj field pc = 
+          try
+            match (obj, field) with
+            | ObjCell _, String _ -> return (get_attr attr obj field) pc
+            | Sym o_id, String f ->
+              let (fn_id, pc') = fresh_var ("FN_" ^ f) TString pc in
+              (* todo: assert that (SId fn_id) = (Concrete f) *)
+              sym_get_attr attr obj (Sym fn_id) pc'
+            | ObjCell c, Sym f_id ->
+              let (_, props) = !c in
+              combine
+                (IdMap.fold (fun fieldName _ results ->
+                  let (fn_id, pc') = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                  let pc'' = add_constraint
+                    (SAssert (SApp(SId "=",
+                                   [SId f_id; SId fn_id]))) pc' in
+                  let (ret_gf, pc''') = fresh_var "GF_" TAny pc'' in
+                  also_return (Sym ret_gf)
+                    (add_constraint (SLet (ret_gf, Concrete (get_attr attr obj (String fieldName)))) pc''') results)
+                   props none)
+                (let none_of = IdMap.fold
+                   (fun fieldName _ pc ->
+                     let (fn_id, pc) = fresh_var ("FN_" ^ fieldName ^ "_") TString pc in
+                     add_constraint
+                       (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id);
+                                                       SCastJS (TString, SId fn_id)])))) pc)
+                   props pc in
+                 let (ret_gf, pc''') = fresh_var "GF_" TAny none_of in
+                 return (Sym ret_gf)
+                   (add_constraint (SLet (ret_gf, Concrete undef)) pc'''))
+            | Sym o_id, Sym f_id ->
               let pc_types = check_type o_id TObj (check_type f_id TString pc) in
               let (fn_id, pc') = fresh_var ("FN_" ^ f_id ^ "_") TString pc_types in
               let (ret_gf, pc'') = fresh_var "GF_" TAny pc' in
@@ -563,9 +564,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : path) : result list * exresul
                 let pc_present = check_type fn_id TAccessor pc_present in
                 let pc' = add_constraint (SLet (ret_gf, SApp(SId "setter", [SId fn_id]))) pc_present in
                 also_return (Sym ret_gf) pc' missing)
-          | _ -> failwith ("[interp] GetAttr got a non-object or a non-string field name: (get-attr "
-                           ^ Ljs_sym_pretty.to_string obj ^ " "
-                           ^  Ljs_sym_pretty.to_string field ^ ")")
+            | _ -> failwith ("[interp] GetAttr got a non-object or a non-string field name: (get-attr "
+                             ^ Ljs_sym_pretty.to_string obj ^ " "
+                             ^  Ljs_sym_pretty.to_string field ^ ")")
+          with TypeError _ -> none
         in
         bind (eval obj env pc)
           (fun (obj_val, pc_obj) ->

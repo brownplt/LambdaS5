@@ -146,7 +146,7 @@ let log_z3 = true
 (* communicating with Z3 *)
 
 
-let is_sat (p : path) : bool =
+let is_sat (p : ctx) : bool =
   let z3prelude = "\
 (declare-sort Str)
 (declare-sort Fun)

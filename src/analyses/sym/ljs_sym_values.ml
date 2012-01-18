@@ -18,6 +18,7 @@ type jsType =
 type typeEnv = jsType IdMap.t
 exception TypeError of string
 
+
 type value =
   | Null
   | Undefined
@@ -25,17 +26,35 @@ type value =
   | String of string
   | True
   | False
-  (* A VarCell can contain an ObjCell, but not vice versa.  This
-     mimics the semantics of heap-like object refs alongside mutable
-     variables *)
   | VarCell of value ref 
-  (* Objects shouldn't have VarCells in them, but can have any of
-     the other kinds of values *)
   | ObjCell of (attrsv * (propv IdMap.t)) ref
-  | Closure of (value list -> path -> int -> (result list * exresult list))
-  | Sym of id (* symbolic expression *)
-and 
-  sym_exp = (* a-normal form: nested sym_exp are only SId or Concrete *)
+  | Closure of (value list -> ctx -> int -> (result list * exresult list))
+  | Sym of id (* symbolic value *)
+and
+  attrsv = { code : value option;
+             proto : value;
+             extensible : bool;
+             klass : string;
+             primval : value option; }
+and
+  propv = 
+  | Data of datav * bool * bool
+  | Accessor of accessorv * bool * bool
+and datav = { value : value; writable : bool; }
+and accessorv = { getter : value; setter : value; }
+   
+and exval = 
+  | Break of label * value
+  | Throw of value
+and label = string
+
+and result = value * ctx
+and exresult = exval * ctx
+and ctx = { constraints : sym_exp list;
+            vars : typeEnv ; }
+
+(* language of constraints *)
+and sym_exp =
   | Concrete of value 
   | SId of id
   | SOp1 of string * sym_exp
@@ -51,31 +70,7 @@ and
   | SImplies of sym_exp * sym_exp
   | SIsMissing of sym_exp
   | SGetField of id * id
-and result = value * path
-and exval = 
-  | Break of label * value
-  | Throw of value
-and label = string
-and exresult = exval * path
 
-
-and path = { constraints : sym_exp list;
-             vars : typeEnv ; }
-
-and var = id * string
-
-and
-  attrsv = { code : value option;
-             proto : value;
-             extensible : bool;
-             klass : string;
-             primval : value option; }
-and
-  propv = 
-  | Data of datav * bool * bool
-  | Accessor of accessorv * bool * bool
-and datav = { value : value; writable : bool; }
-and accessorv = { getter : value; setter : value; }
 
 let d_attrsv = { primval = None;
                  code = None; 
