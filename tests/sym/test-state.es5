@@ -1,0 +1,6 @@
+let (ob = {[#proto: %%p,]
+           'x' : {#value 1, #writable false}, 
+           'y' : {#value 23, #writable false}})
+let (z = true)
+{z := ob[%%f];
+ z}
