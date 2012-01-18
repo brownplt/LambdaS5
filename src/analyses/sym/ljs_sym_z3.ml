@@ -164,12 +164,12 @@ let is_sat (p : ctx) : bool =
    (NUM (n Real))
    (UNDEF)
    (NULL)
-   (ABSENT)
    (BOOL (b Bool))
    (STR (s Str))
    (FUN (f Fun))
    (OBJ (fields Fields)))
   (Prop
+   (ABSENT)
    (Data (value JS) (writable Bool) (enumerable Bool) (config Bool))
    (Accessor (getter JS) (setter JS) (enumerable Bool) (config Bool)))))
 (declare-fun js2Field ((Array Str Prop)) Fields)

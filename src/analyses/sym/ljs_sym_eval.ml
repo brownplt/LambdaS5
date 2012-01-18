@@ -621,14 +621,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             | Sym o_id, Sym f_id ->
               let pc_types = check_type o_id TObj (check_type f_id TString pc) in
               let (ret_gf, pc'') = fresh_var "GF_" TAny pc_types in
-              let true_pc =
+              let true_data_pc =
                 add_constraints [(SAssert (SNot (SIsMissing (SGetField (o_id, f_id)))));
-                                 (SLet (ret_gf, SGetField (o_id, f_id)))] pc'' in
+                                 (SLet (ret_gf, SApp(SId "value", [SGetField (o_id, f_id)])))] pc'' in
               let false_pc =
                 add_constraints [(SAssert (SIsMissing (SGetField (o_id, f_id))));
                                  (SLet (ret_gf, SOp2 ("get_field", SId o_id, SId f_id)))] pc''
               in
-              also_return (Sym ret_gf) true_pc
+              also_return (Sym ret_gf) true_data_pc
                 (return (Sym ret_gf)  false_pc)
             | ObjCell loc, Sym f -> begin
               match sto_lookup loc pc with
