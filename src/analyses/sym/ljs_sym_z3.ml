@@ -20,7 +20,11 @@ let rec value v store =
   match v with
   | Null -> text "NULL"
   | Undefined -> text "UNDEF"
-  | Num n -> parens (horz [text "NUM"; text (string_of_float n)])
+  | Num n -> 
+    if (n = infinity) then text "(NUM inf)"
+    else if (n = neg_infinity) then text "(NUM neg_inf)"
+    else if (n <> n) then text "(NUM NaN)"
+    else parens (horz [text "NUM"; text (string_of_float n)])
   | String s -> parens (horz [text "STR"; text ("\"" ^ s ^ "\"")])
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
@@ -40,25 +44,25 @@ and cell c store =
   | ObjLit o ->
     let (avs, props) = o in
     (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
-    parens (horz [text "OBJ";
-                  List.fold_left (fun acc (f, p) ->
-                    let value = 
-                      match p with
-                      | Data ({value=v; writable=w}, enum, config) -> value v store
-                      (* horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value";  *)
-                      (*                                                     value v; text ",";  *)
-                      (*                                                     text "#writable";   *)
-                      (*                                                     text (string_of_bool w); *)
-                      (*                                                     text ","; *)
-                      (*                                                     text "#configurable"; *)
-                      (*                                                     text (string_of_bool config)])] *)
-                      | Accessor ({getter=g; setter=s}, enum, config) -> text "DUMMY" 
-                    (* horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter"; *)
-                    (*                                                     value g; text ","; *)
-                    (*                                                     text "#setter"; *)
-                    (*                                                     value s])] *)
-                    in parens (vert [horz[text "store"; acc]; horz[text f; value]])) 
-                    (text "mtObj") (IdMap.bindings props)])
+    parens (
+      horz [text "OBJ";
+            parens 
+              (horz [text "js2Field";
+                     List.fold_left (fun acc (f, p) ->
+                       let value = 
+                         match p with
+                         | Data ({value=v; writable=w}, enum, config) -> 
+                           parens (horz [text "Data"; (value v store); 
+                                         text (string_of_bool w);
+                                         text (string_of_bool enum); 
+                                         text (string_of_bool config)])
+                         | Accessor ({getter=g; setter=s}, enum, config) -> 
+                           parens (horz [text "Accessor";  (value g store);
+                                         (value s store);
+                                         text (string_of_bool enum); 
+                                         text (string_of_bool config)])
+                       in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text f]); value]]))
+                    (text "mtObj") (IdMap.bindings props)])])
 
 
 (* and prim verbose p =  *)
@@ -145,6 +149,25 @@ and prop store (f, prop) = match prop with
                                                         value s store])]
 ;;
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
+
+
+let is_num t l = SApp(SId "isNum", [t; l])
+let is_undef t l = SApp(SId "isUndef", [t; l])
+let is_null t l = SApp(SId "isNull", [t; l])
+let is_absent t l = SApp(SId "isAbsent", [t; l])
+let is_bool t l = SApp(SId "isBool", [t; l])
+let is_str t l = SApp(SId "isStr", [t; l])
+let is_fun t l = SApp(SId "isFun", [t; l])
+let is_objcell t l = SApp(SId "isObjCell", [t; l])
+let is_varcell t l = SApp(SId "isVarCell", [t; l])
+let is_obj t l = SApp(SId "isObj", [t; l])
+
+let lookup_store t l = SApp(SId "lookup", [t; l])
+
+let lookup_field o f = SApp(SId "lookupField", [o; f])
+let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])
+let update_dataField o f v = SApp(SId "updateField", [o; f; v])
+
   
   
 let log_z3 = true
@@ -177,34 +200,40 @@ let is_sat (p : ctx) : bool =
 (assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))
 (declare-fun get_field (Fields Str) Prop)
 (declare-fun get_attr (Fields Str Attr) JS)
+(declare-fun typeof (JS) Str)
+(declare-fun prim->str (JS) Str)
+(declare-fun hasOwnProperty (Fields Str) Bool)
+(declare-const mtObj (Array Str Prop))
+(assert (= mtObj ((as const (Array Str Prop)) ABSENT)))
+(define-fun neg_inf () Real (- 0.0 1234567890.984321))
+(define-fun inf () Real 12345678.321)
+(define-fun NaN () Real 876545689.24565432)
 " in
 
-  (* (declare-const mtObj Fields)\n\
-     (assert (= (field2js mtObj) ((as const (Array Str JS)) ABSENT)))  *)
 
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   let { constraints = cs; vars = vs; store = store } = p in      
   if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
   IdMap.iter
-    (fun id tp -> 
+    (fun id (tp, hint) -> 
       let assertion =
         match tp with
-        | TNull -> Printf.sprintf "(assert (= %s NULL))\n" id
-        | TUndef -> Printf.sprintf "(assert (= %s UNDEF))\n" id
-        | TString -> Printf.sprintf "(assert (exists ((s Str)) (= %s (STR s))))\n" id
-        | TBool -> Printf.sprintf "(assert (exists ((b Bool)) (= %s (BOOL b))))\n" id
-        | TNum -> Printf.sprintf "(assert (exists ((n Real)) (= %s (NUM n))))\n" id
+        | TNull -> Printf.sprintf "(assert (is-NULL %s))\n" id
+        | TUndef -> Printf.sprintf "(assert (i-UNDEF %s))\n" id
+        | TString -> Printf.sprintf "(assert (is-STR %s))\n" id
+        | TBool -> Printf.sprintf "(assert (is-BOOL %s))\n" id
+        | TNum -> Printf.sprintf "(assert (is-NUM %s))\n" id
         | TObj -> Printf.sprintf "(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id
-        | TFun arity -> Printf.sprintf "(assert (exists ((f Fun)) (= %s (FUN f))))\n" id
+        | TFun arity -> Printf.sprintf "(assert (is-FUN %s))\n" id
         | TAny -> ""
         | TData -> Printf.sprintf 
-          "(assert (exists ((v JS) (w Bool) (e Bool) (c Bool)) (= %s (Data v w e c))))\n" id
+          "(assert (is-Data %s))\n" id
         | TAccessor -> Printf.sprintf
-          "(assert (exists ((g JS) (s JS) (e Bool) (c Bool)) (= %s (Accessor g s e c))))\n" id
+          "(assert (is-Accessor %s))\n" id
       in
-      if log_z3 then Printf.printf "(declare-const %s JS)\n" id;
-      output_string outch (Printf.sprintf "(declare-const %s JS)\n" id);
+      if log_z3 then Printf.printf "(declare-const %s JS) ;; \"%s\"\n" id hint;
+      output_string outch (Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n" id hint);
       if log_z3 then Printf.printf "%s" assertion;
       output_string outch assertion;
     )

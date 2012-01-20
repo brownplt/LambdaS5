@@ -1,0 +1,264 @@
+let (ob = {[#proto: %%p,]
+           'x' : {#value 1, #writable true}, 
+           'y' : {#value 2, #writable false}})  
+if(prim("stx=",ob[%%s],1)) {
+  ob["x" = 2];
+  if (prim("stx=", ob[%%t], 2)) { %%t } else { false }
+} else {
+ %%s
+}
+
+/*
+// output
+
+false:
+(assert (not (b %%P2_stx=_19)))
+(assert (= %%P2_stx=_19 (BOOL (= %%GF_14 (NUM 2.)))))
+(assert (= %%GF_14 (value (get_field (fields %%p) (s %%t)))))
+(assert (= (select (field2js (fields %%p)) (s %%t)) ABSENT))
+(assert (not (= (s %%t) (s %%FN_y_13))))
+(assert (not (= (s %%t) (s %%FN_x_12))))
+(assert (b %%P2_stx=_11))
+(assert (= %%P2_stx=_11 (BOOL (= %%GF_5 (NUM 1.)))))
+(assert (= %%GF_5 (NUM 1.)))
+(assert (= %%s %%FN_x_4))
+
+%%t:
+(assert (b %%P2_stx=_19))
+(assert (= %%P2_stx=_19 (BOOL (= %%GF_14 (NUM 2.)))))
+(assert (= %%GF_14 (value (get_field (fields %%p) (s %%t)))))
+(assert (= (select (field2js (fields %%p)) (s %%t)) ABSENT))
+(assert (not (= (s %%t) (s %%FN_y_13))))
+(assert (not (= (s %%t) (s %%FN_x_12))))
+(assert (b %%P2_stx=_11))
+(assert (= %%P2_stx=_11 (BOOL (= %%GF_5 (NUM 1.)))))
+(assert (= %%GF_5 (NUM 1.)))
+(assert (= %%s %%FN_x_4))
+
+false:
+(assert (not (b %%P2_stx=_20)))
+(assert (= %%P2_stx=_20 (BOOL (= %%GF_14 (NUM 2.)))))
+(assert (= %%GF_14 (value (select (field2js (fields %%p)) (s %%t)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%t)) ABSENT)))
+(assert (not (= (s %%t) (s %%FN_y_13))))
+(assert (not (= (s %%t) (s %%FN_x_12))))
+(assert (b %%P2_stx=_11))
+(assert (= %%P2_stx=_11 (BOOL (= %%GF_5 (NUM 1.)))))
+(assert (= %%GF_5 (NUM 1.)))
+(assert (= %%s %%FN_x_4))
+
+%%t:
+(assert (b %%P2_stx=_20))
+(assert (= %%P2_stx=_20 (BOOL (= %%GF_14 (NUM 2.)))))
+(assert (= %%GF_14 (value (select (field2js (fields %%p)) (s %%t)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%t)) ABSENT)))
+(assert (not (= (s %%t) (s %%FN_y_13))))
+(assert (not (= (s %%t) (s %%FN_x_12))))
+(assert (b %%P2_stx=_11))
+(assert (= %%P2_stx=_11 (BOOL (= %%GF_5 (NUM 1.)))))
+(assert (= %%GF_5 (NUM 1.)))
+(assert (= %%s %%FN_x_4))
+
+%%t:
+(assert (b %%P2_stx=_21))
+(assert (= %%P2_stx=_21 (BOOL (= %%GF_18 (NUM 2.)))))
+(assert (= %%GF_18 (NUM 2.)))
+(assert (= %%t %%FN_y_17))
+(assert (b %%P2_stx=_11))
+(assert (= %%P2_stx=_11 (BOOL (= %%GF_5 (NUM 1.)))))
+(assert (= %%GF_5 (NUM 1.)))
+(assert (= %%s %%FN_x_4))
+
+%%t:
+(assert (b %%P2_stx=_22))
+(assert (= %%P2_stx=_22 (BOOL (= %%GF_16 (NUM 2.)))))
+(assert (= %%GF_16 (NUM 2.)))
+(assert (= %%t %%FN_x_15))
+(assert (b %%P2_stx=_11))
+(assert (= %%P2_stx=_11 (BOOL (= %%GF_5 (NUM 1.)))))
+(assert (= %%GF_5 (NUM 1.)))
+(assert (= %%s %%FN_x_4))
+
+%%s:
+(assert (not (b %%P2_stx=_10)))
+(assert (= %%P2_stx=_10 (BOOL (= %%GF_7 (NUM 1.)))))
+(assert (= %%GF_7 (NUM 2.)))
+(assert (= %%s %%FN_y_6))
+
+false:
+(assert (not (b %%P2_stx=_30)))
+(assert (= %%P2_stx=_30 (BOOL (= %%GF_25 (NUM 2.)))))
+(assert (= %%GF_25 (value (get_field (fields %%p) (s %%t)))))
+(assert (= (select (field2js (fields %%p)) (s %%t)) ABSENT))
+(assert (not (= (s %%t) (s %%FN_y_24))))
+(assert (not (= (s %%t) (s %%FN_x_23))))
+(assert (b %%P2_stx=_9))
+(assert (= %%P2_stx=_9 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (select (field2js (fields %%p)) (s %%s)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%s)) ABSENT)))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_30))
+(assert (= %%P2_stx=_30 (BOOL (= %%GF_25 (NUM 2.)))))
+(assert (= %%GF_25 (value (get_field (fields %%p) (s %%t)))))
+(assert (= (select (field2js (fields %%p)) (s %%t)) ABSENT))
+(assert (not (= (s %%t) (s %%FN_y_24))))
+(assert (not (= (s %%t) (s %%FN_x_23))))
+(assert (b %%P2_stx=_9))
+(assert (= %%P2_stx=_9 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (select (field2js (fields %%p)) (s %%s)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%s)) ABSENT)))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+false:
+(assert (not (b %%P2_stx=_31)))
+(assert (= %%P2_stx=_31 (BOOL (= %%GF_25 (NUM 2.)))))
+(assert (= %%GF_25 (value (select (field2js (fields %%p)) (s %%t)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%t)) ABSENT)))
+(assert (not (= (s %%t) (s %%FN_y_24))))
+(assert (not (= (s %%t) (s %%FN_x_23))))
+(assert (b %%P2_stx=_9))
+(assert (= %%P2_stx=_9 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (select (field2js (fields %%p)) (s %%s)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%s)) ABSENT)))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_31))
+(assert (= %%P2_stx=_31 (BOOL (= %%GF_25 (NUM 2.)))))
+(assert (= %%GF_25 (value (select (field2js (fields %%p)) (s %%t)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%t)) ABSENT)))
+(assert (not (= (s %%t) (s %%FN_y_24))))
+(assert (not (= (s %%t) (s %%FN_x_23))))
+(assert (b %%P2_stx=_9))
+(assert (= %%P2_stx=_9 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (select (field2js (fields %%p)) (s %%s)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%s)) ABSENT)))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_32))
+(assert (= %%P2_stx=_32 (BOOL (= %%GF_29 (NUM 2.)))))
+(assert (= %%GF_29 (NUM 2.)))
+(assert (= %%t %%FN_y_28))
+(assert (b %%P2_stx=_9))
+(assert (= %%P2_stx=_9 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (select (field2js (fields %%p)) (s %%s)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%s)) ABSENT)))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_33))
+(assert (= %%P2_stx=_33 (BOOL (= %%GF_27 (NUM 2.)))))
+(assert (= %%GF_27 (NUM 2.)))
+(assert (= %%t %%FN_x_26))
+(assert (b %%P2_stx=_9))
+(assert (= %%P2_stx=_9 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (select (field2js (fields %%p)) (s %%s)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%s)) ABSENT)))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%s:
+(assert (not (b %%P2_stx=_9)))
+(assert (= %%P2_stx=_9 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (select (field2js (fields %%p)) (s %%s)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%s)) ABSENT)))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+false:
+(assert (not (b %%P2_stx=_41)))
+(assert (= %%P2_stx=_41 (BOOL (= %%GF_36 (NUM 2.)))))
+(assert (= %%GF_36 (value (get_field (fields %%p) (s %%t)))))
+(assert (= (select (field2js (fields %%p)) (s %%t)) ABSENT))
+(assert (not (= (s %%t) (s %%FN_y_35))))
+(assert (not (= (s %%t) (s %%FN_x_34))))
+(assert (b %%P2_stx=_8))
+(assert (= %%P2_stx=_8 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (get_field (fields %%p) (s %%s)))))
+(assert (= (select (field2js (fields %%p)) (s %%s)) ABSENT))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_41))
+(assert (= %%P2_stx=_41 (BOOL (= %%GF_36 (NUM 2.)))))
+(assert (= %%GF_36 (value (get_field (fields %%p) (s %%t)))))
+(assert (= (select (field2js (fields %%p)) (s %%t)) ABSENT))
+(assert (not (= (s %%t) (s %%FN_y_35))))
+(assert (not (= (s %%t) (s %%FN_x_34))))
+(assert (b %%P2_stx=_8))
+(assert (= %%P2_stx=_8 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (get_field (fields %%p) (s %%s)))))
+(assert (= (select (field2js (fields %%p)) (s %%s)) ABSENT))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+false:
+(assert (not (b %%P2_stx=_42)))
+(assert (= %%P2_stx=_42 (BOOL (= %%GF_36 (NUM 2.)))))
+(assert (= %%GF_36 (value (select (field2js (fields %%p)) (s %%t)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%t)) ABSENT)))
+(assert (not (= (s %%t) (s %%FN_y_35))))
+(assert (not (= (s %%t) (s %%FN_x_34))))
+(assert (b %%P2_stx=_8))
+(assert (= %%P2_stx=_8 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (get_field (fields %%p) (s %%s)))))
+(assert (= (select (field2js (fields %%p)) (s %%s)) ABSENT))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_42))
+(assert (= %%P2_stx=_42 (BOOL (= %%GF_36 (NUM 2.)))))
+(assert (= %%GF_36 (value (select (field2js (fields %%p)) (s %%t)))))
+(assert (not (= (select (field2js (fields %%p)) (s %%t)) ABSENT)))
+(assert (not (= (s %%t) (s %%FN_y_35))))
+(assert (not (= (s %%t) (s %%FN_x_34))))
+(assert (b %%P2_stx=_8))
+(assert (= %%P2_stx=_8 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (get_field (fields %%p) (s %%s)))))
+(assert (= (select (field2js (fields %%p)) (s %%s)) ABSENT))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_43))
+(assert (= %%P2_stx=_43 (BOOL (= %%GF_40 (NUM 2.)))))
+(assert (= %%GF_40 (NUM 2.)))
+(assert (= %%t %%FN_y_39))
+(assert (b %%P2_stx=_8))
+(assert (= %%P2_stx=_8 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (get_field (fields %%p) (s %%s)))))
+(assert (= (select (field2js (fields %%p)) (s %%s)) ABSENT))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%t:
+(assert (b %%P2_stx=_44))
+(assert (= %%P2_stx=_44 (BOOL (= %%GF_38 (NUM 2.)))))
+(assert (= %%GF_38 (NUM 2.)))
+(assert (= %%t %%FN_x_37))
+(assert (b %%P2_stx=_8))
+(assert (= %%P2_stx=_8 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (get_field (fields %%p) (s %%s)))))
+(assert (= (select (field2js (fields %%p)) (s %%s)) ABSENT))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+%%s:
+(assert (not (b %%P2_stx=_8)))
+(assert (= %%P2_stx=_8 (BOOL (= %%GF_3 (NUM 1.)))))
+(assert (= %%GF_3 (value (get_field (fields %%p) (s %%s)))))
+(assert (= (select (field2js (fields %%p)) (s %%s)) ABSENT))
+(assert (not (= (s %%s) (s %%FN_y_2))))
+(assert (not (= (s %%s) (s %%FN_x_1))))
+
+*/

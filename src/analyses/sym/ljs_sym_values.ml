@@ -15,7 +15,7 @@ type jsType =
   | TData
   | TAccessor
 
-type typeEnv = jsType IdMap.t
+type typeEnv = (jsType * string) IdMap.t
 exception TypeError of string
 
 
@@ -74,7 +74,6 @@ and sym_exp =
   | SIsMissing of sym_exp
   | SGetField of id * id
 
-
 let d_attrsv = { primval = None;
                  code = None; 
                  proto = Undefined; 
@@ -98,23 +97,42 @@ let ty_to_string t = match t with
   | TData -> "TData"
   | TAccessor -> "TAccessor"
 
+let add_var id ty hint ctx = 
+  { ctx with vars = IdMap.add id (ty, hint) ctx.vars }
+
+let has_var id ctx = 
+  IdMap.mem id ctx.vars
+
+let fresh_var = 
+  let count = ref 0 in
+  (fun prefix t hint pc ->
+    incr count;
+    let nvar = "%%" ^ prefix ^ (string_of_int !count) in
+    (nvar, (add_var nvar t hint pc)))
+
+let const_string f pc = 
+  let str = "S_" ^ f in
+  if has_var str pc then (str, pc)
+  else (str, (add_var str TString f pc))
+
+let add_const_str pc s =
+  let (s_id, pc') = const_string s pc in
+  (Sym s_id, pc')
+
 
 let check_type id t p =
   let { constraints = cs ; vars = vs; store = s; } = p in
   try 
-    let found = IdMap.find id vs in
-    if found = t then p
+    let (found, hint) = IdMap.find id vs in
+    if t = TAny or found = t then p
     else if found = TAny then
-      { constraints = cs ; vars = IdMap.add id t vs ; store = s; }
+      { constraints = cs ; vars = IdMap.add id (t, hint) vs ; store = s; }
     else begin 
       Printf.printf "Known type of %s is %s, wanted %s\n" id (ty_to_string found) (ty_to_string t);
       raise (TypeError id)
     end
   with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
 
-let add_var id ty ctx = 
-  { ctx with vars = IdMap.add id ty ctx.vars }
-    
 let add_constraint c ctx =
   { ctx with constraints = c :: ctx.constraints }
      
