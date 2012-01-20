@@ -47,7 +47,7 @@ and cell c store =
     parens (
       horz [text "OBJ";
             parens 
-              (horz [text "js2Field";
+              (horz [text "Array2Fields";
                      List.fold_left (fun acc (f, p) ->
                        let value = 
                          match p with
@@ -99,6 +99,8 @@ and exp e store =
     | _ -> e in
   match e with
   | Concrete v -> value v store
+  | STime t -> int t
+  | SLoc l -> text (Store.print_loc l)
   | SId id -> text id
   | SOp1 (op, e) -> 
     let (t, ret) = Ljs_sym_delta.typeofOp1 op in
@@ -120,7 +122,7 @@ and exp e store =
   | SIsMissing e ->
     parens (horz [text "="; exp e store; text "ABSENT"])
   | SGetField (id, f) ->
-    uncastFn TAny (parens(horz [text "select"; (parens(horz [text "field2js"; castFn TObj (text id);])); castFn TString (text f)]))
+    uncastFn TAny (parens(horz [text "select"; (parens(horz [text "Fields2Array"; castFn TObj (text id);])); castFn TString (text f)]))
 
 and attrsv store { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p store]] in
@@ -177,29 +179,100 @@ let log_z3 = true
 
 let is_sat (p : ctx) : bool =
   let z3prelude = "\
+(set-option :produce-models true)
+(set-option :auto-config false)
+(set-option :model-compact true)
+
 (declare-sort Str)
 (declare-sort Fun)
 (declare-sort Fields)
+
+(define-sort Time () Int)
+(define-sort Loc () Int)
+
 (declare-datatypes ()
- ((Attr Config Enum Writable Value Getter Setter)))
+                   ((Attr Config Enum Writable Value Getter Setter)))
 (declare-datatypes ()
- ((JS
-   (NUM (n Real))
-   (UNDEF)
-   (NULL)
-   (BOOL (b Bool))
-   (STR (s Str))
-   (FUN (f Fun))
-   (OBJ (fields Fields)))
-  (Prop
-   (ABSENT)
-   (Data (value JS) (writable Bool) (enumerable Bool) (config Bool))
-   (Accessor (getter JS) (setter JS) (enumerable Bool) (config Bool)))))
-(declare-fun js2Field ((Array Str Prop)) Fields)
-(declare-fun field2js (Fields) (Array Str Prop))
-(assert (forall ((f Fields)) (= (js2Field (field2js f)) f)))
+                   ((JS
+                     (NUM (n Real))
+                     (UNDEF)
+                     (NULL)
+                     (BOOL (b Bool))
+                     (STR (s Str))
+                     (FUN (f Fun))
+                     (OBJCELL (oc Loc))
+                     (OBJ (fields Fields)))))
+(declare-datatypes ()
+                   ((Prop
+                     (ABSENT)
+                     (Data (value JS) (writable Bool) (enumerable Bool) (config Bool))
+                     (Accessor (getter JS) (setter JS) (enumerable Bool) (config Bool)))))
+(declare-fun Array2Fields ((Array Str Prop)) Fields)
+(declare-fun Fields2Array (Fields) (Array Str Prop))
 (declare-fun get_field (Fields Str) Prop)
 (declare-fun get_attr (Fields Str Attr) JS)
+
+(declare-const sto (Array Time (Array Loc JS)))
+;; (assert (= (select sto 0) ((as const (Array Loc JS)) UNDEF)))
+
+(define-fun lookup ((t Time) (l Loc)) JS
+  (select (select sto t) l))
+
+(define-fun isObj ((o JS)) Bool
+  (and
+   (is-OBJ o)
+   (exists ((a (Array Str Prop)))
+           (and (= (Array2Fields a) (fields o))
+                (= a (Fields2Array (fields o)))))
+   (= (fields o) (Array2Fields (Fields2Array (fields o))))))
+
+(define-fun lookupField ((o JS) (f JS)) Prop
+  (select (Fields2Array (fields o)) (s f)))
+(define-fun hasValue ((o JS) (f JS) (v JS)) Bool
+  (and
+   (isObj o)
+   (is-Data (lookupField o f))
+   (= (value (lookupField o f)) v)))
+(define-fun addFieldPre ((o JS) (f JS)) Bool
+  (and (isObj o) (is-ABSENT (lookupField o f))))
+
+(define-fun addFieldPost ((o2 JS) (o JS) (f JS) (v JS) (w Bool) (e Bool) (c Bool)) Bool
+  (let ((updated (store (Fields2Array (fields o)) (s f) (Data v w e c))))
+    (and
+     (exists ((f Fields)) (and (= (Fields2Array f) updated) (= f (Array2Fields (Fields2Array f)))))
+     (hasValue o2 f v)
+     (= (fields o) (Array2Fields (Fields2Array (fields o))))
+     (= (fields o2) (Array2Fields (Fields2Array (fields o2))))
+     (= o2 (OBJ (Array2Fields updated)))
+     (= updated (Fields2Array (Array2Fields updated)))
+     (= (Array2Fields updated) (Array2Fields (Fields2Array (Array2Fields updated))))
+     (= (Fields2Array (fields o2)) updated)
+     (= (Array2Fields (store updated (s f) (lookupField o f))) (fields o))
+     )))
+
+(define-fun updateData ((p Prop) (v JS)) Prop
+  (Data v (writable p) (enumerable p) (config p)))
+
+(define-fun updateFieldPre ((o JS) (f JS)) Bool
+  (and (isObj o) (is-Data (lookupField o f))))
+
+(define-fun updateFieldPost ((o2 JS) (o JS) (f JS) (v JS)) Bool
+  (let ((updated (store (Fields2Array (fields o)) (s f) (updateData (lookupField o f) v))))
+    (and
+     (exists ((f Fields)) (and (= (Fields2Array f) updated) (= f (Array2Fields (Fields2Array f)))))
+     (hasValue o2 f v)
+     (= (fields o) (Array2Fields (Fields2Array (fields o))))
+     (= (fields o2) (Array2Fields (Fields2Array (fields o2))))
+     (= o2 (OBJ (Array2Fields updated)))
+     (= (Array2Fields updated) (Array2Fields (Fields2Array (Array2Fields updated))))
+     (= (Fields2Array (fields o2)) updated)
+     (= (Array2Fields (store updated (s f) (lookupField o f))) (fields o))
+     )))
+
+(define-fun heapUpdatedAt ((t Time) (l Loc)) Bool
+  (= (select sto t)
+     (store (select sto (- t 1)) l (lookup t l))))
+
 (declare-fun typeof (JS) Str)
 (declare-fun prim->str (JS) Str)
 (declare-fun hasOwnProperty (Fields Str) Bool)
@@ -219,21 +292,19 @@ let is_sat (p : ctx) : bool =
     (fun id (tp, hint) -> 
       let assertion =
         match tp with
-        | TNull -> Printf.sprintf "(assert (is-NULL %s))\n" id
-        | TUndef -> Printf.sprintf "(assert (i-UNDEF %s))\n" id
-        | TString -> Printf.sprintf "(assert (is-STR %s))\n" id
-        | TBool -> Printf.sprintf "(assert (is-BOOL %s))\n" id
-        | TNum -> Printf.sprintf "(assert (is-NUM %s))\n" id
-        | TObj -> Printf.sprintf "(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id
-        | TFun arity -> Printf.sprintf "(assert (is-FUN %s))\n" id
-        | TAny -> ""
+        | TNull -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NULL %s))\n" id hint id
+        | TUndef -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (i-UNDEF %s))\n" id hint id
+        | TString -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-STR %s))\n" id hint id
+        | TBool -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-BOOL %s))\n" id hint id
+        | TNum -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NUM %s))\n" id hint id
+        | TObj -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id hint id
+        | TFun arity -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-FUN %s))\n" id hint id
+        | TAny -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n" id hint
         | TData -> Printf.sprintf 
-          "(assert (is-Data %s))\n" id
+          "(declare-const %s Prop) ;; \"%s\"\n(assert (is-Data %s))\n" id hint id
         | TAccessor -> Printf.sprintf
-          "(assert (is-Accessor %s))\n" id
+          "(declare-const %s Prop) ;; \"%s\"\n(assert (is-Accessor %s))\n" id hint id
       in
-      if log_z3 then Printf.printf "(declare-const %s JS) ;; \"%s\"\n" id hint;
-      output_string outch (Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n" id hint);
       if log_z3 then Printf.printf "%s" assertion;
       output_string outch assertion;
     )

@@ -1,32 +1,32 @@
 %defineGlobalAccessors("ob");
 let (%context = let (%ob1 = undefined)
-                    {[#proto: %global,
-                      #class: "Object",
-                      #extensible: true,]
-                     'ob' : {#getter func(this , args)
-                                     {label %ret :
-                                      {break %ret %ob1}} ,
-                             #setter func(this , args)
-                                     {label %ret :
-                                      {break %ret %ob1 := args["0" , {[#proto: %ArrayProto,
-                                                                    #class: "Array",
-                                                                    #extensible: true,]
-                                                                    }]}}}})
+		    {[#proto: %global,
+		      #class: "Object",
+		      #extensible: true,]
+		     'ob' : {#getter func(this , args)
+				     {label %ret :
+				      {break %ret %ob1}} ,
+			     #setter func(this , args)
+				     {label %ret :
+				      {break %ret %ob1 := args["0" , {[#proto: %ArrayProto,
+								    #class: "Array",
+								    #extensible: true,]
+								    }]}}}})
     let (%this = %context)
-        {%EnvCheckAssign(%context,
-                         "ob",
-                         {[#proto: %ObjectProto,
-                           #class: "Object",
-                           #extensible: true,]
-                          'x' : {#value 1. , #writable true , #configurable true},
-                          'y' : {#value 2. , #writable true , #configurable true}});
-         %PrimAdd(%PropAccessorCheck(%EnvLookup(%context,
-                                                "ob"))["x" , {[#proto: null,
-                                                               #class: "Object",
-                                                               #extensible: true,]
-                                                              }],
-                  %PropAccessorCheck(%EnvLookup(%context,
-                                                "ob"))["y" , {[#proto: null,
-                                                               #class: "Object",
-                                                               #extensible: true,]
-                                                              }])}
+	{%EnvCheckAssign(%context,
+			 "ob",
+			 {[#proto: %ObjectProto,
+			   #class: "Object",
+			   #extensible: true,]
+			  'x' : {#value 1. , #writable true , #configurable true},
+			  'y' : {#value 2. , #writable true , #configurable true}});
+	 %PrimAdd(%PropAccessorCheck(%EnvLookup(%context,
+						"ob"))[%%x , {[#proto: null,
+							       #class: "Object",
+							       #extensible: true,]
+							      }],
+		  %PropAccessorCheck(%EnvLookup(%context,
+						"ob"))["y" , {[#proto: null,
+							       #class: "Object",
+							       #extensible: true,]
+							      }])}

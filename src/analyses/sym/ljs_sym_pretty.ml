@@ -71,6 +71,8 @@ and uncastFn t e store = match t with
 and exp e store = 
   match e with
   | Concrete v -> value v store
+  | STime t -> horz[text "time:"; int t]
+  | SLoc l -> horz[text "&"; text (Store.print_loc l)]
   | SId id -> text id
   | SOp1 (op, e) -> 
     (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exp e store])])

@@ -14,7 +14,7 @@ let newLoc () : Loc.t =
   loc := !loc + 1;
   !loc
 let distinct loc1 loc2 = (loc1 <> loc2)
-let print_loc loc = "L" ^ (string_of_int loc)
+let print_loc loc = (string_of_int loc)
 type 'a t = 'a LocMap.t
 let empty = LocMap.empty
 let alloc valu store = 
