@@ -156,7 +156,7 @@ let prevent_extensions ctx obj = match obj with
     match sto_lookup o ctx with
     | ObjLit (attrs, props) ->
       let newO = ObjLit ({attrs with extensible = false}, props) in
-      (obj, sto_update o newO ctx)
+      (obj, sto_update o newO ctx )
     | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
     end
   | Sym _ -> failwith "prim got a symbolic exp"
