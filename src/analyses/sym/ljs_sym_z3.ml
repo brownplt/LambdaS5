@@ -25,7 +25,7 @@ let rec value v store =
     else if (n = neg_infinity) then text "(NUM neg_inf)"
     else if (n <> n) then text "(NUM NaN)"
     else parens (horz [text "NUM"; text (string_of_float n)])
-  | String s -> parens (horz [text "STR"; text ("\"" ^ s ^ "\"")])
+  | String s -> parens (horz [text "STR"; text ("S_" ^ s)]) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
   | VarCell v -> cell (Store.lookup v store) store

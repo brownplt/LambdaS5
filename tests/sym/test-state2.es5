@@ -1,8 +1,8 @@
-let (ob = {[#proto: %%p,]
+let (ob = {[#proto: null,]
            'x' : {#value 1, #writable true}, 
            'y' : {#value 2, #writable false}})  
 if(prim("stx=",ob[%%s],1)) {
-  ob["x" = 2];
+  ob["x" = %%z];
   if (prim("stx=", ob[%%t], 2)) { %%t } else { false }
 } else {
  %%s
