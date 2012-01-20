@@ -25,7 +25,7 @@ let rec value v store =
     else if (n = neg_infinity) then text "(NUM neg_inf)"
     else if (n <> n) then text "(NUM NaN)"
     else parens (horz [text "NUM"; text (string_of_float n)])
-  | String s -> parens (horz [text "STR"; text ("S_" ^ s)]) (* for now; this doesn't support spaces... *)
+  | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
   | VarCell v -> cell (Store.lookup v store) store
@@ -61,7 +61,7 @@ and cell c store =
                                          (value s store);
                                          text (string_of_bool enum); 
                                          text (string_of_bool config)])
-                       in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text f]); value]]))
+                       in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text ("S_" ^ f)]); value]]))
                     (text "mtObj") (IdMap.bindings props)])])
 
 
@@ -310,6 +310,12 @@ let is_sat (p : ctx) : bool =
     )
     vs; 
   
+  let distinctStrs = IdMap.fold
+    (fun id (tp, hint) acc -> if tp = TString then id ^ " " ^ acc else acc)
+    vs "" in
+  if log_z3 then Printf.printf "(assert (distinct %s))\n" distinctStrs;
+  output_string outch (Printf.sprintf "(assert (distinct %s))\n" distinctStrs);
+
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc pc = 
     if log_z3 then Printf.printf "%s\n" (to_string pc store);
