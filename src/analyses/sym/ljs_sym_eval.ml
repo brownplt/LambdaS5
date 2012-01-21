@@ -97,7 +97,7 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
 
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
-let rec add_field obj field newval result pc = match obj with
+let add_field obj field newval result pc = match obj with
   | ObjCell loc -> begin match sto_lookup loc pc with
     | ObjLit ({ extensible = true; } as attrs, props) ->
       begin
@@ -681,6 +681,84 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
       | S.SetField (p, obj, f, v, args) ->
         Printf.printf "******* In SetField\n";
+        let sym_add_field objSet field newval result pc = 
+          match objSet, field with
+          | ObjCell loc, String f -> add_field objSet f newval result pc
+          | ObjCell loc, Sym f_id -> begin match sto_lookup loc pc with
+            | ObjLit ({ extensible = true; }, _) ->  (* as attrs, props *)
+              return (result newval) pc (* TODO *)
+              (* begin *)
+              (*   let newO = ObjLit (attrs, IdMap.add fieldName *)
+              (*     (Data ({ value = newval; writable = true }, true, true)) *)
+              (*     props) in *)
+              (*   also_return (Sym ret_gf) *)
+              (*     (add_constraint (SLet (ret_gf, Concrete (result v)))  *)
+              (*        (let (z3field, pc') = const_string fieldName pc in *)
+              (*         (sto_add_field loc newO (Sym z3field) (Concrete (result v)) true true true pc'))) results *)
+              (* end *)
+            | ObjLit _ -> return (result Undefined) pc (* TODO: Check error in case of non-extensible *)
+            | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+          end
+          | Sym _, _ -> failwith "[sym_add_field] Sym obj case not yet implemented"
+          | _ -> failwith "[sym_add_field] should not have happened"
+        in
+        let sym_set_target_field objSet fieldName curPropValue newval setter_args result pc depth results =
+          match objSet with
+          | ObjCell loc ->
+            let (ret_gf, pc') = fresh_var "SF_" TAny 
+              ("@" ^ (Store.print_loc loc) ^ "[\"" ^ fieldName ^ "\" = a value]")
+              pc in
+            begin 
+              match sto_lookup loc pc with
+              | Value _ -> failwith "[sym_set_target_field] Somehow stored a Value through an ObjCell"
+              | ObjLit (attrs, props) ->
+                match curPropValue with
+                | Data ({ value = v; }, enum, config) ->
+                  let newO = ObjLit (attrs, IdMap.add fieldName
+                    (Data ({ value = newval; writable = true }, enum, config))
+                    props) in
+                  also_return (Sym ret_gf)
+                    (add_constraint (SLet (ret_gf, Concrete (result v))) 
+                       (let (z3field, pc'') = const_string fieldName pc' in
+                        (sto_update_field loc newO (Sym z3field) (Concrete (result v)) pc''))) results
+                | Accessor ({ setter = s; }, _, _) ->
+                  combine (apply p s setter_args pc' depth) results
+            end
+          | _ -> failwith "[sym_set_target_field] Should not have happened"
+        in
+        let rec sym_set_field p objCheck objSet field newval setter_args result pc depth = 
+          match objCheck, field with
+          | Null, _ -> sym_add_field objSet field newval result pc 
+          | ObjCell loc, String s ->
+            update_field p objCheck objSet s newval setter_args result pc depth
+          | ObjCell loc, Sym f_id -> begin
+            match sto_lookup loc pc with
+            | ObjLit ({proto = pvalue;}, props) ->
+              combine
+                (IdMap.fold (fun fieldName curPropValue results ->
+                  let (fn_id, pc') = const_string fieldName pc in
+                  Printf.printf "***** FieldName : %s, fn_id : %s\n" fieldName fn_id;
+                  let pc'' = add_constraint
+                    (SAssert (SApp(SId "=",
+                                   [SId f_id; SId fn_id]))) pc' in
+                  sym_set_target_field objSet fieldName curPropValue newval setter_args result pc'' depth results) props none)
+                (let none_of = IdMap.fold
+                   (fun fieldName _ pc ->
+                     let (fn_id, pc) = const_string fieldName pc in 
+                     add_constraint
+                       (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id); 
+                                                       SCastJS (TString, SId fn_id)])))) pc)
+                   props pc in
+                 sym_set_field p pvalue objSet field newval setter_args result none_of depth)
+            | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+          end
+          | Sym o_id, String s ->
+            Printf.printf "***** IN SetField(Sym %s, String %s)\n" o_id s;
+            let (fn_id, pc') = const_string s pc in 
+            sym_set_field p objCheck objSet (Sym fn_id) newval setter_args result pc' depth
+          | Sym o_id, Sym f_id -> failwith "[sym_set_field] Sym/Sym case not yet implemented"
+          | _ -> failwith "[sym_set_field] should not have happened"
+        in
         bind (eval obj env pc) 
           (fun (objv, pc_o) -> 
             bind (eval f env pc_o) 
@@ -689,14 +767,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (fun (vv, pc_v) -> 
                     bind (eval args env pc_v)
                       (fun (argvs, pc_a) ->
-                        match (objv, fv) with 
-                        | (ObjCell o, String s) ->
-                          Printf.printf "Got String %s in SetField\n" s;
-                          update_field p objv objv s vv [objv; argvs] (fun x -> x) pc_a depth
-                        | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-                                         (* ^ string_of_position p ^ " : "  *)
-                                         ^ (Ljs_sym_pretty.to_string objv pc_a.store) 
-                                         ^ ",\n" ^ (Ljs_sym_pretty.to_string fv pc_a.store))))))
+                        sym_set_field p objv objv fv vv [objv; argvs] (fun x -> x) pc_a depth))))
 
       | S.SetAttr (p, attr, obj, field, newval) ->
         bind (eval obj env pc)

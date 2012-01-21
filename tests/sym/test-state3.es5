@@ -1,0 +1,19 @@
+let (ob = {[#proto: null,]
+           'a' : {#value 1, #writable true}})
+let (x = {[#proto: null,]})
+{
+    ob["a" = x];
+    x["f" = 10];
+    x["f" = 20];
+    if (prim("stx=", ob[%%s], 1)){ 1 } else { ob[%%s] }
+}
+
+// let (ob = {[#proto: null,]
+//            'x' : {#value 1, #writable true}, 
+//            'y' : {#value 2, #writable false}})  
+// if(prim("stx=",ob[%%s],1)) {
+//     ob["x" = %%z];
+//     if (prim("stx=", ob[%%t], 2)) { %%t } else { false }
+// } else {
+//         %%s
+// }
