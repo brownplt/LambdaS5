@@ -25,9 +25,9 @@ let typeof ctx v = add_const_str ctx (begin match v with
   | True 
   | False -> "boolean"
   | ObjCell o -> begin match (sto_lookup o ctx) with
-    | ObjLit ({ code = Some cexp }, _) -> "function"
-    | ObjLit _ -> "object"
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ code = Some cexp }, _), _ -> "function"
+    | ObjLit _, _ -> "object"
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Closure _ -> "lambda"
   | VarCell _ -> failwith "[delta] typeof got a variable"
@@ -122,10 +122,10 @@ end, ctx)
 
 let is_callable ctx obj = (bool begin match obj with
   | ObjCell o -> begin match (sto_lookup o ctx) with
-    | ObjLit ({ code = Some (Closure c); }, _) -> true
-    | ObjLit ({ code = Some (Sym _); }, _) -> failwith "prim got a symbolic exp"
-    | ObjLit _ -> false
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ code = Some (Closure c); }, _), _ -> true
+    | ObjLit ({ code = Some (Sym _); }, _), _ -> failwith "prim got a symbolic exp"
+    | ObjLit _, _ -> false
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> false
@@ -143,9 +143,9 @@ let print ctx v =
 let is_extensible ctx obj = (begin
   match obj with
   | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ extensible = true; }, _) -> True
-    | ObjLit _ -> False
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ extensible = true; }, _), _ -> True
+    | ObjLit _, _ -> False
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-extensible")
@@ -154,10 +154,10 @@ end, ctx)
 let prevent_extensions ctx obj = match obj with
   | ObjCell o -> begin
     match sto_lookup o ctx with
-    | ObjLit (attrs, props) ->
+    | ObjLit (attrs, props), ctx ->
       let newO = ObjLit ({attrs with extensible = false}, props) in
       (obj, sto_update o newO ctx )
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
     end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "prevent-extensions")
@@ -165,9 +165,9 @@ let prevent_extensions ctx obj = match obj with
 let get_code ctx obj = (begin
   match obj with
   | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ code = Some v; }, _) -> v
-    | ObjLit ({ code = None; }, _) -> Null
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ code = Some v; }, _), _ -> v
+    | ObjLit ({ code = None; }, _), _ -> Null
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "get-code")
@@ -176,8 +176,8 @@ end, ctx)
 let get_proto ctx obj = (begin
   match obj with
   | ObjCell o -> begin match sto_lookup o ctx with 
-    | ObjLit ({ proto = pvalue; }, _) -> pvalue
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ proto = pvalue; }, _), _ -> pvalue
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | v -> raise (PrimError ("get-proto got: " ^ Ljs_sym_pretty.to_string v ctx.store))
@@ -186,9 +186,9 @@ end, ctx)
 let get_primval ctx obj = (begin 
   match obj with
   | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ primval = Some v; }, _) -> v
-    | ObjLit _ -> raise (PrimError "get-primval on an object with no prim val")
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ primval = Some v; }, _), _ -> v
+    | ObjLit _, _ -> raise (PrimError "get-primval on an object with no prim val")
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "get-primval")
@@ -197,8 +197,8 @@ end , ctx)
 let get_class ctx obj = (begin
   match obj with
   | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ klass = s; }, _) -> String (s)
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ klass = s; }, _), _ -> String (s)
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "get-class")
@@ -211,10 +211,10 @@ let rec get_property_names ctx obj = match obj with
     let folder o set = begin match o with
       | ObjCell o' -> begin
 	match sto_lookup o' ctx with
-        | ObjLit (attrs, props) ->
+        | ObjLit (attrs, props), _ ->
 	  IdMap.fold (fun k v s -> 
 	    if enum v then IdSet.add k s else s) props set
-        | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+        | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
       end
       | _ -> set (* non-object prototypes don't contribute *) 
     end in
@@ -236,8 +236,8 @@ let rec get_property_names ctx obj = match obj with
 and all_protos ctx o = 
   match o with
   | ObjCell c -> begin match sto_lookup c ctx with 
-    | ObjLit ({ proto = pvalue; }, _) -> pvalue::(all_protos ctx pvalue)
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ proto = pvalue; }, _), ctx -> pvalue::(all_protos ctx pvalue)
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> []
@@ -249,7 +249,7 @@ and enum prop = match prop with
 let get_own_property_names ctx obj = match obj with
   | ObjCell o -> begin
     match sto_lookup o ctx with
-    | ObjLit (_, props) ->
+    | ObjLit (_, props), ctx ->
       let add_name n x m = 
         IdMap.add (string_of_int x) 
           (Data ({ value = String n; writable = false; }, false, false)) 
@@ -266,7 +266,7 @@ let get_own_property_names ctx obj = match obj with
       in
       let (newLoc, ctx') = sto_alloc (ObjLit (d_attrsv, final_props)) ctx in
       (ObjCell newLoc, ctx')
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "own-property-names")
@@ -276,8 +276,8 @@ let get_own_property_names ctx obj = match obj with
 let object_to_string ctx obj = add_const_str ctx begin
   match obj with
   | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ klass = s }, _) -> "[object " ^ s ^ "]"
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ klass = s }, _), _ -> "[object " ^ s ^ "]"
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
@@ -286,9 +286,9 @@ end
 let is_array ctx obj = (begin
   match obj with
   | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ klass = "Array"; }, _) -> True
-    | ObjLit _ -> False
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit ({ klass = "Array"; }, _), _ -> True
+    | ObjLit _, _ -> False
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")
@@ -527,8 +527,8 @@ let abs_eq ctx v1 v2 = (bool begin
 end, ctx)
 
 let rec has_property ctx obj field = match obj, field with
-  | ObjCell o, String s -> begin match sto_lookup o ctx, s with
-    | ObjLit ({ proto = pvalue; }, props), s ->
+  | ObjCell o, String s -> begin match sto_lookup o ctx with
+    | ObjLit ({ proto = pvalue; }, props), ctx ->
       if (IdMap.mem s props) then (bool true, ctx)
       else has_property ctx pvalue field
     | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
@@ -540,8 +540,8 @@ let rec has_property ctx obj field = match obj, field with
 let has_own_property ctx obj field = match obj, field with
   | ObjCell o, String s -> begin
     match sto_lookup o ctx with
-    | ObjLit (attrs, props) -> (bool (IdMap.mem s props), ctx)
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | ObjLit (attrs, props), ctx -> (bool (IdMap.mem s props), ctx)
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | ObjCell o, _ -> raise (PrimError "has-own-property: field not a string")
   | _, String s -> raise (PrimError ("has-own-property: obj not an object for field " ^ s))
@@ -628,7 +628,7 @@ end, ctx)
 let rec is_accessor ctx a b = match a, b with
   | ObjCell o, String s -> begin
     match sto_lookup o ctx with
-    | ObjLit (attrs, props) -> 
+    | ObjLit (attrs, props), ctx -> 
       if IdMap.mem s props
       then let prop = IdMap.find s props in
            match prop with
@@ -636,7 +636,7 @@ let rec is_accessor ctx a b = match a, b with
            | Accessor _ -> (True, ctx)
       else let pr = match attrs with { proto = p } -> p in
            is_accessor ctx pr b
-    | Value _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Null, String s -> raise (PrimError "isAccessor topped out")
   | Sym _, _ 

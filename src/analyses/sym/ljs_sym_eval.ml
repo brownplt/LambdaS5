@@ -78,7 +78,7 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
   | Null -> return Undefined pc (* nothing found *)
   | ObjCell loc -> begin
     match sto_lookup loc pc with
-    | ObjLit ({proto = pvalue; }, props) -> begin
+    | ObjLit ({proto = pvalue; }, props), pc -> begin
       try match IdMap.find field props with
       | Data ({ value = v; }, _, _) -> return (result v) pc
       | Accessor ({ getter = g; }, _, _) ->
@@ -87,7 +87,7 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
       with Not_found ->
         get_field p pvalue field getter_params result pc depth
     end
-    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+    | Value _, _ -> failwith "[interp][get_field] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith (interp_error p
                      "get_field on a non-object.  The expression was (get-field "
@@ -99,15 +99,15 @@ let rec get_field p obj1 field getter_params result pc depth = match obj1 with
 (* ES5 8.12.5, step 6 *)
 let add_field obj field newval result pc = match obj with
   | ObjCell loc -> begin match sto_lookup loc pc with
-    | ObjLit ({ extensible = true; } as attrs, props) ->
+    | ObjLit ({ extensible = true; } as attrs, props), pc ->
       begin
         let newO = ObjLit (attrs, IdMap.add field
           (Data ({ value = newval; writable = true; }, true, true))
           props) in
         return (result newval) (sto_update loc newO pc)
       end
-    | ObjLit _ -> return (result Undefined) pc(* TODO: Check error in case of non-extensible *)
-    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+    | ObjLit _, _ -> return (result Undefined) pc(* TODO: Check error in case of non-extensible *)
+    | Value _, _ -> failwith "[interp][add_field] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith ("[interp] add_field given non-object.")
 
@@ -126,7 +126,7 @@ let rec update_field p obj1 obj2 field newval setter_args result pc depth = matc
   (* 8.12.4, step 4 *)
   | Null -> add_field obj2 field newval result pc
   | ObjCell loc -> begin match sto_lookup loc pc with
-    | ObjLit ({ proto = pvalue; } as attrs, props) ->
+    | ObjLit ({ proto = pvalue; } as attrs, props), pc ->
       if (not (IdMap.mem field props)) then
         (* EUpdateField-Proto *)
         update_field p pvalue obj2 field newval setter_args result pc depth 
@@ -150,7 +150,7 @@ let rec update_field p obj1 obj2 field newval setter_args result pc depth = matc
           apply p setterv setter_args pc depth
         | _ -> failwith "Field not writable!"
       end
-    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+    | Value _, _ -> failwith "[interp][set_field] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ 
                       Ljs_sym_pretty.to_string obj1 pc.store ^ " " ^ 
@@ -160,7 +160,7 @@ let rec update_field p obj1 obj2 field newval setter_args result pc depth = matc
 let get_attr attr obj field pc = match obj, field with
   | ObjCell loc, String s -> begin
     match sto_lookup loc pc with
-    | ObjLit (attrs, props) ->
+    | ObjLit (attrs, props), pc ->
       if (not (IdMap.mem s props)) then
         undef
       else
@@ -175,7 +175,7 @@ let get_attr attr obj field pc = match obj, field with
         | Accessor ({ setter = sv; }, _, _), S.Setter -> sv
         | _ -> failwith "bad access of attribute"
         end
-    | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+    | Value _, _ -> failwith "[interp][get_attr] Somehow storing a Value through an ObjCell"
   end
   | _ -> failwith ("[interp] get-attr didn't get an object and a string.")
 
@@ -195,8 +195,8 @@ let get_attr attr obj field pc = match obj, field with
 *)
 let rec set_attr attr obj field newval pc = match obj, field with
   | ObjCell loc, String f_str -> begin match sto_lookup loc pc with
-    | Value _ -> failwith "[eval] set_attr found a Value through an ObjCell"
-    | ObjLit ({ extensible = ext; } as attrsv, props) ->
+    | Value _, _ -> failwith "[eval] set_attr found a Value through an ObjCell"
+    | ObjLit ({ extensible = ext; } as attrsv, props), pc ->
       if not (IdMap.mem f_str props) then
         if ext then
           let newprop = match attr with
@@ -304,8 +304,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             match IdMap.find x env with
             | VarCell loc -> begin
               match sto_lookup loc pc with
-              | Value v -> return v pc
-              | ObjLit _ -> failwith "[eval] Somehow storing a ObjLit through a Varcell"
+              | Value v, pc -> return v pc
+              | ObjLit _, _ -> failwith "[eval] Somehow storing a ObjLit through a Varcell"
             end
             | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
                                 " at " ^ (string_of_position p) ^ 
@@ -530,7 +530,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               sym_get_attr attr obj (Sym fn_id) pc'
             | ObjCell loc, Sym f_id -> begin
               match sto_lookup loc pc with
-              | ObjLit (_, props) ->
+              | ObjLit (_, props), pc ->
                 combine
                   (IdMap.fold (fun fieldName _ results ->
                     let (fn_id, pc') = const_string fieldName pc in
@@ -555,7 +555,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                      none_of in
                    return (Sym ret_gf)
                      (add_constraint (SLet (ret_gf, Concrete undef)) pc'''))
-              | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+              | Value _, _ -> failwith "[eval][sym_get_attr] Somehow storing a Value through an ObjCell"
             end
             | Sym o_id, Sym f_id ->
               let pc_types = check_type o_id TObj (check_type f_id TString pc) in
@@ -632,7 +632,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             | ObjCell loc, Sym f -> begin
               Printf.printf "***** IN GetField(ObjCell %s, Sym %s)\n" (Store.print_loc loc) f;
               match sto_lookup loc pc with
-              | ObjLit ({proto = pvalue; }, props) ->
+              | ObjLit ({proto = pvalue; }, props), pc ->
                 combine
                   (IdMap.fold (fun fieldName value results ->
                     let (fn_id, pc') = const_string fieldName pc in
@@ -657,7 +657,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                                                          SCastJS (TString, SId fn_id)])))) pc)
                      props pc in
                    sym_get_field p pvalue field getter_params result none_of depth)
-              | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+              | Value _, _ -> failwith "[eval][sym_get_field] Somehow storing a Value through an ObjCell"
             end
             | ObjCell loc, String f ->
               Printf.printf "***** IN GetField(ObjCell %s, String %s)\n" (Store.print_loc loc) f;
@@ -685,7 +685,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           match objSet, field with
           | ObjCell loc, String f -> add_field objSet f newval result pc
           | ObjCell loc, Sym f_id -> begin match sto_lookup loc pc with
-            | ObjLit ({ extensible = true; }, _) ->  (* as attrs, props *)
+            | ObjLit ({ extensible = true; }, _), pc ->  (* as attrs, props *)
               return (result newval) pc (* TODO *)
               (* begin *)
               (*   let newO = ObjLit (attrs, IdMap.add fieldName *)
@@ -696,8 +696,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (*        (let (z3field, pc') = const_string fieldName pc in *)
               (*         (sto_add_field loc newO (Sym z3field) (Concrete (result v)) true true true pc'))) results *)
               (* end *)
-            | ObjLit _ -> return (result Undefined) pc (* TODO: Check error in case of non-extensible *)
-            | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+            | ObjLit _, _ -> return (result Undefined) pc (* TODO: Check error in case of non-extensible *)
+            | Value _, _ -> failwith "[eval][sym_add_field] Somehow storing a Value through an ObjCell"
           end
           | Sym _, _ -> failwith "[sym_add_field] Sym obj case not yet implemented"
           | _ -> failwith "[sym_add_field] should not have happened"
@@ -710,8 +710,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               pc in
             begin 
               match sto_lookup loc pc with
-              | Value _ -> failwith "[sym_set_target_field] Somehow stored a Value through an ObjCell"
-              | ObjLit (attrs, props) ->
+              | Value _, _ -> failwith "[eval][sym_set_target_field] Somehow stored a Value through an ObjCell"
+              | ObjLit (attrs, props), pc ->
                 match curPropValue with
                 | Data ({ value = v; }, enum, config) ->
                   let newO = ObjLit (attrs, IdMap.add fieldName
@@ -733,7 +733,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             update_field p objCheck objSet s newval setter_args result pc depth
           | ObjCell loc, Sym f_id -> begin
             match sto_lookup loc pc with
-            | ObjLit ({proto = pvalue;}, props) ->
+            | ObjLit ({proto = pvalue;}, props), pc ->
               combine
                 (IdMap.fold (fun fieldName curPropValue results ->
                   let (fn_id, pc') = const_string fieldName pc in
@@ -750,13 +750,31 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                                                        SCastJS (TString, SId fn_id)])))) pc)
                    props pc in
                  sym_set_field p pvalue objSet field newval setter_args result none_of depth)
-            | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+            | Value _, _ -> failwith "[eval][sym_set_field] Somehow storing a Value through an ObjCell"
           end
           | Sym o_id, String s ->
             Printf.printf "***** IN SetField(Sym %s, String %s)\n" o_id s;
             let (fn_id, pc') = const_string s pc in 
             sym_set_field p objCheck objSet (Sym fn_id) newval setter_args result pc' depth
-          | Sym o_id, Sym f_id -> failwith "[sym_set_field] Sym/Sym case not yet implemented"
+              
+          | Sym o_id, Sym f_id -> 
+            combine 
+              (Store.fold (fun loc value results ->
+                combine (sym_set_field p (ObjCell loc) (ObjCell loc) 
+                           field newval setter_args result 
+                           (add_constraints [(SAssert (is_equal (SLoc loc) (SId o_id)));
+                                             (SAssert (is_obj (STime pc.time) (SLoc loc)))] pc)
+                           depth)
+                  results)
+                 pc.store none)
+              (let none_of = Store.fold
+                 (fun loc value pc -> 
+                   add_constraint (SAssert (is_not_equal (SLoc loc) (SId o_id))) pc)
+                 pc.store pc in
+               let (obj, pc') = fresh_var "OB" TObj "sym object set field" none_of in
+               let (loc, pc'') = sto_alloc (Value (Sym obj)) pc' in
+               sym_set_field p (ObjCell loc) (ObjCell loc) field newval setter_args result
+                 (add_constraint (SAssert (is_obj (STime pc''.time) (SLoc loc))) pc'') depth)
           | _ -> failwith "[sym_set_field] should not have happened"
         in
         bind (eval obj env pc) 
@@ -907,7 +925,7 @@ let rec eval_expr expr jsonPath maxDepth pc =
         match v with
         | ObjCell loc -> begin
           match sto_lookup loc pc with
-          | ObjLit (attrs, props) ->
+          | ObjLit (attrs, props), pc ->
             begin try
                     match IdMap.find "message" props with
                     | Data ({ value = msg_val; }, _, _) ->
@@ -915,7 +933,7 @@ let rec eval_expr expr jsonPath maxDepth pc =
                     | _ -> (Ljs_sym_pretty.to_string v pc.store)
               with Not_found -> (Ljs_sym_pretty.to_string v pc.store)
             end
-          | Value _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
+          | Value _, _ -> failwith "[eval] Somehow storing a Value through an ObjCell"
         end
         | v -> (Ljs_sym_pretty.to_string v pc.store) in
       throw (str ("Uncaught exception: " ^ err_msg)) pc

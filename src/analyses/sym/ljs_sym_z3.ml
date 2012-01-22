@@ -153,6 +153,9 @@ and prop store (f, prop) = match prop with
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
 
 
+let is_equal a b = SApp (SId "=", [a; b])
+let is_not_equal  a b = SNot (is_equal a b)
+
 let is_num t l = SApp(SId "isNum", [t; l])
 let is_undef t l = SApp(SId "isUndef", [t; l])
 let is_null t l = SApp(SId "isNull", [t; l])

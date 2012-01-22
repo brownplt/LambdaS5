@@ -195,8 +195,9 @@ let sto_update loc v ctx =
   { constraints = cs'; vars = vs; time = t+1; store = Store.update loc v ctx.store }
 
 let sto_lookup loc ctx = 
-  Store.lookup loc ctx.store (* in *)
-  (* match ret with *)
-  (* | Value (Sym id) -> (ret,  *)
-  (*                      add_constraint (SAssert (SApp(SId "stx=", [SId id; SApp(SId "lookup", [STime ctx.time; SLoc loc])]))) ctx) *)
-  (* | _ -> (ret, ctx) *)
+  let ret = Store.lookup loc ctx.store  in 
+  match ret with 
+  | Value (Sym id) -> 
+    (ret,
+     add_constraint (SAssert (SApp(SId "stx=", [SId id; SApp(SId "lookup", [STime ctx.time; SLoc loc])]))) ctx)
+  | _ -> (ret, ctx)
