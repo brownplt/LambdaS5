@@ -7,7 +7,7 @@ import argparse
 
 from single_test import *
 
-result_dir = "results-new"
+result_dir = "results-test"
 
 def testFile(useC3, f):
   def mkRow(typ, message):
@@ -184,7 +184,7 @@ Tests run at %s
       totalSs += int(ssuccess)
       totalSf += int(sfail)
 
-  summary = open(os.path.join(result_dir, 'summary.html'), 'w')
+  summary = open(os.path.join(result_dir, "summary.html"), "w")
   summary.write(html % (str(datetime.datetime.now()), l, totalS, totalS + totalF, totalSs, totalSf, totalSk))
   summary.close()
 
