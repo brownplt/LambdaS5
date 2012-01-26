@@ -127,6 +127,77 @@ let rec fv (s : stmt) : Prelude.IdSet.t =
       | Some x -> IdSetExt.unions (map fv x) in result in
     IdSetExt.unions [init_b; init_c; init_f]
 
+let rec var_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
+  let rec var_vars_expr e = match e with
+    | This _
+    | Id _
+    | Lit _
+    | Array _
+    | Bracket _
+    | Dot _
+    | New _
+    | Prefix _
+    | UnaryAssign _
+    | Infix _
+    | Cond _
+    | Assign _
+    | List _
+    | Call _
+    | Object _ -> IdSet.empty
+    | Paren (_, el) -> IdSetExt.unions (map var_vars_expr el)
+    | Func (_, _, ids, sel) -> IdSet.empty in
+
+  let rec var_vars_stmt s = 
+    let evars ex = match ex with 
+      | None -> IdSet.empty 
+      | Some (exp) -> var_vars_expr exp
+    and svars st = match st with
+      | None -> IdSet.empty
+      | Some (stm) -> var_vars_stmt stm
+    and decl_var (VarDecl (x, _)) = IdSet.singleton x in
+    match s with
+    | Block (_, sl) -> IdSetExt.unions (map var_vars_stmt sl)
+    (* setters/getters for declared vars handled elsewhere *)
+    | Var (_, decls) -> IdSetExt.unions (map decl_var decls)
+    | Empty _ -> IdSet.empty
+    | Expr (_, e) -> var_vars_expr e
+    | If (_, tst, cns, alt) -> 
+      let alt_vars = svars alt in
+      IdSetExt.unions [var_vars_expr tst; var_vars_stmt cns; alt_vars]
+    | DoWhile (_, s, e) | While (_, e, s) -> 
+      IdSet.union (var_vars_stmt s) (var_vars_expr e)
+    | For (_, e1, e2, e3, bdy) ->
+      let found_vars = IdSetExt.unions (map evars [e1; e2; e3]) in
+      IdSet.union found_vars (var_vars_stmt bdy)
+    | ForVar (_, _, e1, e2, bdy) ->
+      let found_vars = IdSetExt.unions (map evars [e1; e2]) in
+      IdSet.union found_vars (var_vars_stmt bdy)
+    | ForIn (_, e1, e2, bdy) ->
+      let found_vars = IdSetExt.unions (map var_vars_expr [e1; e2]) in
+      IdSet.union found_vars (var_vars_stmt bdy)
+    | ForInVar (_, _, e, bdy) ->
+      IdSet.union (var_vars_expr e) (var_vars_stmt bdy)
+    | Labeled (_, _, bdy) -> var_vars_stmt bdy
+    | Continue _ | Break _ -> IdSet.empty
+    | Return (_, e) -> evars e
+    | With _ -> IdSet.empty
+    | Switch (_, e, cl) ->
+      let case_vars c = match c with
+        | Case (_, e, st) -> IdSet.union (var_vars_expr e) (var_vars_stmt st)
+        | Default (_, st) -> var_vars_stmt st in
+      IdSet.union (var_vars_expr e) (IdSetExt.unions (map case_vars cl))
+    | Throw (_, e) -> var_vars_expr e
+    | Try (_, sl, c, f) ->
+      IdSetExt.unions [IdSetExt.unions (map var_vars_stmt sl)]
+    | Debugger _ -> IdSet.empty in
+
+  let var_vars_se se = match se with
+    | Stmt s -> var_vars_stmt s
+    | FuncDecl (nm, args, bdy) -> IdSet.singleton nm in
+
+  match sel with
+    | [] -> IdSet.empty
+    | se :: rest -> IdSet.union (var_vars_se se) (var_vars_sel rest)
 
 (* All identifiers that don't appear in var declarations, so that we can assign
  * to the global object if necessary *)
@@ -142,7 +213,9 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
         | Get (_, sel) | Set (_, _, sel) -> used_vars_sel sel in
       IdSetExt.unions (map mem_var ml)
     | Paren (_, el) -> IdSetExt.unions (map used_vars_expr el)
-    | Func (_, _, _, sel) -> used_vars_sel sel
+    | Func (_, _, ids, sel) ->
+        IdSet.diff (used_vars_sel sel)
+          (IdSet.union (IdSetExt.from_list ids) (var_vars_sel sel))
     | Bracket (_, e1, e2) -> IdSet.union (used_vars_expr e1) (used_vars_expr e2)
     | Dot (_, e1, _) -> used_vars_expr e1
     | New (_, ex, el) -> 
@@ -210,11 +283,12 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
   let used_vars_se se = match se with
     | Stmt s -> used_vars_stmt s
     | FuncDecl (nm, args, bdy) -> 
-      IdSet.union (IdSet.singleton nm) (used_vars_sel bdy) in
+      IdSet.union (IdSet.singleton nm)
+        (IdSet.diff (used_vars_sel bdy) (IdSetExt.from_list args)) in
 
   match sel with
     | [] -> IdSet.empty
-    | se :: rest -> IdSet.union (used_vars_se se) (used_vars_sel rest)
+    | se :: rest -> IdSet.diff (IdSet.union (used_vars_se se) (used_vars_sel rest)) (IdSet.union (var_vars_sel [se]) (var_vars_sel rest))
 
 (* Free vars in a program, without descending into nested functions *)
 let rec fv_sel (sel : srcElt list) : Prelude.IdSet.t = 

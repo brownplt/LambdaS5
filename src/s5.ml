@@ -13,7 +13,12 @@ module S5 = struct
   open Js_to_exprjs
   open Exprjs_to_ljs
   open Exprjs_syntax
+  open Js_syntax
+  open Format
+  open FormatExt
 
+  let srcJS = ref [Js_syntax.Stmt (Js_syntax.Expr (dummy_pos, Js_syntax.Lit
+(dummy_pos, Js_syntax.Null)))]
   let srcES5 = ref (Ljs_syntax.Undefined dummy_pos)
   let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
   let cpsES5 = ref (Ljs_cps.AppRetCont(Ljs_cps.Label.dummy, Ljs_cps.RetId(Ljs_cps.Label.dummy,"fake"), Ljs_cps.Id(dummy_pos,Ljs_cps.Label.dummy,"fake")))
@@ -57,6 +62,15 @@ module S5 = struct
     let envFunc = Ljs.parse_es5_env (open_in path) path in
     srcES5 := envFunc !srcES5
 
+  let load_spidermonkey_js (path : string) : unit = 
+    let ast = SpiderMonkey.parse_spidermonkey (open_in path) path in
+    srcJS := ast
+
+  let get_fvs () : unit =
+    let fvs = Js_syntax.used_vars_sel !srcJS in
+    printf "%s\n" ((FormatExt.to_string (fun lst -> (vert (map text lst))))
+                            (IdSet.elements fvs))
+    
   let desugar_spidermonkey_js (path : string) : unit = 
     let ast = SpiderMonkey.parse_spidermonkey (open_in path) path in
     let (used_ids, exprjsd) = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
@@ -106,6 +120,10 @@ module S5 = struct
       [
         ("-desugar", Arg.String desugar_spidermonkey_js,
         "<file> desugar json ast file");
+        ("-load", Arg.String load_spidermonkey_js,
+        "<file> load file as JavaScript AST");
+        ("-fvs", Arg.Unit get_fvs,
+        "print JavaScript free variables");
         ("-c3desugar", Arg.String desugar_c3_js,
         "<file> desugar json ast file");
         ("-s5", Arg.String load_s5,
