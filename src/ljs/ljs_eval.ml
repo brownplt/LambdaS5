@@ -33,39 +33,18 @@ let apply p func args = match func with
                      ("Applied non-function, was actually " ^ 
 		         pretty_value func))
 
-let rec get_field p obj1 field getter_params result = match obj1 with
-  | Null -> Undefined (* nothing found *)
-  | ObjCell c -> begin match !c with
+let rec get_prop p obj field =
+  match obj with
+    | Null -> None
+    | ObjCell c -> begin match !c with
       | { proto = pvalue; }, props ->
-         try match IdMap.find field props with
-             | Data ({ value = v; }, _, _) -> result v
-             | Accessor ({ getter = g; }, _, _) ->
-               apply p g getter_params
-         (* Not_found means prototype lookup is necessary *)
-         with Not_found ->
-	   get_field p pvalue field getter_params result
-  end
-  | _ -> failwith (interp_error p 
-		     "get_field on a non-object.  The expression was (get-field " 
-		   ^ pretty_value obj1 
-		   ^ " " ^ pretty_value (List.nth getter_params 0)
-		   ^ " " ^ field ^ ")")
-
-
-(* EUpdateField-Add *)
-(* ES5 8.12.5, step 6 *)
-let rec add_field obj field newval result = match obj with
-  | ObjCell c -> begin match !c with
-      | { extensible = true; } as attrs, props ->
-        begin
-	  c := (attrs, IdMap.add field 
-            (Data ({ value = newval; writable = true; }, true, true))
-	    props);
-	  result newval
-        end
-      | _ -> result Undefined(* TODO: Check error in case of non-extensible *)
-  end
-  | _ -> failwith ("[interp] add_field given non-object.")
+         try Some (IdMap.find field props)
+         with Not_found -> get_prop p pvalue field
+      end
+    | _ -> failwith (interp_error p 
+           "get_prop on a non-object.  The expression was (get-prop " 
+         ^ pretty_value obj 
+         ^ " " ^ field ^ ")")
 
 (* Both functions (because a property can satisfy writable and not_writable) *)
 let rec writable prop = match prop with
@@ -75,37 +54,6 @@ let rec writable prop = match prop with
 let rec not_writable prop = match prop with
   | Data ({ writable = false; }, _, _) -> true
   | _ -> false
-
-(* EUpdateField *)
-(* ES5 8.12.4, 8.12.5 *)
-let rec update_field p obj1 obj2 field newval setter_args result = match obj1 with
-    (* 8.12.4, step 4 *)
-  | Null -> add_field obj2 field newval result
-  | ObjCell c -> begin match !c with
-      | { proto = pvalue; } as attrs, props ->
-        if (not (IdMap.mem field props)) then
-          (* EUpdateField-Proto *)
-          update_field p pvalue obj2 field newval setter_args result
-        else
-          match (IdMap.find field props) with
-            | Data ({ writable = true; }, enum, config) ->
-            (* This check asks how far down we are in searching *)
-              if (not (obj1 == obj2)) then
-                (* 8.12.4, last step where inherited.[[writable]] is true *)
-                add_field obj2 field newval result
-              else begin
-                (* 8.12.5, step 3, changing the value of a field *)
-                c := (attrs, IdMap.add field
-                  (Data ({ value = newval; writable = true }, enum, config))
-		  props);
-                result newval
-              end
-            | Accessor ({ setter = setterv; }, enum, config) ->
-              (* 8.12.5, step 5 *)
-              apply p setterv setter_args
-            | _ -> failwith "Field not writable!"
-  end
-  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ pretty_value obj1 ^ " " ^ pretty_value obj2 ^ " " ^ field ^ " " ^ pretty_value newval ^ ")" )
 
 let rec get_attr attr obj field = match obj, field with
   | ObjCell c, String s -> let (attrs, props) = !c in
@@ -207,7 +155,9 @@ let rec set_attr attr obj field newval = match obj, field with
               Accessor (a, unbool new_enum, true)
             | Accessor (a, enum, false), S.Config, False ->
               Accessor (a, enum, false)
-            | _ -> failwith "[interp] bad property set"
+            | _ -> failwith ("[interp] bad property set "
+                    ^ (pretty_value obj) ^ " " ^ f_str ^ " " ^
+                    (S.string_of_attr attr) ^ " " ^ (pretty_value newval))
 	in begin
             c := (attrsv, IdMap.add f_str newprop props);
             true
@@ -288,30 +238,65 @@ let rec eval jsonPath exp env =
 	IdMap.add name (eval_prop prop) m in
 	ObjCell (ref (attrsv,
 		      fold_left eval_prop IdMap.empty props))
+    (* 8.12.4, 8.12.5 *)
   | S.SetField (p, obj, f, v, args) ->
       let obj_value = eval obj env in
       let f_value = eval f env in
       let v_value = eval v env in
       let args_value = eval args env in begin
-	match (obj_value, f_value) with
-	  | (ObjCell o, String s) ->
-	      update_field p obj_value
-		obj_value 
-		s
-		v_value
-		[obj_value; args_value]
-    (fun x -> x)
+        match (obj_value, f_value) with
+          | (ObjCell o, String s) ->
+            let ({extensible=extensible;} as attrs, props) = !o in
+            let prop = get_prop p obj_value s in
+            begin match prop with
+              | Some (Data ({ writable = true; }, enum, config)) ->
+		let (enum, config) = 
+		  if (IdMap.mem s props)
+		  then (enum, config) (* 8.12.5, step 3, changing the value of a field *)
+		  else (true, true) in (* 8.12.4, last step where inherited.[[writable]] is true *)
+                begin
+                  o := (attrs,
+                        IdMap.add s
+                          (Data ({ value = v_value; writable = true },
+                                 enum, config))
+                          props);
+                  v_value
+                end
+              | Some (Data _) -> failwith "Field not writable!"
+              | Some (Accessor ({ setter = setterv; }, enum, config)) ->
+                (* 8.12.5, step 5 *)
+                apply p setterv [obj_value; args_value]
+              | None ->
+                (* 8.12.5, step 6 *)
+                if extensible
+                then begin
+                  o := (attrs,
+                        IdMap.add s 
+                          (Data ({ value = v_value; writable = true; },
+                                 true, true))
+                          props);
+                  v_value
+                end
+                else
+                  Undefined (* TODO: Check error in case of non-extensible *)
+	    end
 	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
 			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
-                             ", " ^ (pretty_value f_value))
-	end
+			     ", " ^ (pretty_value f_value))
+      end
   | S.GetField (p, obj, f, args) ->
       let obj_value = eval obj env in
       let f_value = eval f env in 
       let args_value = eval args env in begin
         match (obj_value, f_value) with
           | (ObjCell o, String s) ->
-              get_field p obj_value s [obj_value; args_value] (fun x -> x)
+            let prop = get_prop p obj_value s in
+            begin match prop with
+              | Some (Data ({value=v;}, _, _)) -> v 
+              | Some (Accessor ({getter=g;},_,_)) ->
+                apply p g [obj_value; args_value]
+              | None -> Undefined
+            end
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
                  ^ string_of_position p 
                  ^ ". Instead, it got " 
