@@ -31,7 +31,7 @@ let apply p func args = match func with
   end
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
-		         pretty_value func))
+                         pretty_value func))
 
 let rec get_prop p obj field =
   match obj with
@@ -58,9 +58,9 @@ let rec not_writable prop = match prop with
 let rec get_attr attr obj field = match obj, field with
   | ObjCell c, String s -> let (attrs, props) = !c in
       if (not (IdMap.mem s props)) then
-	undef
+        undef
       else
-	begin match (IdMap.find s props), attr with 
+        begin match (IdMap.find s props), attr with 
           | Data (_, _, config), S.Config
           | Accessor (_, _, config), S.Config -> bool config
           | Data (_, enum, _), S.Enum
@@ -115,10 +115,10 @@ let rec set_attr attr obj field newval = match obj, field with
           else
             failwith "[interp] Extending inextensible object ."
         else
-	(* 8.12.9: "If a field is absent, then its value is considered
-	to be false" -- we ensure that fields are present and
-	(and false, if they would have been absent). *)
-	  let newprop = match (IdMap.find f_str props), attr, newval with
+        (* 8.12.9: "If a field is absent, then its value is considered
+        to be false" -- we ensure that fields are present and
+        (and false, if they would have been absent). *)
+          let newprop = match (IdMap.find f_str props), attr, newval with
             (* S.Writable true -> false when configurable is false *)
             | Data ({ writable = true } as d, enum, config), S.Writable, new_w -> 
               Data ({ d with writable = unbool new_w }, enum, config)
@@ -158,10 +158,10 @@ let rec set_attr attr obj field newval = match obj, field with
             | _ -> failwith ("[interp] bad property set "
                     ^ (pretty_value obj) ^ " " ^ f_str ^ " " ^
                     (S.string_of_attr attr) ^ " " ^ (pretty_value newval))
-	in begin
+        in begin
             c := (attrsv, IdMap.add f_str newprop props);
             true
-	end
+        end
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
@@ -175,7 +175,7 @@ and fun_obj value = match value with
   end
   | Undefined -> false
   | _ -> false
-	  
+          
 
 let rec eval jsonPath exp env = 
   let eval = eval jsonPath in
@@ -189,25 +189,25 @@ let rec eval jsonPath exp env =
   | S.False _ -> False
   | S.Id (p, x) -> begin
       try
-	match IdMap.find x env with
-	  | VarCell v -> !v
-	  | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
-			     " at " ^ (string_of_position p) ^ 
-			     ", but found something else: " ^ pretty_value (IdMap.find x env))
+        match IdMap.find x env with
+          | VarCell v -> !v
+          | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
+                             " at " ^ (string_of_position p) ^ 
+                             ", but found something else: " ^ pretty_value (IdMap.find x env))
       with Not_found ->
-	failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
-		    (string_of_position p))
+        failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
+                    (string_of_position p))
     end
   | S.SetBang (p, x, e) -> begin
       try
-	match IdMap.find x env with
-	  | VarCell v -> v := eval e env; !v
-	  | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
-			     " at " ^ (string_of_position p) ^ 
-			     ", but found something else.")
+        match IdMap.find x env with
+          | VarCell v -> v := eval e env; !v
+          | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
+                             " at " ^ (string_of_position p) ^ 
+                             ", but found something else.")
       with Not_found ->
-	failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-		    (string_of_position p))
+        failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
+                    (string_of_position p))
     end
   | S.Object (p, attrs, props) -> 
     let attrsv = match attrs with
@@ -235,9 +235,9 @@ let rec eval jsonPath exp env =
         Accessor ({ getter = eval ge env; setter = eval se env}, enum, config)
     in
       let eval_prop m (name, prop) = 
-	IdMap.add name (eval_prop prop) m in
-	ObjCell (ref (attrsv,
-		      fold_left eval_prop IdMap.empty props))
+        IdMap.add name (eval_prop prop) m in
+        ObjCell (ref (attrsv,
+                      fold_left eval_prop IdMap.empty props))
     (* 8.12.4, 8.12.5 *)
   | S.SetField (p, obj, f, v, args) ->
       let obj_value = eval obj env in
@@ -250,10 +250,10 @@ let rec eval jsonPath exp env =
             let prop = get_prop p obj_value s in
             begin match prop with
               | Some (Data ({ writable = true; }, enum, config)) ->
-		let (enum, config) = 
-		  if (IdMap.mem s props)
-		  then (enum, config) (* 8.12.5, step 3, changing the value of a field *)
-		  else (true, true) in (* 8.12.4, last step where inherited.[[writable]] is true *)
+                let (enum, config) = 
+                  if (IdMap.mem s props)
+                  then (enum, config) (* 8.12.5, step 3, changing the value of a field *)
+                  else (true, true) in (* 8.12.4, last step where inherited.[[writable]] is true *)
                 begin
                   o := (attrs,
                         IdMap.add s
@@ -279,10 +279,10 @@ let rec eval jsonPath exp env =
                 end
                 else
                   Undefined (* TODO: Check error in case of non-extensible *)
-	    end
-	  | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-			   ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
-			     ", " ^ (pretty_value f_value))
+            end
+          | _ -> failwith ("[interp] Update field didn't get an object and a string" 
+                           ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
+                             ", " ^ (pretty_value f_value))
       end
   | S.GetField (p, obj, f, args) ->
       let obj_value = eval obj env in
@@ -307,11 +307,11 @@ let rec eval jsonPath exp env =
   | S.DeleteField (p, obj, f) ->
       let obj_val = eval obj env in
       let f_val = eval f env in begin
-	match (obj_val, f_val) with
-	  | (ObjCell c, String s) -> 
+        match (obj_val, f_val) with
+          | (ObjCell c, String s) -> 
             begin match !c with
               | (attrs, props) -> begin try
-		match IdMap.find s props with
+                match IdMap.find s props with
                   | Data (_, _, true) 
                   | Accessor (_, _, true) ->
                     begin
@@ -322,17 +322,17 @@ let rec eval jsonPath exp env =
                 with Not_found -> False
               end
             end
-	  | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
-			   ^ string_of_position p 
-			   ^ ". Instead, it got " 
-			   ^ pretty_value obj_val
-			   ^ " and " 
-			   ^ pretty_value f_val)
-	end
+          | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
+                           ^ string_of_position p 
+                           ^ ". Instead, it got " 
+                           ^ pretty_value obj_val
+                           ^ " and " 
+                           ^ pretty_value f_val)
+        end
   | S.GetAttr (p, attr, obj, field) ->
       let obj_val = eval obj env in
       let f_val = eval field env in
-	get_attr attr obj_val f_val
+        get_attr attr obj_val f_val
   | S.SetAttr (p, attr, obj, field, newval) ->
       let obj_val = eval obj env in
       let f_val = eval field env in
@@ -346,9 +346,9 @@ let rec eval jsonPath exp env =
       op2 op e1_val e2_val
   | S.If (p, c, t, e) ->
       let c_val = eval c env in
-	if (c_val = True)
-	then eval t env
-	else eval e env
+        if (c_val = True)
+        then eval t env
+        else eval e env
   | S.App (p, func, args) -> 
       let func_value = eval func env in
       let args_values = map (fun e -> eval e env) args in
@@ -358,7 +358,7 @@ let rec eval jsonPath exp env =
       eval e2 env
   | S.Let (p, x, e, body) ->
       let e_val = eval e env in
-	eval body (IdMap.add x (VarCell (ref e_val)) env)
+        eval body (IdMap.add x (VarCell (ref e_val)) env)
   | S.Rec (p, x, e, body) ->
     let x' = ref Undefined in
     let ev_val = eval e (IdMap.add x (VarCell x') env) in
@@ -366,10 +366,10 @@ let rec eval jsonPath exp env =
     eval body (IdMap.add x (VarCell (ref ev_val)) env)
   | S.Label (p, l, e) -> begin
       try
-	eval e env
+        eval e env
       with Break (l', v) ->
-	if l = l' then v
-	else raise (Break (l', v))
+        if l = l' then v
+        else raise (Break (l', v))
     end
   | S.Break (p, l, e) ->
       raise (Break (l, eval e env))
@@ -389,11 +389,11 @@ let rec eval jsonPath exp env =
   | S.Throw (p, e) -> raise (Throw (eval e env))
   | S.Lambda (p, xs, e) -> 
       let set_arg arg x m = IdMap.add x (VarCell (ref arg)) m in
-	Closure (fun args -> 
-		     if (List.length args) != (List.length xs) then
-		       arity_mismatch_err p xs args
-		     else
-		       eval e (List.fold_right2 set_arg args xs env))
+        Closure (fun args -> 
+                     if (List.length args) != (List.length xs) then
+                       arity_mismatch_err p xs args
+                     else
+                       eval e (List.fold_right2 set_arg args xs env))
   | S.Eval (p, e) ->
     match eval e env with
       | String s -> eval_op s env jsonPath
