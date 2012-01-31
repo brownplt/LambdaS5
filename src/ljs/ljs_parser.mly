@@ -35,6 +35,7 @@ let with_pos exp pos = match exp with
   | GetField (_, left, right, args) -> GetField (pos, left, right, args)
   | SetField (_, obj, field, value, args) -> SetField (pos, obj, field, value, args)
   | DeleteField (_, obj, field) -> DeleteField (pos, obj, field)
+  | OwnFieldNames (_, obj) -> OwnFieldNames(pos, obj)
   | SetBang (_, id, exp) -> SetBang (pos, id, exp)
   | Op1 (_, op, exp) -> Op1 (pos, op, exp)
   | Op2 (_, op, left, right) -> Op2 (pos, op, left, right)
@@ -64,7 +65,7 @@ let with_pos exp pos = match exp with
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW EQEQEQUALS TYPEOF
   AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION REC WRITABLE GETTER SETTER
-  CONFIG VALUE ENUM LT GT PROTO CODE EXTENSIBLE CLASS EVAL
+  CONFIG VALUE ENUM LT GT PROTO CODE EXTENSIBLE CLASS EVAL GETFIELDS
 
 
 %token EOF
@@ -158,6 +159,8 @@ exp :
  | atom { $1 }
  | exp LPAREN exps RPAREN 
    { App ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $1, $3) }
+ | GETFIELDS LPAREN exp RPAREN
+   { OwnFieldNames ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
  | EVAL LPAREN exp RPAREN
      { Eval ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
  | PRIM LPAREN STRING COMMA unbraced_seq_exp COMMA unbraced_seq_exp RPAREN

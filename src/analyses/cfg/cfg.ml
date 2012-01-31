@@ -434,6 +434,35 @@ let eval (exp : C.cps_exp) =
     | C.Op1(_, _, op, arg) -> 
       let (arg', bindingStore, retStore, exnStore) = eval_val arg env bindingStore retEnv retStore exnEnv exnStore in
       (D.op1 op arg' bindingStore, bindingStore, retStore, exnStore)
+    | C.OwnFieldNames (pos, _, obj) ->
+      let (obj_val, bindingStore, retStore, exnStore) = eval_val obj env bindingStore retEnv retStore exnEnv exnStore in
+      begin match obj_val with
+        | V.Object (_, _, attrs, props) ->
+          let add_name n x m = 
+             ((string_of_int x),
+              (V.Data ({ V.value = V.String (pos, newLabel(), n);
+                         V.writable = false; }, false, false)))::m in
+          let namelist = List.fold_left (fun l (k,v) -> (k :: l)) [] props in
+          let props = 
+            List.fold_right2 add_name namelist
+              (iota (List.length namelist)) []
+          in
+          let d = (float_of_int (List.length namelist)) in
+          let final_props = 
+            ("length",
+              (V.Data ({ V.value = V.Num (pos, newLabel(), d);
+                         V.writable = false; }, false, false)))::props
+          in
+          let attrs' = {
+            V.primval = None;
+            V.code = None; 
+            V.proto = Some (V.Undefined (pos, newLabel()));
+            V.extensible = false; 
+            V.klass = "LambdaJS internal"; } in
+          (V.Object (pos, newLabel(), attrs', final_props),
+           bindingStore, retStore, exnStore)
+        | _ -> failwith "[cpsinterp] OwnFieldNames didn't get an object"
+      end
     | C.Op2(_, _, op, left, right) -> 
       let (left', bindingStore, retStore, exnStore) = eval_val left env bindingStore retEnv retStore exnEnv exnStore in
       let (right', bindingStore, retStore, exnStore) = eval_val right env bindingStore retEnv retStore exnEnv exnStore in

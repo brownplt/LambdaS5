@@ -133,6 +133,7 @@ rule token = parse
    | "#code" { CODE }
    | "#extensible" { EXTENSIBLE }
    | "#class" { CLASS }
+   | "get-own-field-names" { GETFIELDS }    
 
    | ident as x { ID x }
  

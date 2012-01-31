@@ -32,6 +32,7 @@ type exp =
   | GetField of pos * exp * exp * exp (*pos, left, right, args object *)
   | SetField of pos * exp * exp * exp * exp (* pos, obj, field, new val, args *)
   | DeleteField of pos * exp * exp (* pos, obj, field *)
+  | OwnFieldNames of pos * exp
   | SetBang of pos * id * exp
   | Op1 of pos * string * exp
   | Op2 of pos * string * exp * exp
@@ -95,6 +96,7 @@ let pos_of exp = match exp with
   | GetField (pos, _, _, _) -> pos 
   | SetField (pos, _, _, _, _) -> pos 
   | DeleteField (pos, _, _) -> pos
+  | OwnFieldNames (pos, _) -> pos
   | SetBang (pos, _, _) -> pos
   | Op1 (pos, _, _) -> pos
   | Op2 (pos, _, _, _) -> pos

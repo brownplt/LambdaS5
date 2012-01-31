@@ -48,6 +48,8 @@ and prim verbose p =
     label verbose lbl (squish [text "mutPrim"; parens (horz [text ("\"" ^ op ^ "\","); value e])])
   | DeleteField (p,lbl, o, f) ->
     label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])])
+  | OwnFieldNames (p, lbl, obj) ->
+    label verbose lbl (squish [text "get-own-field-names"; parens (value obj)])
 
 and label verbose lbl ret = if verbose then squish [Label.pretty lbl; text ":"; ret] else ret
 

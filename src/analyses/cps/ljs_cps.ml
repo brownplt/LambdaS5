@@ -43,6 +43,7 @@ and cps_prim =
   | MutableOp1 of pos * Label.t * string * cps_value
   | DeleteField of pos * Label.t * cps_value * cps_value (* pos, obj, field *)
   | SetBang of pos * Label.t * id * cps_value
+  | OwnFieldNames of pos * Label.t * cps_value
 
 and cps_exp =
   | LetValue of pos * Label.t * id * cps_value * cps_exp (* let binding of values to variables *)
@@ -114,6 +115,7 @@ let pos_of_prim (prim : cps_prim) = match prim with
 | MutableOp1 (pos, _, _, _) -> pos
 | DeleteField (pos, _, _, _) -> pos
 | SetBang (pos, _, _, _) -> pos
+| OwnFieldNames (pos, _, _) -> pos
 
 let label_of_val (value : cps_value) = match value with
 | Null (_, label) -> label
@@ -144,6 +146,7 @@ let label_of_prim (prim : cps_prim) = match prim with
 | MutableOp1 (_, label, _, _) -> label
 | DeleteField (_, label, _, _) -> label
 | SetBang (_, label, _, _) -> label
+| OwnFieldNames (_, label, _) -> label
 
 
 let pretty_print : (cps_exp -> Format.formatter -> unit) ref = ref (fun _ _ -> ())
@@ -498,6 +501,12 @@ let rec cps (exp : E.exp)
                      RetLam (Label.newLabel(), retArg, ret (id retArg)), 
                      ExnId(Label.newLabel(),exnName), 
                      [obj'; obj'; field'; value'; args'])))))
+    | E.OwnFieldNames (pos, obj) ->
+      cps obj exnName (fun var ->
+        let temp = newVar "objVar" in
+          LetPrim (pos, Label.newLabel(), temp,
+            OwnFieldNames (pos, Label.newLabel(), var),
+            ret (Id (pos, Label.newLabel(), temp))))
     | E.Label (pos, label, body) -> 
         let newExnName = newVar "exn" in
         let argName = newVar "argX" in
@@ -709,6 +718,14 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
               AppFun(pos,Label.newLabel(), id updateField, retName, ExnId(Label.newLabel(),exnName), 
                      [obj'; obj'; field'; value'; args'])))))
 
+    | E.OwnFieldNames (pos, obj) ->
+      cps obj exnName (fun obj ->
+      let temp = newVar "ownNamesTemp" in
+      LetPrim (pos, Label.newLabel(), temp,
+               OwnFieldNames (pos,Label.newLabel(), obj), 
+               AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
+
+
     | E.Label (pos, label, body) -> 
       let newExnName = newVar "exn" in
       let argName = newVar "argX" in
@@ -825,4 +842,5 @@ and de_cps_prim (prim : cps_prim) : E.exp =
   | MutableOp1 (pos, _, op, id) -> E.Op1 (pos, op, de_cps_val id)
   | DeleteField (pos, _, obj, field) -> E.DeleteField (pos, de_cps_val obj, de_cps_val field)
   | SetBang (pos, _, var, value) -> E.SetBang (pos, var, de_cps_val value)
+  | OwnFieldNames (pos, _, obj) -> E.OwnFieldNames (pos, de_cps_val obj)
 

@@ -32,6 +32,8 @@ let rec exp e = match e with
     squish [exp o;
             brackets (squish [exp f; angles (horz [text (string_of_attr a)]);
                               text "="; exp v])]
+  | OwnFieldNames (p, o) ->
+    squish [text "get-own-field-names"; parens (exp o)]
   | SetBang (p, x, e) ->
     horz [text x; text ":="; exp e]
   | Op1 (p, op, e) -> 

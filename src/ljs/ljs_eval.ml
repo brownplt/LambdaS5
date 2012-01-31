@@ -342,6 +342,31 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       let (v_val, store) = eval newval env store in
       let b, store = set_attr store attr obj_val f_val v_val in
       bool b, store
+  | S.OwnFieldNames (p, obj) ->
+      let (obj_val, store) = eval obj env store in
+      begin match obj_val with
+        | ObjLoc loc ->
+          let _, props = get_obj store loc in
+          let add_name n x m = 
+            IdMap.add (string_of_int x) 
+              (Data ({ value = String n; writable = false; }, false, false)) 
+              m in
+          let namelist = IdMap.fold (fun k v l -> (k :: l)) props [] in
+          let props = 
+            List.fold_right2 add_name namelist
+              (iota (List.length namelist)) IdMap.empty
+          in
+          let d = (float_of_int (List.length namelist)) in
+          let final_props = 
+            IdMap.add "length" 
+              (Data ({ value = Num d; writable = false; }, false, false))
+              props
+          in
+          let (new_obj, store) = add_obj store (d_attrsv, final_props) in
+          ObjLoc new_obj, store
+        | _ -> failwith ("[interp] OwnFieldNames didn't get an object," ^
+                  " got " ^ (pretty_value obj_val) ^ " instead.")
+      end
   | S.Op1 (p, op, e) ->
       let (e_val, store) = eval e env store in
       op1 store op e_val, store

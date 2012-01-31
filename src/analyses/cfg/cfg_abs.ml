@@ -176,6 +176,9 @@ let partition_vars e =
     | C.SetBang (_, l, _, v) ->
       part_val curL v;
       LabelUF.union labelSets curL l
+    | C.OwnFieldNames (_, l, obj) ->
+      part_val curL obj;
+      LabelUF.union labelSets curL l
   in 
 
   let rec vars_at_exp e acc = match e with
@@ -210,6 +213,7 @@ let partition_vars e =
     | C.MutableOp1 (_, _, _, v) -> vars_at_val v acc
     | C.DeleteField (_, _, o, f) -> vars_at_val f (vars_at_val o acc)
     | C.SetBang (_, _, _, v) -> vars_at_val v acc
+    | C.OwnFieldNames (_, _, o) -> vars_at_val o acc
   and vars_at_val v acc = match v with
     | C.Lambda (_, l, ret, exn, args, b) -> 
       let flip f x y = f y x in 
@@ -915,6 +919,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       | C.Op2(_, l, o, a, b) -> printf "%s Op2(%s, %s, %s)\n" (C.Label.toString l) o (pretty_val a) (pretty_val b)
       | C.MutableOp1(_, l, o, a) -> printf "%s MutableOp1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
       | C.SetBang(_, l, i, v) -> printf "%s Set!(%s = %s)\n" (C.Label.toString l) i (pretty_val v)
+      | C.OwnFieldNames(_, l, o) -> printf "%s GetOwnFieldNames(%s)\n" (C.Label.toString l) (pretty_val o)
     );
     match prim with
     | C.GetAttr(_, label, pattr, obj, field) ->
@@ -1109,6 +1114,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       let (bindingStore, _, _) = getStore label storeArg in
       printModReasons label ["oldArg <> arg'", arg' <> oldArg];
       (D.op1 op arg' bindingStore, storeArg, oldArg <> arg')
+    | C.OwnFieldNames _ -> failwith "[cfg_abs] OwnFieldNames NYI"
     | C.MutableOp1(_, label, op, arg) ->
       let oldArg = eval_val arg env store in
       let envArg = copyEnv label (C.label_of_val arg) env in

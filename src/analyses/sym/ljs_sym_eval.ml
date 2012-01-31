@@ -825,6 +825,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         end *)
 
 
+      | S.OwnFieldNames _ -> failwith "[ljs_sym_eval] OwnFieldNames NYI"
           
       | S.Label (p, l, e) -> begin
         bind_exn
