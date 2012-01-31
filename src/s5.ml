@@ -42,7 +42,7 @@ module S5 = struct
     | _ -> failwith "bad option string"
 
   let eval () : unit =
-    let v = Ljs_eval.eval_expr !srcES5 !jsonPath in
+    let (v, _) = Ljs_eval.eval_expr !srcES5 !jsonPath in
     printf "%s" (pretty_value v);
     print_newline ()
 
