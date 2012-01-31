@@ -11,11 +11,12 @@ type value =
       (* A VarCell can contain an ObjCell, but not vice versa.  This
       mimics the semantics of heap-like object refs alongside mutable
       variables *)
-  | VarCell of value ref 
+  | VarLoc of Store.loc
       (* Objects shouldn't have VarCells in them, but can have any of
       the other kinds of values *)
-  | ObjCell of (attrsv * (propv IdMap.t)) ref
-  | Closure of (value list -> value)
+  | ObjLoc of Store.loc
+  | Closure of (value list -> store -> (value * store))
+and store = ((attrsv * (propv IdMap.t)) Store.t * value Store.t)
 and
   attrsv = { code : value option;
              proto : value;
@@ -35,11 +36,26 @@ let d_attrsv = { primval = None;
                  extensible = false; 
                  klass = "LambdaJS internal"; }
 
+let get_obj (objs, _) loc = Store.lookup loc objs
+let get_var (_, vars) loc = Store.lookup loc vars
+
+let set_obj ((objs, vars) : store) (loc : Store.loc) new_obj =
+  (Store.update loc new_obj objs), vars
+let set_var (objs, vars) loc new_val =
+  (objs, Store.update loc new_val vars)
+
+let add_obj (objs, vars) new_obj =
+  let new_loc, objs' = Store.alloc new_obj objs in
+  new_loc, (objs', vars)
+let add_var (objs, vars) new_val =
+  let new_loc, vars' = Store.alloc new_val vars in
+  new_loc, (objs, vars')
+
 type env = value IdMap.t
 type label = string
 
-exception Break of label * value
-exception Throw of value
+exception Break of label * value * store
+exception Throw of value * store
 
 let rec pretty_value v = match v with 
   | Num d -> string_of_float d
@@ -49,9 +65,10 @@ let rec pretty_value v = match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | Closure c -> "function"
-  | ObjCell o -> "object"
-  | VarCell v -> "&<" ^ pretty_value !v ^ ">"
+  | ObjLoc o -> "object"
+  | VarLoc v -> "&<" ^ Store.print_loc v ^ ">"
 
 let rec pretty_value_list vs = match vs with
   | (v::vs) -> pretty_value v ^ ", " ^ pretty_value_list vs
   | [] -> ""
+
