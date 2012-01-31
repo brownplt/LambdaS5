@@ -1,0 +1,15 @@
+#!/bin/bash
+
+TMP=`mktemp -t js.XXXXXX`
+if [ $# -eq 0 ]; then
+  read -d \0 JS
+  echo $JS > $TMP
+else
+  echo $1 > $TMP
+fi
+
+../bin/js json_print.js $TMP > $TMP.ast
+ocamlrun ../obj/s5.d.byte -desugar $TMP.ast \
+        -json ../src/desugar.sh -env ../envs/es5.env \
+        -eval
+rm $TMP.ast

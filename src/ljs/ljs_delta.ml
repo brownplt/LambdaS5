@@ -45,7 +45,7 @@ let is_primitive v = match v with
   | _ -> False
 
 let float_str n = 
-  if n == nan then "NaN"
+  if not (n <= n || n >= n) then "NaN"
   else
     if n == infinity then "Infinity"
     else if n == neg_infinity then "-Infinity"
@@ -114,7 +114,7 @@ end
 
 let print v = match v with
   | String s -> 
-      printf "%S\n%!" s; Undefined
+      printf "%s\n%!" s; Undefined
   | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
 
