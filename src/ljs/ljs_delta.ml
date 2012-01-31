@@ -2,8 +2,6 @@ open Prelude
 open Ljs_syntax
 open Ljs_values
 
-exception PrimErr of value
-
 let undef = Undefined
 let null = Null
 let str s = String s
@@ -15,30 +13,30 @@ let bool b = match b with
 
 let to_int v = match v with
   | Num x -> int_of_float x
-  | _ -> raise (PrimErr (str ("expected number, got " ^ pretty_value v)))
+  | _ -> raise (Throw (str ("expected number, got " ^ pretty_value v)))
 
-let typeof store v = str begin match v with
+let typeof v = str begin match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | String _ -> "string"
   | Num _ -> "number"
   | True 
   | False -> "boolean"
-  | ObjLoc loc -> begin match get_obj store loc with
+  | ObjCell o -> begin match !o with
       | ({ code = Some cexp }, _) -> "function"
       | _ -> "object"
   end
   | Closure _ -> "lambda"
-  | VarLoc _ -> failwith "[delta] typeof got a variable"
+  | VarCell _ -> failwith "[delta] typeof got a variable"
 end
 
-let surface_typeof store v = begin match v with
-  | Closure _ -> raise (PrimErr (str "surface_typeof got lambda"))
+let surface_typeof v = begin match v with
+  | Closure _ -> raise (Throw (str "surface_typeof got lambda"))
   | Null -> str "object"
-  | _ -> typeof store v
+  | _ -> typeof v
 end
   
-let is_primitive store v = match v with
+let is_primitive v = match v with
   | Undefined 
   | Null
   | String _
@@ -56,7 +54,7 @@ let float_str n =
       then string_of_int (int_of_float n) 
       else string_of_float n
 
-let prim_to_str store v = str begin match v with
+let prim_to_str v = str begin match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | String s -> s
@@ -76,15 +74,15 @@ let prim_to_str store v = str begin match v with
         else fs
   | True -> "true"
   | False -> "false"
-  | _ -> raise (PrimErr (str "prim_to_str"))
+  | _ -> raise (Throw (str "prim_to_num"))
 end
 
-let strlen store s = match s with
+let strlen s = match s with
   | String s -> Num (float_of_int (String.length s))
-  | _ -> raise (PrimErr (str "strlen"))
+  | _ -> raise (Throw (str "strlen"))
 
 (* Section 9.3, excluding objects *)
-let prim_to_num store v = num begin match v with
+let prim_to_num v = num begin match v with
   | Undefined -> nan 
   | Null -> 0.0
   | True -> 1.0
@@ -93,10 +91,10 @@ let prim_to_num store v = num begin match v with
   | String "" -> 0.0
   | String s -> begin try float_of_string s
     with Failure _ -> nan end
-  | _ -> raise (PrimErr (str "prim_to_num"))
+  | _ -> raise (Throw (str "prim_to_num"))
 end
   
-let prim_to_bool store v = bool begin match v with
+let prim_to_bool v = bool begin match v with
   | True -> true
   | False -> false
   | Undefined -> false
@@ -106,64 +104,62 @@ let prim_to_bool store v = bool begin match v with
   | _ -> true
 end
 
-let is_callable store obj = bool begin match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
+let is_callable obj = bool begin match obj with
+  | ObjCell o -> begin match !o with
       | ({ code = Some (Closure c); }, _) -> true
       | _ -> false
   end
   | _ -> false
 end
 
-let print store v = match v with
+let print v = match v with
   | String s -> 
       printf "%S\n%!" s; Undefined
   | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
 
-let is_extensible store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
+let is_extensible obj = match obj with
+  | ObjCell o -> begin match !o with
       | ({ extensible = true; }, _) -> True
       | _ -> False
   end
-  | _ -> raise (PrimErr (str "is-extensible"))
+  | _ -> raise (Throw (str "is-extensible"))
 
-(*
 let prevent_extensions obj = match obj with
   | ObjCell o -> 
       let (attrs, props) = !o in begin
 	  o := ({attrs with extensible = false}, props);
 	  obj
 	end
-  | _ -> raise (PrimErr (str "prevent-extensions"))
-*)
-let get_code store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
+  | _ -> raise (Throw (str "prevent-extensions"))
+      
+let get_code obj = match obj with
+  | ObjCell o -> begin match !o with
     | ({ code = Some v; }, _) -> v
     | ({ code = None; }, _) -> Null
   end
-    | _ -> raise (PrimErr (str "get-code"))
+    | _ -> raise (Throw (str "get-code"))
 
-let get_proto store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with 
+let get_proto obj = match obj with
+  | ObjCell o -> begin match !o with 
       | ({ proto = pvalue; }, _) -> pvalue
   end
-  | v -> raise (PrimErr (str ("get-proto got: " ^ pretty_value v)))
+  | v -> raise (Throw (str ("get-proto got: " ^ pretty_value v)))
 
-let get_primval store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
+let get_primval obj = match obj with
+  | ObjCell o -> begin match !o with
       | ({ primval = Some v; }, _) -> v
-      | _ -> raise (PrimErr (str "get-primval on an object with no prim val"))
+      | _ -> raise (Throw (str "get-primval on an object with no prim val"))
   end
-  | _ -> raise (PrimErr (str "get-primval"))
+  | _ -> raise (Throw (str "get-primval"))
 
-let get_class store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
+let get_class obj = match obj with
+  | ObjCell o -> begin match !o with
       | ({ klass = s; }, _) -> String (s)
   end
-  | _ -> raise (PrimErr (str "get-class"))
+  | _ -> raise (Throw (str "get-class"))
 
 (* All the enumerable property names of an object *)
-(*
 let rec get_property_names obj = match obj with
   | ObjCell o ->
       let protos = obj::(all_protos obj) in
@@ -185,7 +181,7 @@ let rec get_property_names obj = match obj with
         name_list
         IdMap.empty in
         ObjCell (ref (d_attrsv, name_props))
-  | _ -> raise (PrimErr (str "get-property-names"))
+  | _ -> raise (Throw (str "get-property-names"))
 
 and all_protos o = 
   match o with
@@ -216,162 +212,162 @@ let get_own_property_names obj = match obj with
             props 
         in
 	ObjCell (ref (d_attrsv, final_props))
-  | _ -> raise (PrimErr (str "own-property-names"))
-*)
+  | _ -> raise (Throw (str "own-property-names"))
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
-let object_to_string store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
+let object_to_string obj = match obj with
+  | ObjCell o -> begin match !o with
       | ({ klass = s }, _) -> str ("[object " ^ s ^ "]")
   end
-  | _ -> raise (PrimErr (str "object-to-string, wasn't given object"))	
+  | _ -> raise (Throw (str "object-to-string, wasn't given object"))	
 
-let is_array store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
+let is_array obj = match obj with
+  | ObjCell o -> begin match !o with
       | ({ klass = "Array"; }, _) -> True
       | _ -> False
     end
-  | _ -> raise (PrimErr (str "is-array"))	
+  | _ -> raise (Throw (str "is-array"))	
 
 
-let to_int32 store v = match v with
+let to_int32 v = match v with
   | Num d -> Num (float_of_int (int_of_float d))
-  | _ -> raise (PrimErr (str "to-int"))
+  | _ -> raise (Throw (str "to-int"))
 
-let nnot store e = match e with
+let nnot e = match e with
   | Undefined -> True
   | Null -> True
   | True -> False
   | False -> True
   | Num d -> if (d = 0.) || (d <> d) then True else False
   | String s -> if s = "" then True else False
-  | ObjLoc _ -> False
+  | ObjCell _ -> False
   | Closure _ -> False
   | _ -> failwith ("Fatal: ! operator on " ^ (pretty_value e))
 
-let void store v = Undefined
+let void v = Undefined
 
-let floor' store = function Num d -> num (floor d) | _ -> raise (PrimErr (str "floor"))
+let floor' = function Num d -> num (floor d) | _ -> raise (Throw (str "floor"))
 
-let ceil' store= function Num d -> num (ceil d) | _ -> raise (PrimErr (str "ceil"))
+let ceil' = function Num d -> num (ceil d) | _ -> raise (Throw (str "ceil"))
 
-let absolute store = function Num d -> num (abs_float d) | _ -> raise (PrimErr (str "abs"))
+let absolute = function Num d -> num (abs_float d) | _ -> raise (Throw (str "abs"))
 
-let log' store = function Num d -> num (log d ) | _ -> raise (PrimErr (str "log"))
+let log' = function Num d -> num (log d ) | _ -> raise (Throw (str "log"))
 
-let ascii_ntoc store n = match n with
+let ascii_ntoc n = match n with
   | Num d -> str (String.make 1 (Char.chr (int_of_float d)))
-  | _ -> raise (PrimErr (str "ascii_ntoc")) 
-let ascii_cton store c = match c with
+  | _ -> raise (Throw (str "ascii_ntoc"))
+
+let ascii_cton c = match c with
   | String s -> Num (float_of_int (Char.code (String.get s 0)))
-  | _ -> raise (PrimErr (str "ascii_cton"))
+  | _ -> raise (Throw (str "ascii_cton"))
 
-let to_lower store = function
+let to_lower = function
   | String s -> String (String.lowercase s)
-  | _ -> raise (PrimErr (str "to_lower"))
+  | _ -> raise (Throw (str "to_lower"))
 
-let to_upper store = function
+let to_upper = function
   | String s -> String (String.uppercase s)
-  | _ -> raise (PrimErr (str "to_lower"))
+  | _ -> raise (Throw (str "to_lower"))
 
-let bnot store = function
+let bnot = function
   | Num d -> Num (float_of_int (lnot (int_of_float d)))
-  | _ -> raise (PrimErr (str "bnot"))
+  | _ -> raise (Throw (str "bnot"))
 
-let sine store = function
+let sine = function
   | Num d -> Num (sin d)
-  | _ -> raise (PrimErr (str "sin"))
+  | _ -> raise (Throw (str "sin"))
 
-let numstr store = function
+let numstr = function
   | String s -> Num (try float_of_string s with Failure _ -> nan)
-  | _ -> raise (PrimErr (str "numstr"))
+  | _ -> raise (Throw (str "numstr"))
 
-let op1 store op = match op with
-  | "typeof" -> typeof store
-  | "surface-typeof" -> surface_typeof store
-  | "primitive?" -> is_primitive store
-  | "prim->str" -> prim_to_str store
-  | "prim->num" -> prim_to_num store
-  | "prim->bool" -> prim_to_bool store
-  | "is-callable" -> is_callable store
-  | "is-extensible" -> is_extensible store
-(*  | "prevent-extensions" -> prevent_extensions store *)
-  | "print" -> print store
-  | "get-proto" -> get_proto store
-  | "get-primval" -> get_primval store
-  | "get-class" -> get_class store
-  | "get-code" -> get_code store
-(*  | "property-names" -> get_property_names store
-  | "own-property-names" -> get_own_property_names store *)
-  | "object-to-string" -> object_to_string store
-  | "strlen" -> strlen store
-  | "is-array" -> is_array store
-  | "to-int32" -> to_int32 store
-  | "!" -> nnot store
-  | "void" -> void store
-  | "floor" -> floor' store
-  | "ceil" -> ceil' store
-  | "abs" -> absolute store
-  | "log" -> log' store
-  | "ascii_ntoc" -> ascii_ntoc store
-  | "ascii_cton" -> ascii_cton store
-  | "to-lower" -> to_lower store
-  | "to-upper" -> to_upper store
-  | "~" -> bnot store
-  | "sin" -> sine store
-  | "numstr->num" -> numstr store
+let op1 op = match op with
+  | "typeof" -> typeof
+  | "surface-typeof" -> surface_typeof
+  | "primitive?" -> is_primitive
+  | "prim->str" -> prim_to_str
+  | "prim->num" -> prim_to_num
+  | "prim->bool" -> prim_to_bool
+  | "is-callable" -> is_callable
+  | "is-extensible" -> is_extensible
+  | "prevent-extensions" -> prevent_extensions
+  | "print" -> print
+  | "get-proto" -> get_proto
+  | "get-primval" -> get_primval
+  | "get-class" -> get_class
+  | "get-code" -> get_code
+  | "property-names" -> get_property_names
+  | "own-property-names" -> get_own_property_names
+  | "object-to-string" -> object_to_string
+  | "strlen" -> strlen
+  | "is-array" -> is_array
+  | "to-int32" -> to_int32
+  | "!" -> nnot
+  | "void" -> void
+  | "floor" -> floor'
+  | "ceil" -> ceil'
+  | "abs" -> absolute
+  | "log" -> log'
+  | "ascii_ntoc" -> ascii_ntoc
+  | "ascii_cton" -> ascii_cton
+  | "to-lower" -> to_lower
+  | "to-upper" -> to_upper
+  | "~" -> bnot
+  | "sin" -> sine
+  | "numstr->num" -> numstr
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
-let arith store s i_op f_op v1 v2 = match v1, v2 with
+let arith s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
-  | v1, v2 -> raise (PrimErr (str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
+  | v1, v2 -> raise (Throw (str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
                                  (pretty_value v1) ^ ", " ^ (pretty_value v2) ^
                                    "perhaps something wasn't desugared fully?")))
 
-let arith_sum store = arith store "+" (+) (+.)
+let arith_sum = arith "+" (+) (+.)
 
-let arith_sub store = arith store "-" (-) (-.)
+let arith_sub = arith "-" (-) (-.)
 
 (* OCaml syntax failure! Operator section syntax lexes as a comment. *)
-let arith_mul store = arith store "*" (fun m n -> m * n) (fun x y -> x *. y)
+let arith_mul = arith "*" (fun m n -> m * n) (fun x y -> x *. y)
 
-let arith_div store x y = try arith store "/" (/) (/.) x y
+let arith_div x y = try arith "/" (/) (/.) x y
 with Division_by_zero -> Num infinity
 
-let arith_mod store x y = try arith store "mod" (mod) mod_float x y
+let arith_mod x y = try arith "mod" (mod) mod_float x y
 with Division_by_zero -> Num nan
 
-let arith_lt store x y = bool (x < y)
+let arith_lt x y = bool (x < y)
 
-let arith_le store x y = bool (x <= y)
+let arith_le x y = bool (x <= y)
 
-let arith_gt store x y = bool (x > y)
+let arith_gt x y = bool (x > y)
 
-let arith_ge store x y = bool (x >= y)
+let arith_ge x y = bool (x >= y)
 
-let bitwise_and store v1 v2 = Num (float_of_int ((to_int v1) land (to_int v2)))
+let bitwise_and v1 v2 = Num (float_of_int ((to_int v1) land (to_int v2)))
 
-let bitwise_or store v1 v2 = Num (float_of_int ((to_int v1) lor (to_int v2)))
+let bitwise_or v1 v2 = Num (float_of_int ((to_int v1) lor (to_int v2)))
 
-let bitwise_xor store v1 v2 = Num (float_of_int ((to_int v1) lxor (to_int v2)))
+let bitwise_xor v1 v2 = Num (float_of_int ((to_int v1) lxor (to_int v2)))
 
-let bitwise_shiftl store v1 v2 = Num (float_of_int ((to_int v1) lsl (to_int v2)))
+let bitwise_shiftl v1 v2 = Num (float_of_int ((to_int v1) lsl (to_int v2)))
 
-let bitwise_zfshiftr store v1 v2 = Num (float_of_int ((to_int v1) lsr (to_int v2)))
+let bitwise_zfshiftr v1 v2 = Num (float_of_int ((to_int v1) lsr (to_int v2)))
 
-let bitwise_shiftr store v1 v2 = Num (float_of_int ((to_int v1) asr (to_int v2)))
+let bitwise_shiftr v1 v2 = Num (float_of_int ((to_int v1) asr (to_int v2)))
 
-let string_plus store v1 v2 = match v1, v2 with
+let string_plus v1 v2 = match v1, v2 with
   | String s1, String s2 ->
       String (s1 ^ s2)
-  | _ -> raise (PrimErr (str "string concatenation"))
+  | _ -> raise (Throw (str "string concatenation"))
 
-let string_lessthan store v1 v2 = match v1, v2 with
+let string_lessthan v1 v2 = match v1, v2 with
   | String s1, String s2 -> bool (s1 < s2)
-  | _ -> raise (PrimErr (str "string less than"))
+  | _ -> raise (Throw (str "string less than"))
 
-let stx_eq store v1 v2 = bool begin match v1, v2 with
+let stx_eq v1 v2 = bool begin match v1, v2 with
   | Num x1, Num x2 -> x1 = x2
   | String x1, String x2 -> x1 = x2
   | Undefined, Undefined -> true
@@ -383,7 +379,7 @@ end
 
 (* Algorithm 11.9.3, steps 1 through 19. Steps 20 and 21 are desugared to
    access the heap. *)
-let abs_eq store v1 v2 = bool begin
+let abs_eq v1 v2 = bool begin
   if v1 = v2 then (* works correctly on floating point values *)
     true
   else match v1, v2 with
@@ -398,23 +394,23 @@ let abs_eq store v1 v2 = bool begin
 (* TODO: are these all the cases? *)
 end
 
-let rec has_property store obj field = match obj, field with
-  | ObjLoc loc, String s -> begin match get_obj store loc, s with
+let rec has_property obj field = match obj, field with
+  | ObjCell o, String s -> begin match !o, s with
       ({ proto = pvalue; }, props), s ->
         if (IdMap.mem s props) then bool true
-        else has_property store pvalue field
+        else has_property pvalue field
   end
   | _ -> bool false
 
-let has_own_property store obj field = match obj, field with
-  | ObjLoc loc, String s -> 
-      let (attrs, props) = get_obj store loc in
+let has_own_property obj field = match obj, field with
+  | ObjCell o, String s -> 
+      let (attrs, props) = !o in
         bool (IdMap.mem s props)
-  | ObjLoc loc, _ -> raise (PrimErr (str "has-own-property: field not a string"))
-  | _, String s -> raise (PrimErr (str ("has-own-property: obj not an object for field " ^ s)))
-  | _ -> raise (PrimErr (str "has-own-property: neither an object nor a string"))
+  | ObjCell o, _ -> raise (Throw (str "has-own-property: field not a string"))
+  | _, String s -> raise (Throw (str ("has-own-property: obj not an object for field " ^ s)))
+  | _ -> raise (Throw (str "has-own-property: neither an object nor a string"))
 
-let base store n r = 
+let base n r = 
   let rec get_digits n l = match n with
     | 97 -> 'a' :: l
     | i -> get_digits (n - 1) ((Char.chr i) :: l) in
@@ -440,27 +436,27 @@ let base store n r =
     (* TODO: implement *)
     "non-base-10 with fractional parts NYI"
 
-let get_base store n r = match n, r with
+let get_base n r = match n, r with
   | Num x, Num y -> 
-    let result = base store (abs_float x) (abs_float y) in
+    let result = base (abs_float x) (abs_float y) in
     str (if x < 0.0 then "-" ^ result else result)
-  | _ -> raise (PrimErr (str "base got non-numbers"))
+  | _ -> raise (Throw (str "base got non-numbers"))
 
-let char_at store a b  = match a, b with
+let char_at a b  = match a, b with
   | String s, Num n ->
     String (String.make 1 (String.get s (int_of_float n)))
-  | _ -> raise (PrimErr (str "char_at didn't get a string and a number"))
+  | _ -> raise (Throw (str "char_at didn't get a string and a number"))
 
-let locale_compare store a b = match a, b with
+let locale_compare a b = match a, b with
   | String r, String s ->
     Num (float_of_int (String.compare r s))
-  | _ -> raise (PrimErr (str "locale_compare didn't get 2 strings"))
+  | _ -> raise (Throw (str "locale_compare didn't get 2 strings"))
 
-let pow store a b = match a, b with
+let pow a b = match a, b with
   | Num base, Num exp -> Num (base ** exp)
-  | _ -> raise (PrimErr (str "pow didn't get 2 numbers"))
+  | _ -> raise (Throw (str "pow didn't get 2 numbers"))
 
-let to_fixed store a b = match a, b with
+let to_fixed a b = match a, b with
   | Num x, Num f -> 
     let s = string_of_float x
     and fint = int_of_float f in
@@ -476,47 +472,47 @@ let to_fixed store a b = match a, b with
         String (fixed_s)
       else let suffix = String.make (fint - decimal_chars) '0' in
         String (s ^ suffix)
-  | _ -> raise (PrimErr (str "to-fixed didn't get 2 numbers"))
+  | _ -> raise (Throw (str "to-fixed didn't get 2 numbers"))
 
-let rec is_accessor store a b = match a, b with
-  | ObjLoc loc, String s ->
-    let (attrs, props) = get_obj store loc in
+let rec is_accessor a b = match a, b with
+  | ObjCell o, String s ->
+    let (attrs, props) = !o in
     if IdMap.mem s props
     then let prop = IdMap.find s props in
       match prop with
         | Data _ -> False
         | Accessor _ -> True
     else let pr = match attrs with { proto = p } -> p in
-      is_accessor store pr b
-  | Null, String s -> raise (PrimErr (str "isAccessor topped out"))
-  | _ -> raise (PrimErr (str "isAccessor"))
+      is_accessor pr b
+  | Null, String s -> raise (Throw (str "isAccessor topped out"))
+  | _ -> raise (Throw (str "isAccessor"))
 
-let op2 store op = match op with
-  | "+" -> arith_sum store
-  | "-" -> arith_sub store
-  | "/" -> arith_div store
-  | "*" -> arith_mul store
-  | "%" -> arith_mod store
-  | "&" -> bitwise_and store
-  | "|" -> bitwise_or store
-  | "^" -> bitwise_xor store
-  | "<<" -> bitwise_shiftl store
-  | ">>" -> bitwise_shiftr store
-  | ">>>" -> bitwise_zfshiftr store
-  | "<" -> arith_lt store
-  | "<=" -> arith_le store
-  | ">" -> arith_gt store
-  | ">=" -> arith_ge store
-  | "stx=" -> stx_eq store
-  | "abs=" -> abs_eq store
-  | "hasProperty" -> has_property store
-  | "hasOwnProperty" -> has_own_property store
-  | "string+" -> string_plus store
-  | "string<" -> string_lessthan store
-  | "base" -> get_base store
-  | "char-at" -> char_at store
-  | "locale-compare" -> locale_compare store
-  | "pow" -> pow store
-  | "to-fixed" -> to_fixed store
-  | "isAccessor" -> is_accessor store
+let op2 op = match op with
+  | "+" -> arith_sum
+  | "-" -> arith_sub
+  | "/" -> arith_div
+  | "*" -> arith_mul
+  | "%" -> arith_mod
+  | "&" -> bitwise_and
+  | "|" -> bitwise_or
+  | "^" -> bitwise_xor
+  | "<<" -> bitwise_shiftl
+  | ">>" -> bitwise_shiftr
+  | ">>>" -> bitwise_zfshiftr
+  | "<" -> arith_lt
+  | "<=" -> arith_le
+  | ">" -> arith_gt
+  | ">=" -> arith_ge
+  | "stx=" -> stx_eq
+  | "abs=" -> abs_eq
+  | "hasProperty" -> has_property
+  | "hasOwnProperty" -> has_own_property
+  | "string+" -> string_plus
+  | "string<" -> string_lessthan
+  | "base" -> get_base
+  | "char-at" -> char_at
+  | "locale-compare" -> locale_compare
+  | "pow" -> pow
+  | "to-fixed" -> to_fixed
+  | "isAccessor" -> is_accessor
   | _ -> failwith ("no implementation of binary operator: " ^ op)

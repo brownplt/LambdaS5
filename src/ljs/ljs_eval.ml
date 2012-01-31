@@ -23,23 +23,23 @@ let unbool b = match b with
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
-let apply p store func args = match func with
-  | Closure c -> c args store
-  | ObjLoc loc -> begin match get_obj store loc with
-      | ({ code = Some (Closure c) }, _) -> c args store
+let apply p func args = match func with
+  | Closure c -> c args
+  | ObjCell c -> begin match !c with
+      | ({ code = Some (Closure c) }, _) -> c args
       | _ -> failwith "Applied an object without a code attribute"
   end
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
                          pretty_value func))
 
-let rec get_prop p store obj field =
+let rec get_prop p obj field =
   match obj with
     | Null -> None
-    | ObjLoc loc -> begin match get_obj store loc with
+    | ObjCell c -> begin match !c with
       | { proto = pvalue; }, props ->
          try Some (IdMap.find field props)
-         with Not_found -> get_prop p store pvalue field
+         with Not_found -> get_prop p pvalue field
       end
     | _ -> failwith (interp_error p 
            "get_prop on a non-object.  The expression was (get-prop " 
@@ -55,8 +55,8 @@ let rec not_writable prop = match prop with
   | Data ({ writable = false; }, _, _) -> true
   | _ -> false
 
-let rec get_attr store attr obj field = match obj, field with
-  | ObjLoc loc, String s -> let (attrs, props) = get_obj store loc in
+let rec get_attr attr obj field = match obj, field with
+  | ObjCell c, String s -> let (attrs, props) = !c in
       if (not (IdMap.mem s props)) then
         undef
       else
@@ -87,8 +87,8 @@ let rec get_attr store attr obj field = match obj, field with
        a. Value, which checks Writable
        b. Writable, which can change true->false
 *)
-let rec set_attr (store : store) attr obj field newval = match obj, field with
-  | ObjLoc loc, String f_str -> begin match get_obj store loc with
+let rec set_attr attr obj field newval = match obj, field with
+  | ObjCell c, String f_str -> begin match !c with
       | ({ extensible = ext; } as attrsv, props) ->
         if not (IdMap.mem f_str props) then
           if ext then 
@@ -110,9 +110,8 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
               | S.Config ->
                 Data ({ value = Undefined; writable = false },
                       true, unbool newval) in
-            let store = set_obj store loc
-                  (attrsv, IdMap.add f_str newprop props) in
-            true, store
+            c := (attrsv, IdMap.add f_str newprop props);
+            true
           else
             failwith "[interp] Extending inextensible object ."
         else
@@ -160,28 +159,38 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
                     ^ (pretty_value obj) ^ " " ^ f_str ^ " " ^
                     (S.string_of_attr attr) ^ " " ^ (pretty_value newval))
         in begin
-            let store = set_obj store loc 
-              (attrsv, IdMap.add f_str newprop props) in
-            true, store
+            c := (attrsv, IdMap.add f_str newprop props);
+            true
         end
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
+(* 8.10.5, steps 7/8 "If iscallable(getter) is false and getter is not
+   undefined..." *)
 
-let rec eval jsonPath exp env (store : store) : (value * store) =
+and fun_obj value = match value with
+  | ObjCell c -> begin match !c with
+      | { code = Some (Closure cv) }, _ -> true
+      | _ -> false
+  end
+  | Undefined -> false
+  | _ -> false
+          
+
+let rec eval jsonPath exp env = 
   let eval = eval jsonPath in
   match exp with
-  | S.Hint (_, _, e) -> eval e env store
-  | S.Undefined _ -> Undefined, store
-  | S.Null _ -> Null, store
-  | S.String (_, s) -> String s, store
-  | S.Num (_, n) -> Num n, store
-  | S.True _ -> True, store
-  | S.False _ -> False, store
+  | S.Hint (_, _, e) -> eval e env
+  | S.Undefined _ -> Undefined
+  | S.Null _ -> Null
+  | S.String (_, s) -> String s
+  | S.Num (_, n) -> Num n
+  | S.True _ -> True
+  | S.False _ -> False
   | S.Id (p, x) -> begin
       try
         match IdMap.find x env with
-          | VarLoc v -> get_var store v, store
+          | VarCell v -> !v
           | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
                              " at " ^ (string_of_position p) ^ 
                              ", but found something else: " ^ pretty_value (IdMap.find x env))
@@ -192,10 +201,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
   | S.SetBang (p, x, e) -> begin
       try
         match IdMap.find x env with
-          | VarLoc loc ->
-            let (new_val, store) = eval e env store in
-            let store = set_var store loc new_val in
-            new_val, store
+          | VarCell v -> v := eval e env; !v
           | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
                              " at " ^ (string_of_position p) ^ 
                              ", but found something else.")
@@ -204,102 +210,92 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                     (string_of_position p))
     end
   | S.Object (p, attrs, props) -> 
-    let { S.primval = vexp;
+    let attrsv = match attrs with
+      | { S.primval = vexp;
           S.proto = protoexp;
           S.code = codexp;
           S.extensible = ext;
-          S.klass = kls; } = attrs in
-    let opt_lift (value, store) = (Some value, store) in
-    let primval, store = match vexp with
-      | Some vexp -> opt_lift (eval vexp env store)
-      | None -> None, store
+          S.klass = kls; } ->
+        { primval = (match vexp with
+          | Some vexp -> Some (eval vexp env)
+          | None -> None);
+          proto = (match protoexp with 
+          | Some pexp -> eval pexp env 
+          | None -> Undefined);
+          code = (match codexp with
+            | Some cexp -> Some (eval cexp env)
+            | None -> None);
+          extensible = ext;
+          klass = kls} 
     in
-    let proto, store = match protoexp with 
-      | Some pexp -> eval pexp env store
-      | None -> Undefined, store
-    in
-    let code, store = match codexp with
-        | Some cexp -> opt_lift (eval cexp env store)
-        | None -> None, store
-    in
-    let attrsv = {
-      code=code; proto=proto; primval=primval;
-      klass=kls; extensible=ext;
-    } in
-    let eval_prop prop store = match prop with
+    let eval_prop prop = match prop with
       | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
-        let vexp, store = eval vexp env store in
-        Data ({ value = vexp; writable = w; }, enum, config), store
+        Data ({ value = eval vexp env; writable = w; }, enum, config)
       | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
-        let gv, store = eval ge env store in
-        let sv, store = eval se env store in
-        Accessor ({ getter = gv; setter = sv}, enum, config), store
+        Accessor ({ getter = eval ge env; setter = eval se env}, enum, config)
     in
-      let eval_prop (m, store) (name, prop) = 
-        let propv, store = eval_prop prop store in
-          IdMap.add name propv m, store in
-      let propsv, store =
-        fold_left eval_prop (IdMap.empty, store) props in
-      let obj_loc, store = add_obj store (attrsv, propsv) in
-      ObjLoc obj_loc, store
+      let eval_prop m (name, prop) = 
+        IdMap.add name (eval_prop prop) m in
+        ObjCell (ref (attrsv,
+                      fold_left eval_prop IdMap.empty props))
     (* 8.12.4, 8.12.5 *)
   | S.SetField (p, obj, f, v, args) ->
-      let (obj_value, store) = eval obj env store in
-      let (f_value, store) = eval f env store in
-      let (v_value, store) = eval v env store in
-      let (args_value, store) = eval args env store in begin
+      let obj_value = eval obj env in
+      let f_value = eval f env in
+      let v_value = eval v env in
+      let args_value = eval args env in begin
         match (obj_value, f_value) with
-          | (ObjLoc loc, String s) ->
-            let ({extensible=extensible;} as attrs, props) =
-              get_obj store loc in
-            let prop = get_prop p store obj_value s in
+          | (ObjCell o, String s) ->
+            let ({extensible=extensible;} as attrs, props) = !o in
+            let prop = get_prop p obj_value s in
             begin match prop with
               | Some (Data ({ writable = true; }, enum, config)) ->
                 let (enum, config) = 
                   if (IdMap.mem s props)
                   then (enum, config) (* 8.12.5, step 3, changing the value of a field *)
                   else (true, true) in (* 8.12.4, last step where inherited.[[writable]] is true *)
-                let store = set_obj store loc 
-                    (attrs,
-                      IdMap.add s
-                        (Data ({ value = v_value; writable = true },
-                               enum, config))
-                        props) in
-                v_value, store
+                begin
+                  o := (attrs,
+                        IdMap.add s
+                          (Data ({ value = v_value; writable = true },
+                                 enum, config))
+                          props);
+                  v_value
+                end
               | Some (Data _) -> failwith "Field not writable!"
               | Some (Accessor ({ setter = setterv; }, enum, config)) ->
                 (* 8.12.5, step 5 *)
-                apply p store setterv [obj_value; args_value]
+                apply p setterv [obj_value; args_value]
               | None ->
                 (* 8.12.5, step 6 *)
                 if extensible
-                then
-                  let store = set_obj store loc 
-                      (attrs,
+                then begin
+                  o := (attrs,
                         IdMap.add s 
                           (Data ({ value = v_value; writable = true; },
                                  true, true))
-                          props) in
-                  v_value, store
+                          props);
+                  v_value
+                end
                 else
-                  Undefined, store (* TODO: Check error in case of non-extensible *)
+                  Undefined (* TODO: Check error in case of non-extensible *)
             end
           | _ -> failwith ("[interp] Update field didn't get an object and a string" 
                            ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
       end
   | S.GetField (p, obj, f, args) ->
-      let (obj_value, store) = eval obj env store in
-      let (f_value, store) = eval f env store in 
-      let (args_value, store) = eval args env store in begin
+      let obj_value = eval obj env in
+      let f_value = eval f env in 
+      let args_value = eval args env in begin
         match (obj_value, f_value) with
-          | (ObjLoc _, String s) ->
-            let prop = get_prop p store obj_value s in
+          | (ObjCell o, String s) ->
+            let prop = get_prop p obj_value s in
             begin match prop with
-              | Some (Data ({value=v;}, _, _)) -> v, store
+              | Some (Data ({value=v;}, _, _)) -> v 
               | Some (Accessor ({getter=g;},_,_)) ->
-                apply p store g [obj_value; args_value]
-              | None -> Undefined, store
+                apply p g [obj_value; args_value]
+              | None -> Undefined
             end
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
                  ^ string_of_position p 
@@ -309,20 +305,21 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                  ^ pretty_value f_value)
       end
   | S.DeleteField (p, obj, f) ->
-      let (obj_val, store) = eval obj env store in
-      let (f_val, store) = eval f env store in begin
+      let obj_val = eval obj env in
+      let f_val = eval f env in begin
         match (obj_val, f_val) with
-          | (ObjLoc loc, String s) -> 
-            begin match get_obj store loc with
+          | (ObjCell c, String s) -> 
+            begin match !c with
               | (attrs, props) -> begin try
                 match IdMap.find s props with
                   | Data (_, _, true) 
                   | Accessor (_, _, true) ->
-                    let store = set_obj store loc
-                      (attrs, IdMap.remove s props) in
-                    True, store
-                  | _ -> False, store
-                with Not_found -> False, store
+                    begin
+                      c := (attrs, IdMap.remove s props);
+                      True
+                    end
+                  | _ -> False
+                with Not_found -> False
               end
             end
           | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
@@ -333,95 +330,74 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                            ^ pretty_value f_val)
         end
   | S.GetAttr (p, attr, obj, field) ->
-      let (obj_val, store) = eval obj env store in
-      let (f_val, store) = eval field env store in
-        get_attr store attr obj_val f_val, store
+      let obj_val = eval obj env in
+      let f_val = eval field env in
+        get_attr attr obj_val f_val
   | S.SetAttr (p, attr, obj, field, newval) ->
-      let (obj_val, store) = eval obj env store in
-      let (f_val, store) = eval field env store in
-      let (v_val, store) = eval newval env store in
-      let b, store = set_attr store attr obj_val f_val v_val in
-      bool b, store
+      let obj_val = eval obj env in
+      let f_val = eval field env in
+      let v_val = eval newval env in
+      bool (set_attr attr obj_val f_val v_val)
   | S.Op1 (p, op, e) ->
-      let (e_val, store) = eval e env store in
-      op1 store op e_val, store
+      let e_val = eval e env in op1 op e_val
   | S.Op2 (p, op, e1, e2) -> 
-      let (e1_val, store) = eval e1 env store in
-      let (e2_val, store) = eval e2 env store in
-      op2 store op e1_val e2_val, store
+      let e1_val = eval e1 env in
+      let e2_val = eval e2 env in
+      op2 op e1_val e2_val
   | S.If (p, c, t, e) ->
-      let (c_val, store) = eval c env store in
+      let c_val = eval c env in
         if (c_val = True)
-        then eval t env store
-        else eval e env store
+        then eval t env
+        else eval e env
   | S.App (p, func, args) -> 
-      let (func_value, store) = eval func env store in
-      let (args_values, store) =
-        fold_left (fun (vals, store) e ->
-            let (newval, store) = eval e env store in
-            (newval::vals, store))
-          ([], store) args in
-      apply p store func_value (List.rev args_values)
+      let func_value = eval func env in
+      let args_values = map (fun e -> eval e env) args in
+        apply p func_value args_values
   | S.Seq (p, e1, e2) -> 
-      let (_, store) = eval e1 env store in
-      eval e2 env store
+      ignore (eval e1 env);
+      eval e2 env
   | S.Let (p, x, e, body) ->
-      let (e_val, store) = eval e env store in
-      let (new_loc, store) = add_var store e_val in
-      eval body (IdMap.add x (VarLoc new_loc) env) store
+      let e_val = eval e env in
+        eval body (IdMap.add x (VarCell (ref e_val)) env)
   | S.Rec (p, x, e, body) ->
-      let (new_loc, store) = add_var store Undefined in
-      let env' = (IdMap.add x (VarLoc new_loc) env) in
-      let (ev_val, store) = eval e env' store in
-      eval body env' (set_var store new_loc ev_val)
-  | S.Label (p, l, e) ->
-      begin
-        try
-          eval e env store
-        with Break (l', v, store) ->
-          if l = l' then (v, store)
-          else raise (Break (l', v, store))
-      end
+    let x' = ref Undefined in
+    let ev_val = eval e (IdMap.add x (VarCell x') env) in
+    x' := ev_val;
+    eval body (IdMap.add x (VarCell (ref ev_val)) env)
+  | S.Label (p, l, e) -> begin
+      try
+        eval e env
+      with Break (l', v) ->
+        if l = l' then v
+        else raise (Break (l', v))
+    end
   | S.Break (p, l, e) ->
-      let v, store = eval e env store in
-      raise (Break (l, v, store))
+      raise (Break (l, eval e env))
   | S.TryCatch (p, body, catch) -> begin
       try
-        eval body env store
-      with Throw (v, store) ->
-        let catchv, store = eval catch env store in
-        apply p store catchv [v]
+        eval body env
+      with Throw v -> apply p (eval catch env) [v]
     end
   | S.TryFinally (p, body, fin) -> begin
       try
-        let (_, store) = eval body env store in
-        eval fin env store
+        ignore (eval body env)
       with
-        | Throw (v, store) ->
-          let (_, store) = eval fin env store in
-          raise (Throw (v, store))
-        | Break (l, v, store) ->
-          let (_, store) = eval fin env store in
-          raise (Break (l, v, store))
-      end
-  | S.Throw (p, e) -> let (v, s) = eval e env store in
-    raise (Throw (v, s))
+        | Throw v -> ignore (eval fin env); raise (Throw v)
+        | Break (l, v) -> ignore (eval fin env); raise (Break (l, v))
+      end;
+      eval fin env
+  | S.Throw (p, e) -> raise (Throw (eval e env))
   | S.Lambda (p, xs, e) -> 
-    let alloc_arg argval argname (store, env) =
-      let (new_loc, store) = add_var store argval in
-      let env' = IdMap.add argname (VarLoc new_loc) env in
-      (store, env') in
-    let closure args store =
-      if (List.length args) != (List.length xs) then
-        arity_mismatch_err p xs args
-      else
-        let (store, env) = (List.fold_right2 alloc_arg args xs (store, env)) in
-        eval e env store in
-    Closure closure, store
+      let set_arg arg x m = IdMap.add x (VarCell (ref arg)) m in
+        Closure (fun args -> 
+                     if (List.length args) != (List.length xs) then
+                       arity_mismatch_err p xs args
+                     else
+                       eval e (List.fold_right2 set_arg args xs env))
   | S.Eval (p, e) ->
-    match eval e env store with
-      | String s, store -> eval_op s env store jsonPath
-      | v, store -> v, store
+    match eval e env with
+      | String s -> eval_op s env jsonPath
+      | v -> v
 
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
@@ -433,7 +409,7 @@ and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ strin
    only a single file works out. 
 
    TODO(joe): I have no idea what happens on windows. *)
-and eval_op str env store jsonPath = 
+and eval_op str env jsonPath = 
   let outchan = open_out "/tmp/curr_eval.js" in
   output_string outchan str;
   close_out outchan;
@@ -446,7 +422,7 @@ and eval_op str env store jsonPath =
   let json_err = regexp (quote "SyntaxError") in
   begin try
     ignore (search_forward json_err buf 0);
-    raise (Throw (String "EvalError", store))
+    raise (Throw (String "EvalError"))
     with Not_found -> ()
   end;
   let ast =
@@ -454,23 +430,23 @@ and eval_op str env store jsonPath =
   let (used_ids, exprjsd) = 
     try
       js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
-    with ParseError _ -> raise (Throw (String "EvalError", store))
+    with ParseError _ -> raise (Throw (String "EvalError"))
     in
   let desugard = exprjs_to_ljs used_ids exprjsd in
   if (IdMap.mem "%global" env) then
     (Ljs_pretty.exp desugard std_formatter; print_newline ();
-     eval jsonPath desugard env store (* TODO: which env? *))
+     eval jsonPath desugard env (* TODO: which env? *))
   else
     (failwith "no global")
 
 let rec eval_expr expr jsonPath = try
-  eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
+  eval jsonPath expr IdMap.empty
 with
-  | Throw (v, store) ->
+  | Throw v ->
       let err_msg = 
         match v with
-          | ObjLoc loc ->
-              let (attrs, props) = get_obj store loc in
+          | ObjCell c ->
+              let (attrs, props) = !c in
                 begin try
                   match IdMap.find "message" props with
                     | Data ({ value = msg_val; }, _, _) ->
@@ -480,5 +456,5 @@ with
                 end
           | v -> (pretty_value v) in
         failwith ("Uncaught exception: " ^ err_msg)
-  | Break (l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
+  | Break (l, v) -> failwith ("Broke to top of execution, missed label: " ^ l)
 
