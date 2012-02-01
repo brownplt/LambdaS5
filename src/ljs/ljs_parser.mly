@@ -67,7 +67,7 @@ let with_pos exp pos = match exp with
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW EQEQEQUALS TYPEOF
   AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION REC WRITABLE GETTER SETTER
-  CONFIG VALUE ENUM LT GT PROTO CODE EXTENSIBLE CLASS EVAL GETFIELDS
+  CONFIG VALUE ENUM LT GT PROTO CODE EXTENSIBLE CLASS EVAL GETFIELDS PRIMVAL
 
 
 %token EOF
@@ -98,13 +98,17 @@ const :
 
 oattrsv :
  | { d_attrs }
- | VALUE COLON exp COMMA oattrsv { { $5 with primval = Some $3 } }
+ | PRIMVAL COLON exp COMMA oattrsv { { $5 with primval = Some $3 } }
  | EXTENSIBLE COLON BOOL COMMA oattrsv { { $5 with extensible = $3 } }
  | PROTO COLON exp COMMA oattrsv { { $5 with proto = Some $3 } }
  | CODE COLON exp COMMA oattrsv { {$5 with code = Some $3 } }
  | CLASS COLON STRING COMMA oattrsv { { $5 with klass = $3 } }
 
 oattr_name :
+ | PRIMVAL { Primval }
+ | PROTO { Proto }
+ | CODE { Code }
+ | CLASS { Klass }
  | EXTENSIBLE { Extensible }
 
 attr_name :
@@ -205,12 +209,12 @@ exp :
      { GetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $5, $1, $3) }
  | exp LBRACK unbraced_seq_exp LT attr_name GT EQUALS unbraced_seq_exp RBRACK
      { SetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 9), $5, $1, $3, $8) }
- | exp LT oattr_name GT
-     { GetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4),
-                  $3, $1) }
- | exp LT oattr_name EQUALS unbraced_seq_exp GT
-     { SetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4),
-                  $3, $1, $5) }
+ | exp LBRACK LT oattr_name GT RBRACK
+     { GetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6),
+                  $4, $1) }
+ | exp LBRACK LT oattr_name EQUALS unbraced_seq_exp GT RBRACK
+     { SetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8),
+                  $4, $1, $6) }
  | exp AMPAMP exp
      { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, 
             $3, False (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3)) }

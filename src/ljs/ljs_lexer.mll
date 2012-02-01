@@ -132,6 +132,7 @@ rule token = parse
    | "#proto" { PROTO }
    | "#code" { CODE }
    | "#extensible" { EXTENSIBLE }
+   | "#primval" { PRIMVAL }
    | "#class" { CLASS }
    | "get-own-field-names" { GETFIELDS }    
 
