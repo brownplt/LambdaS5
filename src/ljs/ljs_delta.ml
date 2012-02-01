@@ -106,14 +106,6 @@ let prim_to_bool store v = bool begin match v with
   | _ -> true
 end
 
-let is_callable store obj = bool begin match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
-      | ({ code = Some (Closure c); }, _) -> true
-      | _ -> false
-  end
-  | _ -> false
-end
-
 let print store v = match v with
   | String s -> 
       printf "%s\n%!" s; Undefined
@@ -126,98 +118,6 @@ let is_extensible store obj = match obj with
       | _ -> False
   end
   | _ -> raise (PrimErr (str "is-extensible"))
-
-(*
-let prevent_extensions obj = match obj with
-  | ObjCell o -> 
-      let (attrs, props) = !o in begin
-	  o := ({attrs with extensible = false}, props);
-	  obj
-	end
-  | _ -> raise (PrimErr (str "prevent-extensions"))
-*)
-let get_code store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
-    | ({ code = Some v; }, _) -> v
-    | ({ code = None; }, _) -> Null
-  end
-    | _ -> raise (PrimErr (str "get-code"))
-
-let get_proto store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with 
-      | ({ proto = pvalue; }, _) -> pvalue
-  end
-  | v -> raise (PrimErr (str ("get-proto got: " ^ pretty_value v)))
-
-let get_primval store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
-      | ({ primval = Some v; }, _) -> v
-      | _ -> raise (PrimErr (str "get-primval on an object with no prim val"))
-  end
-  | _ -> raise (PrimErr (str "get-primval"))
-
-let get_class store obj = match obj with
-  | ObjLoc loc -> begin match get_obj store loc with
-      | ({ klass = s; }, _) -> String (s)
-  end
-  | _ -> raise (PrimErr (str "get-class"))
-
-(* All the enumerable property names of an object *)
-(*
-let rec get_property_names obj = match obj with
-  | ObjCell o ->
-      let protos = obj::(all_protos obj) in
-      let folder o set = begin match o with
-	| ObjCell o' ->
-	    let (attrs, props) = !o' in
-	      IdMap.fold (fun k v s -> 
-			    if enum v then IdSet.add k s else s) props set
-	| _ -> set (* non-object prototypes don't contribute *) 
-      end in
-      let name_set = List.fold_right folder protos IdSet.empty in
-      let name_list= IdSet.elements name_set in
-      let prop_folder num name props = 
-	IdMap.add (string_of_int num) 
-          (Data ({ value = String name; writable = false; }, false, false))
-          props in
-      let name_props = List.fold_right2 prop_folder 
-        (iota (List.length name_list))
-        name_list
-        IdMap.empty in
-        ObjCell (ref (d_attrsv, name_props))
-  | _ -> raise (PrimErr (str "get-property-names"))
-
-and all_protos o = 
-  match o with
-    | ObjCell c -> begin match !c with 
-        | ({ proto = pvalue; }, _) -> pvalue::(all_protos pvalue)
-    end
-    | _ -> []
-
-and enum prop = match prop with
-  | Accessor (_, b, _)
-  | Data (_, b, _) -> b
-
-let get_own_property_names obj = match obj with
-  | ObjCell o ->
-      let (_, props) = !o in
-      let add_name n x m = 
-	IdMap.add (string_of_int x) 
-          (Data ({ value = String n; writable = false; }, false, false)) 
-          m in
-      let namelist = IdMap.fold (fun k v l -> (k :: l)) props [] in
-      let props = 
-	List.fold_right2 add_name namelist (iota (List.length namelist)) IdMap.empty
-      in
-        let d = (float_of_int (List.length namelist)) in
-        let final_props = 
-          IdMap.add "length" 
-            (Data ({ value = Num d; writable = false; }, false, false))
-            props 
-        in
-	ObjCell (ref (d_attrsv, final_props))
-  | _ -> raise (PrimErr (str "own-property-names"))
-*)
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
@@ -294,16 +194,7 @@ let op1 store op = match op with
   | "prim->str" -> prim_to_str store
   | "prim->num" -> prim_to_num store
   | "prim->bool" -> prim_to_bool store
-  | "is-callable" -> is_callable store
-  | "is-extensible" -> is_extensible store
-(*  | "prevent-extensions" -> prevent_extensions store *)
   | "print" -> print store
-  | "get-proto" -> get_proto store
-  | "get-primval" -> get_primval store
-  | "get-class" -> get_class store
-  | "get-code" -> get_code store
-(*  | "property-names" -> get_property_names store
-  | "own-property-names" -> get_own_property_names store *)
   | "object-to-string" -> object_to_string store
   | "strlen" -> strlen store
   | "is-array" -> is_array store

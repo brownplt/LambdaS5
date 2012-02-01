@@ -42,7 +42,6 @@ and cps_prim =
   | SetObjAttr of pos * Label.t * E.oattr * cps_value * cps_value
   | Op1 of pos * Label.t * string * cps_value
   | Op2 of pos * Label.t * string * cps_value * cps_value
-  | MutableOp1 of pos * Label.t * string * cps_value
   | DeleteField of pos * Label.t * cps_value * cps_value (* pos, obj, field *)
   | SetBang of pos * Label.t * id * cps_value
   | OwnFieldNames of pos * Label.t * cps_value
@@ -116,7 +115,6 @@ let pos_of_prim (prim : cps_prim) = match prim with
 | SetObjAttr (pos, _, _, _, _) -> pos
 | Op1 (pos, _, _, _) -> pos
 | Op2 (pos, _, _, _, _) -> pos
-| MutableOp1 (pos, _, _, _) -> pos
 | DeleteField (pos, _, _, _) -> pos
 | SetBang (pos, _, _, _) -> pos
 | OwnFieldNames (pos, _, _) -> pos
@@ -149,7 +147,6 @@ let label_of_prim (prim : cps_prim) = match prim with
 | SetObjAttr (_, label, _, _, _) -> label
 | Op1 (_, label, _, _) -> label
 | Op2 (_, label, _, _, _) -> label
-| MutableOp1 (_, label, _, _) -> label
 | DeleteField (_, label, _, _) -> label
 | SetBang (_, label, _, _) -> label
 | OwnFieldNames (_, label, _) -> label
@@ -327,7 +324,6 @@ let rec cps (exp : E.exp)
   (* | E.SetBang (pos, _, _) -> printf "Set! %s\n" (string_of_position pos) *)
   (* | E.Op1 (pos, _, _) -> printf "Op1 %s\n" (string_of_position pos) *)
   (* | E.Op2 (pos, _, _, _) -> printf "Op2 %s\n" (string_of_position pos) *)
-  (* | E.MutableOp1 (pos, _, _) -> printf "MutableOp1 %s\n" (string_of_position pos) *)
   (* | E.If (pos, _, _, _) -> printf "If %s\n" (string_of_position pos) *)
   (* | E.App (pos, _, _) -> printf "App %s\n" (string_of_position pos) *)
   (* | E.Seq (pos, _, _) -> printf "Seq %s\n" (string_of_position pos) *)
@@ -383,17 +379,9 @@ let rec cps (exp : E.exp)
                    ret (Id(pos,Label.newLabel(),temp))))
     | E.Op1 (pos, op, exp) -> 
         cps exp exnName (fun var ->
-          match op with
-          | "prevent-extension"
-          | "property-names"
-          | "own-property-names" ->
-            let temp = newVar "mutOp1Temp" in
-            LetPrim (pos,Label.newLabel(), temp, MutableOp1 (pos,Label.newLabel(), op, var), 
-                     ret (Id(pos,Label.newLabel(), temp)))
-          | _ -> 
-            let temp = newVar "op1Temp" in
-            LetPrim (pos,Label.newLabel(), temp, Op1 (pos,Label.newLabel(), op, var), 
-                     ret (Id(pos,Label.newLabel(), temp))))
+          let temp = newVar "op1Temp" in
+          LetPrim (pos,Label.newLabel(), temp, Op1 (pos,Label.newLabel(), op, var), 
+                   ret (Id(pos,Label.newLabel(), temp))))
     | E.Op2 (pos, op, left, right) -> 
         cps left exnName (fun leftVar -> 
           cps right exnName (fun rightVar ->
@@ -626,17 +614,9 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
           LetPrim (pos,Label.newLabel(), temp, SetBang (pos,Label.newLabel(), id, var), AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
     | E.Op1 (pos, op, exp) -> 
         cps exp exnName (fun var ->
-          match op with
-          | "prevent-extension"
-          | "property-names"
-          | "own-property-names" ->
-            let temp = newVar "mutOp1Temp" in
-            LetPrim (pos,Label.newLabel(), temp, MutableOp1 (pos,Label.newLabel(), op, var), 
-                     AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp)))
-          | _ -> 
-            let temp = newVar "op1Temp" in
-            LetPrim (pos,Label.newLabel(), temp, Op1 (pos,Label.newLabel(), op, var), 
-                     AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
+          let temp = newVar "op1Temp" in
+          LetPrim (pos,Label.newLabel(), temp, Op1 (pos,Label.newLabel(), op, var), 
+                   AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
     | E.Op2 (pos, op, left, right) -> 
         cps left exnName (fun leftVar -> 
           cps right exnName (fun rightVar ->
@@ -878,7 +858,6 @@ and de_cps_prim (prim : cps_prim) : E.exp =
   | SetObjAttr (pos, _, prop, obj, value) -> E.SetObjAttr(pos, prop, de_cps_val obj, de_cps_val value)
   | Op1 (pos, _, op, id) -> E.Op1 (pos, op, de_cps_val id)
   | Op2 (pos, _, op, left, right) -> E.Op2 (pos, op, de_cps_val left, de_cps_val right)
-  | MutableOp1 (pos, _, op, id) -> E.Op1 (pos, op, de_cps_val id)
   | DeleteField (pos, _, obj, field) -> E.DeleteField (pos, de_cps_val obj, de_cps_val field)
   | SetBang (pos, _, var, value) -> E.SetBang (pos, var, de_cps_val value)
   | OwnFieldNames (pos, _, obj) -> E.OwnFieldNames (pos, de_cps_val obj)

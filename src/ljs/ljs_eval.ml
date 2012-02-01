@@ -59,7 +59,7 @@ let get_obj_attr attrs attr = match attrs, attr with
   | { proto=proto }, S.Proto -> proto
   | { extensible=extensible} , S.Extensible -> bool extensible
   | { code=Some code}, S.Code -> code
-  | { code=None}, S.Code -> failwith "[interp] Got Code attr of None"
+  | { code=None}, S.Code -> Null
   | { primval=Some primval}, S.Primval -> primval
   | { primval=None}, S.Primval ->
       failwith "[interp] Got Primval attr of None"

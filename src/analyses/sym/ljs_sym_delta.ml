@@ -120,17 +120,6 @@ let prim_to_bool ctx v = (bool begin match v with
   | _ -> true
 end, ctx)
 
-let is_callable ctx obj = (bool begin match obj with
-  | ObjCell o -> begin match (sto_lookup o ctx) with
-    | ObjLit ({ code = Some (Closure c); }, _), _ -> true
-    | ObjLit ({ code = Some (Sym _); }, _), _ -> failwith "prim got a symbolic exp"
-    | ObjLit _, _ -> false
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> false
-end, ctx)
-
 let print ctx v = 
   let ret = match v with
     | String s -> 
@@ -139,137 +128,6 @@ let print ctx v =
     | Sym _ -> failwith "prim got a symbolic exp"
     | _ -> failwith ("[interp] Print received non-string: " ^ Ljs_sym_pretty.to_string v ctx.store)
   in (ret, ctx)
-
-let is_extensible ctx obj = (begin
-  match obj with
-  | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ extensible = true; }, _), _ -> True
-    | ObjLit _, _ -> False
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "is-extensible")
-end, ctx)
-  
-let prevent_extensions ctx obj = match obj with
-  | ObjCell o -> begin
-    match sto_lookup o ctx with
-    | ObjLit (attrs, props), ctx ->
-      let newO = ObjLit ({attrs with extensible = false}, props) in
-      (obj, sto_update o newO ctx )
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-    end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "prevent-extensions")
-    
-let get_code ctx obj = (begin
-  match obj with
-  | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ code = Some v; }, _), _ -> v
-    | ObjLit ({ code = None; }, _), _ -> Null
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "get-code")
-end, ctx)
-
-let get_proto ctx obj = (begin
-  match obj with
-  | ObjCell o -> begin match sto_lookup o ctx with 
-    | ObjLit ({ proto = pvalue; }, _), _ -> pvalue
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | v -> raise (PrimError ("get-proto got: " ^ Ljs_sym_pretty.to_string v ctx.store))
-end, ctx)
-
-let get_primval ctx obj = (begin 
-  match obj with
-  | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ primval = Some v; }, _), _ -> v
-    | ObjLit _, _ -> raise (PrimError "get-primval on an object with no prim val")
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "get-primval")
-end , ctx)
-
-let get_class ctx obj = (begin
-  match obj with
-  | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ klass = s; }, _), _ -> String (s)
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "get-class")
-end, ctx)
-
-(* All the enumerable property names of an object *)
-let rec get_property_names ctx obj = match obj with
-  | ObjCell o ->
-    let protos = obj::(all_protos ctx obj) in
-    let folder o set = begin match o with
-      | ObjCell o' -> begin
-	match sto_lookup o' ctx with
-        | ObjLit (attrs, props), _ ->
-	  IdMap.fold (fun k v s -> 
-	    if enum v then IdSet.add k s else s) props set
-        | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-      end
-      | _ -> set (* non-object prototypes don't contribute *) 
-    end in
-    let name_set = List.fold_right folder protos IdSet.empty in
-    let name_list= IdSet.elements name_set in
-    let prop_folder num name props = 
-      IdMap.add (string_of_int num) 
-        (Data ({ value = String name; writable = false; }, false, false))
-        props in
-    let name_props = List.fold_right2 prop_folder 
-      (iota (List.length name_list))
-      name_list
-      IdMap.empty in
-    let (newLoc, ctx') = sto_alloc (ObjLit (d_attrsv, name_props)) ctx in
-    (ObjCell newLoc, ctx')
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "get-property-names")
-
-and all_protos ctx o = 
-  match o with
-  | ObjCell c -> begin match sto_lookup c ctx with 
-    | ObjLit ({ proto = pvalue; }, _), ctx -> pvalue::(all_protos ctx pvalue)
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> []
-
-and enum prop = match prop with
-  | Accessor (_, b, _)
-  | Data (_, b, _) -> b
-
-let get_own_property_names ctx obj = match obj with
-  | ObjCell o -> begin
-    match sto_lookup o ctx with
-    | ObjLit (_, props), ctx ->
-      let add_name n x m = 
-        IdMap.add (string_of_int x) 
-          (Data ({ value = String n; writable = false; }, false, false)) 
-          m in
-      let namelist = IdMap.fold (fun k v l -> (k :: l)) props [] in
-      let props = 
-        List.fold_right2 add_name namelist (iota (List.length namelist)) IdMap.empty
-      in
-      let d = (float_of_int (List.length namelist)) in
-      let final_props = 
-        IdMap.add "length" 
-          (Data ({ value = Num d; writable = false; }, false, false))
-          props 
-      in
-      let (newLoc, ctx') = sto_alloc (ObjLit (d_attrsv, final_props)) ctx in
-      (ObjCell newLoc, ctx')
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
-  | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "own-property-names")
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
@@ -376,16 +234,7 @@ let op1 ctx op : value -> value * ctx = match op with
   | "prim->str" -> prim_to_str ctx
   | "prim->num" -> prim_to_num ctx
   | "prim->bool" -> prim_to_bool ctx
-  | "is-callable" -> is_callable ctx
-  | "is-extensible" -> is_extensible ctx
-  | "prevent-extensions" -> prevent_extensions ctx
   | "print" -> print ctx
-  | "get-proto" -> get_proto ctx
-  | "get-primval" -> get_primval ctx
-  | "get-class" -> get_class ctx
-  | "get-code" -> get_code ctx
-  | "property-names" -> get_property_names ctx
-  | "own-property-names" -> get_own_property_names ctx
   | "object-to-string" -> object_to_string ctx
   | "strlen" -> strlen ctx
   | "is-array" -> is_array ctx
@@ -412,16 +261,7 @@ let typeofOp1 op = match op with
   | "prim->str" -> (TAny, TString)
   | "prim->num" -> (TAny, TNum)
   | "prim->bool" -> (TAny, TBool)
-  | "is-callable" -> (TAny, TBool)
-  | "is-extensible" -> (TObj, TBool)
-  | "prevent-extensions" -> (TObj, TObj)
   | "print" -> (TAny, TUndef)
-  | "get-proto" -> (TObj, TAny)
-  | "get-primval" -> (TObj, TAny)
-  | "get-class" -> (TObj, TString)
-  | "get-code" -> (TObj, TAny)
-  | "property-names" -> (TObj, TObj)
-  | "own-property-names" -> (TObj, TObj)
   | "object-to-string" -> (TObj, TString)
   | "strlen" -> (TString, TNum)
   | "is-array" -> (TAny, TBool)

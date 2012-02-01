@@ -322,7 +322,6 @@ let eval (exp : C.cps_exp) =
     (* | C.DeleteField(_, l, o, f) -> printf "%d DeleteField %s[%s]\n" l (pretty_val o) (pretty_val f) *)
     (* | C.Op1(_, l, o, a) -> printf "%d Op1(%s, %s)\n" l o (pretty_val a) *)
     (* | C.Op2(_, l, o, a, b) -> printf "%d Op2(%s, %s, %s)\n" l o (pretty_val a) (pretty_val b) *)
-    (* | C.MutableOp1(_, l, o, a) -> printf "%d MutableOp1(%s, %s)\n" l o (pretty_val a) *)
     (* | C.SetBang(_, l, i, v) -> printf "%d Set!(%s = %s)\n" l i (pretty_val v) *)
     (* ); *)
     match prim with
@@ -469,10 +468,6 @@ let eval (exp : C.cps_exp) =
       let (left', bindingStore, retStore, exnStore) = eval_val left env bindingStore retEnv retStore exnEnv exnStore in
       let (right', bindingStore, retStore, exnStore) = eval_val right env bindingStore retEnv retStore exnEnv exnStore in
       (D.op2 op left' right' bindingStore, bindingStore, retStore, exnStore)
-    | C.MutableOp1(_, _, op, arg) -> 
-      let (arg', bindingStore, retStore, exnStore) = eval_val arg env bindingStore retEnv retStore exnEnv exnStore in
-      let (value, newStore) = D.mutableOp1 op arg' bindingStore in
-      (value, newStore, retStore, exnStore)
     | C.DeleteField(pos, _, obj, field) -> 
       let (obj', bindingStore, retStore, exnStore) = eval_val obj env bindingStore retEnv retStore exnEnv exnStore in
       let (obj', addr, retStore, exnStore) = match obj' with

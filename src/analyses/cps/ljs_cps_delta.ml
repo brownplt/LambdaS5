@@ -106,119 +106,11 @@ let prim_to_bool v _ = bool begin match v with
   | _ -> true
 end
 
-let is_callable obj (store : bindingStore) = bool begin match obj with
-  | VarCell (_, _, a) -> (match (Store.find a store) with
-    | Object (_, _, { code = Some (Closure _) }, _) -> true
-    | _ -> false)
-  | _ -> false
-end
-
 let print v _ = match v with
   | String (_, _, s) -> 
       printf "%S\n%!" s; Undefined (dummy_pos, newLabel())
   | Num (_, _, n) -> let s = string_of_float n in printf "%S\n" s; Undefined (dummy_pos, newLabel())
   | _ -> failwith ("[cps-interp] Print received non-string: " ^ (pretty_bind v))
-
-let is_extensible obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (_, _, { extensible = true }, _) -> bool true
-    | _ -> raise (CpsThrow ( "is-extensible: " ^ (pretty_bind obj))))
-  | _ -> raise (CpsThrow ( "is-extensible: " ^ (pretty_bind obj)))
-
-let prevent_extensions obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (p, l, attrs, props) -> 
-      (obj, Store.add a (Object(p, l, {attrs with extensible = false}, props)) store)
-    | _ -> raise (CpsThrow ( "prevent-extensions: " ^ (pretty_bind obj))))
-  | _ -> raise (CpsThrow ( "prevent-extensions: " ^ (pretty_bind obj)))
-      
-let get_code obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (_, _, { code = Some v }, _) -> v
-    | Object (_, _, { code = None }, _) -> Null (dummy_pos, newLabel())
-    | _ -> raise (CpsThrow ( "get-code: " ^ (pretty_bind obj))))
-  | _ -> raise (CpsThrow ( "get-code: " ^ (pretty_bind obj)))
-
-let get_proto obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (_, _, { proto = Some p }, _) -> p
-    | Object (_, _, { proto = None }, _) -> Null (dummy_pos, newLabel())
-    | v -> raise (CpsThrow ( ("cps-get-proto got a non-object:"  ^ (pretty_bind obj)))))
-  | v -> raise (CpsThrow ( ("cps-get-proto got a non-VarCell:"  ^ (pretty_bind obj))))
-
-let get_primval obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (_, _, { primval = Some v }, _) -> v
-    | Object (_, _, { primval = None }, _) -> raise (CpsThrow ( "get-primval on an object with no prim val"))
-    | _ -> raise (CpsThrow ( "cps-get-primval: " ^ (pretty_bind obj))))
-  | _ -> raise (CpsThrow ( "cps-get-primval: " ^ (pretty_bind obj)))
-
-let get_class obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (_, _, { klass = s }, _) -> str s
-    | _ -> raise (CpsThrow ( "cps-get-class: " ^ (pretty_bind obj))))
-  | _ -> raise (CpsThrow ( "cps-get-class: " ^ (pretty_bind obj)))
-
-(* All the enumerable property names of an object *)
-let rec get_property_names obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object _ ->
-      let protos = obj::(all_protos obj store) in
-      let folder o set = begin match o with
-	| Object(_, _, attrs, props) ->
-	  List.fold_left (fun s (k, v) -> 
-            if enum v then IdSet.add k s else s) set props
-	| _ -> set (* non-object prototypes don't contribute *) 
-      end in
-      let name_set = List.fold_right folder protos IdSet.empty in
-      let name_list= IdSet.elements name_set in
-      let prop_folder num name props = 
-	((string_of_int num),
-          (Data ({ value = String(dummy_pos, newLabel(), name); writable = false; }, false, false)))::props in
-      let name_props = List.fold_right2 prop_folder 
-        (iota (List.length name_list))
-        name_list
-        [] in
-      let d_attrsv = { primval = None; code = None; proto = None; extensible = false; klass = "LambdaJS interal" }
-      in
-      let newAddr = ADDRESS.newAddr() in
-      (VarCell(dummy_pos, newLabel(), newAddr), 
-       Store.add newAddr (Object(dummy_pos, newLabel(),d_attrsv, name_props)) store)
-    | _ -> raise (CpsThrow ( "get-property-names: " ^ (pretty_bind obj))))
-  | _ -> raise (CpsThrow ( "get-property-names: " ^ (pretty_bind obj)))
-
-and all_protos o store = 
-  match o with
-  | Object (_, _, { proto = Some p }, _) -> p::(all_protos p store)
-  | VarCell (_, _, a) -> all_protos (Store.find a store) store
-  | _ -> []
-
-and enum prop = match prop with
-  | Accessor (_, b, _)
-  | Data (_, b, _) -> b
-
-let get_own_property_names obj store = match obj with
-  | VarCell(_, _, a) -> (match (Store.find a store) with
-    | Object (_, _, _, props) ->
-      let add_name n x m = 
-        ((string_of_int x),
-         (Data ({ value = String (dummy_pos, newLabel(), n); writable = false; }, false, false))) :: m in
-      let namelist = List.fold_left (fun l (k, v) -> (k :: l)) [] props in
-      let props = 
-	List.fold_right2 add_name namelist (iota (List.length namelist)) []
-      in
-      let d = (float_of_int (List.length namelist)) in
-      let final_props = 
-        ("length",
-         (Data ({ value = Num (dummy_pos, newLabel(), d); writable = false; }, false, false)))::props in 
-      let d_attrsv = { primval = None; code = None; proto = None; 
-                       extensible = false; klass = "LambdaJS interal" }
-      in 
-      let newAddr = ADDRESS.newAddr() in
-      (VarCell(dummy_pos, newLabel(), newAddr), 
-       Store.add newAddr (Object(dummy_pos, newLabel(), d_attrsv, final_props)) store)
-    | _ -> raise (CpsThrow ( "own-property-names: " ^ (pretty_bind obj))))
-  | _ -> raise (CpsThrow ( "own-property-names: " ^ (pretty_bind obj)))
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
@@ -289,12 +181,6 @@ let numstr s _ = match s with
   | String (_, _, s) -> num (try float_of_string s with Failure _ -> nan)
   | _ -> raise (CpsThrow ( "numstr"))
 
-let mutableOp1 op : bind_value -> bind_value Store.t -> bind_value * bind_value Store.t = match op with
-  | "property-names" -> get_property_names
-  | "own-property-names" -> get_own_property_names
-  | "prevent-extensions" -> prevent_extensions
-  | _ -> failwith ("Not a mutable op1: " ^ op)
-
 let op1 op : bind_value -> bind_value Store.t -> bind_value = match op with
   | "typeof" -> typeof
   | "surface-typeof" -> surface_typeof
@@ -302,13 +188,7 @@ let op1 op : bind_value -> bind_value Store.t -> bind_value = match op with
   | "prim->str" -> prim_to_str
   | "prim->num" -> prim_to_num
   | "prim->bool" -> prim_to_bool
-  | "is-callable" -> is_callable
-  | "is-extensible" -> is_extensible
   | "print" -> print
-  | "get-proto" -> get_proto
-  | "get-primval" -> get_primval
-  | "get-class" -> get_class
-  | "get-code" -> get_code
   | "object-to-string" -> object_to_string
   | "strlen" -> strlen
   | "is-array" -> is_array

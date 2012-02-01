@@ -1159,232 +1159,11 @@ let prim_to_bool v _ =
     )
   | _ -> bool true
 
-let is_callable obj store = 
-  let module VL = ValueLattice in
-  let module ASL = AddressSetLattice in
-  let module OL = ObjLattice in
-  match (ValueLattice.addrsOf obj) with
-  | ASL.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
-                                     (ASL.elements addrs)) in
-    (match (VL.objOf value) with
-    | OL.Bot -> VL.injectBool (BoolLattice._Bot ())
-    | OL.Obj ({OL.code = Some _}, _) -> bool true
-    | OL.Obj _ -> bool false
-    | OL.Top -> VL.injectBool (BoolLattice._Top ()))
-  | _ -> bool false
-
 let print v _ = 
   ValueLattice.injectUndef (UndefLattice._Top ()) (* abstractly, we don't have to print *)
 
-let is_extensible obj store = 
-  let module VL = ValueLattice in
-  let module ASL = AddressSetLattice in
-  let module OL = ObjLattice in
-  match (ValueLattice.addrsOf obj) with
-  | ASL.Set addrs ->
-    let value = VL.meet (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
-                                     (ASL.elements addrs)) in
-    (match (VL.objOf value) with
-    | OL.Bot -> VL.injectBool (BoolLattice._Bot ())
-    | OL.Obj ({OL.extensible = b}, _) -> VL.injectBool b
-    | OL.Top -> VL.injectBool (BoolLattice._Top ()))
-  | _ -> bool false
-
-let prevent_extensions label getStore updateValue obj store = match (ValueLattice.addrsOf obj) with
-  | AddressSetLattice.Set addrs ->
-    let strongUpdate = AddressSet.cardinal addrs = 1 in
-    let (store, modified) = AddressSet.fold (fun addr (store, modified) ->
-      let (bindingStore, _, _) = getStore label store in
-      let value = Ljs_cps_values.Store.find addr bindingStore in
-      let o = ValueLattice.objOf value in
-      let o' = ObjLattice.setExtensible strongUpdate o BoolLattice.False in
-      (updateValue true label addr (ValueLattice.injectObj o') store, modified || o' <> o)
-    ) addrs (store, false) in
-    (obj, store, modified)
-  | _ -> (obj, store, false) 
-
-let get_code obj store = 
-  let module VL = ValueLattice in
-  let module OL = ObjLattice in
-  match (VL.addrsOf obj) with
-  | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
-                                     (AddressSetLattice.elements addrs)) in
-    let o = VL.objOf value in
-    (match o with
-    | OL.Obj ({OL.code = Some v}, _) -> VL.injectClosure v
-    | OL.Obj ({OL.code = None}, _) -> VL.injectNull (NullLattice._Top ())
-    | OL.Bot -> VL._Bot ()
-    | OL.Top -> VL.join [VL.injectNull (NullLattice._Top ()); VL.injectObj (ObjLattice._Top ())])
-  | a -> ValueLattice.injectAddrs a
-
-let get_proto obj store =
-  let module VL = ValueLattice in
-  let module OL = ObjLattice in
-  match (VL.addrsOf obj) with
-  | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
-                                     (AddressSetLattice.elements addrs)) in
-    let o = VL.objOf value in
-    (match o with
-    | OL.Obj ({OL.proto = Some v}, _) -> v
-    | OL.Obj ({OL.proto = None}, _) -> VL.injectNull (NullLattice._Top ())
-    | OL.Bot -> VL._Bot ()
-    | OL.Top -> VL._Top ())
-  | a -> ValueLattice.injectAddrs a
-
-let get_primval obj store =
-  let module VL = ValueLattice in
-  let module OL = ObjLattice in
-  match (VL.addrsOf obj) with
-  | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
-                                     (AddressSetLattice.elements addrs)) in
-    let o = VL.objOf value in
-    (match o with
-    | OL.Obj ({OL.primval = Some v}, _) -> v
-    | OL.Obj ({OL.primval = None}, _) -> VL._Bot ()
-    | OL.Bot -> VL._Bot ()
-    | OL.Top -> VL._Top ())
-  | a -> ValueLattice.injectAddrs a
-
-let get_class obj store =
-  let module VL = ValueLattice in
-  let module OL = ObjLattice in
-  match (VL.addrsOf obj) with
-  | AddressSetLattice.Set addrs ->
-    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
-                                     (AddressSetLattice.elements addrs)) in
-    let o = VL.objOf value in
-    (match o with
-    | OL.Obj ({OL.klass = s}, _) -> VL.injectStr s
-    | OL.Bot -> VL.injectStr (StringLattice._Bot ())
-    | OL.Top -> VL.injectStr (StringLattice._Top ()))
-  | a -> ValueLattice.injectAddrs a
-
 (* All the enumerable property names of an object *)
 exception Pointy of ValueLattice.t
-let rec get_property_names label getStore updateValue obj store =
-  let module VL = ValueLattice in
-  let module BL = BoolLattice in
-  let module OL = ObjLattice in
-  try
-    match (VL.addrsOf obj) with
-    | AddressSetLattice.Set addrs ->
-      let (bindingStore, _, _) = getStore label store in
-      let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr bindingStore)
-                             (AddressSetLattice.elements addrs)) in
-      let o = VL.objOf value in
-      (match o with
-      | OL.Obj (_, _) -> 
-        let protos = o::(all_protos obj bindingStore) in
-        let folder o set = begin match o with
-	  | OL.Obj(attrs, props) -> 
-	    IdMap.fold (fun k v s ->
-              match enum v with
-              | BoolLattice.Bot -> raise (Pointy (VL._Bot ()))
-              | BoolLattice.Bool -> raise (Pointy (VL.injectObj (OL._Top ())))
-              | b -> if unbool b then IdSet.add k s else s) props set
-          | OL.Top -> raise (Pointy (VL._Top ()))
-	  | OL.Bot -> set (* non-object prototypes don't contribute *) 
-        end in
-        let name_set = List.fold_right folder protos IdSet.empty in
-        let name_list= IdSet.elements name_set in
-        let prop_folder num name props = 
-          IdMap.add (string_of_int num)
-            (OL.Data ({ OL.value = str name; OL.writable = BL.inject false }, 
-                      BL.inject false, BL.inject false)) props in
-        let name_props = List.fold_right2 prop_folder 
-          (iota (List.length name_list))
-          name_list
-          IdMap.empty in
-        let d_attrsv = { OL.primval = None; OL.code = None; OL.proto = None; 
-                         OL.extensible = BL.inject false; OL.klass = StringLattice.inject "LambdaJS interal" }
-        in 
-        let newAddr = V.ADDRESS.addrForContour [label] in
-        let oldObj = Ljs_cps_values.Store.find newAddr bindingStore in
-        let newObj = VL.injectObj (OL.Obj(d_attrsv, name_props)) in
-        (VL.injectAddrs (AddressSetLattice.inject newAddr), 
-         updateValue true label newAddr (VL.join [newObj; oldObj]) store, 
-         oldObj <> newObj)
-      | OL.Bot -> (VL._Bot (), store, false)
-      | OL.Top -> (VL.injectObj (OL._Top ())), store, false)
-    | a -> (ValueLattice.injectAddrs a, store, false)
-  with Pointy v -> (v, store, false) (* if anything went wrong, abort with a pointy *)
-
-
-and all_protos o store : ObjLattice.t list = 
-  let module VL = ValueLattice in
-  let module ASL = AddressSetLattice in
-  let module OL = ObjLattice in
-  let fromObj = match (VL.objOf o) with
-    | OL.Obj ({ OL.proto = Some p }, _) -> Some p
-    | _ -> None in
-  let fromAddrs = match (VL.addrsOf o) with
-    | ASL.Set addrs ->
-      let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr store)
-                             (ASL.elements addrs)) in
-      (match (VL.objOf value) with
-      | OL.Obj ({ OL.proto = Some p }, _) -> Some p
-      | _ -> None)
-    | _ -> None in
-  let joined = match (fromObj, fromAddrs) with
-    | None, Some o -> Some o
-    | Some o, None -> Some o
-    | Some o, Some a -> Some (VL.join [o; a])
-    | _ -> None in
-  match joined with
-  | None -> []
-  | Some v -> match (VL.objOf v) with
-    | (OL.Obj ({OL.proto = Some p}, _) as o) -> o :: all_protos p store
-    | (OL.Obj _) -> []
-    | (OL.Bot) -> [OL._Bot ()]
-    | (OL.Top) -> [OL._Top ()]
-
-and enum prop = match prop with
-  | ObjLattice.Accessor (_, b, _)
-  | ObjLattice.Data (_, b, _) -> b
-  | ObjLattice.PropTop -> BoolLattice.Bool
-  | ObjLattice.Unknown -> BoolLattice.Bot
-
-let get_own_property_names label getStore updateValue obj store =
-  let module VL = ValueLattice in
-  let module BL = BoolLattice in
-  let module OL = ObjLattice in
-  match (VL.addrsOf obj) with
-  | AddressSetLattice.Set addrs ->
-    let (bindingStore, _, _) = getStore label store in
-    let value = VL.join (List.map (fun addr -> Ljs_cps_values.Store.find addr bindingStore)
-                           (AddressSetLattice.elements addrs)) in
-    let o = VL.objOf value in
-    (match o with
-    | OL.Obj (_, props) -> 
-      let add_name n x m = 
-        IdMap.add (string_of_int x)
-          (OL.Data ({ OL.value = str n; OL.writable = BL.inject false }, 
-                    BL.inject false, BL.inject false)) m in
-      let namelist = IdMap.fold (fun k _ l -> (k :: l)) props [] in
-      
-      let props = 
-	List.fold_right2 add_name namelist (iota (List.length namelist)) IdMap.empty in
-      let d = (float_of_int (List.length namelist)) in
-      let final_props = 
-        IdMap.add "length"
-          (OL.Data ({ OL.value = num d; OL.writable = BL.inject false },
-                    BL.inject false, BL.inject false)) props in 
-      let d_attrsv = { OL.primval = None; OL.code = None; OL.proto = None; 
-                       OL.extensible = BL.inject false; OL.klass = StringLattice.inject "LambdaJS interal" }
-      in
-      let newAddr = V.ADDRESS.addrForContour [label] in
-      let oldObj = Ljs_cps_values.Store.find newAddr bindingStore in
-      let newObj = VL.injectObj (OL.Obj(d_attrsv, final_props)) in
-      (VL.injectAddrs (AddressSetLattice.inject newAddr), 
-       updateValue true label newAddr (VL.join [newObj; oldObj]) store, 
-       oldObj <> newObj)
-    | OL.Bot -> (VL._Bot (), store, false)
-    | OL.Top -> (VL.injectObj (OL._Top ())), store, false)
-  | a -> (ValueLattice.injectAddrs a, store, false)
 
 
 (* Implement this here because there's no need to expose the class
@@ -1532,12 +1311,6 @@ let sine n _ = to_num_fn sin n
 
 let numstr s _ = str_to_num_fn (fun s -> (try float_of_string s with Failure _ -> nan)) s
 
-let mutableOp1 label getStore updateValue op = match op with
-  | "property-names" -> get_property_names label getStore updateValue
-  | "own-property-names" -> get_own_property_names label getStore updateValue
-  | "prevent-extensions" -> prevent_extensions label getStore updateValue
-  | _ -> failwith ("Not a mutable op1: " ^ op)
-
 
 let op1 op : ValueLattice.t -> ValueLattice.t Ljs_cps_values.Store.t -> ValueLattice.t = match op with
   | "typeof" -> typeof
@@ -1546,13 +1319,7 @@ let op1 op : ValueLattice.t -> ValueLattice.t Ljs_cps_values.Store.t -> ValueLat
   | "prim->str" -> prim_to_str
   | "prim->num" -> prim_to_num
   | "prim->bool" -> prim_to_bool
-  | "is-callable" -> is_callable
-  | "is-extensible" -> is_extensible
   | "print" -> print
-  | "get-proto" -> get_proto
-  | "get-primval" -> get_primval
-  | "get-class" -> get_class
-  | "get-code" -> get_code
   | "object-to-string" -> object_to_string
   | "strlen" -> strlen
   | "is-array" -> is_array

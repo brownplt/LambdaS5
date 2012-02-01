@@ -49,8 +49,6 @@ and cell c store =
 (*                                                  text "="; value v])]) *)
 (*   | SetBang (p,lbl, x, e) -> *)
 (*     label verbose lbl (horz [text x; text "<-"; value e]) *)
-(*   | MutableOp1 (p,lbl, op, e) ->  *)
-(*     label verbose lbl (squish [text "mutPrim"; parens (horz [text ("\"" ^ op ^ "\","); value e])]) *)
 (*   | DeleteField (p,lbl, o, f) -> *)
 (*     label verbose lbl (squish [value o; brackets (horz [text "delete"; value f])]) *)
 and castFn t e store = match t with

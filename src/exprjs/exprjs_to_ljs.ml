@@ -193,7 +193,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
               S.If (p, S.Op1 (p, "!", is_object_type p (S.Id (p, pr_id))),
                 S.SetBang (p, pr_id, S.Id (p, "%ObjectProto")), S.Undefined p),
             S.Let (p, newobj, S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
-              S.If (p, null_test p (S.Op1 (p, "get-code", S.Id (p, constr_id))),
+              S.If (p, null_test p (S.GetObjAttr (p, S.Code, S.Id (p, constr_id))),
                     throw_typ_error p,
                     S.Let (p, constr_result, S.App (p, S.Id (p, constr_id), [S.Id (p, newobj); constrargs]),
                     S.If (p, is_object_type p (S.Id (p, constr_result)),

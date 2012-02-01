@@ -173,9 +173,6 @@ let partition_vars e =
     | C.Op2 (_, l, _, u, v) ->
       part_val curL u;      part_val curL v;
       LabelUF.union labelSets curL l
-    | C.MutableOp1 (_, l, _, v) ->
-      part_val curL v;
-      LabelUF.union labelSets curL l
     | C.DeleteField(_, l, o, f) ->
       part_val curL o;      part_val curL f;
       LabelUF.union labelSets curL l
@@ -218,7 +215,6 @@ let partition_vars e =
     | C.SetObjAttr (_, _, _, o, v) -> vars_at_val v (vars_at_val o acc)
     | C.Op1 (_, _, _, v) -> vars_at_val v acc
     | C.Op2 (_, _, _, l, r) -> vars_at_val r (vars_at_val l acc)
-    | C.MutableOp1 (_, _, _, v) -> vars_at_val v acc
     | C.DeleteField (_, _, o, f) -> vars_at_val f (vars_at_val o acc)
     | C.SetBang (_, _, _, v) -> vars_at_val v acc
     | C.OwnFieldNames (_, _, o) -> vars_at_val o acc
@@ -927,7 +923,6 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       | C.DeleteField(_, l, o, f) -> printf "%s DeleteField %s[%s]\n" (C.Label.toString l) (pretty_val o) (pretty_val f)
       | C.Op1(_, l, o, a) -> printf "%s Op1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
       | C.Op2(_, l, o, a, b) -> printf "%s Op2(%s, %s, %s)\n" (C.Label.toString l) o (pretty_val a) (pretty_val b)
-      | C.MutableOp1(_, l, o, a) -> printf "%s MutableOp1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
       | C.SetBang(_, l, i, v) -> printf "%s Set!(%s = %s)\n" (C.Label.toString l) i (pretty_val v)
       | C.OwnFieldNames(_, l, o) -> printf "%s GetOwnFieldNames(%s)\n" (C.Label.toString l) (pretty_val o)
     );
@@ -1127,13 +1122,6 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       printModReasons label ["oldArg <> arg'", arg' <> oldArg];
       (D.op1 op arg' bindingStore, storeArg, oldArg <> arg')
     | C.OwnFieldNames _ -> failwith "[cfg_abs] OwnFieldNames NYI"
-    | C.MutableOp1(_, label, op, arg) ->
-      let oldArg = eval_val arg env store in
-      let envArg = copyEnv label (C.label_of_val arg) env in
-      let storeArg = pushStore label (C.label_of_val arg) store in
-      let arg' = eval_val arg envArg storeArg in
-      let (value', store', modified) = D.mutableOp1 label getStore updateValue op arg' storeArg in
-      (arg', store', modified || oldArg <> arg')
     | C.Op2(_, label, op, left, right) ->
       print_all_abs_bindings store;
       let oldLeft = eval_val left env store in
