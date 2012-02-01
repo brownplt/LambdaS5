@@ -32,7 +32,7 @@ and accessorv = { getter : value; setter : value; }
 
 let d_attrsv = { primval = None;
                  code = None; 
-                 proto = Undefined; 
+                 proto = Null; 
                  extensible = false; 
                  klass = "LambdaJS internal"; }
 
