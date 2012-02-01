@@ -32,6 +32,8 @@ let with_pos exp pos = match exp with
   | Object (_, attrs, props) -> Object (pos, attrs, props)
   | GetAttr (_, pattr, obj, field) -> GetAttr (pos, pattr, obj, field)
   | SetAttr (_, prop, obj, field, value) -> SetAttr (pos, prop, obj, field, value)
+  | GetObjAttr (_, oattr, obj) -> GetObjAttr (pos, oattr, obj)
+  | SetObjAttr (_, oattr, obj, v) -> SetObjAttr (pos, oattr, obj, v)
   | GetField (_, left, right, args) -> GetField (pos, left, right, args)
   | SetField (_, obj, field, value, args) -> SetField (pos, obj, field, value, args)
   | DeleteField (_, obj, field) -> DeleteField (pos, obj, field)
@@ -101,6 +103,9 @@ oattrsv :
  | PROTO COLON exp COMMA oattrsv { { $5 with proto = Some $3 } }
  | CODE COLON exp COMMA oattrsv { {$5 with code = Some $3 } }
  | CLASS COLON STRING COMMA oattrsv { { $5 with klass = $3 } }
+
+oattr_name :
+ | EXTENSIBLE { Extensible }
 
 attr_name :
  | WRITABLE { Writable }
@@ -200,6 +205,12 @@ exp :
      { GetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $5, $1, $3) }
  | exp LBRACK unbraced_seq_exp LT attr_name GT EQUALS unbraced_seq_exp RBRACK
      { SetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 9), $5, $1, $3, $8) }
+ | exp LT oattr_name GT
+     { GetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4),
+                  $3, $1) }
+ | exp LT oattr_name EQUALS unbraced_seq_exp GT
+     { SetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4),
+                  $3, $1, $5) }
  | exp AMPAMP exp
      { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, 
             $3, False (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3)) }

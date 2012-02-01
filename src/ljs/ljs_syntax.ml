@@ -1,5 +1,12 @@
 open Prelude
 
+type oattr = 
+  | Proto
+  | Klass
+  | Extensible
+  | Primval
+  | Code
+
 type pattr =
   | Value
   | Getter
@@ -29,6 +36,8 @@ type exp =
   | GetAttr of pos * pattr * exp * exp
       (* SetAttr (pos, property, object, field name, new value) *)
   | SetAttr of pos * pattr * exp * exp * exp
+  | GetObjAttr of pos * oattr * exp
+  | SetObjAttr of pos * oattr * exp * exp
   | GetField of pos * exp * exp * exp (*pos, left, right, args object *)
   | SetField of pos * exp * exp * exp * exp (* pos, obj, field, new val, args *)
   | DeleteField of pos * exp * exp (* pos, obj, field *)
@@ -93,6 +102,8 @@ let pos_of exp = match exp with
   | Object (pos, _, _) -> pos
   | GetAttr (pos, _, _, _) -> pos
   | SetAttr (pos, _, _, _, _) -> pos
+  | GetObjAttr (pos, _, _) -> pos
+  | SetObjAttr (pos, _, _, _) -> pos
   | GetField (pos, _, _, _) -> pos 
   | SetField (pos, _, _, _, _) -> pos 
   | DeleteField (pos, _, _) -> pos
@@ -113,3 +124,4 @@ let pos_of exp = match exp with
   | Lambda (pos, _, _) -> pos
   | Eval (pos, _) -> pos
   | Hint (pos, _, _) -> pos
+
