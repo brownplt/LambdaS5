@@ -7,6 +7,13 @@ type oattr =
   | Primval
   | Code
 
+let string_of_oattr oattr = match oattr with
+  | Proto -> "#proto"
+  | Klass -> "#class"
+  | Extensible -> "#extensible"
+  | Primval -> "#primval"
+  | Code -> "#code"
+
 type pattr =
   | Value
   | Getter

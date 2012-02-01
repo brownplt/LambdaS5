@@ -37,6 +37,15 @@ and prim verbose p =
     label verbose lbl (squish [value o;
                                brackets (squish [value f; angles (horz [text (Ljs_syntax.string_of_attr a)]);
                                                  text "="; value v])])
+  | GetObjAttr (p,lbl, a, o) ->
+    label verbose lbl (squish [value o;
+                               angles (horz [text (Ljs_syntax.string_of_oattr a)])])
+  | SetObjAttr (p,lbl, a, o, v) ->
+    label verbose lbl
+      (squish [value o;
+               angles (horz [text (Ljs_syntax.string_of_oattr a);
+                             text "=";
+                             value v])])
   | SetBang (p,lbl, x, e) ->
     label verbose lbl (horz [text x; text "<-"; value e])
   | Op1 (p,lbl, op, e) -> 

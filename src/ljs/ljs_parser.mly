@@ -212,9 +212,9 @@ exp :
  | exp LBRACK LT oattr_name GT RBRACK
      { GetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6),
                   $4, $1) }
- | exp LBRACK LT oattr_name EQUALS unbraced_seq_exp GT RBRACK
+ | exp LBRACK LT oattr_name GT EQUALS unbraced_seq_exp RBRACK
      { SetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8),
-                  $4, $1, $6) }
+                  $4, $1, $7) }
  | exp AMPAMP exp
      { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, 
             $3, False (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3)) }

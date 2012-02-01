@@ -606,6 +606,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind (eval field env pc_obj)
               (fun (f_val, pc_f) -> sym_get_attr attr obj_val f_val pc_f))
 
+      | S.GetObjAttr _ -> failwith "[sym_eval] GetObjAttr NYI"
+      | S.SetObjAttr _ -> failwith "[sym_eval] SetObjAttr NYI"
+
       | S.GetField (p, obj, f, args) ->
         let rec sym_get_field p obj1 field getter_params result pc depth = 
           try

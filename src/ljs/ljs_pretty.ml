@@ -32,6 +32,13 @@ let rec exp e = match e with
     squish [exp o;
             brackets (squish [exp f; angles (horz [text (string_of_attr a)]);
                               text "="; exp v])]
+  | GetObjAttr (p, a, o) ->
+    squish [exp o;
+            brackets (angles (horz [text (string_of_oattr a)]))]
+  | SetObjAttr (p, a, o, v) ->
+    squish [exp o;
+            brackets (squish [angles (horz [text (string_of_oattr a)]);
+                              text "="; exp v])]
   | OwnFieldNames (p, o) ->
     squish [text "get-own-field-names"; parens (exp o)]
   | SetBang (p, x, e) ->

@@ -38,6 +38,8 @@ type cps_value =
 and cps_prim =
   | GetAttr of pos * Label.t * E.pattr * cps_value * cps_value
   | SetAttr of pos * Label.t * E.pattr * cps_value * cps_value * cps_value
+  | GetObjAttr of pos * Label.t * E.oattr * cps_value
+  | SetObjAttr of pos * Label.t * E.oattr * cps_value * cps_value
   | Op1 of pos * Label.t * string * cps_value
   | Op2 of pos * Label.t * string * cps_value * cps_value
   | MutableOp1 of pos * Label.t * string * cps_value
@@ -110,6 +112,8 @@ let pos_of_exp (exp : cps_exp) = match exp with
 let pos_of_prim (prim : cps_prim) = match prim with
 | GetAttr (pos, _, _, _, _) -> pos
 | SetAttr (pos, _, _, _, _, _) -> pos
+| GetObjAttr (pos, _, _, _) -> pos
+| SetObjAttr (pos, _, _, _, _) -> pos
 | Op1 (pos, _, _, _) -> pos
 | Op2 (pos, _, _, _, _) -> pos
 | MutableOp1 (pos, _, _, _) -> pos
@@ -141,6 +145,8 @@ let label_of_exp (exp : cps_exp) = match exp with
 let label_of_prim (prim : cps_prim) = match prim with
 | GetAttr (_, label, _, _, _) -> label
 | SetAttr (_, label, _, _, _, _) -> label
+| GetObjAttr (_, label, _, _) -> label
+| SetObjAttr (_, label, _, _, _) -> label
 | Op1 (_, label, _, _) -> label
 | Op2 (_, label, _, _, _) -> label
 | MutableOp1 (_, label, _, _) -> label
@@ -413,6 +419,20 @@ let rec cps (exp : E.exp)
               let temp = newVar "setTemp" in
               LetPrim (pos,Label.newLabel(), temp, SetAttr (pos,Label.newLabel(), prop_meta, objVar, pnameVar, valueVar), 
                        ret (Id(pos,Label.newLabel(), temp))))))
+    | E.GetObjAttr (pos, oattr, obj) ->
+        cps obj exnName (fun objVar ->
+          let temp = newVar "getObjAttrTemp" in
+          LetPrim (pos, Label.newLabel(), temp,
+                   GetObjAttr (pos, Label.newLabel(), oattr, objVar),
+                       ret (Id(pos,Label.newLabel(), temp))))
+    | E.SetObjAttr (pos, oattr, obj, attrval) ->
+        cps obj exnName (fun objVar ->
+          cps attrval exnName (fun attrVar -> 
+            let temp = newVar "getObjAttrTemp" in
+            LetPrim (pos, Label.newLabel(), temp,
+                     SetObjAttr (pos, Label.newLabel(), oattr, objVar,
+                                 attrVar),
+                       ret (Id(pos,Label.newLabel(), temp)))))
 
     (* CPS Expression forms *)
     | E.Hint (pos, label, exp) -> cps exp exnName ret
@@ -640,6 +660,23 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
               LetPrim (pos,Label.newLabel(), temp, SetAttr (pos,Label.newLabel(), prop_meta, objVar, pnameVar, valueVar), 
                        AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))))
 
+    | E.GetObjAttr (pos, attr, obj) -> 
+        cps obj exnName (fun objVar -> 
+          let temp = newVar "getTemp" in
+          LetPrim (pos,Label.newLabel(), temp,
+                   GetObjAttr (pos,Label.newLabel(), attr, objVar),
+                   AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
+
+    | E.SetObjAttr (pos, attr, obj, attrval) -> 
+        cps obj exnName (fun objVar -> 
+          cps attrval exnName (fun attrVar ->
+            let temp = newVar "getTemp" in
+            LetPrim (pos,Label.newLabel(), temp,
+                     SetObjAttr (pos,Label.newLabel(), attr,
+                                 objVar, attrVar),
+                     AppRetCont (Label.newLabel(), retName,
+                                 Id (pos,Label.newLabel(),temp)))))
+
     (* CPS Expression forms *)
     | E.Hint (pos, label, exp) -> cps_tail exp exnName retName
     | E.Seq (pos, first, second) -> 
@@ -837,6 +874,8 @@ and de_cps_prim (prim : cps_prim) : E.exp =
   match prim with
   | GetAttr (pos, _, prop, obj, field) -> E.GetAttr(pos, prop, de_cps_val obj, de_cps_val field)
   | SetAttr (pos, _, prop, obj, field, value) -> E.SetAttr(pos, prop, de_cps_val obj, de_cps_val field, de_cps_val value)
+  | GetObjAttr (pos, _, prop, obj) -> E.GetObjAttr(pos, prop, de_cps_val obj)
+  | SetObjAttr (pos, _, prop, obj, value) -> E.SetObjAttr(pos, prop, de_cps_val obj, de_cps_val value)
   | Op1 (pos, _, op, id) -> E.Op1 (pos, op, de_cps_val id)
   | Op2 (pos, _, op, left, right) -> E.Op2 (pos, op, de_cps_val left, de_cps_val right)
   | MutableOp1 (pos, _, op, id) -> E.Op1 (pos, op, de_cps_val id)

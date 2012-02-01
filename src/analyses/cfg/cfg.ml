@@ -431,6 +431,8 @@ let eval (exp : C.cps_exp) =
         failwith "[cps-interp] extending inextensible object"
       | _ -> failwith "[cps-interp] set-attr didn't get an object and a string"
       end
+    | C.GetObjAttr _ -> failwith "[cps-interp] GetObjAttr NYI"
+    | C.SetObjAttr _ -> failwith "[cps-interp] SetObjAttr NYI"
     | C.Op1(_, _, op, arg) -> 
       let (arg', bindingStore, retStore, exnStore) = eval_val arg env bindingStore retEnv retStore exnEnv exnStore in
       (D.op1 op arg' bindingStore, bindingStore, retStore, exnStore)

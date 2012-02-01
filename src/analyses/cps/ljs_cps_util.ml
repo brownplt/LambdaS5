@@ -26,6 +26,8 @@ let no_free_vars exp (env : unit IdMap.t) : bool =
     match prim with
     | C.GetAttr (_,_, _, obj, field) -> List.for_all (free_val env) [obj; field]
     | C.SetAttr (_,_, _, obj, field, value) -> List.for_all (free_val env) [obj; field; value]
+    | C.GetObjAttr (_,_, _, obj) -> free_val env obj
+    | C.SetObjAttr (_,_, _, obj, value) -> List.for_all (free_val env) [obj; value]
     | C.Op1 (_,_, _, arg) -> free_val env arg
     | C.Op2 (_,_, _, left, right) -> List.for_all (free_val env) [left; right]
     | C.MutableOp1 (_,_, _, arg) -> free_val env arg
@@ -125,6 +127,13 @@ let alphatize allowUnbound (exp, env) =
       let (field', env2) = alph_val (field, env1) in
       let (value', env3) = alph_val (value, env2) in
       (C.SetAttr(p,l, pattr, obj', field', value'), env3)
+    | C.GetObjAttr (p,l, pattr, obj) ->
+      let (obj', env1) = alph_val (obj, env) in
+      (C.GetObjAttr(p,l, pattr, obj'), env1)
+    | C.SetObjAttr (p,l, pattr, obj, value) ->
+      let (obj', env1) = alph_val (obj, env) in
+      let (value', env2) = alph_val (value, env1) in
+      (C.SetObjAttr(p,l, pattr, obj', value'), env2)
     | C.Op1 (p,l, op, arg) ->
       let (arg', env1) = alph_val (arg, env) in
       (C.Op1(p,l, op, arg'), env1)

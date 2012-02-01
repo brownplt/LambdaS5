@@ -55,6 +55,17 @@ let rec not_writable prop = match prop with
   | Data ({ writable = false; }, _, _) -> true
   | _ -> false
 
+let get_obj_attr attrs attr = match attrs, attr with
+  | { proto=proto }, S.Proto -> proto
+  | { extensible=extensible} , S.Extensible -> bool extensible
+  | { code=Some code}, S.Code -> code
+  | { code=None}, S.Code -> failwith "[interp] Got Code attr of None"
+  | { primval=Some primval}, S.Primval -> primval
+  | { primval=None}, S.Primval ->
+      failwith "[interp] Got Primval attr of None"
+  | { klass=klass }, S.Klass -> String klass
+
+
 let rec get_attr store attr obj field = match obj, field with
   | ObjLoc loc, String s -> let (attrs, props) = get_obj store loc in
       if (not (IdMap.mem s props)) then
@@ -342,6 +353,39 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       let (v_val, store) = eval newval env store in
       let b, store = set_attr store attr obj_val f_val v_val in
       bool b, store
+  | S.GetObjAttr (p, oattr, obj) ->
+      let (obj_val, store) = eval obj env store in
+      begin match obj_val with
+        | ObjLoc loc ->
+            let (attrs, _) = get_obj store loc in
+            get_obj_attr attrs oattr, store
+        | _ -> failwith ("[interp] GetObjAttr got a non-object: " ^
+                          (pretty_value obj_val))
+      end
+  | S.SetObjAttr (p, oattr, obj, attre) ->
+      let (obj_val, store) = eval obj env store in
+      let (attrv, store) = eval attre env store in
+      begin match obj_val with
+        | ObjLoc loc ->
+            let (attrs, props) = get_obj store loc in
+            let attrs' = match oattr, attrv with
+              | S.Proto, ObjLoc _
+              | S.Proto, Null -> { attrs with proto=attrv }
+              | S.Proto, _ ->
+                  failwith ("[interp] Update proto failed: " ^
+                            (pretty_value attrv))
+              | S.Extensible, True -> { attrs with extensible=true }
+              | S.Extensible, False -> { attrs with extensible=false }
+              | S.Extensible, _ ->
+                  failwith ("[interp] Update extensible failed: " ^
+                            (pretty_value attrv))
+              | S.Code, _ -> failwith "[interp] Can't update Code"
+              | S.Primval, _ -> failwith "[interp] Can't update Primval"
+              | S.Klass, _ -> failwith "[interp] Can't update Klass" in
+            attrv, set_obj store loc (attrs', props)
+        | _ -> failwith ("[interp] SetObjAttr got a non-object: " ^
+                          (pretty_value obj_val))
+      end
   | S.OwnFieldNames (p, obj) ->
       let (obj_val, store) = eval obj env store in
       begin match obj_val with

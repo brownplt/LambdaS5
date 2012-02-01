@@ -161,6 +161,12 @@ let partition_vars e =
     | C.SetAttr (_, l, _, o, f, v) ->
       part_val curL o;      part_val curL f;      part_val curL v;
       LabelUF.union labelSets curL l
+    | C.GetObjAttr(_, l, _, o) ->
+      part_val curL o;
+      LabelUF.union labelSets curL l
+    | C.SetObjAttr (_, l, _, o, v) ->
+      part_val curL o;      part_val curL v;
+      LabelUF.union labelSets curL l
     | C.Op1 (_, l, _, v) ->
       part_val curL v;
       LabelUF.union labelSets curL l
@@ -208,6 +214,8 @@ let partition_vars e =
   and vars_at_prim p acc = match p with
     | C.GetAttr (_, _, _, o, f) -> vars_at_val f (vars_at_val o acc)
     | C.SetAttr (_, _, _, o, f, v) -> vars_at_val v (vars_at_val f (vars_at_val o acc))
+    | C.GetObjAttr (_, _, _, o) -> vars_at_val o acc
+    | C.SetObjAttr (_, _, _, o, v) -> vars_at_val v (vars_at_val o acc)
     | C.Op1 (_, _, _, v) -> vars_at_val v acc
     | C.Op2 (_, _, _, l, r) -> vars_at_val r (vars_at_val l acc)
     | C.MutableOp1 (_, _, _, v) -> vars_at_val v acc
@@ -912,8 +920,10 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
   and eval_prim (prim : C.cps_prim) (env : abstractEnv) (store : abstractStore) : D.ValueLattice.t * abstractStore  * bool = 
     (let pretty_val v = Ljs_cps_pretty.value false v Format.str_formatter; Format.flush_str_formatter() in
       match prim with
-      | C.GetAttr(_, l, a, o, f) -> printf "%s GetAttr %s[%s<%s>]\n" (C.Label.toString l) (pretty_val o) (E.string_of_attr a) (pretty_val f)
-      | C.SetAttr(_, l, a, o, f, v) -> printf "%s SetAttr %s[%s<%s> = %s]\n" (C.Label.toString l) (pretty_val o) (E.string_of_attr a) (pretty_val f) (pretty_val v)
+      | C.GetAttr(_, l, a, o, f) -> printf "%s GetAttr %s[%s<%s>]\n" (C.Label.toString l) (pretty_val o) (pretty_val f) (E.string_of_attr a)
+      | C.SetAttr(_, l, a, o, f, v) -> printf "%s SetAttr %s[%s<%s> = %s]\n" (C.Label.toString l) (pretty_val o) (pretty_val f) (E.string_of_attr a) (pretty_val v)
+      | C.GetObjAttr(_, l, a, o) -> printf "%s GetObjAttr %s[<%s>]\n" (C.Label.toString l) (pretty_val o) (E.string_of_oattr a)
+      | C.SetObjAttr(_, l, a, o, v) -> printf "%s SetAttr %s[<%s> = %s]\n" (C.Label.toString l) (pretty_val o) (E.string_of_oattr a) (pretty_val v)
       | C.DeleteField(_, l, o, f) -> printf "%s DeleteField %s[%s]\n" (C.Label.toString l) (pretty_val o) (pretty_val f)
       | C.Op1(_, l, o, a) -> printf "%s Op1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
       | C.Op2(_, l, o, a, b) -> printf "%s Op2(%s, %s, %s)\n" (C.Label.toString l) o (pretty_val a) (pretty_val b)
@@ -1106,6 +1116,8 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
             (D.bool true, store3, modified || oldValue <> value' || oldField <> field')
           end
       end
+    | C.GetObjAttr _ -> failwith "[cfg_abs] GetObjAttr NYI"
+    | C.SetObjAttr _ -> failwith "[cfg_abs] SetObjAttr NYI"
     | C.Op1(_, label, op, arg) ->
       let oldArg = eval_val arg env store in
       let envArg = copyEnv label (C.label_of_val arg) env in
