@@ -2,7 +2,7 @@ module E = Exprjs_syntax
 module J = Js_syntax
 
 open Prelude
-open Js_print
+open Js_pretty
 
 exception ParseError of string
 
