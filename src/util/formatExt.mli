@@ -5,6 +5,8 @@ type printer = formatter -> unit
 
 val nest : printer -> printer
 
+val inter : printer -> printer list -> printer
+
 val sep : printer list -> printer
 
 val squish : printer list -> printer
