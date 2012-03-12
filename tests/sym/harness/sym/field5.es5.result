@@ -1,5 +1,0 @@
-******* In SetField
-***** IN GetField(ObjCell 1, String x)
-2.:
-(assert (heapUpdatedAt 1 1))
-
