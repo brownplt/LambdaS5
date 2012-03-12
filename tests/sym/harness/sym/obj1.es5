@@ -1,0 +1,7 @@
+// 2, 1
+let (obj1 = {[#proto: null,]
+    "x": {#value 1, #writable true}
+}) {
+%%o["x" = 2];
+obj1["x"]
+}

@@ -1,0 +1,10 @@
+// "ok", "ok", "%%o!=obj"
+let (obj1 = {[#proto: null,]
+    "x": {#value 1, #writable true}
+}) {
+// if %%o = obj1 or %%o["x"] = 1
+if (prim("stx=", %%o["x"], 1)) { "ok" } 
+// else %%o != obj1 and %%o["x"] != 1
+else { if (prim("stx=", %%o, obj1)) { "fail" }
+else { "%%o!=obj" }}
+}
