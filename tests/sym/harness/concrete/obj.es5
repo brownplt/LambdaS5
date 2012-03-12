@@ -1,0 +1,6 @@
+// 1
+let (obj = { [#proto: null,]
+    "field1" : {#value 1, #writable false},
+    "field2" : {#value 2, #writable true} 
+})
+obj["field1"]

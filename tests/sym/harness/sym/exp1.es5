@@ -1,0 +1,8 @@
+// "%%x=0", "%%x!=0"
+if (prim("stx=", %%x, prim("+", %%x, %%x))) {
+    if (prim("stx=", %%x, 0)) {
+        "%%x=0"
+    } else {
+        "fail"
+    }
+} else { "%%x!=0" }

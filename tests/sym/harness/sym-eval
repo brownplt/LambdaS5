@@ -1,0 +1,1 @@
+../../../src/s5.d.byte -s5 $@ -sym-eval 

@@ -1,0 +1,4 @@
+// "ok"
+let (x = %%x)
+let (y = prim("+", x, 5))
+if (prim("<", x, y)) { "ok" } else { "fail" }

@@ -1,0 +1,2 @@
+// "win"
+if (prim('>', 1, 0)) { 'win' } else { 'lose' }

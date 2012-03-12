@@ -1,0 +1,3 @@
+// 3
+let (add = func(x,y) { prim('+', x, y) })
+add(1,2)

@@ -1,0 +1,8 @@
+// 1, 1, 3
+let (obj = {[#proto: null,]
+    "x": {#value 1, #writable true},
+    "y": {#value 2, #writable false}
+}) {
+obj[%%f = 3];
+obj["x"]
+}

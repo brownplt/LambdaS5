@@ -1,0 +1,6 @@
+// 120 
+rec (fact = func(x) {
+    if (prim('<=', x, 1)) { 1 }
+    else { prim('*', x, fact(prim('-', x, 1))) }
+})
+fact(5)

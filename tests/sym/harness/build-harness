@@ -1,0 +1,1 @@
+ocamlfind ocamlc -o run-harness -package oUnit,Str -linkpkg -g harness.ml

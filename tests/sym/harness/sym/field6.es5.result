@@ -1,0 +1,19 @@
+******* In SetField
+***** IN GetField(ObjCell 1, Sym %%f)
+***** FieldName : %%f, fn_id : S_%%f
+***** FieldName : x, fn_id : S_x
+undefined:
+(assert (not (= (s %%f) (s S_x))))
+(assert (not (= (s %%f) (s S_%%f))))
+(assert (heapUpdatedAt 1 1))
+
+%%GF_2:
+(assert (= %%GF_2 (NUM 2.)))
+(assert (= %%f S_x))
+(assert (heapUpdatedAt 1 1))
+
+%%GF_1:
+(assert (= %%GF_1 (NUM 1.)))
+(assert (= %%f S_%%f))
+(assert (heapUpdatedAt 1 1))
+
