@@ -30,7 +30,6 @@ let typeof ctx v = add_const_str ctx (begin match v with
     | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
   end
   | Closure _ -> "lambda"
-  | VarCell _ -> failwith "[delta] typeof got a variable"
   | Sym _ -> failwith "prim got a symbolic exp"
 end)
 
@@ -171,7 +170,6 @@ let nnot ctx e = (begin
   | ObjCell _ -> False
   | Closure _ -> False
   | Sym _ -> failwith "prim got a symbolic exp"
-  | _ -> failwith ("Fatal: ! operator on " ^ (Ljs_sym_pretty.to_string e ctx.store))
 end, ctx)
 
 let void ctx v = (Undefined, ctx)

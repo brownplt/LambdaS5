@@ -17,7 +17,6 @@ let rec value v store =
   | String s -> text ("\"" ^ s ^ "\"")
   | True -> text "true"
   | False -> text "false"
-  | VarCell v -> cell (Store.lookup v store) store
   | ObjCell o -> cell (Store.lookup o store) store
   | Closure func -> text "(closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)

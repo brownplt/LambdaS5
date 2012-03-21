@@ -301,16 +301,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           return (Sym x) (add_var x TAny x pc)
         else begin
           try
-            match IdMap.find x env with
-            | VarCell loc -> begin
-              match sto_lookup loc pc with
-              | Value v, pc -> return v pc
-              | ObjLit _, _ -> failwith "[eval] Somehow storing a ObjLit through a Varcell"
-            end
-            | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
-                                " at " ^ (string_of_position p) ^ 
-                                ", but found something else: " ^ 
-                                Ljs_sym_pretty.to_string (IdMap.find x env) pc.store)
+            match sto_lookup (IdMap.find x env) pc with
+            | Value v, pc -> return v pc
+            | ObjLit _, _ -> failwith "[eval] Somehow storing a ObjLit through a Varcell"
           with Not_found ->
             failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
                          (string_of_position p))
@@ -319,7 +312,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Lambda (p, xs, e) -> 
         let bind_arg arg x (m, pc) = 
           let (loc, pc') = sto_alloc (Value arg) pc in 
-          (IdMap.add x (VarCell loc) m, pc')
+          (IdMap.add x loc m, pc')
         in
         return 
           (Closure (fun args pc depth -> 
@@ -434,11 +427,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           (eval e env pc)
           (fun (e_val, pc') -> 
             let (loc, pc'') = sto_alloc (Value e_val) pc' in 
-            eval body (IdMap.add x (VarCell loc) env) pc'')
+            eval body (IdMap.add x loc env) pc'')
           
       | S.Rec (p, x, e, body) ->
         let (loc, pc') = sto_alloc (Value Undefined) pc in
-        let env' = IdMap.add x (VarCell loc) env in
+        let env' = IdMap.add x loc env in
         bind
           (eval e env' pc')
           (fun (ev_val, pc') -> 
@@ -447,16 +440,12 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
       | S.SetBang (p, x, e) -> begin
         try
-          match IdMap.find x env with
-          | VarCell loc -> 
-            bind 
-              (eval e env pc)
-              (fun (e_val, pc') ->
-                let pc'' = sto_update loc (Value e_val) pc' in
-                return e_val pc'')
-          | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
-                              " at " ^ (string_of_position p) ^ 
-                              ", but found something else.")
+          let loc = IdMap.find x env in
+          bind 
+            (eval e env pc)
+            (fun (e_val, pc') ->
+              let pc'' = sto_update loc (Value e_val) pc' in
+              return e_val pc'')
         with Not_found ->
           failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
                        (string_of_position p))

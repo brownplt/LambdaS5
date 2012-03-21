@@ -26,7 +26,6 @@ type value =
   | String of string
   | True
   | False
-  | VarCell of Store.loc (* can only point to a Value (see below) *)
   | ObjCell of Store.loc (* can only point to ObjLit (see below) *)
   | Closure of (value list -> ctx -> int -> (result list * exresult list))
   | Sym of id (* symbolic value *)
@@ -83,7 +82,7 @@ let d_attrsv = { primval = None;
                  extensible = false; 
                  klass = "LambdaJS internal"; }
 
-type env = value IdMap.t
+type env = Store.loc IdMap.t
 
 
 let mtPath = { constraints = []; vars = IdMap.empty; store = Store.empty; time = 0 }

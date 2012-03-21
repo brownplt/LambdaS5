@@ -28,7 +28,6 @@ let rec value v store =
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
-  | VarCell v -> cell (Store.lookup v store) store
   | ObjCell o -> cell (Store.lookup o store) store
   | Closure func -> text "(FUN closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
@@ -162,7 +161,6 @@ let is_bool t l = SApp(SId "isBool", [t; l])
 let is_str t l = SApp(SId "isStr", [t; l])
 let is_fun t l = SApp(SId "isFun", [t; l])
 let is_objcell t l = SApp(SId "isObjCell", [t; l])
-let is_varcell t l = SApp(SId "isVarCell", [t; l])
 let is_obj t l = SApp(SId "isObj", [t; l])
 
 let lookup_store t l = SApp(SId "lookup", [t; l])
