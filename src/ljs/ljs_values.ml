@@ -8,10 +8,6 @@ type value =
   | String of string
   | True
   | False
-      (* A VarCell can contain an ObjCell, but not vice versa.  This
-      mimics the semantics of heap-like object refs alongside mutable
-      variables *)
-  | VarLoc of Store.loc
       (* Objects shouldn't have VarCells in them, but can have any of
       the other kinds of values *)
   | ObjLoc of Store.loc
@@ -51,7 +47,7 @@ let add_var (objs, vars) new_val =
   let new_loc, vars' = Store.alloc new_val vars in
   new_loc, (objs, vars')
 
-type env = value IdMap.t
+type env = Store.loc IdMap.t
 type label = string
 
 exception Break of label * value * store
@@ -66,7 +62,6 @@ let rec pretty_value v = match v with
   | Null -> "null"
   | Closure c -> "function"
   | ObjLoc o -> "object"
-  | VarLoc v -> "&<" ^ Store.print_loc v ^ ">"
 
 let rec pretty_value_list vs = match vs with
   | (v::vs) -> pretty_value v ^ ", " ^ pretty_value_list vs

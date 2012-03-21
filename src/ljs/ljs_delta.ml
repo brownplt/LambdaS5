@@ -29,7 +29,6 @@ let typeof store v = str begin match v with
       | _ -> "object"
   end
   | Closure _ -> "lambda"
-  | VarLoc _ -> failwith "[delta] typeof got a variable"
 end
 
 let surface_typeof store v = begin match v with
@@ -148,7 +147,6 @@ let nnot store e = match e with
   | String s -> if s = "" then True else False
   | ObjLoc _ -> False
   | Closure _ -> False
-  | _ -> failwith ("Fatal: ! operator on " ^ (pretty_value e))
 
 let void store v = Undefined
 

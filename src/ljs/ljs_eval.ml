@@ -191,25 +191,17 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
   | S.False _ -> False, store
   | S.Id (p, x) -> begin
       try
-        match IdMap.find x env with
-          | VarLoc v -> get_var store v, store
-          | _ -> failwith ("[interp] (EId) xpected a VarCell for variable " ^ x ^ 
-                             " at " ^ (string_of_position p) ^ 
-                             ", but found something else: " ^ pretty_value (IdMap.find x env))
+        (get_var store (IdMap.find x env), store)
       with Not_found ->
         failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
                     (string_of_position p))
     end
   | S.SetBang (p, x, e) -> begin
       try
-        match IdMap.find x env with
-          | VarLoc loc ->
-            let (new_val, store) = eval e env store in
-            let store = set_var store loc new_val in
-            new_val, store
-          | _ -> failwith ("[interp] (ESet) xpected a VarCell for variable " ^ x ^ 
-                             " at " ^ (string_of_position p) ^ 
-                             ", but found something else.")
+        let loc = IdMap.find x env in
+        let (new_val, store) = eval e env store in
+        let store = set_var store loc new_val in
+        new_val, store
       with Not_found ->
         failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
                     (string_of_position p))
@@ -437,10 +429,10 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
   | S.Let (p, x, e, body) ->
       let (e_val, store) = eval e env store in
       let (new_loc, store) = add_var store e_val in
-      eval body (IdMap.add x (VarLoc new_loc) env) store
+      eval body (IdMap.add x new_loc env) store
   | S.Rec (p, x, e, body) ->
       let (new_loc, store) = add_var store Undefined in
-      let env' = (IdMap.add x (VarLoc new_loc) env) in
+      let env' = (IdMap.add x new_loc env) in
       let (ev_val, store) = eval e env' store in
       eval body env' (set_var store new_loc ev_val)
   | S.Label (p, l, e) ->
@@ -478,7 +470,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
   | S.Lambda (p, xs, e) -> 
     let alloc_arg argval argname (store, env) =
       let (new_loc, store) = add_var store argval in
-      let env' = IdMap.add argname (VarLoc new_loc) env in
+      let env' = IdMap.add argname new_loc env in
       (store, env') in
     let closure args store =
       if (List.length args) != (List.length xs) then
