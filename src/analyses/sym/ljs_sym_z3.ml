@@ -28,7 +28,7 @@ let rec value v store =
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
-  | ObjCell o -> cell (Store.lookup o store) store
+  | ObjCell o -> obj (sto_lookup_obj o store)
   | Closure func -> text "(FUN closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
@@ -37,31 +37,27 @@ let rec value v store =
   (*                            braces (exp e)]) *)
   | Sym id -> text id
 
-and cell c store = 
-  match c with
-  | Value v -> horz [squish [text "&<"; value v store; text ">"]]
-  | ObjLit o ->
-    let (avs, props) = o in
-    (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
-    parens (
-      horz [text "OBJ";
-            parens 
-              (horz [text "Array2Fields";
-                     List.fold_left (fun acc (f, p) ->
-                       let value = 
-                         match p with
-                         | Data ({value=v; writable=w}, enum, config) -> 
-                           parens (horz [text "Data"; (value v store); 
-                                         text (string_of_bool w);
-                                         text (string_of_bool enum); 
-                                         text (string_of_bool config)])
-                         | Accessor ({getter=g; setter=s}, enum, config) -> 
-                           parens (horz [text "Accessor";  (value g store);
-                                         (value s store);
-                                         text (string_of_bool enum); 
-                                         text (string_of_bool config)])
-                       in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text ("S_" ^ f)]); value]]))
-                    (text "mtObj") (IdMap.bindings props)])])
+and obj ((avs, props), store) = 
+  (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
+  parens (
+    horz [text "OBJ";
+          parens 
+            (horz [text "Array2Fields";
+                   List.fold_left (fun acc (f, p) ->
+                     let value = 
+                       match p with
+                       | Data ({value=v; writable=w}, enum, config) -> 
+                         parens (horz [text "Data"; (value v store); 
+                                       text (string_of_bool w);
+                                       text (string_of_bool enum); 
+                                       text (string_of_bool config)])
+                       | Accessor ({getter=g; setter=s}, enum, config) -> 
+                         parens (horz [text "Accessor";  (value g store);
+                                       (value s store);
+                                       text (string_of_bool enum); 
+                                       text (string_of_bool config)])
+                     in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text ("S_" ^ f)]); value]]))
+                     (text "mtObj") (IdMap.bindings props)])])
 
 
 (* and prim verbose p =  *)
@@ -189,6 +185,7 @@ let is_sat (p : ctx) : bool =
 (define-sort Time () Int)
 (define-sort Loc () Int)
 
+
 (declare-datatypes ()
                    ((Attr Config Enum Writable Value Getter Setter)))
 (declare-datatypes ()
@@ -284,7 +281,7 @@ let is_sat (p : ctx) : bool =
 
 
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
-  let { constraints = cs; vars = vs; store = store } = p in      
+  let { constraints = cs; vars = vs; store = store } = p in
   if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
   IdMap.iter
@@ -316,10 +313,10 @@ let is_sat (p : ctx) : bool =
   output_string outch (Printf.sprintf "(assert (distinct %s))\n" distinctStrs);
 
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
-  let print_pc pc = 
-    if log_z3 then Printf.printf "%s\n" (to_string pc store);
+  let print_pc constraintExp = 
+    if log_z3 then Printf.printf "%s\n" (to_string constraintExp p);
     output_string outch 
-      (Printf.sprintf "%s\n" (to_string pc store)) in
+      (Printf.sprintf "%s\n" (to_string constraintExp p)) in
   List.iter print_pc lets; 
   List.iter print_pc rest;
 

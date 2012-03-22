@@ -24,10 +24,9 @@ let typeof ctx v = add_const_str ctx (begin match v with
   | Num _ -> "number"
   | True 
   | False -> "boolean"
-  | ObjCell o -> begin match (sto_lookup o ctx) with
-    | ObjLit ({ code = Some cexp }, _), _ -> "function"
-    | ObjLit _, _ -> "object"
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+  | ObjCell o -> begin match (sto_lookup_obj o ctx) with
+    | ({ code = Some cexp }, _), _ -> "function"
+    | _, _ -> "object"
   end
   | Closure _ -> "lambda"
   | Sym _ -> failwith "prim got a symbolic exp"
@@ -132,21 +131,15 @@ let print ctx v =
    property outside of the delta function *)
 let object_to_string ctx obj = add_const_str ctx begin
   match obj with
-  | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ klass = s }, _), _ -> "[object " ^ s ^ "]"
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
+  | ObjCell o -> 
+    let (({klass = s}, _), _) = sto_lookup_obj o ctx in "[object " ^ s ^ "]"
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
 end
 
 let is_array ctx obj = (begin
   match obj with
-  | ObjCell o -> begin match sto_lookup o ctx with
-    | ObjLit ({ klass = "Array"; }, _), _ -> True
-    | ObjLit _, _ -> False
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
+  | ObjCell o -> let ({klass=k}, _), _ = sto_lookup_obj o ctx in bool (k = "Array")
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")
 end, ctx)
@@ -365,21 +358,18 @@ let abs_eq ctx v1 v2 = (bool begin
 end, ctx)
 
 let rec has_property ctx obj field = match obj, field with
-  | ObjCell o, String s -> begin match sto_lookup o ctx with
-    | ObjLit ({ proto = pvalue; }, props), ctx ->
-      if (IdMap.mem s props) then (bool true, ctx)
-      else has_property ctx pvalue field
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
+  | ObjCell o, String s -> 
+    let ({proto = pvalue }, props), ctx = sto_lookup_obj o ctx in
+    if (IdMap.mem s props) then (bool true, ctx)
+    else has_property ctx pvalue field
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
   | _ -> (bool false, ctx)
 
 let has_own_property ctx obj field = match obj, field with
   | ObjCell o, String s -> begin
-    match sto_lookup o ctx with
-    | ObjLit (attrs, props), ctx -> (bool (IdMap.mem s props), ctx)
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
+    let (_, props), ctx = sto_lookup_obj o ctx in
+    (bool (IdMap.mem s props), ctx)
   end
   | ObjCell o, _ -> raise (PrimError "has-own-property: field not a string")
   | _, String s -> raise (PrimError ("has-own-property: obj not an object for field " ^ s))
@@ -464,18 +454,15 @@ let to_fixed ctx a b = (begin
 end, ctx)
 
 let rec is_accessor ctx a b = match a, b with
-  | ObjCell o, String s -> begin
-    match sto_lookup o ctx with
-    | ObjLit (attrs, props), ctx -> 
-      if IdMap.mem s props
-      then let prop = IdMap.find s props in
-           match prop with
-           | Data _ -> (False, ctx)
-           | Accessor _ -> (True, ctx)
-      else let pr = match attrs with { proto = p } -> p in
-           is_accessor ctx pr b
-    | Value _, _ -> failwith "[delta] Somehow storing a Value through an ObjCell"
-  end
+  | ObjCell o, String s ->
+    let (attrs, props), ctx = sto_lookup_obj o ctx in
+    if IdMap.mem s props
+    then let prop = IdMap.find s props in
+         match prop with
+         | Data _ -> (False, ctx)
+         | Accessor _ -> (True, ctx)
+    else let pr = match attrs with { proto = p } -> p in
+         is_accessor ctx pr b
   | Null, String s -> raise (PrimError "isAccessor topped out")
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"

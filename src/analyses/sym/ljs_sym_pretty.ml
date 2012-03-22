@@ -17,7 +17,7 @@ let rec value v store =
   | String s -> text ("\"" ^ s ^ "\"")
   | True -> text "true"
   | False -> text "false"
-  | ObjCell o -> cell (Store.lookup o store) store
+  | ObjCell o -> horz [squish [text "&<"; text (Store.print_loc o); text ">"]] (* TODO: Print objects! *)
   | Closure func -> text "(closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
@@ -26,15 +26,12 @@ let rec value v store =
   (*                            braces (exp e)]) *)
   | Sym id -> text id
 
-and cell c store = 
-  match c with
-  | Value v -> horz [squish [text "&<"; value v store; text ">"]]
-  | ObjLit o ->
-    let (avs, props) = o in
-    horz [squish [text "@"; (braces (vert [attrsv store avs; 
-                                           vert (vert_intersperse (text ",") 
-                                                   (map (prop store) (IdMap.bindings props)))]))]]
-
+and obj o store = 
+  let (avs, props) = o in
+  horz [squish [text "@"; (braces (vert [attrsv store avs; 
+                                         vert (vert_intersperse (text ",") 
+                                                 (map (prop store) (IdMap.bindings props)))]))]]
+    
 
 (* and prim verbose p =  *)
 (*   let value = value verbose in *)

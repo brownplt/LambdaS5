@@ -29,7 +29,6 @@ type value =
   | ObjCell of Store.loc (* can only point to ObjLit (see below) *)
   | Closure of (value list -> ctx -> int -> (result list * exresult list))
   | Sym of id (* symbolic value *)
-and cell = Value of value | ObjLit of (attrsv * (propv IdMap.t))
 and
   attrsv = { code : value option;
              proto : value;
@@ -51,10 +50,11 @@ and label = string
 and result = value * ctx
 and exresult = exval * ctx
 
+and sto_type = { objs : (attrsv * (propv IdMap.t)) Store.t; vals : value Store.t }
 and ctx = { constraints : sym_exp list;
             vars : typeEnv ;
             time : int ;
-            store : (cell Store.t) }
+            store : sto_type }
 
 (* language of constraints *)
 and sym_exp =
@@ -85,7 +85,7 @@ let d_attrsv = { primval = None;
 type env = Store.loc IdMap.t
 
 
-let mtPath = { constraints = []; vars = IdMap.empty; store = Store.empty; time = 0 }
+let mtPath = { constraints = []; vars = IdMap.empty; store = { objs = Store.empty; vals = Store.empty }; time = 0 }
 
 let ty_to_string t = match t with
   | TNull -> "TNull"
@@ -141,62 +141,77 @@ let add_constraint c ctx =
 let add_constraints cs ctx =
   { ctx with constraints = List.rev_append cs ctx.constraints }
 
-let sto_alloc v ctx = 
-  let (loc, sto) = Store.alloc v ctx.store in
-  (loc, { ctx with store = sto })
+let sto_alloc_val v ctx = 
+  let (loc, sto) = Store.alloc v ctx.store.vals in
+  (loc, { ctx with store = { ctx.store with vals = sto } })
+
+let sto_alloc_obj v ctx = 
+  let (loc, sto) = Store.alloc v ctx.store.objs in
+  (loc, { ctx with store = { ctx.store with objs = sto } })
 
 let sto_update_field loc v field newval ctx = 
   let { constraints = cs; vars = vs; time = t; store = s } = ctx in
   let cs' = match v with
-    | Value (Closure _) ->
-      List.rev_append 
-        [
-          (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
-        ] cs 
-    | Value value ->
-      List.rev_append 
-        [
-          (SAssert (SApp(SId "updateFieldPre", [SApp(SId "lookup", [STime t; SLoc loc]); Concrete field])));
-          (SAssert (SApp(SId "updateFieldPost", [SApp(SId "lookup", [STime (t+1); SLoc loc]); 
-                                                 SApp(SId "lookup", [STime t; SLoc loc]);
-                                                 Concrete field;
-                                                 newval])));
-          (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
-        ] cs 
-    | ObjLit (attrs, props) -> 
+    (* | (Closure _) -> *)
+    (*   List.rev_append  *)
+    (*     [ *)
+    (*       (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc]))) *)
+    (*     ] cs  *)
+    (* | value -> *)
+    (*   List.rev_append  *)
+    (*     [ *)
+    (*       (SAssert (SApp(SId "updateFieldPre", [SApp(SId "lookup", [STime t; SLoc loc]); Concrete field]))); *)
+    (*       (SAssert (SApp(SId "updateFieldPost", [SApp(SId "lookup", [STime (t+1); SLoc loc]);  *)
+    (*                                              SApp(SId "lookup", [STime t; SLoc loc]); *)
+    (*                                              Concrete field; *)
+    (*                                              newval]))); *)
+    (*       (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc]))) *)
+    (*     ] cs  *)
+    | (attrs, props) -> 
       List.rev_append 
         [
           (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
         ] cs 
   in
-  { constraints = cs'; vars = vs; time = t+1; store = Store.update loc v ctx.store }
+  { constraints = cs'; vars = vs; time = t+1; store = {s with objs = Store.update loc v ctx.store.objs} }
 
-let sto_update loc v ctx = 
+let sto_update_val loc v ctx = 
   let { constraints = cs; vars = vs; time = t; store = s } = ctx in
   let cs' = match v with
-    | Value (Closure _) -> 
+    | (Closure _) -> 
       List.rev_append 
         [
           (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
         ] cs 
-    | Value value ->
+    | value ->
       List.rev_append 
         [
           (SAssert (SApp(SId "=", [SApp(SId "lookup", [STime t; SLoc loc]); Concrete value])));
           (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
         ] cs 
-    | ObjLit (attrs, props) -> 
+  in
+  { constraints = cs'; vars = vs; time = t+1; 
+    store = { ctx.store with vals = Store.update loc v ctx.store.vals } }
+
+let sto_update_obj loc v ctx = 
+  let { constraints = cs; vars = vs; time = t; store = s } = ctx in
+  let cs' = (* match v with *)
+    (* | (attrs, props) ->  *)
       List.rev_append 
         [
           (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
         ] cs 
   in
-  { constraints = cs'; vars = vs; time = t+1; store = Store.update loc v ctx.store }
+  { constraints = cs'; vars = vs; time = t+1; 
+    store = {ctx.store with objs = Store.update loc v ctx.store.objs } }
 
-let sto_lookup loc ctx = 
-  let ret = Store.lookup loc ctx.store  in 
+let sto_lookup_obj loc ctx = 
+  (Store.lookup loc ctx.store.objs, ctx)
+
+let sto_lookup_val loc ctx = 
+  let ret = Store.lookup loc ctx.store.vals  in 
   match ret with 
-  | Value (Sym id) -> 
+  | (Sym id) -> 
     (ret,
      add_constraint (SAssert (SApp(SId "stx=", [SId id; SApp(SId "lookup", [STime ctx.time; SLoc loc])]))) ctx)
   | _ -> (ret, ctx)
