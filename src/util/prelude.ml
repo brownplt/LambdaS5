@@ -126,3 +126,6 @@ let rec iota' m lst =
 let iota n = iota' (n - 1) []
 
 (* let flatmap f lst = List.concat (List.map f lst) *)
+
+let curry f = (fun a b -> f(a,b))
+let uncurry f = (fun (a,b) -> f a b)

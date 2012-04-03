@@ -103,7 +103,8 @@ and attrsv store { proto = p; code = c; extensible = b; klass = k } =
 and prop store (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                                        value v store; text ","; 
+                                                        (* TODO: print values from store *)
+                                                        text (Store.print_loc v); text ",";
                                                         text "#writable";  
                                                         text (string_of_bool w);
                                                         text ",";
@@ -111,8 +112,8 @@ and prop store (f, prop) = match prop with
                                                         text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                                        value g store; text ",";
+                                                        text (Store.print_loc g); text ",";
                                                         text "#setter";
-                                                        value s store])]
+                                                        text (Store.print_loc s)])]
 ;;
 let to_string v store = value v store Format.str_formatter; Format.flush_str_formatter(); 

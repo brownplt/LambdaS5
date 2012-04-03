@@ -89,3 +89,6 @@ val nub : 'a list -> 'a list
 
 (** [iota n] returns the list of integers [0] through [n-1], inclusive. *)
 val iota : int -> int list
+
+val curry : ('a * 'b -> 'c) -> ('a -> 'b -> 'c)
+val uncurry : ('a -> 'b -> 'c) -> ('a * 'b -> 'c)

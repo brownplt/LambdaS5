@@ -29,6 +29,7 @@ type value =
   | ObjCell of Store.loc (* can only point to ObjLit (see below) *)
   | Closure of (value list -> ctx -> int -> (result list * exresult list))
   | Sym of id (* symbolic value *)
+(* ObjLit *)
 and
   attrsv = { code : value option;
              proto : value;
@@ -39,8 +40,9 @@ and
   propv = 
   | Data of datav * bool * bool
   | Accessor of accessorv * bool * bool
-and datav = { value : value; writable : bool; }
-and accessorv = { getter : value; setter : value; }
+(* stores memory location of value for each property *)
+and datav = { value : Store.loc; writable : bool; }
+and accessorv = { getter : Store.loc; setter : Store.loc; }
    
 and exval = 
   | Break of label * value
@@ -143,10 +145,12 @@ let add_constraints cs ctx =
 
 let sto_alloc_val v ctx = 
   let (loc, sto) = Store.alloc v ctx.store.vals in
+(*   Printf.eprintf "allocing loc %s in vals\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with vals = sto } })
 
 let sto_alloc_obj v ctx = 
   let (loc, sto) = Store.alloc v ctx.store.objs in
+(*   Printf.eprintf "allocing loc %s in objs\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with objs = sto } })
 
 let sto_update_field loc v field newval ctx = 
@@ -206,9 +210,11 @@ let sto_update_obj loc v ctx =
     store = {ctx.store with objs = Store.update loc v ctx.store.objs } }
 
 let sto_lookup_obj loc ctx = 
+(*   Printf.eprintf "looking for %s in objs\n" (Store.print_loc loc); *)
   (Store.lookup loc ctx.store.objs, ctx)
 
 let sto_lookup_val loc ctx = 
+(*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
   let ret = Store.lookup loc ctx.store.vals  in 
   match ret with 
   | (Sym id) -> 

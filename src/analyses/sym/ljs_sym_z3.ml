@@ -47,13 +47,13 @@ and obj ((avs, props), store) =
                      let value = 
                        match p with
                        | Data ({value=v; writable=w}, enum, config) -> 
-                         parens (horz [text "Data"; (value v store); 
+                         parens (horz [text "Data"; (uncurry value) (sto_lookup_val v store); 
                                        text (string_of_bool w);
                                        text (string_of_bool enum); 
                                        text (string_of_bool config)])
                        | Accessor ({getter=g; setter=s}, enum, config) -> 
-                         parens (horz [text "Accessor";  (value g store);
-                                       (value s store);
+                         parens (horz [text "Accessor"; (uncurry value) (sto_lookup_val g store);
+                                       (uncurry value) (sto_lookup_val s store);
                                        text (string_of_bool enum); 
                                        text (string_of_bool config)])
                      in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text ("S_" ^ f)]); value]]))
@@ -131,7 +131,8 @@ and attrsv store { proto = p; code = c; extensible = b; klass = k } =
 and prop store (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                                        value v store; text ","; 
+                                                        (* TODO: lookup val in store *)
+                                                        text (Store.print_loc v); text ","; 
                                                         text "#writable";  
                                                         text (string_of_bool w);
                                                         text ",";
@@ -139,9 +140,9 @@ and prop store (f, prop) = match prop with
                                                         text (string_of_bool config)])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                                        value g store; text ",";
+                                                        text (Store.print_loc g); text ","; 
                                                         text "#setter";
-                                                        value s store])]
+                                                        text (Store.print_loc s)])]
 ;;
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
 
