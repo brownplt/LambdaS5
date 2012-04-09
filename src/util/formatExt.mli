@@ -15,6 +15,10 @@ val vert : printer list -> printer
 
 val horz : printer list -> printer
 
+val horzOrVert : printer list -> printer
+
+val wrapBox : printer list -> printer
+
 val text : string -> printer
 
 val int : int -> printer

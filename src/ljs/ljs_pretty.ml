@@ -17,10 +17,13 @@ let rec exp e = match e with
   | True _ -> text "true"
   | False _-> text "false"
   | Id (p, x) -> text x
-  | Object (p, avs, props) ->
-    braces (vert [attrsv avs; vert (vert_intersperse (text ",") (map prop props))])
+  | Object (p, avs, props) -> begin
+    match props with
+    | [] -> braces (attrsv avs)
+    | _ -> braces (vert [attrsv avs; vert (vert_intersperse (text ",") (map prop props))])
+  end
   | SetField (p, o, f, v, args) ->
-    squish [exp o; brackets (horz [exp f; text "="; exp v; text ","; exp args])]
+    squish [exp o; brackets (horzOrVert [horz [exp f; text "="; exp v; text ","]; exp args])]
   | GetField (p, o, f, args) ->
     squish [exp o; brackets (horz [exp f; text ","; exp args])]
   | DeleteField (p, o, f) ->
@@ -92,22 +95,19 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
     | Some e -> [horz [text "#proto:"; exp e]] in
   let code = match c with None -> [] 
     | Some e -> [horz [text "#code:"; exp e]] in
-  brackets (vert (map (fun x -> squish [x; (text ",")])
-                  (proto@
-                    code@
-                    [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
-                     horz [text "#extensible:"; text (string_of_bool b)]])))
+  brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
+                          (proto@
+                             code@
+                             [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
+                              horz [text "#extensible:"; text (string_of_bool b)]])))
               
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                          exp v; text ","; 
-                                          text "#writable";  
-                                          text (string_of_bool w);
-                                          text ",";
-                                          text "#configurable";
-                                          text (string_of_bool config)])]
+    horz [text ("'" ^ f ^ "'"); text ":"; 
+          braces (horzOrVert [horz [text "#value"; exp v; text ","]; 
+                              horz [text "#writable"; text (string_of_bool w); text ","];
+                              horz [text "#configurable"; text (string_of_bool config)]])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (vert [horz [text "#getter";
                                           exp g; text ","];

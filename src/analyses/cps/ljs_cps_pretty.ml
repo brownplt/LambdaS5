@@ -19,8 +19,12 @@ let rec value verbose v =
   | True _ -> text "true"
   | False _-> text "false"
   | Id (p,_, x) -> text x
-  | Object (p,lbl, avs, props) ->
-    label verbose lbl (braces (vert [attrsv verbose avs; vert (vert_intersperse (text ",") (map prop props))]))
+  | Object (p,lbl, avs, props) -> begin
+    match props with
+    | [] -> label verbose lbl (braces (attrsv verbose avs))
+    | _ -> label verbose lbl (braces (vert [attrsv verbose avs; 
+                                            vert (vert_intersperse (text ",") (map prop props))]))
+  end
   | Lambda (p,lbl, ret, exn, xs, e) ->
     label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," ::
                                                                  text "Exn" :: text exn :: text ";" :: 
@@ -74,14 +78,14 @@ and exp verbose e =
   let prim = prim verbose in
   let value = value verbose in match e with
   | LetValue (p,lbl, x, v, body) ->
-    label verbose lbl (vert [horz [text "letVal"; vert [parens (horz [text x; text "="; value v])]];
-                                 horz [text "in"; vert [exp body]]])
+    label verbose lbl (vert [horz [text "letVal"; parens (horz [text x; text "="; value v])];
+                             horz [text "in"; vert [exp body]]])
   | RecValue (p,lbl, x, v, body) ->
-    label verbose lbl (vert [horz [text "recVal"; vert [parens (horz [text x; text "="; value v])]];
-          horz [text "in"; vert [exp body]]])
+    label verbose lbl (vert [horz [text "recVal"; parens (horz [text x; text "="; value v])];
+                             horz [text "in"; vert [exp body]]])
   | LetPrim (p,lbl, x, pr, body) ->
-    label verbose lbl (vert [horz [text "letPrim"; vert [parens (horz [text x; text "="; prim pr])]];
-          horz [text "in"; vert [exp body]]])
+    label verbose lbl (vert [horz [text "letPrim"; parens (horz [text x; text "="; prim pr])];
+                             horz [text "in"; vert [exp body]]])
   | LetRetCont (lbl,ret, r, body) ->
     label verbose lbl (vert [horz [text "letRet"; horz [text ret; text "="]; vert [print_ret verbose r]];
           horz [text "in"; vert [exp body]]])
@@ -95,9 +99,15 @@ and exp verbose e =
 	  | If _ -> (exp e)
 	  | _ -> braces (exp e))]])
   | AppFun (p,lbl, f, ret, exn, args) ->
-    label verbose lbl (squish [value f; parens (squish (text "Ret " :: print_ret verbose ret :: text ", " ::
-                                       text "Exn " :: print_exn verbose exn :: text "; " :: 
-                                       intersperse (text ", ") (map value args)))])
+    let rec pairOff l = match l with
+      | [] -> []
+      | [i] -> [i]
+      | i::s::l -> squish[i;s] :: pairOff l in      
+    label verbose lbl (squish [value f; 
+                               parens (horzOrVert 
+                                         [wrapBox [squish [text "Ret "; print_ret verbose ret; text ","];
+                                                       squish [text "Exn "; print_exn verbose exn; text ";"]];
+                                          wrapBox (pairOff (intersperse (text ",") (map value args)))])])
   | AppRetCont (lbl,r, x) ->
     label verbose lbl (horz [squish [print_ret verbose r; parens (horz [value x])]])
   | AppExnCont (lbl,e, x, l) ->
@@ -112,25 +122,22 @@ and attrsv verbose { proto = p; code = c; extensible = b; klass = k } =
     | Some e -> [horz [text "#proto:"; value e]] in
   let code = match c with None -> [] 
     | Some e -> [horz [text "#code:"; value e]] in
-  brackets (vert (map (fun x -> squish [x; (text ",")])
-                  (proto@
-                    code@
-                    [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
-                     horz [text "#extensible:"; text (string_of_bool b)]])))
+  brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
+                          (proto@
+                             code@
+                             [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
+                              horz [text "#extensible:"; text (string_of_bool b)]])))
               
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                          text v; text ","; 
-                                          text "#writable";  
-                                          text (string_of_bool w);
-                                          text ",";
-                                          text "#configurable";
-                                          text (string_of_bool config)])]
+    horz [text ("'" ^ f ^ "'"); text ":"; 
+          braces (horzOrVert [horz [text "#value"; squish [text v; text ","]]; 
+                              horz [text "#writable"; squish [text (string_of_bool w); text ","]];
+                              horz [text "#configurable"; text (string_of_bool config)]])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                          text g; text ",";
+                                          squish [text g; text ","];
                                           text "#setter";
                                           text s])]
 ;;

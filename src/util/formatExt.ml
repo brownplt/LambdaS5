@@ -22,7 +22,7 @@ let rec inter (sep : printer) (lst : printer list) (fmt : formatter) : unit = ma
       pp_close_box fmt ()
   | [] -> ()
 
-let sep (lst : printer list) (fmt : formatter) : unit = inter (text " ") lst fmt
+let sep (lst : printer list) (fmt : formatter) : unit = inter (fun fmt -> pp_print_space fmt ()) lst fmt
 
 let rec squish (lst : printer list) (fmt : formatter) : unit = match lst with
   | x :: xs -> x fmt; squish xs fmt
@@ -39,6 +39,16 @@ let horz (p : printer list) (fmt : formatter) : unit =
   sep p fmt;
   pp_close_box fmt ()
   
+let horzOrVert (p : printer list) (fmt : formatter) : unit =
+  pp_open_hvbox fmt 0;
+  sep p fmt;
+  pp_close_box fmt ()
+
+let wrapBox (p : printer list) (fmt : formatter) : unit =
+  pp_open_hovbox fmt 0;
+  sep p fmt;
+  pp_close_box fmt ()
+
 let int n fmt = pp_print_int fmt n
  
 let float f fmt = pp_print_float fmt f

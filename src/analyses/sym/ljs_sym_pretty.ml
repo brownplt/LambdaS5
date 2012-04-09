@@ -27,21 +27,24 @@ let rec value v =
   | Sym id -> text id
 
 and obj { attrs = attrsv; conps = conpsv; symps = sympsv; } = 
-  horz [squish [text "@"; (braces (vert [attrs attrsv; 
-                                         vert (vert_intersperse (text ",") 
-                                                 (map prop (List.append (IdMap.bindings conpsv)
-                                                                        (IdMap.bindings sympsv))))]))]]
+  if IdMap.is_empty conpsv && IdMap.is_empty sympsv 
+  then squish [text "@"; braces (attrs attrsv)]
+  else 
+    horz [squish [text "@"; (braces (vert [attrs attrsv; 
+                                           vert (vert_intersperse (text ",") 
+                                                   (map prop (List.append (IdMap.bindings conpsv)
+                                                                          (IdMap.bindings sympsv))))]))]]
 
 
 and attrs { proto = p; code = c; extensible = b; klass = k } =
   let proto = [horz [text "#proto:"; value p]] in
   let code = match c with None -> [] 
     | Some e -> [horz [text "#code:"; value e]] in
-  brackets (vert (map (fun x -> squish [x; (text ",")])
-                    (proto@
-                       code@
-                       [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
-                        horz [text "#extensible:"; text (string_of_bool b)]])))
+  brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
+                          (proto@
+                             code@
+                             [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
+                              horz [text "#extensible:"; text (string_of_bool b)]])))
     
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
@@ -124,15 +127,15 @@ let obj_to_string = to_string obj
 
 let one_store store one_v = vert
   (map (fun (loc, v) -> horz [text (Store.print_loc loc);
-                              text ": "; one_v v;])
+                              text ":"; one_v v;])
       (Store.bindings store))
 
 let store { objs = objs; vals = vals } =
    vert [ 
      text "--- Values:  ---";
-     one_store vals value; 
+     braces (one_store vals value); 
      text "--- Objects: ---"; 
-     one_store objs obj; ]
+     braces (one_store objs obj); ]
 ;;
 
 let store_to_string = to_string store
