@@ -15,7 +15,7 @@ let bool b = match b with
 
 let to_int ctx v = match v with
   | Num x -> int_of_float x
-  | _ -> raise (PrimError ("expected number, got " ^ Ljs_sym_pretty.to_string v ctx.store))
+  | _ -> raise (PrimError ("expected number, got " ^ Ljs_sym_pretty.val_to_string v))
 
 let typeof ctx v = add_const_str ctx (begin match v with
   | Undefined -> "undefined"
@@ -25,7 +25,7 @@ let typeof ctx v = add_const_str ctx (begin match v with
   | True 
   | False -> "boolean"
   | ObjCell o -> begin match (sto_lookup_obj o ctx) with
-    | ({ code = Some cexp }, _), _ -> "function"
+    | { attrs = { code = Some cexp }}, _ -> "function"
     | _, _ -> "object"
   end
   | Closure _ -> "lambda"
@@ -124,7 +124,7 @@ let print ctx v =
       printf "%S\n%!" s; Undefined
     | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
     | Sym _ -> failwith "prim got a symbolic exp"
-    | _ -> failwith ("[interp] Print received non-string: " ^ Ljs_sym_pretty.to_string v ctx.store)
+    | _ -> failwith ("[interp] Print received non-string: " ^ Ljs_sym_pretty.val_to_string v)
   in (ret, ctx)
 
 (* Implement this here because there's no need to expose the class
@@ -132,14 +132,14 @@ let print ctx v =
 let object_to_string ctx obj = add_const_str ctx begin
   match obj with
   | ObjCell o -> 
-    let (({klass = s}, _), _) = sto_lookup_obj o ctx in "[object " ^ s ^ "]"
+    let { attrs = {klass = s}}, _ = sto_lookup_obj o ctx in "[object " ^ s ^ "]"
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
 end
 
 let is_array ctx obj = (begin
   match obj with
-  | ObjCell o -> let ({klass=k}, _), _ = sto_lookup_obj o ctx in bool (k = "Array")
+  | ObjCell o -> let { attrs = {klass=k}}, _ = sto_lookup_obj o ctx in bool (k = "Array")
   | Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")
 end, ctx)
@@ -276,8 +276,8 @@ let typeofOp1 op = match op with
 let arith ctx s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> (Num (f_op x y), ctx)
   | v1, v2 -> raise (PrimError ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
-                                   (Ljs_sym_pretty.to_string v1 ctx.store) ^ ", " ^ 
-                                   (Ljs_sym_pretty.to_string v2 ctx.store) ^
+                                   (Ljs_sym_pretty.val_to_string v1) ^ ", " ^ 
+                                   (Ljs_sym_pretty.val_to_string v2) ^
                                    "perhaps something wasn't desugared fully?"))
 
 let arith_sum ctx = arith ctx "+" (+) (+.)
@@ -359,18 +359,20 @@ end, ctx)
 
 let rec has_property ctx obj field = match obj, field with
   | ObjCell o, String s -> 
-    let ({proto = pvalue }, props), ctx = sto_lookup_obj o ctx in
+    let { attrs = { proto = pvalue }; conps = props; }, ctx = sto_lookup_obj o ctx in
     if (IdMap.mem s props) then (bool true, ctx)
     else has_property ctx pvalue field
+  (* TODO: handle case when field name is sym? *)
   | Sym _, _ 
   | _, Sym _ -> failwith "prim got a symbolic exp"
   | _ -> (bool false, ctx)
 
 let has_own_property ctx obj field = match obj, field with
   | ObjCell o, String s -> begin
-    let (_, props), ctx = sto_lookup_obj o ctx in
+    let { conps = props; }, ctx = sto_lookup_obj o ctx in
     (bool (IdMap.mem s props), ctx)
   end
+  (* TODO: handle case when field name is sym? *)
   | ObjCell o, _ -> raise (PrimError "has-own-property: field not a string")
   | _, String s -> raise (PrimError ("has-own-property: obj not an object for field " ^ s))
   | Sym _, _ 
@@ -455,16 +457,16 @@ end, ctx)
 
 let rec is_accessor ctx a b = match a, b with
   | ObjCell o, String s ->
-    let (attrs, props), ctx = sto_lookup_obj o ctx in
+    let { attrs = { proto = pr }; conps = props; }, ctx = sto_lookup_obj o ctx in
     if IdMap.mem s props
     then let prop = IdMap.find s props in
          match prop with
          | Data _ -> (False, ctx)
          | Accessor _ -> (True, ctx)
-    else let pr = match attrs with { proto = p } -> p in
-         is_accessor ctx pr b
+    else is_accessor ctx pr b
   | Null, String s -> raise (PrimError "isAccessor topped out")
   | Sym _, _ 
+  (* TODO handle symbolic field names? *)
   | _, Sym _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "isAccessor")
 

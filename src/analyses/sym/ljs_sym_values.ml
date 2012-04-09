@@ -29,7 +29,11 @@ type value =
   | ObjCell of Store.loc (* can only point to ObjLit (see below) *)
   | Closure of (value list -> ctx -> int -> (result list * exresult list))
   | Sym of id (* symbolic value *)
+
 (* ObjLit *)
+and objlit = { attrs: attrsv;
+               conps: propv IdMap.t; (* props with concrete field names *)
+               symps: propv IdMap.t; } (* props with symbolic field names *)
 and
   attrsv = { code : value option;
              proto : value;
@@ -52,7 +56,7 @@ and label = string
 and result = value * ctx
 and exresult = exval * ctx
 
-and sto_type = { objs : (attrsv * (propv IdMap.t)) Store.t; vals : value Store.t }
+and sto_type = { objs : objlit Store.t; vals : value Store.t }
 and ctx = { constraints : sym_exp list;
             vars : typeEnv ;
             time : int ;
@@ -155,7 +159,8 @@ let sto_alloc_obj v ctx =
 
 let sto_update_field loc v field newval ctx = 
   let { constraints = cs; vars = vs; time = t; store = s } = ctx in
-  let cs' = match v with
+  let cs' = cs 
+    (*match v with*)
     (* | (Closure _) -> *)
     (*   List.rev_append  *)
     (*     [ *)
@@ -171,11 +176,11 @@ let sto_update_field loc v field newval ctx =
     (*                                              newval]))); *)
     (*       (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc]))) *)
     (*     ] cs  *)
-    | (attrs, props) -> 
-      List.rev_append 
-        [
-          (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
-        ] cs 
+    (*| (attrs, props) -> *)
+    (*  List.rev_append *)
+    (*    [*)
+    (*      (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))*)
+    (*    ] cs *)
   in
   { constraints = cs'; vars = vs; time = t+1; store = {s with objs = Store.update loc v ctx.store.objs} }
 

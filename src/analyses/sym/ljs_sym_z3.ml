@@ -37,7 +37,7 @@ let rec value v store =
   (*                            braces (exp e)]) *)
   | Sym id -> text id
 
-and obj ((avs, props), store) = 
+and obj ({ attrs = avs; conps = conprops; symps = symprops; }, store) = 
   (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
   parens (
     horz [text "OBJ";
@@ -57,7 +57,9 @@ and obj ((avs, props), store) =
                                        text (string_of_bool enum); 
                                        text (string_of_bool config)])
                      in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text ("S_" ^ f)]); value]]))
-                     (text "mtObj") (IdMap.bindings props)])])
+                     (text "mtObj")
+                     (List.append (IdMap.bindings conprops)
+                                  (IdMap.bindings symprops))])])
 
 
 (* and prim verbose p =  *)
