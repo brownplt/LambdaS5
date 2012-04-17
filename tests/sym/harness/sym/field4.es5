@@ -1,6 +1,5 @@
 // 1, undefined 
-let (obj = {[#proto: null,]
-    %%f: {#value 1, #writable true}
-}) {
+let (obj = {[#proto: null,]}) {
+obj[%%f = 1];
 obj["x"]
 }

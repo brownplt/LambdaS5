@@ -1,4 +1,4 @@
-// %%1, %%2, undefined
+// 1, 2, undefined
 let (obj = {[#proto: null,]
     "x": {#value 1, #writable false},
     "y": {#value 2, #writable false}})

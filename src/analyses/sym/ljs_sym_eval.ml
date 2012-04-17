@@ -81,48 +81,21 @@ let get_sym_props { symps = sym_props } = sym_props
 let set_con_props o con_props = { o with conps = con_props }
 let set_sym_props o sym_props = { o with symps = sym_props }
 
-let rec get_field get_props p obj1 field getter_params pc depth = match obj1 with
-  | ObjCell loc -> begin
-    let { attrs = { proto = pvalue }; } as objv, pc = sto_lookup_obj loc pc in
-    let props = get_props objv in
-    try match IdMap.find field props with
-    | Data ({ value = vloc; }, _, _) -> (uncurry return) (sto_lookup_val vloc pc)
-    | Accessor ({ getter = gloc; }, _, _) ->
-      let g, pc = sto_lookup_val gloc pc in
-      apply p g getter_params pc depth
-      (* Not_found means prototype lookup is necessary *)
-    with Not_found ->
-      get_field get_props p pvalue field getter_params pc depth
-  end
-  | _ -> failwith (interp_error p
-                     "get_field on a non-object.  The expression was (get-field "
-                   ^ Ljs_sym_pretty.val_to_string obj1
-                   ^ " " ^ Ljs_sym_pretty.val_to_string (List.nth getter_params 0)
-                   ^ " " ^ field ^ ")")
-
-let get_con_field = get_field get_con_props
-let get_sym_field = get_field get_sym_props
-
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
-let add_field get_props set_props obj field newval pc = match obj with
+let add_field obj field newval pc get_props set_props = match obj with
   | ObjCell loc -> begin match sto_lookup_obj loc pc with
-    | (* ObjLit *) { attrs = { extensible = true; }} as o, pc ->
-      begin
-        let vloc, pc = sto_alloc_val newval pc in
-        let newO = set_props o
-          (IdMap.add field
-             (Data ({ value = vloc; writable = true; }, true, true))
-             (get_props o)) in
-        return newval (sto_update_obj loc newO pc)
-      end
-    | (* ObjLit *) _, _ -> return Undefined pc(* TODO: Check error in case of non-extensible *)
+    | { attrs = { extensible = true; }} as o, pc ->
+      let vloc, pc = sto_alloc_val newval pc in
+      let newO = set_props o
+        (IdMap.add field
+           (Data ({ value = vloc; writable = true; }, true, true))
+           (get_props o)) in
+      return newval (sto_update_obj loc newO pc)
+    | _, _ -> return Undefined pc (* TODO: Check error in case of non-extensible *)
     (* | Value _, _ -> failwith "[interp][add_field] Somehow storing a Value through an ObjCell" *)
   end
   | _ -> failwith ("[interp] add_field given non-object.")
-
-let add_con_field = add_field get_con_props set_con_props
-let add_sym_field = add_field get_sym_props set_sym_props
 
 (* (\* Both functions (because a property can satisfy writable and not_writable) *\) *)
 (* let rec writable prop = match prop with *)
@@ -133,48 +106,6 @@ let add_sym_field = add_field get_sym_props set_sym_props
 (*   | Data ({ writable = false; }, _, _) -> true *)
 (*   | _ -> false *)
 
-(* EUpdateField *)
-(* ES5 8.12.4, 8.12.5 *)
-let rec update_field get_props set_props p objCheck objSet field newval setter_args pc depth = match objCheck with
-  (* 8.12.4, step 4 *)
-  | Null -> add_field get_props set_props objSet field newval pc
-  | ObjCell loc -> 
-    let { attrs = { proto = pvalue; }} as o, pc = sto_lookup_obj loc pc in
-    let props = get_props o in
-    if (not (IdMap.mem field props)) then
-        (* EUpdateField-Proto *)
-      update_field get_props set_props p pvalue objSet field newval setter_args pc depth 
-    else begin
-      match (IdMap.find field props) with
-      | Data ({ writable = true; }, enum, config) ->
-          (* This check asks how far down we are in searching *)
-        if (not (objCheck == objSet)) then
-          
-            (* 8.12.4, last step where inherited.[[writable]] is true *)
-          add_field get_props set_props objSet field newval pc
-        else begin
-            (* 8.12.5, step 3, changing the value of a field *)
-          let vloc, pc = sto_alloc_val newval pc in
-          let newO = set_props o
-            (IdMap.add field
-               (Data ({ value = vloc; writable = true }, enum, config))
-               props) in
-          let (z3field, pc') = const_string field pc in
-          return newval (sto_update_field loc newO (Sym z3field) (Concrete newval) pc')
-        end
-      | Accessor ({ setter = setterloc; }, enum, config) ->
-          (* 8.12.5, step 5 *)
-        let setterv, pc = sto_lookup_val setterloc pc in
-        apply p setterv setter_args pc depth
-      | _ -> failwith "Field not writable!"
-    end
-  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ 
-                      Ljs_sym_pretty.val_to_string objCheck ^ " " ^ 
-                      Ljs_sym_pretty.val_to_string objSet ^ " " ^ field ^ " " ^ 
-                      Ljs_sym_pretty.val_to_string newval ^ ")" )
-
-let update_con_field = update_field get_con_props set_con_props
-let update_sym_field = update_field get_sym_props set_sym_props
 
 (* Gets an attr of a prop of an object *)
 let get_attr attr props field pc = 
@@ -534,7 +465,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                           ([(IdMap.empty, pc_c)], []) props in
                       bind propvs_pcs
                         (fun (propvs, pc_psv) -> 
-                          (* TODO are we accidentally putting sym props in conps? *)
                           let objv = { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
                           let (loc, pc_obj) = sto_alloc_obj objv pc_psv in
                           return (ObjCell loc) pc_obj))))
@@ -632,70 +562,106 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
       | S.GetObjAttr _ -> failwith "[sym_eval] GetObjAttr NYI"
       | S.SetObjAttr _ -> failwith "[sym_eval] SetObjAttr NYI"
-
+ 
+      (* Invariants on the concrete and symbolic field maps in an object:
+       * 1) All field names in both maps are distinct from
+       *    all other field names in both maps
+       *
+       * These are the only constraints imposed by our representation. All other
+       * constraints must be checked by Z3.
+       *)
       | S.GetField (p, obj, f, args) ->
-        let rec sym_get_field p obj1 field getter_params pc depth = 
-          try
-            match obj1, field with
-            | Null, _ -> return Undefined pc (* nothing found *)
-            | Sym id, String f -> begin
-              Printf.printf "***** IN GetField(Sym %s, String %s)\n" id f;
-              let (fn_id, pc') = const_string f pc in 
-              sym_get_field p obj1 (Sym fn_id) getter_params pc' depth
-            end
-            | Sym o_id, Sym f_id ->
-              Printf.printf "***** IN GetField(Sym %s, Sym %s)\n" o_id f_id;
-              let pc_types = check_type o_id TObj (check_type f_id TString pc) in
-              let (ret_gf, pc'') = fresh_var "GF_" TAny (o_id ^ "[" ^ f_id ^ "]") pc_types in
-              let true_data_pc =
-                add_constraints [(SAssert (SNot (SIsMissing (SGetField (o_id, f_id)))));
-                                 (SLet (ret_gf, SApp(SId "value", [SGetField (o_id, f_id)])))] pc'' in
-              let false_pc =
-                add_constraints [(SAssert (SIsMissing (SGetField (o_id, f_id))));
-                                 (SLet (ret_gf, SApp(SId "value", [SOp2 ("get_field", SId o_id, SId f_id)])))] pc''
-              in
-              also_return (Sym ret_gf) true_data_pc
-                (return (Sym ret_gf)  false_pc)
-            | ObjCell loc, Sym f -> 
-              get_sym_field p obj1 f getter_params pc depth
-            (*  Printf.printf "***** IN GetField(ObjCell %s, Sym %s)\n" (Store.print_loc loc) f;*)
-            (*  let ({proto = pvalue; }, props), pc = sto_lookup_obj loc pc in*)
-            (*  combine*)
-            (*    (IdMap.fold (fun fieldName value results ->*)
-            (*      let (fn_id, pc') = const_string fieldName pc in*)
-            (*      Printf.printf "***** FieldName : %s, fn_id : %s\n" fieldName fn_id;*)
-            (*      let pc'' = add_constraint*)
-            (*        (SAssert (SApp(SId "=",*)
-            (*                       [SId f; SId fn_id]))) pc' in*)
-            (*      let (ret_gf, pc''') = fresh_var "GF_" TAny *)
-            (*        ("@" ^ (Store.print_loc loc) ^ "[\"" ^ fieldName ^ "\"]")*)
-            (*        pc'' in*)
-            (*      match value with*)
-            (*      | Data ({ value = vloc; }, _, _) ->*)
-            (*        let v, pc''' = sto_lookup_val vloc pc''' in*)
-            (*        also_return (Sym ret_gf)*)
-            (*          (add_constraint (SLet (ret_gf, Concrete v)) pc''') results*)
-            (*      | Accessor ({ getter = gloc; }, _, _) ->*)
-            (*        let g, pc''' = sto_lookup_val gloc pc''' in*)
-            (*        combine (apply p g getter_params pc''' depth) results) props none)*)
-            (*    (let none_of = IdMap.fold*)
-            (*       (fun fieldName _ pc ->*)
-            (*         let (fn_id, pc) = const_string fieldName pc in *)
-            (*         add_constraint*)
-            (*           (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f); *)
-            (*                                           SCastJS (TString, SId fn_id)])))) pc)*)
-            (*       props pc in*)
-            (*     sym_get_field p pvalue field getter_params none_of depth)*)
-            (*end*)
-            | ObjCell loc, String f ->
-              (*Printf.printf "***** IN GetField(ObjCell %s, String %s)\n" (Store.print_loc loc) f;*)
-              get_con_field p obj1 f getter_params pc depth
-            | _ -> failwith (interp_error p
-                               "get_field on a non-object.  The expression was (get-field "
-                             ^ Ljs_sym_pretty.val_to_string obj1
-                             ^ " " ^ Ljs_sym_pretty.val_to_string (List.nth getter_params 0)
-                             ^ " " ^ Ljs_sym_pretty.val_to_string field ^ ")")
-          with TypeError _ -> none
+        let rec sym_get_field obj1 field getter_params pc depth =
+          (* Let [same] be the type of f (symbolic or concrete) and [diff] be the opposite
+           * If f is present in the [same] field map, we simply get its value
+           * If f is not present in the [same] field map, either
+           *    a) f is equal to one of the [same] field names
+           *    b) f is equal to one of the [diff] field names
+           *    c) f is not equal to any of the field names, so we check the prototype
+           *)
+          (* get_props should produce a pair ([same] props, [diff] props) *)
+          let get_field objLoc f get_props = 
+            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj objLoc pc in
+            let same_props, diff_props = get_props objv in
+
+            (* Looks up the property stored at fieldName in props.
+             * Should only be called when fieldName is guaranteed to be present *)
+            let find_prop fieldName props pc =
+              try match IdMap.find fieldName props with
+              | Data ({ value = vloc; }, _, _) ->
+                (uncurry return) (sto_lookup_val vloc pc)
+              | Accessor ({ getter = gloc; }, _, _) ->
+                let g, pc = sto_lookup_val gloc pc in
+                apply p g getter_params pc depth
+              with Not_found -> failwith ("Impossible! get_prop was called with" ^
+                " a field name that wasn't present in the field map")
+            in
+
+            (* Creates branches for each property f' in the given property map where
+             * f is asserted equal to f' and the result is the property stored at f'.*)
+            let prop_branches props = IdMap.fold
+              (fun f' _ branches ->
+                let (f'_const, pc') = const_string f' pc in
+                let pc'' = add_constraint
+                  (SAssert (SApp (SId "=", [SId f; SId f'_const]))) pc' in
+                combine (find_prop f' props pc'') branches)
+              props none
+            in
+
+            (* If f is present in the [same] field map, we simply get its value *)
+            if IdMap.mem f same_props 
+            then find_prop f same_props pc
+            (* If f is not present in the [same] field map, either *)
+            else
+            (*    a) f is equal to one of the [diff] field names *)
+            (*    b) f is equal to one of the [same] field names *)
+            let branches = combine (prop_branches diff_props) (prop_branches same_props) in
+            (*    c) f is not equal to any of the field names, so we check the prototype *)
+            let assert_none_equal = IdMap.fold
+              (fun f' _ pc ->
+                let (f', pc') = const_string f' pc in
+                let pc'' = add_constraint
+                  (SAssert (SNot (SApp (SId "=", [SId f; SId f'])))) pc' in
+                pc'')
+            in
+            let none_pc = assert_none_equal same_props (assert_none_equal diff_props pc) in
+            let none_branch = sym_get_field proto field getter_params none_pc depth in
+            combine none_branch branches
+          in
+
+          try match obj1, field with
+          | Null, _ -> return Undefined pc (* nothing found *)
+          | ObjCell loc, String f ->
+          (* If f is present in the concrete field map, we simply get its value
+           * If f is not present in the concrete field map, either
+           *    a) f is equal to one of the symbolic field names
+           *    b) f is equal to one of the concrete field names
+           *    c) f is not equal to any of the field names, so we check the prototype
+           *
+           * -- Note that (b) is infeasible in this case, but makes the branches
+           *    symmetric with the way we handle symbolic field names. The infeasibility
+           *    of (b) is not imposed by our object invariants, so we fall back on
+           *    Z3 to catch it rather than try to catch it ourselves.
+           *)
+            get_field loc f (fun { conps = cons; symps = syms; } -> (cons, syms))
+
+          | ObjCell loc, Sym f ->
+          (* If f is present in the symbolic field map, we simply get its value
+           * If f is not present in the symbolic field map, either
+           *    a) f is equal to one of the concrete field names
+           *    b) f is equal to one of the symbolic field names
+           *    c) f is not equal to any of the field names, so we check the prototype
+           *)
+            get_field loc f (fun { conps = cons; symps = syms; } -> (syms, cons))
+
+          | Sym id, String f 
+          | Sym id, Sym f -> failwith "GetField not implemented for sym objs."
+          | _ -> failwith (interp_error p
+                             "get_field on a non-object.  The expression was (get-field "
+                           ^ Ljs_sym_pretty.val_to_string obj1
+                           ^ " " ^ Ljs_sym_pretty.val_to_string (List.nth getter_params 0)
+                           ^ " " ^ Ljs_sym_pretty.val_to_string field ^ ")")
+        with TypeError _ -> none
         in
         bind (eval obj env pc)
           (fun (objv, pc_o) -> 
@@ -703,107 +669,99 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (fun (fv, pc_f) -> 
                 bind (eval args env pc_f)
                   (fun (argsv, pc') ->
-                    sym_get_field p objv fv [objv; argsv] pc' depth)))
+                    sym_get_field objv fv [objv; argsv] pc' depth)))
 
           
 
       | S.SetField (p, obj, f, v, args) ->
-        Printf.printf "******* In SetField\n";
-        let sym_add_field objSet field newval pc = 
-          match objSet, field with
-          | ObjCell loc, String f -> add_con_field objSet f newval pc
-          | ObjCell loc, Sym f -> add_sym_field objSet f newval pc
-            (*begin match sto_lookup_obj loc pc with*)
-            (*| { attrs = { extensible = true; }}, pc ->*)
-            (*  return newval pc [> TODO <]*)
-              (* begin *)
-              (*   let newO = ObjLit (attrs, IdMap.add fieldName *)
-              (*     (Data ({ value = newval; writable = true }, true, true)) *)
-              (*     props) in *)
-              (*   also_return (Sym ret_gf) *)
-              (*     (add_constraint (SLet (ret_gf, Concrete (result v)))  *)
-              (*        (let (z3field, pc') = const_string fieldName pc in *)
-              (*         (sto_add_field loc newO (Sym z3field) (Concrete (result v)) true true true pc'))) results *)
-              (* end *)
-            (*| _, _ -> return Undefined pc [> TODO: Check error in case of non-extensible <]*)
-          (*end*)
-          | Sym _, _ -> failwith "[sym_add_field] Sym obj case not yet implemented"
-          | _ -> failwith "[sym_add_field] should not have happened"
-        in
-        (*let sym_set_target_field objSet fieldName curPropValue newval setter_args pc depth results =*)
-        (*  match objSet with*)
-        (*  | ObjCell loc ->*)
-        (*    let (ret_gf, pc') = fresh_var "SF_" TAny *)
-        (*      ("@" ^ (Store.print_loc loc) ^ "[\"" ^ fieldName ^ "\" = a value]")*)
-        (*      pc in*)
-        (*    begin *)
-        (*      let { attrs = attrs, props), pc' = sto_lookup_obj loc pc' in*)
-        (*      match curPropValue with*)
-        (*      | Data ({ value = vloc; }, enum, config) ->*)
-        (*        let newvloc, pc' = sto_alloc_val newval pc' in*)
-        (*        let newO = (attrs, IdMap.add fieldName*)
-        (*          (Data ({ value = newvloc; writable = true }, enum, config))*)
-        (*          props) in*)
-        (*        let v, pc' = sto_lookup_val vloc pc' in*)
-        (*        also_return (Sym ret_gf)*)
-        (*          (add_constraint (SLet (ret_gf, Concrete v)) *)
-        (*             (let (z3field, pc'') = const_string fieldName pc' in*)
-        (*              (sto_update_field loc newO (Sym z3field) (Concrete v) pc''))) results*)
-        (*      | Accessor ({ setter = sloc; }, _, _) ->*)
-        (*        let s, pc' = sto_lookup_val sloc pc' in*)
-        (*        combine (apply p s setter_args pc' depth) results*)
-        (*    end*)
-        (*  | _ -> failwith "[sym_set_target_field] Should not have happened"*)
-        (*in*)
-        let rec sym_set_field p objCheck objSet field newval setter_args pc depth = 
+        (*Printf.printf "******* In SetField\n";*)
+        let rec sym_set_field objCheck objSet field newval setter_params pc depth = 
+          (* Let [same] be the type of f (symbolic or concrete) and [diff] be the opposite
+           * Whenever we set a field, it is set on the original object
+           *
+           * If f is present in the [same] field map, we simply set its value
+           * If f is not present in the [same] field map, either
+           *    a) f is equal to one of the [same] field names
+           *    b) f is equal to one of the [diff] field names
+           *    c) f is not equal to any of the field names, so we check the prototype
+           *      - if the object doesn't have a prototype, add the field
+           *)
+          (* get_props should produce a pair ([same] props, [diff] props) *)
+          (* set_same should take an object and a new [same] props map
+           *  and produce a new object with the new [same] props map *)
+          (* set_diff should do the same for [diff] props *)
+          let set_field objLoc f get_props set_same set_diff = 
+            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj objLoc pc in
+            let same_props, diff_props = get_props objv in
+
+            (* Update the property at fieldName in props.
+             * Should only be called when fieldName is guaranteed to be present. *)
+            let update_prop set_props fieldName props pc =
+              try match IdMap.find fieldName props with
+              | Data ({ writable = true; }, enum, config) ->
+                let vloc, pc = sto_alloc_val newval pc in
+                let newO = set_props objv
+                  (IdMap.add fieldName
+                     (Data ({ value = vloc; writable = true }, enum, config))
+                     props) in
+                let (z3field, pc') = const_string fieldName pc in
+                return newval (sto_update_field objLoc newO (Sym z3field) (Concrete newval) pc') (* TODO what's this?? probably don't need the last line either *)
+              | Accessor ({ setter = sloc; }, _, _) ->
+                let s, pc = sto_lookup_val sloc pc in
+                apply p s setter_params pc depth
+              | _ -> failwith "SetField NYI for non-writable fields"
+              with Not_found -> failwith ("Impossible! update_prop was called with" ^
+                " a field name that wasn't present in the field map")
+            in
+            let update_same = update_prop set_same in
+            let update_diff = update_prop set_diff in
+
+            (* Creates branches for each property f' in the given property map where
+             * f is asserted equal to f' and the new value is stored at f'.*)
+            let prop_branches update_fun props = IdMap.fold
+              (fun f' _ branches ->
+                let (f'_id, pc') = const_string f' pc in
+                let pc'' = add_constraint
+                  (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
+                Printf.printf "*********** f' = %s" f';
+                combine (update_fun f' props pc'') branches)
+              props none
+            in
+            (* If f is present in the [same] field map, we simply set its value *)
+            if IdMap.mem f same_props 
+            then update_same f same_props pc
+            (* If f is not present in the [same] field map, either *)
+            else
+            (*    a) f is equal to one of the [diff] field names *)
+            (*    b) f is equal to one of the [same] field names *)
+            let branches = combine (prop_branches update_diff diff_props)
+                             (prop_branches update_same same_props) in
+            (*    c) f is not equal to any of the field names, so we check the prototype *)
+            let assert_none_equal = IdMap.fold
+              (fun f' _ pc ->
+                let (f', pc') = const_string f' pc in
+                let pc'' = add_constraint
+                  (SAssert (SNot (SApp (SId "=", [SId f; SId f'])))) pc' in
+                pc'')
+            in
+            let none_pc = assert_none_equal same_props (assert_none_equal diff_props pc) in
+            let none_branch = sym_set_field proto objSet field newval setter_params none_pc depth in
+            combine none_branch branches
+          in
+
           match objCheck, field with
-          | Null, _ -> sym_add_field objSet field newval pc 
-          | ObjCell loc, String f ->
-            update_con_field p objCheck objSet f newval setter_args pc depth
-          | ObjCell loc, Sym f ->
-            update_sym_field p objCheck objSet f newval setter_args pc depth
-          (*begin*)
-          (*  let ({proto = pvalue;}, props), pc = sto_lookup_obj loc pc in*)
-          (*  combine*)
-          (*    (IdMap.fold (fun fieldName curPropValue results ->*)
-          (*      let (fn_id, pc') = const_string fieldName pc in*)
-          (*      Printf.printf "***** FieldName : %s, fn_id : %s\n" fieldName fn_id;*)
-          (*      let pc'' = add_constraint*)
-          (*        (SAssert (SApp(SId "=",*)
-          (*                       [SId f_id; SId fn_id]))) pc' in*)
-          (*      sym_set_target_field objSet fieldName curPropValue newval setter_args pc'' depth results) props none)*)
-          (*    (let none_of = IdMap.fold*)
-          (*       (fun fieldName _ pc ->*)
-          (*         let (fn_id, pc) = const_string fieldName pc in *)
-          (*         add_constraint*)
-          (*           (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id); *)
-          (*                                           SCastJS (TString, SId fn_id)])))) pc)*)
-          (*       props pc in*)
-          (*     sym_set_field p pvalue objSet field newval setter_args none_of depth)*)
-          (*end*)
-          | Sym o_id, String s ->
-            Printf.printf "***** IN SetField(Sym %s, String %s)\n" o_id s;
-            let (fn_id, pc') = const_string s pc in 
-            sym_set_field p objCheck objSet (Sym fn_id) newval setter_args pc' depth
-              
-          | Sym o_id, Sym f_id -> 
-            combine (* over all objects *)
-              (Store.fold (fun loc _ results ->
-                combine (sym_set_field p (ObjCell loc) (ObjCell loc) (* over all fields *)
-                           field newval setter_args
-                           (add_constraints [(SAssert (is_equal (SLoc loc) (SId o_id)));
-                                             (SAssert (is_obj (STime pc.time) (SLoc loc)))] pc)
-                           depth)
-                  results)
-                 pc.store.objs none)
-              (let none_of = Store.fold (* over all objects *)
-                 (fun loc _ pc -> 
-                   add_constraint (SAssert (is_not_equal (SLoc loc) (SId o_id))) pc)
-                 pc.store.objs pc in
-               let (obj, pc') = fresh_var "OB" TObj "sym object set field" none_of in
-               let (loc, pc'') = sto_alloc_val (Sym obj) pc' in
-               sym_set_field p (ObjCell loc) (ObjCell loc) field newval setter_args
-                 (add_constraint (SAssert (is_obj (STime pc''.time) (SLoc loc))) pc'') depth)
+          | Null, String f -> add_field objSet f newval pc get_con_props set_con_props
+          | Null, Sym f    -> add_field objSet f newval pc get_sym_props set_sym_props
+          | ObjCell loc, String f -> set_field loc f
+              (fun { conps = cons; symps = syms; } -> (cons, syms)) (* get_props *)
+              set_con_props (* set_same_props *)
+              set_sym_props (* set_diff_props *)
+          | ObjCell loc, Sym f -> set_field loc f
+              (fun { conps = cons; symps = syms; } -> (syms, cons)) (* get_props *)
+              set_sym_props (* set_same_props *)
+              set_con_props (* set_diff_props *)
+          | Sym id, String f
+          | Sym id, Sym f -> failwith "SetField NYI for sym objects."
           | _ -> failwith "[sym_set_field] should not have happened"
         in
         bind (eval obj env pc) 
@@ -814,7 +772,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (fun (vv, pc_v) -> 
                     bind (eval args env pc_v)
                       (fun (argvs, pc_a) ->
-                        sym_set_field p objv objv fv vv [objv; argvs] pc_a depth))))
+                        sym_set_field objv objv fv vv [objv; argvs] pc_a depth))))
 
       | S.SetAttr (p, attr, obj, field, newval) ->
         bind (eval obj env pc)
@@ -966,3 +924,257 @@ let rec eval_expr expr jsonPath maxDepth pc =
         | v -> (Ljs_sym_pretty.val_to_string v) in
       throw (str ("Uncaught exception: " ^ err_msg)) pc
     | Break (l, v) -> throw (str ("Broke to top of execution, missed label: " ^ l)) pc)
+
+
+(*let rec get_field get_props p obj1 field getter_params pc depth = match obj1 with*)
+(*  | Null -> return Undefined pc*)
+(*  | ObjCell loc -> begin*)
+(*    let { attrs = { proto = pvalue }; } as objv, pc = sto_lookup_obj loc pc in*)
+(*    let props = get_props objv in*)
+(*    try match IdMap.find field props with*)
+(*    | Data ({ value = vloc; }, _, _) -> (uncurry return) (sto_lookup_val vloc pc)*)
+(*    | Accessor ({ getter = gloc; }, _, _) ->*)
+(*      let g, pc = sto_lookup_val gloc pc in*)
+(*      apply p g getter_params pc depth*)
+(*      [> Not_found means prototype lookup is necessary <]*)
+(*    with Not_found ->*)
+(*      get_field get_props p pvalue field getter_params pc depth*)
+(*  end*)
+(*  | _ -> failwith (interp_error p*)
+(*                     "get_field on a non-object.  The expression was (get-field "*)
+(*                   ^ Ljs_sym_pretty.val_to_string obj1*)
+(*                   ^ " " ^ Ljs_sym_pretty.val_to_string (List.nth getter_params 0)*)
+(*                   ^ " " ^ field ^ ")")*)
+
+(*let get_con_field = get_field get_con_props*)
+(*let get_sym_field = get_field get_sym_props*)
+(* EUpdateField *)
+(* ES5 8.12.4, 8.12.5 *)
+(*let rec update_field get_props set_props p objCheck objSet field newval setter_args pc depth = match objCheck with*)
+(*  [> 8.12.4, step 4 <]*)
+(*  | Null -> add_field get_props set_props objSet field newval pc*)
+(*  | ObjCell loc -> *)
+(*    let { attrs = { proto = pvalue; }} as o, pc = sto_lookup_obj loc pc in*)
+(*    let props = get_props o in*)
+(*    if (not (IdMap.mem field props)) then*)
+(*        [> EUpdateField-Proto <]*)
+(*      update_field get_props set_props p pvalue objSet field newval setter_args pc depth *)
+(*    else begin*)
+(*      match (IdMap.find field props) with*)
+(*      | Data ({ writable = true; }, enum, config) ->*)
+(*          [> This check asks how far down we are in searching <]*)
+(*        if (not (objCheck == objSet)) then*)
+          
+(*            [> 8.12.4, last step where inherited.[[writable]] is true <]*)
+(*          add_field get_props set_props objSet field newval pc*)
+(*        else begin*)
+(*            [> 8.12.5, step 3, changing the value of a field <]*)
+(*          let vloc, pc = sto_alloc_val newval pc in*)
+(*          let newO = set_props o*)
+(*            (IdMap.add field*)
+(*               (Data ({ value = vloc; writable = true }, enum, config))*)
+(*               props) in*)
+(*          let (z3field, pc') = const_string field pc in*)
+(*          return newval (sto_update_field loc newO (Sym z3field) (Concrete newval) pc')*)
+(*        end*)
+(*      | Accessor ({ setter = setterloc; }, enum, config) ->*)
+(*          [> 8.12.5, step 5 <]*)
+(*        let setterv, pc = sto_lookup_val setterloc pc in*)
+(*        apply p setterv setter_args pc depth*)
+(*      | _ -> failwith "Field not writable!"*)
+(*    end*)
+(*  | _ -> failwith ("[interp] set_field received (or found) a non-object.  The call was (set-field " ^ *)
+(*                      Ljs_sym_pretty.val_to_string objCheck ^ " " ^ *)
+(*                      Ljs_sym_pretty.val_to_string objSet ^ " " ^ field ^ " " ^ *)
+(*                      Ljs_sym_pretty.val_to_string newval ^ ")" )*)
+
+(*let update_con_field = update_field get_con_props set_con_props*)
+(*let update_sym_field = update_field get_sym_props set_sym_props*)
+
+
+          (*
+            | Sym id, String f -> begin
+              Printf.printf "***** IN GetField(Sym %s, String %s)\n" id f;
+              let (fn_id, pc') = const_string f pc in 
+              sym_get_field p obj1 (Sym fn_id) getter_params pc' depth
+            end
+            | Sym o_id, Sym f_id ->
+              Printf.printf "***** IN GetField(Sym %s, Sym %s)\n" o_id f_id;
+              let pc_types = check_type o_id TObj (check_type f_id TString pc) in
+              let (ret_gf, pc'') = fresh_var "GF_" TAny (o_id ^ "[" ^ f_id ^ "]") pc_types in
+              let true_data_pc =
+                add_constraints [(SAssert (SNot (SIsMissing (SGetField (o_id, f_id)))));
+                                 (SLet (ret_gf, SApp(SId "value", [SGetField (o_id, f_id)])))] pc'' in
+              let false_pc =
+                add_constraints [(SAssert (SIsMissing (SGetField (o_id, f_id))));
+                                 (SLet (ret_gf, SApp(SId "value", [SOp2 ("get_field", SId o_id, SId f_id)])))] pc''
+              in
+              also_return (Sym ret_gf) true_data_pc
+                (return (Sym ret_gf)  false_pc)
+            | ObjCell loc, Sym f_id -> begin
+              Printf.printf "***** IN GetField(ObjCell %s, Sym %s)\n" (Store.print_loc loc) f_id;
+              let { symps = sym_props; conps = con_props; }, pc = sto_lookup_obj loc pc in
+              (* If the field is in the sym fields map, then get it. *)
+              if IdMap.mem f_id sym_props
+              then get_sym_field p obj1 f_id getter_params pc depth
+              else combine
+              (* Otherwise, branch for each case where the sym field == the concrete field *)
+                     (* TODO also need to branch for sym fields *)
+                (IdMap.fold
+                   (fun fieldName _ results ->
+                      let (fn_id, pc') = const_string fieldName pc in
+                      Printf.printf "***** FieldName : %s, fn_id : %s\n" fieldName fn_id;
+                      let pc'' = add_constraint
+                        (SAssert (SApp(SId "=",
+                                       [SId f_id; SId fn_id]))) pc' in
+                      (* getting from the concrete field map *)
+                      combine (get_con_field p obj1 fieldName getter_params pc'' depth) results)
+                   con_props none)
+              (* Plus one case where the sym field != any of the concrete fields *)
+                (let none_of = IdMap.fold
+                   (fun fieldName _ pc ->
+                     let (fn_id, pc) = const_string fieldName pc in 
+                     add_constraint
+                       (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id); 
+                                                       SCastJS (TString, SId fn_id)])))) pc)
+                   con_props pc in
+                  (* getting from the sym field map *)
+                  get_sym_field p obj1 f_id getter_params none_of depth)
+            end
+            (*  Printf.printf "***** IN GetField(ObjCell %s, Sym %s)\n" (Store.print_loc loc) f;*)
+            (*  let ({proto = pvalue; }, props), pc = sto_lookup_obj loc pc in*)
+            (*  combine*)
+            (*    (IdMap.fold (fun fieldName value results ->*)
+            (*      let (fn_id, pc') = const_string fieldName pc in*)
+            (*      Printf.printf "***** FieldName : %s, fn_id : %s\n" fieldName fn_id;*)
+            (*      let pc'' = add_constraint*)
+            (*        (SAssert (SApp(SId "=",*)
+            (*                       [SId f; SId fn_id]))) pc' in*)
+            (*      let (ret_gf, pc''') = fresh_var "GF_" TAny *)
+            (*        ("@" ^ (Store.print_loc loc) ^ "[\"" ^ fieldName ^ "\"]")*)
+            (*        pc'' in*)
+            (*      match value with*)
+            (*      | Data ({ value = vloc; }, _, _) ->*)
+            (*        let v, pc''' = sto_lookup_val vloc pc''' in*)
+            (*        also_return (Sym ret_gf)*)
+            (*          (add_constraint (SLet (ret_gf, Concrete v)) pc''') results*)
+            (*      | Accessor ({ getter = gloc; }, _, _) ->*)
+            (*        let g, pc''' = sto_lookup_val gloc pc''' in*)
+            (*        combine (apply p g getter_params pc''' depth) results) props none)*)
+            (*    (let none_of = IdMap.fold*)
+            (*       (fun fieldName _ pc ->*)
+            (*         let (fn_id, pc) = const_string fieldName pc in *)
+            (*         add_constraint*)
+            (*           (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f); *)
+            (*                                           SCastJS (TString, SId fn_id)])))) pc)*)
+            (*       props pc in*)
+            (*     sym_get_field p pvalue field getter_params none_of depth)*)
+            (*end*)
+            | ObjCell loc, String f ->
+              (*Printf.printf "***** IN GetField(ObjCell %s, String %s)\n" (Store.print_loc loc) f;*)
+              get_con_field p obj1 f getter_params pc depth
+           *)
+
+        (*let sym_add_field objSet field newval pc = *)
+        (*  match objSet, field with*)
+        (*  | ObjCell loc, String f -> add_con_field objSet f newval pc*)
+        (*  | ObjCell loc, Sym f -> add_sym_field objSet f newval pc*)
+        (*    [>begin match sto_lookup_obj loc pc with<]*)
+        (*    [>| { attrs = { extensible = true; }}, pc -><]*)
+        (*    [>  return newval pc [> TODO <]<]*)
+        (*      [> begin <]*)
+        (*      [>   let newO = ObjLit (attrs, IdMap.add fieldName <]*)
+        (*      [>     (Data ({ value = newval; writable = true }, true, true)) <]*)
+        (*      [>     props) in <]*)
+        (*      [>   also_return (Sym ret_gf) <]*)
+        (*      [>     (add_constraint (SLet (ret_gf, Concrete (result v)))  <]*)
+        (*      [>        (let (z3field, pc') = const_string fieldName pc in <]*)
+        (*      [>         (sto_add_field loc newO (Sym z3field) (Concrete (result v)) true true true pc'))) results <]*)
+        (*      [> end <]*)
+        (*    [>| _, _ -> return Undefined pc [> TODO: Check error in case of non-extensible <]<]*)
+        (*  [>end<]*)
+        (*  | Sym _, _ -> failwith "[sym_add_field] Sym obj case not yet implemented"*)
+        (*  | _ -> failwith "[sym_add_field] should not have happened"*)
+        (*in*)
+        (*let sym_set_target_field objSet fieldName curPropValue newval setter_args pc depth results =*)
+        (*  match objSet with*)
+        (*  | ObjCell loc ->*)
+        (*    let (ret_gf, pc') = fresh_var "SF_" TAny *)
+        (*      ("@" ^ (Store.print_loc loc) ^ "[\"" ^ fieldName ^ "\" = a value]")*)
+        (*      pc in*)
+        (*    begin *)
+        (*      let { attrs = attrs, props), pc' = sto_lookup_obj loc pc' in*)
+        (*      match curPropValue with*)
+        (*      | Data ({ value = vloc; }, enum, config) ->*)
+        (*        let newvloc, pc' = sto_alloc_val newval pc' in*)
+        (*        let newO = (attrs, IdMap.add fieldName*)
+        (*          (Data ({ value = newvloc; writable = true }, enum, config))*)
+        (*          props) in*)
+        (*        let v, pc' = sto_lookup_val vloc pc' in*)
+        (*        also_return (Sym ret_gf)*)
+        (*          (add_constraint (SLet (ret_gf, Concrete v)) *)
+        (*             (let (z3field, pc'') = const_string fieldName pc' in*)
+        (*              (sto_update_field loc newO (Sym z3field) (Concrete v) pc''))) results*)
+        (*      | Accessor ({ setter = sloc; }, _, _) ->*)
+        (*        let s, pc' = sto_lookup_val sloc pc' in*)
+        (*        combine (apply p s setter_args pc' depth) results*)
+        (*    end*)
+        (*  | _ -> failwith "[sym_set_target_field] Should not have happened"*)
+        (*in*)
+
+        (*  | Null, _ -> sym_add_field objSet field newval pc *)
+        (*  | ObjCell loc, String f ->*)
+        (*    update_con_field p objCheck objSet f newval setter_args pc depth*)
+        (*  | ObjCell loc, Sym f_id -> begin*)
+        (*    let { symps = sym_props; conps = con_props; }, pc = sto_lookup_obj loc pc in*)
+        (*    [> If the field is in the sym fields map, then update it. <]*)
+        (*    if IdMap.mem f_id sym_props*)
+        (*    then update_sym_field p objCheck objSet f_id newval setter_args pc depth*)
+        (*    else combine*)
+        (*    [> Otherwise, branch for each case where the sym field == the concrete field <]*)
+        (*      (IdMap.fold*)
+        (*         (fun fieldName _ results ->*)
+        (*            let (fn_id, pc') = const_string fieldName pc in*)
+        (*            Printf.printf "***** FieldName : %s, fn_id : %s\n" fieldName fn_id;*)
+        (*            let pc'' = add_constraint*)
+        (*              (SAssert (SApp(SId "=",*)
+        (*                             [SId f_id; SId fn_id]))) pc' in*)
+        (*            [> updating the concrete field map <]*)
+        (*            combine (update_con_field p objCheck objSet fieldName newval setter_args pc'' depth) results)*)
+        (*            [>sym_set_target_field objSet fieldName curPropValue newval setter_args pc'' depth results) props none)<]*)
+        (*         con_props none)*)
+        (*    [> Plus one case where the sym field != any of the concrete fields <]*)
+        (*      (let none_of = IdMap.fold*)
+        (*         (fun fieldName _ pc ->*)
+        (*           let (fn_id, pc) = const_string fieldName pc in *)
+        (*           add_constraint*)
+        (*             (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id); *)
+        (*                                             SCastJS (TString, SId fn_id)])))) pc)*)
+        (*         con_props pc in*)
+        (*        [> updating the sym field map <]*)
+        (*        update_sym_field p objCheck objSet f_id newval setter_args none_of depth)*)
+        (*       [>sym_set_field p pvalue objSet field newval setter_args none_of depth)<]*)
+          (*end*)
+          (*| Sym o_id, String s ->*)
+          (*  Printf.printf "***** IN SetField(Sym %s, String %s)\n" o_id s;*)
+          (*  let (fn_id, pc') = const_string s pc in *)
+          (*  sym_set_field p objCheck objSet (Sym fn_id) newval setter_args pc' depth*)
+              
+          (*| Sym o_id, Sym f_id -> *)
+          (*  combine [> over all objects <]*)
+          (*    (Store.fold (fun loc _ results ->*)
+          (*      combine (sym_set_field p (ObjCell loc) (ObjCell loc) [> over all fields <]*)
+          (*                 field newval setter_args*)
+          (*                 (add_constraints [(SAssert (is_equal (SLoc loc) (SId o_id)));*)
+          (*                                   (SAssert (is_obj (STime pc.time) (SLoc loc)))] pc)*)
+          (*                 depth)*)
+          (*        results)*)
+          (*       pc.store.objs none)*)
+          (*    (let none_of = Store.fold [> over all objects <]*)
+          (*       (fun loc _ pc -> *)
+          (*         add_constraint (SAssert (is_not_equal (SLoc loc) (SId o_id))) pc)*)
+          (*       pc.store.objs pc in*)
+          (*     let (obj, pc') = fresh_var "OB" TObj "sym object set field" none_of in*)
+          (*     let (loc, pc'') = sto_alloc_val (Sym obj) pc' in*)
+          (*     sym_set_field p (ObjCell loc) (ObjCell loc) field newval setter_args*)
+          (*       (add_constraint (SAssert (is_obj (STime pc''.time) (SLoc loc))) pc'') depth)*)

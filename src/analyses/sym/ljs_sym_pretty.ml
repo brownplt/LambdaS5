@@ -31,9 +31,12 @@ and obj { attrs = attrsv; conps = conpsv; symps = sympsv; } =
   then squish [text "@"; braces (attrs attrsv)]
   else 
     horz [squish [text "@"; (braces (vert [attrs attrsv; 
-                                           vert (vert_intersperse (text ",") 
-                                                   (map prop (List.append (IdMap.bindings conpsv)
-                                                                          (IdMap.bindings sympsv))))]))]]
+                                           text "- Con fields -";
+                                           vert (vert_intersperse (text ",")
+                                                   (map con_prop (IdMap.bindings conpsv)));
+                                           text "- Sym fields -";
+                                           vert (vert_intersperse (text ",")
+                                                   (map sym_prop (IdMap.bindings sympsv)));]))]]
 
 
 and attrs { proto = p; code = c; extensible = b; klass = k } =
@@ -45,11 +48,11 @@ and attrs { proto = p; code = c; extensible = b; klass = k } =
                              code@
                              [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
                               horz [text "#extensible:"; text (string_of_bool b)]])))
-    
+
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
+    horz [text f; text ":"; braces (horz [text "#value"; 
                                                         text (Store.print_loc v); text ",";
                                                         text "#writable";  
                                                         text (string_of_bool w);
@@ -61,6 +64,9 @@ and prop (f, prop) = match prop with
                                                         text (Store.print_loc g); text ",";
                                                         text "#setter";
                                                         text (Store.print_loc s)])]
+
+and sym_prop fp = prop fp
+and con_prop (f, p) = prop ("'" ^ f ^ "'", p)
 
 (* and prim verbose p =  *)
 (*   let value = value verbose in *)

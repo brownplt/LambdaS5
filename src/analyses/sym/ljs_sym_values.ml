@@ -204,12 +204,12 @@ let sto_update_val loc v ctx =
 
 let sto_update_obj loc v ctx = 
   let { constraints = cs; vars = vs; time = t; store = s } = ctx in
-  let cs' = (* match v with *)
+  let cs' = cs (* match v with *)
     (* | (attrs, props) ->  *)
-      List.rev_append 
-        [
-          (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
-        ] cs 
+      (*List.rev_append *)
+      (*  [*)
+      (*    (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))*)
+      (*  ] cs *)
   in
   { constraints = cs'; vars = vs; time = t+1; 
     store = {ctx.store with objs = Store.update loc v ctx.store.objs } }
