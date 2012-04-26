@@ -40,7 +40,7 @@ let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
 
-let val_sym v = match v with Sym x -> (SId x) | _ -> (Concrete v)
+let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
 
 let bool b = match b with
@@ -67,7 +67,7 @@ let interp_error pos message =
     
 let rec apply p func args pc depth = match func with
   | Closure c -> c args pc depth
-  (* | ObjCell c -> begin match !c with *)
+  (* | ObjPtr c -> begin match !c with *)
   (*     | ({ code = Some cvalue }, _) -> *)
   (*       apply p cvalue args pcs *)
   (*     | _ -> failwith "Applied an object without a code attribute" *)
@@ -84,7 +84,7 @@ let set_sym_props o sym_props = { o with symps = sym_props }
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
 let add_field obj field newval pc get_props set_props = match obj with
-  | ObjCell loc -> begin match sto_lookup_obj loc pc with
+  | ObjPtr loc -> begin match sto_lookup_obj loc pc with
     | { attrs = { extensible = true; }} as o, pc ->
       let vloc, pc = sto_alloc_val newval pc in
       let newO = set_props o
@@ -93,7 +93,7 @@ let add_field obj field newval pc get_props set_props = match obj with
            (get_props o)) in
       return newval (sto_update_obj loc newO pc)
     | _, _ -> return Undefined pc (* TODO: Check error in case of non-extensible *)
-    (* | Value _, _ -> failwith "[interp][add_field] Somehow storing a Value through an ObjCell" *)
+    (* | Value _, _ -> failwith "[interp][add_field] Somehow storing a Value through an ObjPtr" *)
   end
   | _ -> failwith ("[interp] add_field given non-object.")
 
@@ -137,110 +137,109 @@ let get_attr attr props field pc =
   a. Value, which checks Writable
   b. Writable, which can change true->false
 *)
-let rec set_attr attr obj field newval pc = match obj, field with
-  | ObjCell loc, String f_str -> 
-    let { attrs = { extensible = ext; }; conps = props; } as o, pc = sto_lookup_obj loc pc in
-    if not (IdMap.mem f_str props) then
-      if ext then
-        let newprop, pc = match attr with
-          | S.Getter ->
-            let vloc, pc = sto_alloc_val newval pc in 
-            let uloc, pc = sto_alloc_val Undefined pc in
-            (Accessor ({ getter = vloc; setter = uloc; },
-                      false, false), pc)
-          | S.Setter ->
-            let vloc, pc = sto_alloc_val newval pc in 
-            let uloc, pc = sto_alloc_val Undefined pc in
-            (Accessor ({ getter = uloc; setter = vloc; },
-                      false, false), pc)
-          | S.Value ->
-            let vloc, pc = sto_alloc_val newval pc in 
-            (Data ({ value = vloc; writable = false; }, false, false), pc)
-          | S.Writable ->
-            let uloc, pc = sto_alloc_val Undefined pc in
-            (Data ({ value = uloc; writable = unbool newval pc },
-                  false, false), pc)
-          | S.Enum ->
-            let uloc, pc = sto_alloc_val Undefined pc in
-            (Data ({ value = uloc; writable = false },
-                  unbool newval pc, true), pc)
-          | S.Config ->
-            let uloc, pc = sto_alloc_val Undefined pc in
-            (Data ({ value = uloc; writable = false },
-                  true, unbool newval pc), pc) in
-        let newO = { o with conps = IdMap.add f_str newprop props } in
-        return (bool true) (sto_update_obj loc newO pc)
-      else
-        failwith "[interp] Extending inextensible object ."
-    else
-      (* 8.12.9: "If a field is absent, then its value is considered
-         to be false" -- we ensure that fields are present and
-         (and false, if they would have been absent). *)
-      let newprop, pc = match (IdMap.find f_str props), attr, newval with
-        (* S.Writable true -> false when configurable is false *)
-        | Data ({ writable = true } as d, enum, config), S.Writable, new_w ->
-          (Data ({ d with writable = unbool new_w pc }, enum, config), pc)
-        | Data (d, enum, true), S.Writable, new_w ->
-          (Data ({ d with writable = unbool new_w pc }, enum, true), pc)
-        (* Updating values only checks writable *)
-        | Data ({ writable = true } as d, enum, config), S.Value, v ->
-          let vloc, pc = sto_alloc_val v pc in
-          (Data ({ d with value = vloc }, enum, config), pc)
-        (* If we had a data property, update it to an accessor *)
-        | Data (d, enum, true), S.Setter, setterv ->
-          let sloc, pc = sto_alloc_val setterv pc in
-          let uloc, pc = sto_alloc_val Undefined pc in
-          (Accessor ({ getter = uloc; setter = sloc }, enum, true), pc)
-        | Data (d, enum, true), S.Getter, getterv ->
-          let gloc, pc = sto_alloc_val getterv pc in
-          let uloc, pc = sto_alloc_val Undefined pc in
-          (Accessor ({ getter = gloc; setter = uloc }, enum, true), pc)
-        (* Accessors can update their getter and setter properties *)
-        | Accessor (a, enum, true), S.Getter, getterv ->
-          let gloc, pc = sto_alloc_val getterv pc in
-          (Accessor ({ a with getter = gloc }, enum, true), pc)
-        | Accessor (a, enum, true), S.Setter, setterv ->
-          let sloc, pc = sto_alloc_val setterv pc in
-          (Accessor ({ a with setter = sloc }, enum, true), pc)
-        (* An accessor can be changed into a data property *)
-        | Accessor (a, enum, true), S.Value, v ->
-          let vloc, pc = sto_alloc_val v pc in
-          (Data ({ value = vloc; writable = false; }, enum, true), pc)
-        | Accessor (a, enum, true), S.Writable, w ->
-          let uloc, pc = sto_alloc_val Undefined pc in
-          (Data ({ value = uloc; writable = unbool w pc; }, enum, true), pc)
-        (* enumerable and configurable need configurable=true *)
-        | Data (d, _, true), S.Enum, new_enum ->
-          (Data (d, unbool new_enum pc, true), pc)
-        | Data (d, enum, true), S.Config, new_config ->
-          (Data (d, enum, unbool new_config pc), pc)
-        | Data (d, enum, false), S.Config, False ->
-          (Data (d, enum, false), pc)
-        | Accessor (a, enum, true), S.Config, new_config ->
-          (Accessor (a, enum, unbool new_config pc), pc)
-        | Accessor (a, enum, true), S.Enum, new_enum ->
-          (Accessor (a, unbool new_enum pc, true), pc)
-        | Accessor (a, enum, false), S.Config, False ->
-          (Accessor (a, enum, false), pc)
-        | _ -> failwith "[interp] bad property set"
-      in begin
-        let newO = { o with conps = IdMap.add f_str newprop props } in
-        return (bool true) (sto_update_obj loc newO pc)
-      end
-  | _ -> failwith ("[interp] set-attr didn't get an object and a string")
+(*let rec set_attr attr obj field newval pc = match obj, field with*)
+(*  | ObjPtr loc, String f_str -> *)
+(*    let { attrs = { extensible = ext; }; conps = props; } as o, pc = sto_lookup_obj loc pc in*)
+(*    if not (IdMap.mem f_str props) then*)
+(*      if ext then*)
+(*        let newprop, pc = match attr with*)
+(*          | S.Getter ->*)
+(*            let vloc, pc = sto_alloc_val newval pc in *)
+(*            let uloc, pc = sto_alloc_val Undefined pc in*)
+(*            (Accessor ({ getter = vloc; setter = uloc; },*)
+(*                      false, false), pc)*)
+(*          | S.Setter ->*)
+(*            let vloc, pc = sto_alloc_val newval pc in *)
+(*            let uloc, pc = sto_alloc_val Undefined pc in*)
+(*            (Accessor ({ getter = uloc; setter = vloc; },*)
+(*                      false, false), pc)*)
+(*          | S.Value ->*)
+(*            let vloc, pc = sto_alloc_val newval pc in *)
+(*            (Data ({ value = vloc; writable = false; }, false, false), pc)*)
+(*          | S.Writable ->*)
+(*            let uloc, pc = sto_alloc_val Undefined pc in*)
+(*            (Data ({ value = uloc; writable = unbool newval pc },*)
+(*                  false, false), pc)*)
+(*          | S.Enum ->*)
+(*            let uloc, pc = sto_alloc_val Undefined pc in*)
+(*            (Data ({ value = uloc; writable = false },*)
+(*                  unbool newval pc, true), pc)*)
+(*          | S.Config ->*)
+(*            let uloc, pc = sto_alloc_val Undefined pc in*)
+(*            (Data ({ value = uloc; writable = false },*)
+(*                  true, unbool newval pc), pc) in*)
+(*        let newO = { o with conps = IdMap.add f_str newprop props } in*)
+(*        return (bool true) (sto_update_obj loc newO pc)*)
+(*      else*)
+(*        failwith "[interp] Extending inextensible object ."*)
+(*    else*)
+(*      (* 8.12.9: "If a field is absent, then its value is considered*)
+(*         to be false" -- we ensure that fields are present and*)
+(*         (and false, if they would have been absent). *)*)
+(*      let newprop, pc = match (IdMap.find f_str props), attr, newval with*)
+(*        [> S.Writable true -> false when configurable is false <]*)
+(*        | Data ({ writable = true } as d, enum, config), S.Writable, new_w ->*)
+(*          (Data ({ d with writable = unbool new_w pc }, enum, config), pc)*)
+(*        | Data (d, enum, true), S.Writable, new_w ->*)
+(*          (Data ({ d with writable = unbool new_w pc }, enum, true), pc)*)
+(*        [> Updating values only checks writable <]*)
+(*        | Data ({ writable = true } as d, enum, config), S.Value, v ->*)
+(*          let vloc, pc = sto_alloc_val v pc in*)
+(*          (Data ({ d with value = vloc }, enum, config), pc)*)
+(*        [> If we had a data property, update it to an accessor <]*)
+(*        | Data (d, enum, true), S.Setter, setterv ->*)
+(*          let sloc, pc = sto_alloc_val setterv pc in*)
+(*          let uloc, pc = sto_alloc_val Undefined pc in*)
+(*          (Accessor ({ getter = uloc; setter = sloc }, enum, true), pc)*)
+(*        | Data (d, enum, true), S.Getter, getterv ->*)
+(*          let gloc, pc = sto_alloc_val getterv pc in*)
+(*          let uloc, pc = sto_alloc_val Undefined pc in*)
+(*          (Accessor ({ getter = gloc; setter = uloc }, enum, true), pc)*)
+(*        [> Accessors can update their getter and setter properties <]*)
+(*        | Accessor (a, enum, true), S.Getter, getterv ->*)
+(*          let gloc, pc = sto_alloc_val getterv pc in*)
+(*          (Accessor ({ a with getter = gloc }, enum, true), pc)*)
+(*        | Accessor (a, enum, true), S.Setter, setterv ->*)
+(*          let sloc, pc = sto_alloc_val setterv pc in*)
+(*          (Accessor ({ a with setter = sloc }, enum, true), pc)*)
+(*        [> An accessor can be changed into a data property <]*)
+(*        | Accessor (a, enum, true), S.Value, v ->*)
+(*          let vloc, pc = sto_alloc_val v pc in*)
+(*          (Data ({ value = vloc; writable = false; }, enum, true), pc)*)
+(*        | Accessor (a, enum, true), S.Writable, w ->*)
+(*          let uloc, pc = sto_alloc_val Undefined pc in*)
+(*          (Data ({ value = uloc; writable = unbool w pc; }, enum, true), pc)*)
+(*        [> enumerable and configurable need configurable=true <]*)
+(*        | Data (d, _, true), S.Enum, new_enum ->*)
+(*          (Data (d, unbool new_enum pc, true), pc)*)
+(*        | Data (d, enum, true), S.Config, new_config ->*)
+(*          (Data (d, enum, unbool new_config pc), pc)*)
+(*        | Data (d, enum, false), S.Config, False ->*)
+(*          (Data (d, enum, false), pc)*)
+(*        | Accessor (a, enum, true), S.Config, new_config ->*)
+(*          (Accessor (a, enum, unbool new_config pc), pc)*)
+(*        | Accessor (a, enum, true), S.Enum, new_enum ->*)
+(*          (Accessor (a, unbool new_enum pc, true), pc)*)
+(*        | Accessor (a, enum, false), S.Config, False ->*)
+(*          (Accessor (a, enum, false), pc)*)
+(*        | _ -> failwith "[interp] bad property set"*)
+(*      in begin*)
+(*        let newO = { o with conps = IdMap.add f_str newprop props } in*)
+(*        return (bool true) (sto_update_obj loc newO pc)*)
+(*      end*)
+(*  | _ -> failwith ("[interp] set-attr didn't get an object and a string")*)
 
 (* 8.10.5, steps 7/8 "If iscallable(getter) is false and getter is not
    undefined..." *)
 
 (* and fun_obj value = match value with *)
-(*   | ObjCell c -> begin match !c with *)
+(*   | ObjPtr c -> begin match !c with *)
 (*       | { code = Some (Closure cv) }, _ -> true *)
 (*       | _ -> false *)
 (*   end *)
 (*   | Undefined -> false *)
 (*   | _ -> false *)
     
-
 let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
@@ -248,6 +247,60 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
   if (depth >= maxDepth) then none
   else 
     let nestedEval = eval jsonPath maxDepth in
+    (* eval_sym should be called to eval an expression e that is part of an expression
+     * which determines whether e is a scalar or a pointer. For instance, the expression
+     * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
+     * In either case, eval_sym should be used to evaluate e.
+     * 
+     * If given an Id, looks up the id to see if it corresponds to a NewSym (an
+     * uninitialized symbolic value). If so, initializes it (TODO explain init'ing).
+     * If not, then just returns the value stored for that id.
+     *
+     * If given any other expression, calls normal eval on it.
+     *)
+    let eval_sym exp env pc = match exp with
+    | S.Id (p, x) -> 
+      let vloc = (IdMap.find x env) in
+      let (v, pc) = try (sto_lookup_val vloc pc)
+        with Not_found ->
+          failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
+                       (string_of_position p))
+      in begin match v with
+      | NewSym (id, obj_locs) -> (* branch over all locs and if it's a scalar *)
+        (* One branch for if its a scalar *)
+        let scalarv = SymScalar id in
+        let pc_scalar = sto_update_val vloc scalarv pc in
+        (* Branches for each object it could point to *)
+        let ptr_branches =
+          List.fold_left
+            (fun branches obj_loc ->
+               let ptrv = ObjPtr obj_loc in
+               let pc_ptr = sto_update_val vloc ptrv pc in
+               combine (return ptrv pc_ptr) branches)
+            none obj_locs
+        in
+        (* One branch if it's a new symbolic object *)
+        let objv = {
+          symbolic = true;
+          (* TODO figure out what attrs an empty sym object has *)
+          attrs = { code = None; proto = Null; extensible = true;
+                    klass = "huh?"; primval = None; };
+          conps = IdMap.empty;
+          symps = IdMap.empty;
+        } in
+        let (obj_loc, pc_new) = sto_alloc_obj objv pc in
+        let newv = ObjPtr obj_loc in
+        let pc_new = sto_update_val vloc newv pc_new in
+        (* TODO for each new store, we need to find all NewSym's with the same id and
+         * update them with the new value also *)
+        combine (return scalarv pc_scalar)
+          (combine ptr_branches
+             (return newv pc_new))
+
+      | _ -> return v pc
+      end
+    | _ -> eval jsonPath maxDepth depth exp env pc
+    in
     let eval = eval jsonPath maxDepth depth in match exp with
       | S.Hint (_, _, e) -> eval e env pc
       | S.Undefined _ -> return Undefined pc 
@@ -257,8 +310,12 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.True _ -> return True pc
       | S.False _ -> return False pc
       | S.Id (p, x) -> 
-        if (String.length x > 2 && String.sub x 0 2 = "%%") then 
-          return (Sym x) (add_var x TAny x pc)
+        if x = "%%newsym" then 
+          let (sym_id, pc) = (fresh_var "" TAny
+            ("%%newsym at " ^ (string_of_position p)) pc) in
+          (* Get locs of all objects in the store so we can branch
+           * once we know the type of this sym value *)
+          return (NewSym (sym_id, (map fst (Store.bindings pc.store.objs)))) pc
         else begin
           try
             (uncurry return) (sto_lookup_val (IdMap.find x env) pc)
@@ -283,15 +340,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
       | S.Op1 (p, op, e) ->
         bind 
-          (eval e env pc)
+          (eval_sym e env pc)
           (fun (e_val, pc') -> 
             let (t,ret_ty) = typeofOp1 op in 
             try 
               match e_val with
-              | Sym id -> 
+              | SymScalar id -> 
                 let pc'' = check_type id t pc' in
                 let (ret_op1, pc''') = fresh_var ("P1_" ^ op ^ "_") ret_ty ("return from " ^ op) pc'' in
-                return (Sym ret_op1)
+                return (SymScalar ret_op1)
                   (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc''')
               | _ -> 
                 try
@@ -302,25 +359,25 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           
       | S.Op2 (p, op, e1, e2) -> 
         bind
-          (eval e1 env pc)
+          (eval_sym e1 env pc)
           (fun (e1_val, pc') ->
             bind 
-              (eval e2 env pc')
+              (eval_sym e2 env pc')
               (fun (e2_val, pc'') -> 
                 let (t1, t2, ret_ty) = typeofOp2 op in
                 match e1_val, e2_val with
-                | Sym _, Sym _
-                | Sym _, _
-                | _, Sym _ -> begin 
+                | SymScalar _, SymScalar _
+                | SymScalar _, _
+                | _, SymScalar _ -> begin 
                   try 
                     let (sym_e1, pc1) = match e1_val with
-                      | Sym id -> (SId id, check_type id t1 pc'')
+                      | SymScalar id -> (SId id, check_type id t1 pc'')
                       | _ -> (Concrete e1_val, pc'') in
                     let (sym_e2, pc2) = match e2_val with
-                      | Sym id -> (SId id, check_type id t2 pc1)
+                      | SymScalar id -> (SId id, check_type id t2 pc1)
                       | _ -> (Concrete e2_val, pc1) in
                     let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty ("return from " ^ op) pc2 in
-                    return (Sym ret_op)
+                    return (SymScalar ret_op)
                       (add_constraint (SLet (ret_op, SOp2(op, sym_e1, sym_e2))) pc3)
                   with TypeError id -> none 
                 end
@@ -332,11 +389,12 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           
       | S.If (p, c, t, f) ->
         bind 
-          (eval c env pc)
+          (eval_sym c env pc)
           (fun (c_val, pc') -> 
+            (* TODO is an ObjPtr truthy? *)
             match c_val with
             | True -> eval t env pc'
-            | Sym id -> 
+            | SymScalar id -> 
               let true_pc = add_constraint (SAssert (SCastJS (TBool, SId id))) pc' in
               let false_pc  = add_constraint (SAssert (SNot (SCastJS (TBool, SId id)))) pc' in
               combine
@@ -348,7 +406,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           
       | S.App (p, f, args) -> 
         bind 
-          (eval f env pc)
+          (eval_sym f env pc)
           (fun (f_val, pc_f) ->
             let args_pcs : (value list * ctx) list * (exval * ctx) list =
               List.fold_left 
@@ -363,14 +421,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind args_pcs
               (fun (argvs, pcs) ->
                 match f_val with
-                | Sym f -> 
+                  (* TODO do we want a SymScalar for a function? *)
+                | SymScalar f -> 
                   let ((fid : string), (fpc : ctx)) = fresh_var "F" (TFun (List.length argvs)) "function to be applied" pcs in
                   let (argvs : sym_exp list) = List.map val_sym argvs in
                   let ((vs : sym_exp list), (pcs' : ctx)) = List.fold_left
                     (fun (vals, p) exp -> (vals@[exp], p))
                     ([], fpc) argvs in
                   let (res_id, res_pc) = fresh_var "AP" TAny "result of function call" pcs' in 
-                  return (Sym res_id)
+                  return (SymScalar res_id)
                     (add_constraint (SLet (res_id, (SApp (SId fid, vs))))
                        (add_constraint (SLet (fid, (SId f))) res_pc))
                 | _ -> apply p f_val argvs pcs depth))
@@ -390,11 +449,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Rec (p, x, e, body) ->
         let (loc, pc') = sto_alloc_val Undefined pc in
         let env' = IdMap.add x loc env in
-        bind
-          (eval e env' pc')
+        bind (* TODO do we need to use eval_sym here? *)
+          (eval_sym e env' pc')
           (fun (ev_val, pc') -> 
             let pc'' = sto_update_val loc ev_val pc' in 
-            eval body env' pc'')
+            eval_sym body env' pc'')
 
       | S.SetBang (p, x, e) -> begin
         try
@@ -410,6 +469,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       end
 
       | S.Object (p, attrs, props) -> begin 
+        (* TODO which of these do we need to eval_sym? *)
         match attrs with
         | { S.primval = valexp;
             S.proto = protoexp;
@@ -426,7 +486,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               bind
                 (match protoexp with
                 | None -> return Undefined pc_v
-                | Some pexp -> eval pexp env pc_v)
+                | Some pexp -> eval_sym pexp env pc_v)
                 (fun (p, pc_p) ->
                   bind
                     (match codexp with
@@ -443,6 +503,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                             (fun (v2, pc_v2) ->
                               let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
                               return (Data ({ value = v2loc; writable = w; }, enum, config)) pc_v2)
+                        (* TODO do we need eval_sym? *)
                         | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
                           bind (eval ge env pc)
                             (fun (v2, pc_v2) ->
@@ -465,100 +526,102 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                           ([(IdMap.empty, pc_c)], []) props in
                       bind propvs_pcs
                         (fun (propvs, pc_psv) -> 
-                          let objv = { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
+                          let objv = { symbolic = false; attrs = attrsv;
+                                       conps = propvs; symps = IdMap.empty; } in
                           let (loc, pc_obj) = sto_alloc_obj objv pc_psv in
-                          return (ObjCell loc) pc_obj))))
+                          return (ObjPtr loc) pc_obj))))
       end
         
       | S.GetAttr (p, attr, obj, field) ->
-        let rec sym_get_attr attr obj field pc = 
-          try
-            match (obj, field) with
-            | ObjCell loc, String f ->
-                let { conps = props }, pc = sto_lookup_obj loc pc in
-                return (get_attr attr props f pc) pc
-            | Sym o_id, String f ->
-              let (fn_id, pc') = const_string f pc in
-              (* todo: assert that (SId fn_id) = (Concrete f) *)
-              sym_get_attr attr obj (Sym fn_id) pc'
-            | ObjCell loc, Sym f ->
-                let { symps = props }, pc = sto_lookup_obj loc pc in
-                return (get_attr attr props f pc) pc
-            (*| ObjCell loc, Sym f_id -> begin*)
-              (*let { symps = props }, pc = sto_lookup_obj loc pc in*)
-              (*combine*)
-              (*  (IdMap.fold (fun fieldName _ results ->*)
-              (*    let (fn_id, pc') = const_string fieldName pc in*)
-              (*    let pc'' = add_constraint*)
-              (*      (SAssert (SApp(SId "=",*)
-              (*                     [SId f_id; SId fn_id]))) pc' in*)
-              (*    let (ret_gf, pc''') = fresh_var "GF_" TAny ("@" ^ (Store.print_loc loc) ^ "[\"" ^ fieldName ^ "\"]#" ^ (Ljs_syntax.string_of_attr attr)) pc'' in*)
-              (*    also_return (Sym ret_gf)*)
-              (*      (add_constraint *)
-              (*         (SLet (ret_gf, Concrete (get_attr attr obj (String fieldName) pc'''))) pc''')*)
-              (*      results)*)
-              (*     props none)*)
-              (*  (let none_of = IdMap.fold*)
-              (*     (fun fieldName _ pc ->*)
-              (*       let (fn_id, pc) = const_string fieldName pc in*)
-              (*       add_constraint*)
-              (*         (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id);*)
-              (*                                         SCastJS (TString, SId fn_id)])))) pc)*)
-              (*     props pc in*)
-              (*   let (ret_gf, pc''') = fresh_var "GF_" TAny *)
-              (*     ("@" ^ (Store.print_loc loc) ^ "[UNKNOWN]#" ^ (Ljs_syntax.string_of_attr attr))*)
-              (*     none_of in*)
-              (*   return (Sym ret_gf)*)
-              (*     (add_constraint (SLet (ret_gf, Concrete undef)) pc'''))*)
-            (*end*)
-            | Sym o_id, Sym f_id ->
-              let pc_types = check_type o_id TObj (check_type f_id TString pc) in
-              let (ret_gf, pc'') = fresh_var "GF_" TAny 
-                (o_id ^ "[" ^ f_id ^ "]#" ^ (Ljs_syntax.string_of_attr attr)) pc_types in
-              let field = SGetField (o_id, f_id) in
-              let missing = (return (Sym ret_gf) 
-                               (add_constraints [(SAssert (SIsMissing field));
-                                                 (SLet (ret_gf, (Concrete undef)))] pc'')) in
-              let pc_present = (add_constraints [(SAssert (SNot (SIsMissing field)));
-                                                 (SLet (f_id, field))] pc'') in
-              (match attr with
-              | S.Value -> 
-                let pc_present = check_type f_id TData pc_present in
-                let pc' = add_constraint (SLet (ret_gf, SApp(SId "value", [SId f_id]))) pc_present in
-                also_return (Sym ret_gf) pc' missing
-              | S.Writable ->
-                let pc_present = check_type f_id TData pc_present in
-                let pc' = add_constraint (SLet (ret_gf, SApp(SId "writable", [SId f_id]))) pc_present in
-                also_return (Sym ret_gf) (add_constraint (SAssert (SId ret_gf)) pc')
-                  (also_return (Sym ret_gf) (add_constraint (SAssert (SNot (SId ret_gf))) pc')
-                     missing)
-              | S.Enum ->
-                let pc' = add_constraint (SLet (ret_gf, SApp(SId "enumerable", [SId f_id]))) pc_present in
-                also_return (Sym ret_gf) (add_constraint (SAssert (SId ret_gf)) pc')
-                  (also_return (Sym ret_gf) (add_constraint (SAssert (SNot (SId ret_gf))) pc')
-                     missing)
-              | S.Config ->
-                let pc' = add_constraint (SLet (ret_gf, SApp(SId "config", [SId f_id]))) pc_present in
-                also_return (Sym ret_gf) (add_constraint (SAssert (SId ret_gf)) pc')
-                  (also_return (Sym ret_gf) (add_constraint (SAssert (SNot (SId ret_gf))) pc')
-                     missing)
-              | S.Getter ->
-                let pc_present = check_type f_id TAccessor pc_present in
-                let pc' = add_constraint (SLet (ret_gf, SApp(SId "getter", [SId f_id]))) pc_present in
-                also_return (Sym ret_gf) pc' missing
-              | S.Setter ->
-                let pc_present = check_type f_id TAccessor pc_present in
-                let pc' = add_constraint (SLet (ret_gf, SApp(SId "setter", [SId f_id]))) pc_present in
-                also_return (Sym ret_gf) pc' missing)
-            | _ -> failwith ("[interp] GetAttr got a non-object or a non-string field name: (get-attr "
-                             ^ Ljs_sym_pretty.val_to_string obj ^ " "
-                             ^  Ljs_sym_pretty.val_to_string field ^ ")")
-          with TypeError _ -> none
-        in
-        bind (eval obj env pc)
-          (fun (obj_val, pc_obj) ->
-            bind (eval field env pc_obj)
-              (fun (f_val, pc_f) -> sym_get_attr attr obj_val f_val pc_f))
+        failwith "GetAttr NYI"
+        (*let rec sym_get_attr attr obj field pc = *)
+        (*  try*)
+        (*    match (obj, field) with*)
+        (*    | ObjPtr loc, String f ->*)
+        (*        let { conps = props }, pc = sto_lookup_obj loc pc in*)
+        (*        return (get_attr attr props f pc) pc*)
+        (*    | Sym o_id, String f ->*)
+        (*      let (fn_id, pc') = const_string f pc in*)
+        (*      [> todo: assert that (SId fn_id) = (Concrete f) <]*)
+        (*      sym_get_attr attr obj (Sym fn_id) pc'*)
+        (*    | ObjPtr loc, Sym f ->*)
+        (*        let { symps = props }, pc = sto_lookup_obj loc pc in*)
+        (*        return (get_attr attr props f pc) pc*)
+        (*    [>| ObjPtr loc, Sym f_id -> begin<]*)
+        (*      [>let { symps = props }, pc = sto_lookup_obj loc pc in<]*)
+        (*      [>combine<]*)
+        (*      [>  (IdMap.fold (fun fieldName _ results -><]*)
+        (*      [>    let (fn_id, pc') = const_string fieldName pc in<]*)
+        (*      [>    let pc'' = add_constraint<]*)
+        (*      [>      (SAssert (SApp(SId "=",<]*)
+        (*      [>                     [SId f_id; SId fn_id]))) pc' in<]*)
+        (*      [>    let (ret_gf, pc''') = fresh_var "GF_" TAny ("@" ^ (Store.print_loc loc) ^ "[\"" ^ fieldName ^ "\"]#" ^ (Ljs_syntax.string_of_attr attr)) pc'' in<]*)
+        (*      [>    also_return (Sym ret_gf)<]*)
+        (*      [>      (add_constraint <]*)
+        (*      [>         (SLet (ret_gf, Concrete (get_attr attr obj (String fieldName) pc'''))) pc''')<]*)
+        (*      [>      results)<]*)
+        (*      [>     props none)<]*)
+        (*      [>  (let none_of = IdMap.fold<]*)
+        (*      [>     (fun fieldName _ pc -><]*)
+        (*      [>       let (fn_id, pc) = const_string fieldName pc in<]*)
+        (*      [>       add_constraint<]*)
+        (*      [>         (SAssert (SNot (SApp (SId "=", [SCastJS (TString, SId f_id);<]*)
+        (*      [>                                         SCastJS (TString, SId fn_id)])))) pc)<]*)
+        (*      [>     props pc in<]*)
+        (*      [>   let (ret_gf, pc''') = fresh_var "GF_" TAny <]*)
+        (*      [>     ("@" ^ (Store.print_loc loc) ^ "[UNKNOWN]#" ^ (Ljs_syntax.string_of_attr attr))<]*)
+        (*      [>     none_of in<]*)
+        (*      [>   return (Sym ret_gf)<]*)
+        (*      [>     (add_constraint (SLet (ret_gf, Concrete undef)) pc'''))<]*)
+        (*    [>end<]*)
+        (*    | Sym o_id, Sym f_id ->*)
+        (*      let pc_types = check_type o_id TObj (check_type f_id TString pc) in*)
+        (*      let (ret_gf, pc'') = fresh_var "GF_" TAny *)
+        (*        (o_id ^ "[" ^ f_id ^ "]#" ^ (Ljs_syntax.string_of_attr attr)) pc_types in*)
+        (*      let field = SGetField (o_id, f_id) in*)
+        (*      let missing = (return (Sym ret_gf) *)
+        (*                       (add_constraints [(SAssert (SIsMissing field));*)
+        (*                                         (SLet (ret_gf, (Concrete undef)))] pc'')) in*)
+        (*      let pc_present = (add_constraints [(SAssert (SNot (SIsMissing field)));*)
+        (*                                         (SLet (f_id, field))] pc'') in*)
+        (*      (match attr with*)
+        (*      | S.Value -> *)
+        (*        let pc_present = check_type f_id TData pc_present in*)
+        (*        let pc' = add_constraint (SLet (ret_gf, SApp(SId "value", [SId f_id]))) pc_present in*)
+        (*        also_return (Sym ret_gf) pc' missing*)
+        (*      | S.Writable ->*)
+        (*        let pc_present = check_type f_id TData pc_present in*)
+        (*        let pc' = add_constraint (SLet (ret_gf, SApp(SId "writable", [SId f_id]))) pc_present in*)
+        (*        also_return (Sym ret_gf) (add_constraint (SAssert (SId ret_gf)) pc')*)
+        (*          (also_return (Sym ret_gf) (add_constraint (SAssert (SNot (SId ret_gf))) pc')*)
+        (*             missing)*)
+        (*      | S.Enum ->*)
+        (*        let pc' = add_constraint (SLet (ret_gf, SApp(SId "enumerable", [SId f_id]))) pc_present in*)
+        (*        also_return (Sym ret_gf) (add_constraint (SAssert (SId ret_gf)) pc')*)
+        (*          (also_return (Sym ret_gf) (add_constraint (SAssert (SNot (SId ret_gf))) pc')*)
+        (*             missing)*)
+        (*      | S.Config ->*)
+        (*        let pc' = add_constraint (SLet (ret_gf, SApp(SId "config", [SId f_id]))) pc_present in*)
+        (*        also_return (Sym ret_gf) (add_constraint (SAssert (SId ret_gf)) pc')*)
+        (*          (also_return (Sym ret_gf) (add_constraint (SAssert (SNot (SId ret_gf))) pc')*)
+        (*             missing)*)
+        (*      | S.Getter ->*)
+        (*        let pc_present = check_type f_id TAccessor pc_present in*)
+        (*        let pc' = add_constraint (SLet (ret_gf, SApp(SId "getter", [SId f_id]))) pc_present in*)
+        (*        also_return (Sym ret_gf) pc' missing*)
+        (*      | S.Setter ->*)
+        (*        let pc_present = check_type f_id TAccessor pc_present in*)
+        (*        let pc' = add_constraint (SLet (ret_gf, SApp(SId "setter", [SId f_id]))) pc_present in*)
+        (*        also_return (Sym ret_gf) pc' missing)*)
+        (*    | _ -> failwith ("[interp] GetAttr got a non-object or a non-string field name: (get-attr "*)
+        (*                     ^ Ljs_sym_pretty.val_to_string obj ^ " "*)
+        (*                     ^  Ljs_sym_pretty.val_to_string field ^ ")")*)
+        (*  with TypeError _ -> none*)
+        (*in*)
+        (*bind (eval obj env pc)*)
+        (*  (fun (obj_val, pc_obj) ->*)
+        (*    bind (eval field env pc_obj)*)
+        (*      (fun (f_val, pc_f) -> sym_get_attr attr obj_val f_val pc_f))*)
 
       | S.GetObjAttr _ -> failwith "[sym_eval] GetObjAttr NYI"
       | S.SetObjAttr _ -> failwith "[sym_eval] SetObjAttr NYI"
@@ -629,9 +692,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             combine none_branch branches
           in
 
+          (* TODO handle symbolic objects *)
           try match obj1, field with
           | Null, _ -> return Undefined pc (* nothing found *)
-          | ObjCell loc, String f ->
+          | ObjPtr loc, String f ->
           (* If f is present in the concrete field map, we simply get its value
            * If f is not present in the concrete field map, either
            *    a) f is equal to one of the symbolic field names
@@ -645,7 +709,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
            *)
             get_field loc f (fun { conps = cons; symps = syms; } -> (cons, syms))
 
-          | ObjCell loc, Sym f ->
+          | ObjPtr loc, SymScalar f ->
           (* If f is present in the symbolic field map, we simply get its value
            * If f is not present in the symbolic field map, either
            *    a) f is equal to one of the concrete field names
@@ -654,18 +718,19 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
            *)
             get_field loc f (fun { conps = cons; symps = syms; } -> (syms, cons))
 
-          | Sym id, String f 
-          | Sym id, Sym f -> failwith "GetField not implemented for sym objs."
-          | _ -> failwith (interp_error p
-                             "get_field on a non-object.  The expression was (get-field "
-                           ^ Ljs_sym_pretty.val_to_string obj1
-                           ^ " " ^ Ljs_sym_pretty.val_to_string (List.nth getter_params 0)
-                           ^ " " ^ Ljs_sym_pretty.val_to_string field ^ ")")
+          (*| Sym id, String f *)
+          (*| Sym id, Sym f -> failwith "GetField not implemented for sym objs."*)
+          | _ -> throw (Throw (String "get_field on a non-object")) pc
+          (*| _ -> failwith (interp_error p*)
+          (*                   "get_field on a non-object.  The expression was (get-field "*)
+          (*                 ^ Ljs_sym_pretty.val_to_string obj1*)
+          (*                 ^ " " ^ Ljs_sym_pretty.val_to_string (List.nth getter_params 0)*)
+          (*                 ^ " " ^ Ljs_sym_pretty.val_to_string field ^ ")")*)
         with TypeError _ -> none
         in
-        bind (eval obj env pc)
+        bind (eval_sym obj env pc)
           (fun (objv, pc_o) -> 
-            bind (eval f env pc_o) 
+            bind (eval_sym f env pc_o) 
               (fun (fv, pc_f) -> 
                 bind (eval args env pc_f)
                   (fun (argsv, pc') ->
@@ -705,7 +770,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                      (Data ({ value = vloc; writable = true }, enum, config))
                      props) in
                 let (z3field, pc') = const_string fieldName pc in
-                return newval (sto_update_field objLoc newO (Sym z3field) (Concrete newval) pc') (* TODO what's this?? probably don't need the last line either *)
+                return newval (sto_update_field objLoc newO (SymScalar z3field) (Concrete newval) pc') (* TODO what's this?? probably don't need the prev line either *)
               | Accessor ({ setter = sloc; }, _, _) ->
                 let s, pc = sto_lookup_val sloc pc in
                 apply p s setter_params pc depth
@@ -744,29 +809,33 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (SAssert (SNot (SApp (SId "=", [SId f; SId f'])))) pc' in
                 pc'')
             in
-            let none_pc = assert_none_equal same_props (assert_none_equal diff_props pc) in
-            let none_branch = sym_set_field proto objSet field newval setter_params none_pc depth in
+            let none_pc = assert_none_equal same_props
+                            (assert_none_equal diff_props pc) in
+            let none_branch = sym_set_field proto objSet field newval
+                                setter_params none_pc depth in
             combine none_branch branches
           in
 
+          (* TODO handle sym objects *)
           match objCheck, field with
           | Null, String f -> add_field objSet f newval pc get_con_props set_con_props
-          | Null, Sym f    -> add_field objSet f newval pc get_sym_props set_sym_props
-          | ObjCell loc, String f -> set_field loc f
+          | Null, SymScalar f    -> add_field objSet f newval pc get_sym_props set_sym_props
+          | ObjPtr loc, String f -> set_field loc f
               (fun { conps = cons; symps = syms; } -> (cons, syms)) (* get_props *)
               set_con_props (* set_same_props *)
               set_sym_props (* set_diff_props *)
-          | ObjCell loc, Sym f -> set_field loc f
+          | ObjPtr loc, SymScalar f -> set_field loc f
               (fun { conps = cons; symps = syms; } -> (syms, cons)) (* get_props *)
               set_sym_props (* set_same_props *)
               set_con_props (* set_diff_props *)
-          | Sym id, String f
-          | Sym id, Sym f -> failwith "SetField NYI for sym objects."
-          | _ -> failwith "[sym_set_field] should not have happened"
+          (*| Sym id, String f*)
+          (*| Sym id, Sym f -> failwith "SetField NYI for sym objects."*)
+          | _ -> throw (Throw (String "set_field on a non-object")) pc
+          (*| _ -> failwith "[sym_set_field] should not have happened"*)
         in
-        bind (eval obj env pc) 
+        bind (eval_sym obj env pc) 
           (fun (objv, pc_o) -> 
-            bind (eval f env pc_o) 
+            bind (eval_sym f env pc_o) 
               (fun (fv, pc_f) -> 
                 bind (eval v env pc_f)
                   (fun (vv, pc_v) -> 
@@ -775,13 +844,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                         sym_set_field objv objv fv vv [objv; argvs] pc_a depth))))
 
       | S.SetAttr (p, attr, obj, field, newval) ->
-        bind (eval obj env pc)
-          (fun (objv, pc_o) -> 
-            bind (eval field env pc_o)
-              (fun (fv, pc_f) -> 
-                bind (eval newval env pc_f)
-                  (fun (vv, pc_v) ->
-                    set_attr attr objv fv vv pc_v)))
+        failwith "SetAttr NYI"
+        (*bind (eval obj env pc)*)
+        (*  (fun (objv, pc_o) -> *)
+        (*    bind (eval field env pc_o)*)
+        (*      (fun (fv, pc_f) -> *)
+        (*        bind (eval newval env pc_f)*)
+        (*          (fun (vv, pc_v) ->*)
+        (*            set_attr attr objv fv vv pc_v)))*)
 
                   
       (*
@@ -789,7 +859,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         let obj_val = eval obj env in
         let f_val = eval f env in begin
         match (obj_val, f_val) with
-        | (ObjCell c, String s) -> 
+        | (ObjPtr c, String s) -> 
         begin match !c with
         | (attrs, props) -> begin try
         match IdMap.find s props with
@@ -911,7 +981,7 @@ let rec eval_expr expr jsonPath maxDepth pc =
     | Throw v ->
       let err_msg = 
         match v with
-        | ObjCell loc -> begin
+        | ObjPtr loc -> begin
           let { conps = props }, pc = sto_lookup_obj loc pc in
           try
             match IdMap.find "message" props with

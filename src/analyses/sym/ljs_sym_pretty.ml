@@ -17,14 +17,15 @@ let rec value v =
   | String s -> text ("\"" ^ s ^ "\"")
   | True -> text "true"
   | False -> text "false"
-  | ObjCell o -> horz [squish [text "&<"; text (Store.print_loc o); text ">"]]
+  | ObjPtr loc -> horz [squish [text "&<"; text (Store.print_loc loc); text ">"]]
   | Closure func -> text "(closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)
   (*                                                                (intersperse (text ",") (map text xs))))]; *)
   (*                            braces (exp e)]) *)
-  | Sym id -> text id
+  | SymScalar id -> text id
+  | NewSym (id, locs) -> parens (text ("NewSym" ^ id))
 
 and obj { attrs = attrsv; conps = conpsv; symps = sympsv; } = 
   if IdMap.is_empty conpsv && IdMap.is_empty sympsv 

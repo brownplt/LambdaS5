@@ -1,4 +1,4 @@
 // "ok"
-let (x = %%x)
+let (x = %%newsym)
 let (y = x)
 if (prim("stx=", x, y)) { "ok" } else { "fail" }

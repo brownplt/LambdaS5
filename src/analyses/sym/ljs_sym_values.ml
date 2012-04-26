@@ -20,18 +20,25 @@ exception TypeError of string
 
 
 type value =
+  (* Scalar types *)
   | Null
   | Undefined
   | Num of float
   | String of string
   | True
   | False
-  | ObjCell of Store.loc (* can only point to ObjLit (see below) *)
   | Closure of (value list -> ctx -> int -> (result list * exresult list))
-  | Sym of id (* symbolic value *)
+  (* ObjPtr is a pointer to an obj in the object store *)
+  | ObjPtr of Store.loc
+  (* NewSym is an uninitialized symbolic value,
+   * which could either be a SymScalar or an ObjPtr *)
+  | NewSym of id * Store.loc list
+  (* SymScalar is a symbolic value of a scalar type
+   * (i.e. not a pointer or object) *)
+  | SymScalar of id
 
-(* ObjLit *)
-and objlit = { attrs: attrsv;
+and objlit = { symbolic: bool;
+               attrs: attrsv;
                conps: propv IdMap.t; (* props with concrete field names *)
                symps: propv IdMap.t; } (* props with symbolic field names *)
 and
@@ -44,7 +51,7 @@ and
   propv = 
   | Data of datav * bool * bool
   | Accessor of accessorv * bool * bool
-(* stores memory location of value for each property *)
+(* Properties hold the location of their values in the value store *)
 and datav = { value : Store.loc; writable : bool; }
 and accessorv = { getter : Store.loc; setter : Store.loc; }
    
@@ -125,7 +132,7 @@ let const_string f pc =
 
 let add_const_str pc s =
   let (s_id, pc') = const_string s pc in
-  (Sym s_id, pc')
+  (SymScalar s_id, pc')
 
 
 let check_type id t p =
@@ -222,7 +229,7 @@ let sto_lookup_val loc ctx =
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
   let ret = Store.lookup loc ctx.store.vals  in 
   match ret with 
-  | (Sym id) -> 
+  | SymScalar id -> 
     (ret,
      add_constraint (SAssert (SApp(SId "stx=", [SId id; SApp(SId "lookup", [STime ctx.time; SLoc loc])]))) ctx)
   | _ -> (ret, ctx)

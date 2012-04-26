@@ -1,5 +1,5 @@
 // "ok"
-let (x = %%x)
+let (x = %%newsym)
 let (y = prim("+", x, 5))
 let (z = prim("+", x, 5))
 if (prim("stx=", y, z)) { "ok" } else { "fail" }

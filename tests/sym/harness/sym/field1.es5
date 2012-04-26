@@ -1,3 +1,4 @@
 // 1, undefined
+let (f = %%newsym)
 let (obj = {[#proto: null,] "x": {#value 1, #writable false}})
-obj[%%f]
+obj[f]

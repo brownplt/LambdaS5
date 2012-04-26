@@ -1,9 +1,10 @@
 // "ok", undefined 
+let (x = %%newsym)
 let (multX =
-    let (x = %%x) {
-        func(a) { prim("*", a, x) }
+    let (y = x) {
+        func(a) { prim("*", a, y) }
     }
 )
-if (prim("stx=", %%x, 0)) {
+if (prim("stx=", x, 0)) {
     if (prim("stx=", multX(1), multX(2))) { "ok" } else { "fail" }
 }

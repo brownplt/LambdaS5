@@ -24,12 +24,12 @@ let typeof ctx v = add_const_str ctx (begin match v with
   | Num _ -> "number"
   | True 
   | False -> "boolean"
-  | ObjCell o -> begin match (sto_lookup_obj o ctx) with
+  | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
     | { attrs = { code = Some cexp }}, _ -> "function"
     | _, _ -> "object"
   end
   | Closure _ -> "lambda"
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
 end)
 
 let surface_typeof ctx v = begin match v with
@@ -44,7 +44,7 @@ let is_primitive ctx v = match v with
   | String _
   | Num _
   | True | False -> (True, ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> (False, ctx)
 
 let float_str ctx n = 
@@ -84,13 +84,13 @@ let prim_to_str ctx v =
       else fs
   | True -> "true"
   | False -> "false"
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "prim_to_num")
   end 
 
 let strlen ctx s = match s with
   | String s -> (Num (float_of_int (String.length s)), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "strlen")
 
 (* Section 9.3, excluding objects *)
@@ -103,7 +103,7 @@ let prim_to_num ctx v = (num begin match v with
   | String "" -> 0.0
   | String s -> begin try float_of_string s
     with Failure _ -> nan end
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "prim_to_num")
 end, ctx)
   
@@ -114,7 +114,7 @@ let prim_to_bool ctx v = (bool begin match v with
   | Null -> false
   | Num x -> not (x == nan || x = 0.0 || x = -0.0)
   | String s -> not (String.length s = 0)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> true
 end, ctx)
 
@@ -123,7 +123,7 @@ let print ctx v =
     | String s -> 
       printf "%S\n%!" s; Undefined
     | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
-    | Sym _ -> failwith "prim got a symbolic exp"
+    | SymScalar _ -> failwith "prim got a symbolic exp"
     | _ -> failwith ("[interp] Print received non-string: " ^ Ljs_sym_pretty.val_to_string v)
   in (ret, ctx)
 
@@ -131,16 +131,16 @@ let print ctx v =
    property outside of the delta function *)
 let object_to_string ctx obj = add_const_str ctx begin
   match obj with
-  | ObjCell o -> 
-    let { attrs = {klass = s}}, _ = sto_lookup_obj o ctx in "[object " ^ s ^ "]"
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | ObjPtr loc -> 
+    let { attrs = {klass = s}}, _ = sto_lookup_obj loc ctx in "[object " ^ s ^ "]"
+  | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
 end
 
 let is_array ctx obj = (begin
   match obj with
-  | ObjCell o -> let { attrs = {klass=k}}, _ = sto_lookup_obj o ctx in bool (k = "Array")
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | ObjPtr loc -> let { attrs = {klass=k}}, _ = sto_lookup_obj loc ctx in bool (k = "Array")
+  | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")
 end, ctx)
 
@@ -148,7 +148,7 @@ end, ctx)
 let to_int32 ctx v = (begin
   match v with
   | Num d -> Num (float_of_int (int_of_float d))
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "to-int")
 end, ctx)
 
@@ -160,62 +160,62 @@ let nnot ctx e = (begin
   | False -> True
   | Num d -> if (d = 0.) || (d <> d) then True else False
   | String s -> if s = "" then True else False
-  | ObjCell _ -> False
+  | ObjPtr _ -> False
   | Closure _ -> False
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
 end, ctx)
 
 let void ctx v = (Undefined, ctx)
 
 let floor' ctx = function Num d -> (num (floor d), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "floor")
 
 let ceil' ctx = function Num d -> (num (ceil d), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "ceil")
 
 let absolute ctx = function Num d -> (num (abs_float d), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "abs")
 
 let log' ctx = function Num d -> (num (log d ), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "log")
 
 let ascii_ntoc ctx n = match n with
   | Num d -> add_const_str ctx (String.make 1 (Char.chr (int_of_float d)))
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "ascii_ntoc")
 
 let ascii_cton ctx c = match c with
   | String s -> (Num (float_of_int (Char.code (String.get s 0))), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "ascii_cton")
 
 let to_lower ctx = function
   | String s -> (String (String.lowercase s), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "to_lower")
 
 let to_upper ctx = function
   | String s -> (String (String.uppercase s), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "to_lower")
 
 let bnot ctx = function
   | Num d -> (Num (float_of_int (lnot (int_of_float d))), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "bnot")
 
 let sine ctx = function
   | Num d -> (Num (sin d), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "sin")
 
 let numstr ctx = function
   | String s -> (Num (try float_of_string s with Failure _ -> nan), ctx)
-  | Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "numstr")
 
 let op1 ctx op : value -> value * ctx = match op with
@@ -316,14 +316,16 @@ let bitwise_shiftr ctx v1 v2 = (Num (float_of_int ((to_int ctx v1) asr (to_int c
 let string_plus ctx v1 v2 = match v1, v2 with
   | String s1, String s2 ->
     (String (s1 ^ s2), ctx)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "string concatenation")
 
 let string_lessthan ctx v1 v2 = match v1, v2 with
   | String s1, String s2 -> (bool (s1 < s2), ctx)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "string less than")
 
 let stx_eq ctx v1 v2 = (bool begin match v1, v2 with
@@ -333,8 +335,9 @@ let stx_eq ctx v1 v2 = (bool begin match v1, v2 with
   | Null, Null -> true
   | True, True -> true
   | False, False -> true
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> v1 == v2 (* otherwise, pointer equality *)
 end, ctx)
 
@@ -351,32 +354,35 @@ let abs_eq ctx v1 v2 = (bool begin
     (try x = float_of_string s with Failure _ -> false)
   | Num x, True | True, Num x -> x = 1.0
   | Num x, False | False, Num x -> x = 0.0
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> false
 (* TODO: are these all the cases? *)
 end, ctx)
 
 let rec has_property ctx obj field = match obj, field with
-  | ObjCell o, String s -> 
-    let { attrs = { proto = pvalue }; conps = props; }, ctx = sto_lookup_obj o ctx in
+  | ObjPtr loc, String s -> 
+    let { attrs = { proto = pvalue }; conps = props; }, ctx = sto_lookup_obj loc ctx in
     if (IdMap.mem s props) then (bool true, ctx)
     else has_property ctx pvalue field
   (* TODO: handle case when field name is sym? *)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> (bool false, ctx)
 
 let has_own_property ctx obj field = match obj, field with
-  | ObjCell o, String s -> begin
-    let { conps = props; }, ctx = sto_lookup_obj o ctx in
+  | ObjPtr loc, String s -> begin
+    let { conps = props; }, ctx = sto_lookup_obj loc ctx in
     (bool (IdMap.mem s props), ctx)
   end
   (* TODO: handle case when field name is sym? *)
-  | ObjCell o, _ -> raise (PrimError "has-own-property: field not a string")
+  | ObjPtr loc, _ -> raise (PrimError "has-own-property: field not a string")
   | _, String s -> raise (PrimError ("has-own-property: obj not an object for field " ^ s))
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "has-own-property: neither an object nor a string")
 
 let base n r = 
@@ -409,28 +415,31 @@ let get_base ctx n r = match n, r with
   | Num x, Num y -> 
     let result = base (abs_float x) (abs_float y) in
     add_const_str ctx (if x < 0.0 then "-" ^ result else result)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "base got non-numbers")
 
 let char_at ctx a b  = match a, b with
   | String s, Num n ->
     (String (String.make 1 (String.get s (int_of_float n))), ctx)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "char_at didn't get a string and a number")
 
 let locale_compare ctx a b = match a, b with
   | String r, String s ->
     (Num (float_of_int (String.compare r s)), ctx)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "locale_compare didn't get 2 strings")
 
 let pow ctx a b = match a, b with
   | Num base, Num exp -> (Num (base ** exp), ctx)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "pow didn't get 2 numbers")
 
 let to_fixed ctx a b = (begin
@@ -450,14 +459,15 @@ let to_fixed ctx a b = (begin
               String (fixed_s)
          else let suffix = String.make (fint - decimal_chars) '0' in
               String (s ^ suffix)
-  | Sym _, _ 
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "to-fixed didn't get 2 numbers")
 end, ctx)
 
 let rec is_accessor ctx a b = match a, b with
-  | ObjCell o, String s ->
-    let { attrs = { proto = pr }; conps = props; }, ctx = sto_lookup_obj o ctx in
+  | ObjPtr loc, String s ->
+    let { attrs = { proto = pr }; conps = props; }, ctx = sto_lookup_obj loc ctx in
     if IdMap.mem s props
     then let prop = IdMap.find s props in
          match prop with
@@ -465,9 +475,10 @@ let rec is_accessor ctx a b = match a, b with
          | Accessor _ -> (True, ctx)
     else is_accessor ctx pr b
   | Null, String s -> raise (PrimError "isAccessor topped out")
-  | Sym _, _ 
+  | NewSym _, _ | _, NewSym _
+  | SymScalar _, _ 
   (* TODO handle symbolic field names? *)
-  | _, Sym _ -> failwith "prim got a symbolic exp"
+  | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "isAccessor")
 
 let op2 ctx op = match op with

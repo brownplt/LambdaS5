@@ -1,8 +1,9 @@
 // "ok", "else"
-if (prim("stx=", %%x, 5)) {
-    if (prim("<", 5, %%x)) { "fail" }
+let (x = %%newsym)
+if (prim("stx=", x, 5)) {
+    if (prim("<", 5, x)) { "fail" }
     else {
-        if (prim(">", 5, %%x)) { "fail" }
+        if (prim(">", 5, x)) { "fail" }
         else { "ok" }
     }
 } else { "else" }

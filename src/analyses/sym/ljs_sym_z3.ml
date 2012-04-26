@@ -28,14 +28,15 @@ let rec value v store =
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
-  | ObjCell o -> obj (sto_lookup_obj o store)
+  | ObjPtr loc -> obj (sto_lookup_obj loc store)
   | Closure func -> text "(FUN closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)
   (*                                                                (intersperse (text ",") (map text xs))))]; *)
   (*                            braces (exp e)]) *)
-  | Sym id -> text id
+  | SymScalar id -> text id
+  | NewSym (id, loc) -> parens (text ("NewSym " ^ id))
 
 and obj ({ attrs = avs; conps = conprops; symps = symprops; }, store) = 
   (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)

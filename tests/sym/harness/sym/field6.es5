@@ -1,6 +1,7 @@
 // 1, 2
+let (f = %%newsym)
 let (obj = {[#proto: null,]}) {
-obj[%%f = 1];
+obj[f = 1];
 obj["x" = 2];
-obj[%%f]
+obj[f]
 }
