@@ -83,19 +83,25 @@ let set_sym_props o sym_props = { o with symps = sym_props }
 
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
-let add_field obj field newval pc get_props set_props = match obj with
+let add_field_helper force obj field newval pc get_props set_props = match obj with
   | ObjPtr loc -> begin match sto_lookup_obj loc pc with
-    | { attrs = { extensible = true; }} as o, pc ->
+    | { attrs = { extensible = ext; }} as o, pc ->
+      if not (force || ext) then return Undefined pc else
       let vloc, pc = sto_alloc_val newval pc in
       let newO = set_props o
         (IdMap.add field
            (Data ({ value = vloc; writable = true; }, true, true))
            (get_props o)) in
       return newval (sto_update_obj loc newO pc)
-    | _, _ -> return Undefined pc (* TODO: Check error in case of non-extensible *)
+    (*| _, _ -> return Undefined pc [> TODO: Check error in case of non-extensible <]*)
     (* | Value _, _ -> failwith "[interp][add_field] Somehow storing a Value through an ObjPtr" *)
   end
   | _ -> failwith ("[interp] add_field given non-object.")
+
+let add_field = add_field_helper false
+(* If we get a field from a sym obj, we might need to add
+ * a field without checking extensibility *)
+let add_field_force = add_field_helper true
 
 (* (\* Both functions (because a property can satisfy writable and not_writable) *\) *)
 (* let rec writable prop = match prop with *)
@@ -247,61 +253,61 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
   if (depth >= maxDepth) then none
   else 
     let nestedEval = eval jsonPath maxDepth in
+    let eval = eval jsonPath maxDepth depth in 
     (* eval_sym should be called to eval an expression e that is part of an expression
      * which determines whether e is a scalar or a pointer. For instance, the expression
      * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
      * In either case, eval_sym should be used to evaluate e.
      * 
-     * If given an Id, looks up the id to see if it corresponds to a NewSym (an
-     * uninitialized symbolic value). If so, initializes it (TODO explain init'ing).
+     * First evals e, then checks if the result is a NewSym.
+     * If so, initializes it (TODO explain init'ing) and returns the new value.
      * If not, then just returns the value stored for that id.
-     *
-     * If given any other expression, calls normal eval on it.
      *)
-    let eval_sym exp env pc = match exp with
-    | S.Id (p, x) -> 
-      let vloc = (IdMap.find x env) in
-      let (v, pc) = try (sto_lookup_val vloc pc)
-        with Not_found ->
-          failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
-                       (string_of_position p))
-      in begin match v with
-      | NewSym (id, obj_locs) -> (* branch over all locs and if it's a scalar *)
-        (* One branch for if its a scalar *)
-        let scalarv = SymScalar id in
-        let pc_scalar = sto_update_val vloc scalarv pc in
-        (* Branches for each object it could point to *)
-        let ptr_branches =
-          List.fold_left
-            (fun branches obj_loc ->
-               let ptrv = ObjPtr obj_loc in
-               let pc_ptr = sto_update_val vloc ptrv pc in
-               combine (return ptrv pc_ptr) branches)
-            none obj_locs
-        in
-        (* One branch if it's a new symbolic object *)
-        let objv = {
-          symbolic = true;
-          (* TODO figure out what attrs an empty sym object has *)
-          attrs = { code = None; proto = Null; extensible = true;
-                    klass = "huh?"; primval = None; };
-          conps = IdMap.empty;
-          symps = IdMap.empty;
-        } in
-        let (obj_loc, pc_new) = sto_alloc_obj objv pc in
-        let newv = ObjPtr obj_loc in
-        let pc_new = sto_update_val vloc newv pc_new in
-        (* TODO for each new store, we need to find all NewSym's with the same id and
-         * update them with the new value also *)
-        combine (return scalarv pc_scalar)
-          (combine ptr_branches
-             (return newv pc_new))
+    let eval_sym exp env pc =
+      bind
+        (eval exp env pc)
+        (fun (v, pc) -> match v with
+        | NewSym (id, obj_locs) ->
 
-      | _ -> return v pc
-      end
-    | _ -> eval jsonPath maxDepth depth exp env pc
+          let branch newval pc = return newval
+            (* Update every location in the store that has a NewSym
+             * with the same id, since that sym value has now been init'd *)
+            { pc with store = { pc.store with vals =
+              Store.mapi
+                (fun loc v -> match v with
+                  | NewSym (id', _) -> if id' = id then newval else v
+                  | _ -> v)
+                pc.store.vals }}
+          in
+
+          (* One branch for if its a scalar *)
+          let scalar_branch = branch (SymScalar id) pc in
+          (* Branches for each object it could point to *)
+          let ptr_branches =
+            List.fold_left
+              (fun branches obj_loc ->
+                 combine (branch (ObjPtr obj_loc) pc) branches)
+              none obj_locs
+          in
+          (* One branch if it's a new symbolic object *)
+          let objv = {
+            symbolic = true;
+            (* TODO figure out what attrs an empty sym object has *)
+            (* all should be symbolic values of the proper type *)
+            (* attrs should be locs like props are *)
+            attrs = { code = None; proto = Null; extensible = true;
+                      klass = "Object"; primval = None; };
+            conps = IdMap.empty;
+            symps = IdMap.empty;
+          } in
+          let (obj_loc, pc_new) = sto_alloc_obj objv pc in
+          let new_branch = branch (ObjPtr obj_loc) pc_new in
+          combine scalar_branch (combine ptr_branches new_branch)
+
+        | _ -> return v pc)
     in
-    let eval = eval jsonPath maxDepth depth in match exp with
+
+    match exp with
       | S.Hint (_, _, e) -> eval e env pc
       | S.Undefined _ -> return Undefined pc 
       | S.Null _ -> return Null pc 
@@ -309,19 +315,13 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Num (_, n) -> return (Num n) pc
       | S.True _ -> return True pc
       | S.False _ -> return False pc
-      | S.Id (p, x) -> 
+      | S.Id (p, x) -> (uncurry return) begin
         if x = "%%newsym" then 
-          let (sym_id, pc) = (fresh_var "" TAny
-            ("%%newsym at " ^ (string_of_position p)) pc) in
-          (* Get locs of all objects in the store so we can branch
-           * once we know the type of this sym value *)
-          return (NewSym (sym_id, (map fst (Store.bindings pc.store.objs)))) pc
-        else begin
-          try
-            (uncurry return) (sto_lookup_val (IdMap.find x env) pc)
-          with Not_found ->
-            failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
-                         (string_of_position p))
+          new_sym ("%%newsym at " ^ (string_of_position p)) pc
+        else
+          try sto_lookup_val (IdMap.find x env) pc
+          with Not_found -> failwith (interp_error p
+            ("Unbound identifier: " ^ x ^ " in identifier lookup at "))
         end
 
       | S.Lambda (p, xs, e) -> 
@@ -391,7 +391,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         bind 
           (eval_sym c env pc)
           (fun (c_val, pc') -> 
-            (* TODO is an ObjPtr truthy? *)
             match c_val with
             | True -> eval t env pc'
             | SymScalar id -> 
@@ -414,6 +413,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   bind avpcs
                     (fun ((argvs : value list), (pcs : ctx)) -> 
                       bind 
+                        (* We don't need to eval_sym the args because
+                         * they will be rebound in the closure created
+                         * for the function body in the S.Lambda case *)
                         (eval arg env pcs)
                         (fun (argv, pcs') ->
                           return (argvs @ [argv]) pcs')))
@@ -421,7 +423,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind args_pcs
               (fun (argvs, pcs) ->
                 match f_val with
-                  (* TODO do we want a SymScalar for a function? *)
                 | SymScalar f -> 
                   let ((fid : string), (fpc : ctx)) = fresh_var "F" (TFun (List.length argvs)) "function to be applied" pcs in
                   let (argvs : sym_exp list) = List.map val_sym argvs in
@@ -449,11 +450,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Rec (p, x, e, body) ->
         let (loc, pc') = sto_alloc_val Undefined pc in
         let env' = IdMap.add x loc env in
-        bind (* TODO do we need to use eval_sym here? *)
-          (eval_sym e env' pc')
+        bind
+          (eval e env' pc')
           (fun (ev_val, pc') -> 
             let pc'' = sto_update_val loc ev_val pc' in 
-            eval_sym body env' pc'')
+            eval body env' pc'')
 
       | S.SetBang (p, x, e) -> begin
         try
@@ -633,108 +634,109 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
        * These are the only constraints imposed by our representation. All other
        * constraints must be checked by Z3.
        *)
-      | S.GetField (p, obj, f, args) ->
-        let rec sym_get_field obj1 field getter_params pc depth =
-          (* Let [same] be the type of f (symbolic or concrete) and [diff] be the opposite
-           * If f is present in the [same] field map, we simply get its value
-           * If f is not present in the [same] field map, either
-           *    a) f is equal to one of the [same] field names
-           *    b) f is equal to one of the [diff] field names
-           *    c) f is not equal to any of the field names, so we check the prototype
-           *)
-          (* get_props should produce a pair ([same] props, [diff] props) *)
-          let get_field objLoc f get_props = 
-            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj objLoc pc in
-            let same_props, diff_props = get_props objv in
+      | S.GetField (p, obj_ptr, f, args) ->
+        (* ptr_get is the original object ptr we get from, whereas
+         * ptr_check could be any object ptr in the prototype chain. *)
+        let rec sym_get_field ptr_get ptr_check field getter_params pc depth =
+          (* Let [same] be the type of field (symbolic or concrete)
+           * and [diff] be the opposite. get_both_props produces
+           * a pair ([same] props, [diff] props) *)
+          match field with String _ | SymScalar _ -> begin
+          let (f, get_both_props, get_props, set_props) = match field with
+          | String f    -> (f, (fun { conps = cons; symps = syms; } -> (cons, syms)),
+                            get_con_props, set_con_props)
+          | SymScalar f -> (f, (fun { conps = cons; symps = syms; } -> (syms, cons)),
+                            get_sym_props, set_sym_props)
+          | _ -> failwith "get_field given non-string/sym field, but should have already caught it"
+          in
 
-            (* Looks up the property stored at fieldName in props.
-             * Should only be called when fieldName is guaranteed to be present *)
-            let find_prop fieldName props pc =
-              try match IdMap.find fieldName props with
+          try match ptr_check with
+          | Null -> begin match ptr_get with
+            | Null -> return Undefined pc
+            | ObjPtr loc ->
+              let { symbolic = is_sym; }, pc = sto_lookup_obj loc pc in
+              if is_sym
+              (* For sym objs, if field not found, make a new sym value and add it
+               * to the object at that field, then return it *)
+              then
+                let (symv, pc) = new_sym ("get_field at " ^
+                                    (string_of_position p)) pc in
+                add_field_force ptr_get f symv pc get_props set_props
+              (* For con objs, if field not found, return Undef *)
+              else return Undefined pc
+            | _ -> failwith "get_field given non-object, but should have already caught it"
+            end
+          | ObjPtr obj_loc ->
+            (* If f is present in the [same] field map, we simply get its value
+             * If f is not present in the [same] field map, either
+             *    a) f is equal to one of the [diff] field names
+             *    b) f is equal to one of the [same] field names
+             *    c) f is not equal to any of the field names, so we check the prototype
+             *
+             * -- Note that (b) is infeasible in the concrete case, but makes the branches
+             *    symmetric with the way we handle symbolic field names. The infeasibility
+             *    of (b) is not imposed by our object invariants, so we fall back on
+             *    Z3 to catch it rather than try to catch it ourselves.
+             *)
+            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj obj_loc pc in
+            let same_props, diff_props = get_both_props objv in
+
+            let return_prop v pc = match v with
               | Data ({ value = vloc; }, _, _) ->
                 (uncurry return) (sto_lookup_val vloc pc)
               | Accessor ({ getter = gloc; }, _, _) ->
                 let g, pc = sto_lookup_val gloc pc in
                 apply p g getter_params pc depth
-              with Not_found -> failwith ("Impossible! get_prop was called with" ^
-                " a field name that wasn't present in the field map")
-            in
-
-            (* Creates branches for each property f' in the given property map where
-             * f is asserted equal to f' and the result is the property stored at f'.*)
-            let prop_branches props = IdMap.fold
-              (fun f' _ branches ->
-                let (f'_const, pc') = const_string f' pc in
-                let pc'' = add_constraint
-                  (SAssert (SApp (SId "=", [SId f; SId f'_const]))) pc' in
-                combine (find_prop f' props pc'') branches)
-              props none
             in
 
             (* If f is present in the [same] field map, we simply get its value *)
-            if IdMap.mem f same_props 
-            then find_prop f same_props pc
+            begin try
+              let v = IdMap.find f same_props in 
+              return_prop v pc
             (* If f is not present in the [same] field map, either *)
-            else
-            (*    a) f is equal to one of the [diff] field names *)
-            (*    b) f is equal to one of the [same] field names *)
-            let branches = combine (prop_branches diff_props) (prop_branches same_props) in
-            (*    c) f is not equal to any of the field names, so we check the prototype *)
-            let assert_none_equal = IdMap.fold
-              (fun f' _ pc ->
-                let (f', pc') = const_string f' pc in
-                let pc'' = add_constraint
-                  (SAssert (SNot (SApp (SId "=", [SId f; SId f'])))) pc' in
-                pc'')
-            in
-            let none_pc = assert_none_equal same_props (assert_none_equal diff_props pc) in
-            let none_branch = sym_get_field proto field getter_params none_pc depth in
-            combine none_branch branches
-          in
+            with Not_found -> 
+              (*    a) f is equal to one of the [diff] field names *)
+              (*    b) f is equal to one of the [same] field names *)
+              let branches = List.fold_left
+                (fun branches (f', v) ->
+                  let (f'_const, pc') = const_string f' pc in
+                  let pc'' = add_constraint
+                    (SAssert (SApp (SId "=", [SId f; SId f'_const]))) pc' in
+                  combine (return_prop v pc'') branches)
+                none
+                (List.concat (map IdMap.bindings [same_props; diff_props])) in
+              (*    c) f is not equal to any of the field names, so we check the prototype *)
+              let assert_none_equal = IdMap.fold
+                (fun f' _ pc ->
+                  let (f', pc') = const_string f' pc in
+                  let pc'' = add_constraint
+                    (SAssert (SNot (SApp (SId "=", [SId f; SId f'])))) pc' in
+                  pc'') in
+              let none_pc = assert_none_equal same_props
+                              (assert_none_equal diff_props pc) in
+              let none_branch = sym_get_field ptr_get proto field
+                                  getter_params none_pc depth in
+              combine none_branch branches
+            end
 
-          (* TODO handle symbolic objects *)
-          try match obj1, field with
-          | Null, _ -> return Undefined pc (* nothing found *)
-          | ObjPtr loc, String f ->
-          (* If f is present in the concrete field map, we simply get its value
-           * If f is not present in the concrete field map, either
-           *    a) f is equal to one of the symbolic field names
-           *    b) f is equal to one of the concrete field names
-           *    c) f is not equal to any of the field names, so we check the prototype
-           *
-           * -- Note that (b) is infeasible in this case, but makes the branches
-           *    symmetric with the way we handle symbolic field names. The infeasibility
-           *    of (b) is not imposed by our object invariants, so we fall back on
-           *    Z3 to catch it rather than try to catch it ourselves.
-           *)
-            get_field loc f (fun { conps = cons; symps = syms; } -> (cons, syms))
-
-          | ObjPtr loc, SymScalar f ->
-          (* If f is present in the symbolic field map, we simply get its value
-           * If f is not present in the symbolic field map, either
-           *    a) f is equal to one of the concrete field names
-           *    b) f is equal to one of the symbolic field names
-           *    c) f is not equal to any of the field names, so we check the prototype
-           *)
-            get_field loc f (fun { conps = cons; symps = syms; } -> (syms, cons))
-
-          (*| Sym id, String f *)
-          (*| Sym id, Sym f -> failwith "GetField not implemented for sym objs."*)
           | _ -> throw (Throw (String "get_field on a non-object")) pc
+          with TypeError _ -> none
+          end
+          | _ -> throw (Throw (String ("get_field called with non-string/sym field: " ^
+                               Ljs_sym_pretty.val_to_string field))) pc
           (*| _ -> failwith (interp_error p*)
           (*                   "get_field on a non-object.  The expression was (get-field "*)
           (*                 ^ Ljs_sym_pretty.val_to_string obj1*)
           (*                 ^ " " ^ Ljs_sym_pretty.val_to_string (List.nth getter_params 0)*)
           (*                 ^ " " ^ Ljs_sym_pretty.val_to_string field ^ ")")*)
-        with TypeError _ -> none
         in
-        bind (eval_sym obj env pc)
-          (fun (objv, pc_o) -> 
+        bind (eval_sym obj_ptr env pc)
+          (fun (obj_ptrv, pc_o) -> 
             bind (eval_sym f env pc_o) 
               (fun (fv, pc_f) -> 
                 bind (eval args env pc_f)
                   (fun (argsv, pc') ->
-                    sym_get_field objv fv [objv; argsv] pc' depth)))
+                    sym_get_field obj_ptrv obj_ptrv fv [obj_ptrv; argsv] pc' depth)))
 
           
 
@@ -755,8 +757,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           (* set_same should take an object and a new [same] props map
            *  and produce a new object with the new [same] props map *)
           (* set_diff should do the same for [diff] props *)
-          let set_field objLoc f get_props set_same set_diff = 
-            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj objLoc pc in
+          let set_field obj_loc f get_props set_same set_diff = 
+            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj obj_loc pc in
             let same_props, diff_props = get_props objv in
 
             (* Update the property at fieldName in props.
@@ -770,7 +772,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                      (Data ({ value = vloc; writable = true }, enum, config))
                      props) in
                 let (z3field, pc') = const_string fieldName pc in
-                return newval (sto_update_field objLoc newO (SymScalar z3field) (Concrete newval) pc') (* TODO what's this?? probably don't need the prev line either *)
+                return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc') (* TODO what's this?? probably don't need the prev line either *)
               | Accessor ({ setter = sloc; }, _, _) ->
                 let s, pc = sto_lookup_val sloc pc in
                 apply p s setter_params pc depth
@@ -788,7 +790,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 let (f'_id, pc') = const_string f' pc in
                 let pc'' = add_constraint
                   (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
-                Printf.printf "*********** f' = %s" f';
                 combine (update_fun f' props pc'') branches)
               props none
             in
@@ -818,8 +819,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
           (* TODO handle sym objects *)
           match objCheck, field with
-          | Null, String f -> add_field objSet f newval pc get_con_props set_con_props
-          | Null, SymScalar f    -> add_field objSet f newval pc get_sym_props set_sym_props
+          | Null, String f    -> add_field objSet f newval pc get_con_props set_con_props
+          | Null, SymScalar f -> add_field objSet f newval pc get_sym_props set_sym_props
           | ObjPtr loc, String f -> set_field loc f
               (fun { conps = cons; symps = syms; } -> (cons, syms)) (* get_props *)
               set_con_props (* set_same_props *)

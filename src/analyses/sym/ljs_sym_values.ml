@@ -32,7 +32,7 @@ type value =
   | ObjPtr of Store.loc
   (* NewSym is an uninitialized symbolic value,
    * which could either be a SymScalar or an ObjPtr *)
-  | NewSym of id * Store.loc list
+  | NewSym of id * Store.loc list (* TODO explain this list *)
   (* SymScalar is a symbolic value of a scalar type
    * (i.e. not a pointer or object) *)
   | SymScalar of id
@@ -42,7 +42,7 @@ and objlit = { symbolic: bool;
                conps: propv IdMap.t; (* props with concrete field names *)
                symps: propv IdMap.t; } (* props with symbolic field names *)
 and
-  attrsv = { code : value option;
+  attrsv = { code : value option; (* will be a Closure *)
              proto : value;
              extensible : bool;
              klass : string;
@@ -124,6 +124,12 @@ let fresh_var =
     incr count;
     let nvar = "%%" ^ prefix ^ (string_of_int !count) in
     (nvar, (add_var nvar t hint pc)))
+
+let new_sym hint pc = 
+  let (sym_id, pc) = fresh_var "" TAny hint pc in
+  (* Get locs of all objects in the store so we can branch
+   * once we know the type of this sym value *)
+  (NewSym (sym_id, (map fst (Store.bindings pc.store.objs))), pc)
 
 let const_string f pc = 
   let str = "S_" ^ f in

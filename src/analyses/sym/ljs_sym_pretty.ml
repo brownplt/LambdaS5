@@ -25,13 +25,16 @@ let rec value v =
   (*                                                                (intersperse (text ",") (map text xs))))]; *)
   (*                            braces (exp e)]) *)
   | SymScalar id -> text id
-  | NewSym (id, locs) -> parens (text ("NewSym" ^ id))
+  | NewSym (id, locs) -> horz [text ("NewSym " ^ id);
+                               brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
+                                 
 
-and obj { attrs = attrsv; conps = conpsv; symps = sympsv; } = 
+and obj { symbolic = sym; attrs = attrsv; conps = conpsv; symps = sympsv; } = 
+  let prefix = if sym then "@sym" else "@" in
   if IdMap.is_empty conpsv && IdMap.is_empty sympsv 
-  then squish [text "@"; braces (attrs attrsv)]
+  then squish [text prefix; braces (attrs attrsv)]
   else 
-    horz [squish [text "@"; (braces (vert [attrs attrsv; 
+    horz [squish [text prefix; (braces (vert [attrs attrsv; 
                                            text "- Con fields -";
                                            vert (vert_intersperse (text ",")
                                                    (map con_prop (IdMap.bindings conpsv)));

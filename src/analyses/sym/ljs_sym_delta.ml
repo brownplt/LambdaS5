@@ -335,7 +335,7 @@ let stx_eq ctx v1 v2 = (bool begin match v1, v2 with
   | Null, Null -> true
   | True, True -> true
   | False, False -> true
-  | NewSym _, _ | _, NewSym _
+  | NewSym _, _ | _, NewSym _ -> failwith "prim got a newsym"
   | SymScalar _, _ 
   | _, SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> v1 == v2 (* otherwise, pointer equality *)
