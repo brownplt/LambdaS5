@@ -639,14 +639,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
          * ptr_check could be any object ptr in the prototype chain. *)
         let rec sym_get_field ptr_get ptr_check field getter_params pc depth =
           (* Let [same] be the type of field (symbolic or concrete)
-           * and [diff] be the opposite. get_both_props produces
-           * a pair ([same] props, [diff] props) *)
+           * and [diff] be the opposite. *)
           match field with String _ | SymScalar _ -> begin
-          let (f, get_both_props, get_props, set_props) = match field with
-          | String f    -> (f, (fun { conps = cons; symps = syms; } -> (cons, syms)),
-                            get_con_props, set_con_props)
-          | SymScalar f -> (f, (fun { conps = cons; symps = syms; } -> (syms, cons)),
-                            get_sym_props, set_sym_props)
+          let (f, get_same, get_diff, set_same) = match field with
+          | String f    -> (f, get_con_props, get_sym_props, set_con_props)
+          | SymScalar f -> (f, get_sym_props, get_con_props, set_sym_props)
           | _ -> failwith "get_field given non-string/sym field, but should have already caught it"
           in
 
@@ -661,7 +658,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               then
                 let (symv, pc) = new_sym ("get_field at " ^
                                     (string_of_position p)) pc in
-                add_field_force ptr_get f symv pc get_props set_props
+                add_field_force ptr_get f symv pc get_same set_same
               (* For con objs, if field not found, return Undef *)
               else return Undefined pc
             | _ -> failwith "get_field given non-object, but should have already caught it"
@@ -679,7 +676,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
              *    Z3 to catch it rather than try to catch it ourselves.
              *)
             let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj obj_loc pc in
-            let same_props, diff_props = get_both_props objv in
+            let same_props, diff_props = get_same objv, get_diff objv in
 
             let return_prop v pc = match v with
               | Data ({ value = vloc; }, _, _) ->
@@ -695,27 +692,25 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               return_prop v pc
             (* If f is not present in the [same] field map, either *)
             with Not_found -> 
+              let all_props = List.concat (map IdMap.bindings [same_props; diff_props]) in
               (*    a) f is equal to one of the [diff] field names *)
               (*    b) f is equal to one of the [same] field names *)
               let branches = List.fold_left
                 (fun branches (f', v) ->
-                  let (f'_const, pc') = const_string f' pc in
+                  let (f'_id, pc') = const_string f' pc in
                   let pc'' = add_constraint
-                    (SAssert (SApp (SId "=", [SId f; SId f'_const]))) pc' in
+                    (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
                   combine (return_prop v pc'') branches)
-                none
-                (List.concat (map IdMap.bindings [same_props; diff_props])) in
+                none all_props in
               (*    c) f is not equal to any of the field names, so we check the prototype *)
-              let assert_none_equal = IdMap.fold
-                (fun f' _ pc ->
-                  let (f', pc') = const_string f' pc in
+              let none_pc = List.fold_left
+                (fun pc (f', _) ->
+                  let (f'_id, pc') = const_string f' pc in
                   let pc'' = add_constraint
-                    (SAssert (SNot (SApp (SId "=", [SId f; SId f'])))) pc' in
-                  pc'') in
-              let none_pc = assert_none_equal same_props
-                              (assert_none_equal diff_props pc) in
-              let none_branch = sym_get_field ptr_get proto field
-                                  getter_params none_pc depth in
+                    (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc' in
+                  pc'')
+                pc all_props in
+              let none_branch = sym_get_field ptr_get proto field getter_params none_pc depth in
               combine none_branch branches
             end
 
@@ -740,109 +735,108 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
           
 
-      | S.SetField (p, obj, f, v, args) ->
+      | S.SetField (p, obj_ptr, f, v, args) ->
         (*Printf.printf "******* In SetField\n";*)
-        let rec sym_set_field objCheck objSet field newval setter_params pc depth = 
-          (* Let [same] be the type of f (symbolic or concrete) and [diff] be the opposite
-           * Whenever we set a field, it is set on the original object
-           *
-           * If f is present in the [same] field map, we simply set its value
-           * If f is not present in the [same] field map, either
-           *    a) f is equal to one of the [same] field names
-           *    b) f is equal to one of the [diff] field names
-           *    c) f is not equal to any of the field names, so we check the prototype
-           *      - if the object doesn't have a prototype, add the field
-           *)
-          (* get_props should produce a pair ([same] props, [diff] props) *)
-          (* set_same should take an object and a new [same] props map
-           *  and produce a new object with the new [same] props map *)
-          (* set_diff should do the same for [diff] props *)
-          let set_field obj_loc f get_props set_same set_diff = 
-            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj obj_loc pc in
-            let same_props, diff_props = get_props objv in
+        (* ptr_get is the original object ptr we get from, whereas
+         * ptr_check could be any object ptr in the prototype chain. *)
+        let rec sym_set_field ptr_set ptr_check field newval setter_params pc depth = 
+          (* Let [same] be the type of field (symbolic or concrete)
+           * and [diff] be the opposite. *)
+          match field with String _ | SymScalar _ -> begin
+          let (f, get_same, get_diff, set_same, set_diff) = match field with
+          | String f    -> (f, get_con_props, get_sym_props, set_con_props, set_sym_props)
+          | SymScalar f -> (f, get_sym_props, get_con_props, set_sym_props, set_con_props)
+          | _ -> failwith "set_field given non-string/sym field, but should have already caught it"
+          in
 
-            (* Update the property at fieldName in props.
-             * Should only be called when fieldName is guaranteed to be present. *)
-            let update_prop set_props fieldName props pc =
-              try match IdMap.find fieldName props with
-              | Data ({ writable = true; }, enum, config) ->
-                let vloc, pc = sto_alloc_val newval pc in
-                let newO = set_props objv
-                  (IdMap.add fieldName
-                     (Data ({ value = vloc; writable = true }, enum, config))
-                     props) in
-                let (z3field, pc') = const_string fieldName pc in
-                return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc') (* TODO what's this?? probably don't need the prev line either *)
-              | Accessor ({ setter = sloc; }, _, _) ->
-                let s, pc = sto_lookup_val sloc pc in
-                apply p s setter_params pc depth
-              | _ -> failwith "SetField NYI for non-writable fields"
-              with Not_found -> failwith ("Impossible! update_prop was called with" ^
-                " a field name that wasn't present in the field map")
+          try match ptr_check with
+          | Null -> begin match ptr_set with
+            | Null -> return Undefined pc
+            | ObjPtr loc -> add_field ptr_set f newval pc get_same set_same
+              (*let { symbolic = is_sym; }, pc = sto_lookup_obj loc pc in*)
+            | _ -> failwith "set_field given non-object, but should have already caught it"
+            end
+          | ObjPtr obj_loc ->
+            (* Whenever we set a field, it is set on the original object
+             *
+             * If f is present in the [same] field map, we simply set its value
+             * If f is not present in the [same] field map, either
+             *    a) f is equal to one of the [same] field names
+             *    b) f is equal to one of the [diff] field names
+             *    c) f is not equal to any of the field names, so we check the prototype
+             *      - if the object doesn't have a prototype, add the field
+             *)
+            let { attrs = { proto = proto; }} as objv, pc = sto_lookup_obj obj_loc pc in
+            let same_props, diff_props = get_same objv, get_diff objv in
+
+            (* Update the property at f to value v. *)
+            let update_prop get_props set_props f v pc = match v with
+            | Data ({ writable = true; }, enum, config) ->
+              let vloc, pc = sto_alloc_val newval pc in
+              let newO = set_props objv
+                (IdMap.add f
+                   (Data ({ value = vloc; writable = true }, enum, config))
+                   (get_props objv)) in
+              let (z3field, pc') = const_string f pc in
+              return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc') (* TODO what's this?? probably don't need the prev line either *)
+            | Accessor ({ setter = sloc; }, _, _) ->
+              let s, pc = sto_lookup_val sloc pc in
+              apply p s setter_params pc depth
+            | _ -> failwith "SetField NYI for non-writable fields"
             in
-            let update_same = update_prop set_same in
-            let update_diff = update_prop set_diff in
+            let update_same = update_prop get_same set_same in
+            let update_diff = update_prop get_diff set_diff in
 
             (* Creates branches for each property f' in the given property map where
              * f is asserted equal to f' and the new value is stored at f'.*)
             let prop_branches update_fun props = IdMap.fold
-              (fun f' _ branches ->
+              (fun f' v' branches ->
                 let (f'_id, pc') = const_string f' pc in
                 let pc'' = add_constraint
                   (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
-                combine (update_fun f' props pc'') branches)
+                combine (update_fun f' v' pc'') branches)
               props none
             in
-            (* If f is present in the [same] field map, we simply set its value *)
-            if IdMap.mem f same_props 
-            then update_same f same_props pc
-            (* If f is not present in the [same] field map, either *)
-            else
-            (*    a) f is equal to one of the [diff] field names *)
-            (*    b) f is equal to one of the [same] field names *)
-            let branches = combine (prop_branches update_diff diff_props)
-                             (prop_branches update_same same_props) in
-            (*    c) f is not equal to any of the field names, so we check the prototype *)
-            let assert_none_equal = IdMap.fold
-              (fun f' _ pc ->
-                let (f', pc') = const_string f' pc in
-                let pc'' = add_constraint
-                  (SAssert (SNot (SApp (SId "=", [SId f; SId f'])))) pc' in
-                pc'')
-            in
-            let none_pc = assert_none_equal same_props
-                            (assert_none_equal diff_props pc) in
-            let none_branch = sym_set_field proto objSet field newval
-                                setter_params none_pc depth in
-            combine none_branch branches
-          in
 
-          (* TODO handle sym objects *)
-          match objCheck, field with
-          | Null, String f    -> add_field objSet f newval pc get_con_props set_con_props
-          | Null, SymScalar f -> add_field objSet f newval pc get_sym_props set_sym_props
-          | ObjPtr loc, String f -> set_field loc f
-              (fun { conps = cons; symps = syms; } -> (cons, syms)) (* get_props *)
-              set_con_props (* set_same_props *)
-              set_sym_props (* set_diff_props *)
-          | ObjPtr loc, SymScalar f -> set_field loc f
-              (fun { conps = cons; symps = syms; } -> (syms, cons)) (* get_props *)
-              set_sym_props (* set_same_props *)
-              set_con_props (* set_diff_props *)
-          (*| Sym id, String f*)
-          (*| Sym id, Sym f -> failwith "SetField NYI for sym objects."*)
+            (* If f is present in the [same] field map, we simply set its value *)
+            begin try
+              let v = IdMap.find f same_props in 
+              update_same f v pc
+            (* If f is not present in the [same] field map, either *)
+            with Not_found ->
+              (*    a) f is equal to one of the [diff] field names *)
+              (*    b) f is equal to one of the [same] field names *)
+              let branches = combine (prop_branches update_diff diff_props)
+                               (prop_branches update_same same_props) in
+              (*    c) f is not equal to any of the field names, so we check the prototype *)
+              let all_props = List.concat (map IdMap.bindings [same_props; diff_props]) in
+              let none_pc = List.fold_left
+                (fun pc (f', _) ->
+                  let (f'_id, pc') = const_string f' pc in
+                  let pc'' = add_constraint
+                    (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc' in
+                  pc'')
+                pc all_props in
+              let none_branch = sym_set_field ptr_set proto field newval setter_params none_pc depth in
+              combine none_branch branches
+            end
+
           | _ -> throw (Throw (String "set_field on a non-object")) pc
+          with TypeError _ -> none
+          end
+          | _ -> throw (Throw (String ("set_field called with non-string/sym field: " ^
+                               Ljs_sym_pretty.val_to_string field))) pc
           (*| _ -> failwith "[sym_set_field] should not have happened"*)
         in
-        bind (eval_sym obj env pc) 
-          (fun (objv, pc_o) -> 
+        bind (eval_sym obj_ptr env pc) 
+          (fun (obj_ptrv, pc_o) -> 
             bind (eval_sym f env pc_o) 
               (fun (fv, pc_f) -> 
                 bind (eval v env pc_f)
                   (fun (vv, pc_v) -> 
                     bind (eval args env pc_v)
                       (fun (argvs, pc_a) ->
-                        sym_set_field objv objv fv vv [objv; argvs] pc_a depth))))
+                        sym_set_field obj_ptrv obj_ptrv fv vv [obj_ptrv; argvs] pc_a depth))))
 
       | S.SetAttr (p, attr, obj, field, newval) ->
         failwith "SetAttr NYI"
