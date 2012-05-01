@@ -1,6 +1,7 @@
-// 1, NewSym
+// 1, 1, NewSym, NewSym
 let (obj1 = {[#proto: null,]
     "x": {#value 1, #writable true}
 })
 let (o = %%newsym)
-o["x"]
+let (p = %%newsym)
+p["x"]

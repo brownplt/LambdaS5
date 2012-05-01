@@ -29,7 +29,8 @@ module ListValue = OUnitDiff.ListSimpleMake(EValue);;
 let wrap_val v =
       try Num (float_of_string v)  
       with Failure _ ->
-        if string_before v 2 = "%%"
+        if string_before v 2 = "%%" ||
+           (String.length v >= 6 && string_before v 6 = "NewSym")
         then Sym v
         else String v
   

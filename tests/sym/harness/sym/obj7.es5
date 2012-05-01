@@ -6,4 +6,6 @@ let (o = %%newsym)
 let (obj2 = {[#proto: null,]
     "x": {#value 2, #writable true}
 })
-o["x"]
+let (p = o) {
+p["x"]
+}

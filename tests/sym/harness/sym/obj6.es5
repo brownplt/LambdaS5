@@ -1,0 +1,15 @@
+// 4, 4, 4, 4
+// either o = obj1, o = obj2, o = obj3, or o = new sym obj
+let (obj1 = {[#proto: null,]
+    "x": {#value 1, #writable true}
+})
+let (obj2 = {[#proto: null,]
+    "x": {#value 2, #writable true}
+})
+let (obj3 = {[#proto: null,]
+    "y": {#value 3, #writable true}
+})
+let (o = %%newsym) {
+o["x" = 4];
+o["x"]
+}
