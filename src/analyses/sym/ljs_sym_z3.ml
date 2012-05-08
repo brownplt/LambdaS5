@@ -310,11 +310,12 @@ let is_sat (p : ctx) : bool =
     )
     vs; 
   
-  let distinctStrs = IdMap.fold
-    (fun id (tp, hint) acc -> if tp = TString then id ^ " " ^ acc else acc)
-    vs "" in
-  if log_z3 then Printf.printf "(assert (distinct %s))\n" distinctStrs;
-  output_string outch (Printf.sprintf "(assert (distinct %s))\n" distinctStrs);
+  let strvs = IdMap.filter (fun _ (tp, _) -> tp = TString) vs in
+  if not (IdMap.is_empty strvs) then begin
+    let distinctStrs = IdMap.fold (fun id _ acc -> id ^ " " ^ acc) strvs "" in
+    if log_z3 then Printf.printf "(assert (distinct %s))\n" distinctStrs;
+    output_string outch (Printf.sprintf "(assert (distinct %s))\n" distinctStrs);
+  end;
 
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc constraintExp = 

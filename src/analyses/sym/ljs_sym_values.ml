@@ -134,7 +134,6 @@ let add_const_str pc s =
   let (s_id, pc') = const_string s pc in
   (SymScalar s_id, pc')
 
-
 let check_type id t p =
   let { constraints = cs ; vars = vs; store = s; time = time} = p in
   try 
@@ -193,18 +192,18 @@ let sto_update_field loc v field newval ctx =
 
 let sto_update_val loc v ctx = 
   let { constraints = cs; vars = vs; time = t; store = s } = ctx in
-  let cs' = match v with
-    | (Closure _) -> 
-      List.rev_append 
-        [
-          (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
-        ] cs 
-    | value ->
-      List.rev_append 
-        [
-          (SAssert (SApp(SId "=", [SApp(SId "lookup", [STime t; SLoc loc]); Concrete value])));
-          (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))
-        ] cs 
+  let cs' = cs (* match v with*)
+  (*  | (Closure _) -> *)
+  (*    List.rev_append *)
+  (*      [*)
+  (*        (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))*)
+  (*      ] cs *)
+  (*  | value ->*)
+  (*    List.rev_append *)
+  (*      [*)
+  (*        (SAssert (SApp(SId "=", [SApp(SId "lookup", [STime t; SLoc loc]); Concrete value])));*)
+  (*        (SAssert (SApp(SId "heapUpdatedAt", [STime (t+1); SLoc loc])))*)
+  (*      ] cs *)
   in
   { constraints = cs'; vars = vs; time = t+1; 
     store = { ctx.store with vals = Store.update loc v ctx.store.vals } }
@@ -228,11 +227,12 @@ let sto_lookup_obj loc ctx =
 let sto_lookup_val loc ctx = 
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
   let ret = Store.lookup loc ctx.store.vals  in 
-  match ret with 
-  | SymScalar id -> 
-    (ret,
-     add_constraint (SAssert (SApp(SId "stx=", [SId id; SApp(SId "lookup", [STime ctx.time; SLoc loc])]))) ctx)
-  | _ -> (ret, ctx)
+  (ret, ctx)
+  (*match ret with *)
+  (*| SymScalar id -> *)
+  (*  (ret,*)
+  (*   add_constraint (SAssert (SApp(SId "stx=", [SId id; SApp(SId "lookup", [STime ctx.time; SLoc loc])]))) ctx)*)
+  (*| _ -> (ret, ctx)*)
 
 let new_sym hint pc =
   let (sym_id, pc) = fresh_var "" TAny hint pc in
