@@ -1,4 +1,7 @@
-// 1, 1, NewSym, NewSym
+// 1, NewSym, NewSym
+// 1 if p = obj1
+// NewSym if p = o, o != obj1
+// NewSym if p != obj1, p != o
 let (obj1 = {[#proto: null,]
     "x": {#value 1, #writable true}
 })

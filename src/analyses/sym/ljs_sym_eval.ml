@@ -268,7 +268,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         (eval exp env pc)
         (fun (v, pc) -> match v with
         | NewSym (id, obj_locs) ->
-
           let branch newval pc = return newval
             (* Update every location in the store that has a NewSym
              * with the same id, since that sym value has now been init'd *)
@@ -279,31 +278,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   | _ -> v)
                 pc.store.vals }}
           in
-
-          (* One branch for if its a scalar *)
-          let scalar_branch = branch (SymScalar id) pc in
-          (* Branches for each object it could point to *)
-          let ptr_branches =
-            List.fold_left
+          combine
+            (* One branch for if its a scalar *)
+            (branch (SymScalar id) pc)
+            (* One branch for each object it could point to *)
+            (List.fold_left
               (fun branches obj_loc ->
                  combine (branch (ObjPtr obj_loc) pc) branches)
-              none obj_locs
-          in
-          (* One branch if it's a new symbolic object *)
-          let objv = {
-            symbolic = true;
-            (* TODO figure out what attrs an empty sym object has *)
-            (* all should be symbolic values of the proper type *)
-            (* attrs should be locs like props are *)
-            attrs = { code = None; proto = Null; extensible = true;
-                      klass = "Object"; primval = None; };
-            conps = IdMap.empty;
-            symps = IdMap.empty;
-          } in
-          let (obj_loc, pc_new) = sto_alloc_obj objv pc in
-          let new_branch = branch (ObjPtr obj_loc) pc_new in
-          combine scalar_branch (combine ptr_branches new_branch)
-
+              none obj_locs)
         | _ -> return v pc)
     in
 

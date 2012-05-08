@@ -125,12 +125,6 @@ let fresh_var =
     let nvar = "%%" ^ prefix ^ (string_of_int !count) in
     (nvar, (add_var nvar t hint pc)))
 
-let new_sym hint pc = 
-  let (sym_id, pc) = fresh_var "" TAny hint pc in
-  (* Get locs of all objects in the store so we can branch
-   * once we know the type of this sym value *)
-  (NewSym (sym_id, (map fst (Store.bindings pc.store.objs))), pc)
-
 let const_string f pc = 
   let str = "S_" ^ f in
   if has_var str pc then (str, pc)
@@ -239,3 +233,23 @@ let sto_lookup_val loc ctx =
     (ret,
      add_constraint (SAssert (SApp(SId "stx=", [SId id; SApp(SId "lookup", [STime ctx.time; SLoc loc])]))) ctx)
   | _ -> (ret, ctx)
+
+let new_sym hint pc =
+  let (sym_id, pc) = fresh_var "" TAny hint pc in
+  (* Create a new symbolic object, and add it to the store.
+   * This will account for the possibility that the new sym is a
+   * pointer pointing to an unknown symbolic object. *)
+  let objv = {
+    symbolic = true;
+    (* TODO figure out what attrs an empty sym object has *)
+    (* all should be symbolic values of the proper type *)
+    (* attrs should be locs like props are *)
+    attrs = { code = None; proto = Null; extensible = true;
+              klass = "Object"; primval = None; };
+    conps = IdMap.empty;
+    symps = IdMap.empty;
+  } in
+  let (_, pc) = sto_alloc_obj objv pc in
+  (* Get locs of all objects in the store so we can branch
+   * once we know the type of this sym value *)
+  (NewSym (sym_id, (map fst (Store.bindings pc.store.objs))), pc)

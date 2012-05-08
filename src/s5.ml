@@ -54,6 +54,7 @@ module S5 = struct
     List.iter (fun (v, p) -> printf "%s:\n" (Ljs_sym_pretty.val_to_string v);
       List.iter (fun c -> printf "%s\n" 
         (Ljs_sym_z3.to_string c p)) p.Ljs_sym_values.constraints;
+      printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);
       print_newline())
       results
   (* close_in inch; close_out outch *)
