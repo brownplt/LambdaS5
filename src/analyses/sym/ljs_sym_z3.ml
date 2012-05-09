@@ -310,6 +310,7 @@ let is_sat (p : ctx) : bool =
     )
     vs; 
   
+  if log_z3 then Printf.printf ";; String variables:\n";
   let strvs = IdMap.filter (fun _ (tp, _) -> tp = TString) vs in
   if not (IdMap.is_empty strvs) then begin
     let distinctStrs = IdMap.fold (fun id _ acc -> id ^ " " ^ acc) strvs "" in
@@ -322,10 +323,13 @@ let is_sat (p : ctx) : bool =
     if log_z3 then Printf.printf "%s\n" (to_string constraintExp p);
     output_string outch 
       (Printf.sprintf "%s\n" (to_string constraintExp p)) in
-  List.iter print_pc lets; 
+  if log_z3 then Printf.printf ";; Let constraints:\n";
+  List.iter print_pc lets;
+  if log_z3 then Printf.printf ";; Other constraints:\n";
   List.iter print_pc rest;
 
   output_string outch "(check-sat)";
+  if log_z3 then Printf.printf "(check-sat)\n";
   close_out outch;
   flush stdout;
   let res = input_line inch in
