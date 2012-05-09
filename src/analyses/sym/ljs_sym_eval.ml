@@ -39,7 +39,6 @@ let bind_both (ret, exn) f g =
 let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
-
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
 
@@ -468,6 +467,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                  else none)
                 (if is_sat false_pc then (eval f env false_pc)
                  else none)
+            (* TODO should ObjPtr's be truthy? *)
             | _ -> eval f env pc')
           
       | S.App (p, f, args) -> 

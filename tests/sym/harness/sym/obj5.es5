@@ -1,4 +1,4 @@
-// 2, 1
+// 2, 1, 1
 let (obj1 = {[#proto: null,]
     "x": {#value 1, #writable true}
 })
