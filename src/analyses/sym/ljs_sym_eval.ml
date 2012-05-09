@@ -304,13 +304,12 @@ let rec sym_get_prop p pc obj_ptr field =
           try return (field, Some (get_prop objv field)) pc
           with Not_found -> 
             (* object exists, but field isn't found in the same_props *)
-            let all_props = List.concat (map IdMap.bindings [conps; symps]) in
-            (*    a) f is equal to one of the [diff] field names *)
-            (*    b) f is equal to one of the [same] field names *)
+            (*    (a) f is equal to one of the [diff] field names *)
+            (*    (b) f is equal to one of the [same] field names *)
             let prop_branches wrap_f props = IdMap.fold
               (fun f' v' branches ->
-                let (f'_id, pc') = const_string f' pc in
-                let (f, pc') = const_string (field_str field) pc' in
+                let (f'_id, pc') = field_str (wrap_f f') pc in
+                let (f, pc') = field_str field pc' in
                 let pc'' = add_constraint
                   (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
                 let new_branch = if is_sat pc'' 
@@ -322,18 +321,19 @@ let rec sym_get_prop p pc obj_ptr field =
             let branches = combine (prop_branches (fun f -> ConField f) conps)
               (prop_branches (fun f -> SymField f) symps) in
 
-            (*    c) f is not equal to any of the field names, so we check the prototype *)
-            let none_pc = List.fold_left
-              (fun pc (f', _) ->
-                let (f'_id, pc') = const_string f' pc in
-                let (f, pc') = const_string (field_str field) pc' in
-                let pc'' = add_constraint
-                  (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc' in
-                pc'')
-              pc all_props in
+            (*    (c) f is not equal to any of the field names, so we check the prototype *)
+            let (f, pc) = field_str field pc in
+            let not_equal_to_any_of wrap_f = (fun f' _ pc ->
+                let (f'_id, pc') = field_str (wrap_f f') pc in
+                add_constraint
+                  (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc') in
+            let none_pc = IdMap.fold (not_equal_to_any_of (fun f -> SymField f)) symps pc in
+            let none_pc = IdMap.fold (not_equal_to_any_of (fun f -> ConField f)) conps none_pc in
             let none_branch = 
-              bind (branch_sym (protov, none_pc)) 
-                (fun (protov, pc) -> sym_get_prop p pc protov field) in
+              if is_sat none_pc then
+                bind (branch_sym (protov, none_pc)) 
+                  (fun (protov, pc) -> sym_get_prop p pc protov field) 
+              else none in
             combine none_branch branches
         end in
         bind potential_props (fun ((field, prop), pc) ->
@@ -353,7 +353,7 @@ let rec sym_get_prop p pc obj_ptr field =
     | _ -> throw (Throw (String (interp_error p 
            "get_prop on a non-object.  The expression was (get-prop " 
          ^ Ljs_sym_pretty.val_to_string obj_ptr
-         ^ " " ^ field_str field ^ ")"))) pc
+         ^ " " ^ fst (field_str field pc) ^ ")"))) pc
 
 
 let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
@@ -728,7 +728,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           | Some (Data ({ writable = true; }, enum, config)) ->
             let vloc, pc = sto_alloc_val newval pc in
             let newO = set_prop objv f (Data ({ value = vloc; writable = true }, enum, config)) in
-            let (z3field, pc') = const_string (field_str f) pc in
+            let (z3field, pc') = field_str f pc in
             return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc') 
           (* TODO what's this?? probably don't need the prev line either *)
           | Some (Accessor ({ setter = sloc; }, _, _)) ->

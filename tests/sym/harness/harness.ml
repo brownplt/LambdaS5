@@ -37,9 +37,9 @@ let wrap_val v =
 let rec parse_results chan =
   try 
     let line = input_line chan in
-    let i = String.length(line) - 1 in
-    if i > 0 && line.[i] = ':' (* result lines end in colon *)
-    then wrap_val (String.sub line 0 i) :: parse_results chan
+    let i = String.length(line) in
+    if (String.sub line 0 (min i 7) = "Result:")
+    then wrap_val (String.sub line 8 (i-9)) :: parse_results chan
     else parse_results chan
   with End_of_file -> [] 
 

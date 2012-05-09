@@ -294,7 +294,8 @@ let is_sat (p : ctx) : bool =
         match tp with
         | TNull -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NULL %s))\n" id hint id
         | TUndef -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (i-UNDEF %s))\n" id hint id
-        | TString -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-STR %s))\n" id hint id
+        | TString
+        | TSymString -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-STR %s))\n" id hint id
         | TBool -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-BOOL %s))\n" id hint id
         | TNum -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NUM %s))\n" id hint id
         | TObj -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id hint id

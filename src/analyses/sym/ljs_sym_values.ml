@@ -7,6 +7,7 @@ type jsType =
   | TNull
   | TUndef
   | TString
+  | TSymString
   | TBool
   | TNum
   | TObj
@@ -100,15 +101,13 @@ type env = Store.loc IdMap.t
 (* Used within GetField and SetField only *)
 type field_type = SymField of id | ConField of id
 
-let field_str field = match field with SymField f | ConField f -> f
-
-
 let mtPath = { constraints = []; vars = IdMap.empty; store = { objs = Store.empty; vals = Store.empty }; time = 0 }
 
 let ty_to_string t = match t with
   | TNull -> "TNull"
   | TUndef -> "TUndef"
   | TString -> "TString"
+  | TSymString -> "TSymString"
   | TBool -> "TBool"
   | TNum -> "TNum"
   | TObj -> "TObj"
@@ -138,6 +137,13 @@ let const_string f pc =
 let add_const_str pc s =
   let (s_id, pc') = const_string s pc in
   (SymScalar s_id, pc')
+
+
+let field_str field ctx = 
+  match field with
+  | SymField f -> (f, add_var f TSymString f ctx)
+  | ConField f -> const_string f ctx
+
 
 let check_type id t p =
   let { constraints = cs ; vars = vs; store = s; time = time} = p in
