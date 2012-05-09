@@ -97,6 +97,11 @@ let d_attrsv = { primval = None;
 
 type env = Store.loc IdMap.t
 
+(* Used within GetField and SetField only *)
+type field_type = SymField of id | ConField of id
+
+let field_str field = match field with SymField f | ConField f -> f
+
 
 let mtPath = { constraints = []; vars = IdMap.empty; store = { objs = Store.empty; vals = Store.empty }; time = 0 }
 

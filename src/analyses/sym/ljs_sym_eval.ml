@@ -83,15 +83,13 @@ let set_sym_props o sym_props = { o with symps = sym_props }
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
 
-type fieldType = Sym of id | Conc of id
-
 let set_prop o f prop = match f with
-  | Sym f -> set_sym_props o (IdMap.add f prop (get_sym_props o))
-  | Conc f -> set_con_props o (IdMap.add f prop (get_con_props o))
+  | SymField f -> set_sym_props o (IdMap.add f prop (get_sym_props o))
+  | ConField f -> set_con_props o (IdMap.add f prop (get_con_props o))
 
 let get_prop o f = match f with 
-  | Sym f -> IdMap.find f (get_sym_props o)
-  | Conc f -> IdMap.find f (get_con_props o)
+  | SymField f -> IdMap.find f (get_sym_props o)
+  | ConField f -> IdMap.find f (get_con_props o)
 
 let add_field_helper force obj_loc field newval pc = 
   match sto_lookup_obj obj_loc pc with
@@ -259,8 +257,8 @@ let branch_sym (v, pc) =
   match v with
   | NewSym (id, obj_locs) ->
     let branch newval pc = return newval
-          (* Update every location in the store that has a NewSym
-           * with the same id, since that sym value has now been init'd *)
+      (* Update every location in the store that has a NewSym
+       * with the same id, since that sym value has now been init'd *)
       { pc with store = { pc.store with vals =
           Store.mapi
             (fun loc v -> match v with
@@ -269,9 +267,9 @@ let branch_sym (v, pc) =
             pc.store.vals }}
     in
     combine
-          (* One branch for if its a scalar *)
+      (* One branch for if its a scalar *)
       (branch (SymScalar id) pc)
-          (* One branch for each object it could point to *)
+      (* One branch for each object it could point to *)
       (List.fold_left
          (fun branches obj_loc ->
            combine (branch (ObjPtr obj_loc) pc) branches)
@@ -280,8 +278,8 @@ let branch_sym (v, pc) =
 
 let check_field field pc = 
   match field with
-  | String f    -> return (Conc f) pc
-  | SymScalar f -> return (Sym f) pc
+  | String f    -> return (ConField f) pc
+  | SymScalar f -> return (SymField f) pc
   | _ -> throw (Throw (String ("get_field called with non-string/sym field: " ^
                                   Ljs_sym_pretty.val_to_string field))) pc
 
@@ -297,7 +295,6 @@ let check_field field pc =
  * if some ObjPtr then lookup 
 *)
 let rec sym_get_prop p pc obj_ptr field =
-  let f = (match field with Sym f | Conc f -> f) in
   match obj_ptr with
     | NewSym (id, locs) -> failwith "Impossible"
     | Null -> return (field, None) pc
@@ -310,21 +307,23 @@ let rec sym_get_prop p pc obj_ptr field =
             let all_props = List.concat (map IdMap.bindings [conps; symps]) in
             (*    a) f is equal to one of the [diff] field names *)
             (*    b) f is equal to one of the [same] field names *)
-            let prop_branches update_fun props = IdMap.fold
+            let prop_branches wrap_f props = IdMap.fold
               (fun f' v' branches ->
                 let (f'_id, pc') = const_string f' pc in
+                let f = field_str field in
                 let pc'' = add_constraint
                   (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
-                combine (return ((update_fun f'), Some v') pc'') branches)
+                combine (return ((wrap_f f'), Some v') pc'') branches)
               props none
             in
-            let branches = combine (prop_branches (fun f -> Conc f) conps)
-              (prop_branches (fun f -> Sym f) symps) in
+            let branches = combine (prop_branches (fun f -> ConField f) conps)
+              (prop_branches (fun f -> SymField f) symps) in
 
             (*    c) f is not equal to any of the field names, so we check the prototype *)
             let none_pc = List.fold_left
               (fun pc (f', _) ->
                 let (f'_id, pc') = const_string f' pc in
+                let f = field_str field in
                 let pc'' = add_constraint
                   (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc' in
                 pc'')
@@ -350,8 +349,8 @@ let rec sym_get_prop p pc obj_ptr field =
     end
     | _ -> throw (Throw (String (interp_error p 
            "get_prop on a non-object.  The expression was (get-prop " 
-         ^ (Ljs_sym_pretty.val_to_string obj_ptr)
-         ^ " " ^ f ^ ")"))) pc
+         ^ Ljs_sym_pretty.val_to_string obj_ptr
+         ^ " " ^ field_str field ^ ")"))) pc
 
 
 let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
@@ -717,19 +716,16 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                            | Some (Accessor ({ getter = gloc; }, _, _)) ->
                              let g, pc' = sto_lookup_val gloc pc' in
                              apply p g [obj_ptrv; argsv] pc' depth
-                           | None -> return Undefined pc'
-                           )
-                       )))))
+                           | None -> return Undefined pc'))))))
 
       | S.SetField (p, obj_ptr, f, v, args) ->
         let update_prop obj_loc f prop newval setter_params pc = 
-          let f_str = (match f with Sym f | Conc f -> f) in
           let (objv, pc) = sto_lookup_obj obj_loc pc in
           match prop with
           | Some (Data ({ writable = true; }, enum, config)) ->
             let vloc, pc = sto_alloc_val newval pc in
             let newO = set_prop objv f (Data ({ value = vloc; writable = true }, enum, config)) in
-            let (z3field, pc') = const_string f_str pc in
+            let (z3field, pc') = const_string (field_str f) pc in
             return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc') 
           (* TODO what's this?? probably don't need the prev line either *)
           | Some (Accessor ({ setter = sloc; }, _, _)) ->
@@ -753,8 +749,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                                  match obj_ptrv with
                                  | Null -> return Undefined pc'
                                  | ObjPtr obj_loc -> update_prop obj_loc field prop vv [obj_ptrv; argvs] pc'
-                                 | _ -> failwith "Impossible -- should be an ObjPtr"
-                               )))))))
+                                 | _ -> failwith "Impossible -- should be an ObjPtr")))))))
 
       | S.SetAttr (p, attr, obj, field, newval) ->
         failwith "SetAttr NYI"
