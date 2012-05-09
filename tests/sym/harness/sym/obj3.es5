@@ -1,4 +1,4 @@
-// 1, 2, undefined, NewSym
+// 1, 2, undefined, NewSym, undefined
 let (obj1 = {[#proto: null,]
     "x": {#value 1, #writable true}
 })
