@@ -310,10 +310,13 @@ let rec sym_get_prop p pc obj_ptr field =
             let prop_branches wrap_f props = IdMap.fold
               (fun f' v' branches ->
                 let (f'_id, pc') = const_string f' pc in
-                let f = field_str field in
+                let (f, pc') = const_string (field_str field) pc' in
                 let pc'' = add_constraint
                   (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
-                combine (return ((wrap_f f'), Some v') pc'') branches)
+                let new_branch = if is_sat pc'' 
+                  then (return ((wrap_f f'), Some v') pc'')
+                  else none in
+                combine new_branch branches)
               props none
             in
             let branches = combine (prop_branches (fun f -> ConField f) conps)
@@ -323,7 +326,7 @@ let rec sym_get_prop p pc obj_ptr field =
             let none_pc = List.fold_left
               (fun pc (f', _) ->
                 let (f'_id, pc') = const_string f' pc in
-                let f = field_str field in
+                let (f, pc') = const_string (field_str field) pc' in
                 let pc'' = add_constraint
                   (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc' in
                 pc'')
