@@ -28,7 +28,7 @@ let rec value v store =
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
-  | ObjPtr loc -> obj (sto_lookup_obj loc store)
+  | ObjPtr loc -> text ("(OBJCELL " ^ (Store.print_loc loc) ^ ")") (* obj (sto_lookup_obj loc store) *)
   | Closure func -> text "(FUN closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
@@ -38,29 +38,29 @@ let rec value v store =
   | SymScalar id -> text id
   | NewSym (id, loc) -> parens (text ("NewSym " ^ id))
 
-and obj ({ attrs = avs; conps = conprops; symps = symprops; }, store) = 
-  (*    horz [(braces (vert [attrsv avs;  *) (* ignoring avs for the moment *)
-  parens (
-    horz [text "OBJ";
-          parens 
-            (horz [text "Array2Fields";
-                   List.fold_left (fun acc (f, p) ->
-                     let value = 
-                       match p with
-                       | Data ({value=v; writable=w}, enum, config) -> 
-                         parens (horz [text "Data"; (uncurry value) (sto_lookup_val v store); 
-                                       text (string_of_bool w);
-                                       text (string_of_bool enum); 
-                                       text (string_of_bool config)])
-                       | Accessor ({getter=g; setter=s}, enum, config) -> 
-                         parens (horz [text "Accessor"; (uncurry value) (sto_lookup_val g store);
-                                       (uncurry value) (sto_lookup_val s store);
-                                       text (string_of_bool enum); 
-                                       text (string_of_bool config)])
-                     in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text ("S_" ^ f)]); value]]))
-                     (text "mtObj")
-                     (List.append (IdMap.bindings conprops)
-                                  (IdMap.bindings symprops))])])
+(* and obj ({ attrs = avs; conps = conprops; symps = symprops; }, store) =  *)
+(*   (\*    horz [(braces (vert [attrsv avs;  *\) (\* ignoring avs for the moment *\) *)
+(*   parens ( *)
+(*     horz [text "OBJ"; *)
+(*           parens  *)
+(*             (horz [text "Array2Fields"; *)
+(*                    List.fold_left (fun acc (f, p) -> *)
+(*                      let value =  *)
+(*                        match p with *)
+(*                        | Data ({value=v; writable=w}, enum, config) ->  *)
+(*                          parens (horz [text "Data"; (uncurry value) (sto_lookup_val v store);  *)
+(*                                        text (string_of_bool w); *)
+(*                                        text (string_of_bool enum);  *)
+(*                                        text (string_of_bool config)]) *)
+(*                        | Accessor ({getter=g; setter=s}, enum, config) ->  *)
+(*                          parens (horz [text "Accessor"; (uncurry value) (sto_lookup_val g store); *)
+(*                                        (uncurry value) (sto_lookup_val s store); *)
+(*                                        text (string_of_bool enum);  *)
+(*                                        text (string_of_bool config)]) *)
+(*                      in parens (vert [horz[text "store"; acc]; horz[parens (horz[text "s"; text ("S_" ^ f)]); value]])) *)
+(*                      (text "mtObj") *)
+(*                      (List.append (IdMap.bindings conprops) *)
+(*                                   (IdMap.bindings symprops))])]) *)
 
 
 (* and prim verbose p =  *)
@@ -94,6 +94,7 @@ and exp e store =
     | TObj -> parens (horz [text "OBJ"; e])
     | _ -> e in
   match e with
+  | Hint s -> horz [text ";;"; text s] 
   | Concrete v -> value v store
   | STime t -> int t
   | SLoc l -> text (Store.print_loc l)
@@ -120,32 +121,32 @@ and exp e store =
   | SGetField (id, f) ->
     uncastFn TAny (parens(horz [text "select"; (parens(horz [text "Fields2Array"; castFn TObj (text id);])); castFn TString (text f)]))
 
-and attrsv store { proto = p; code = c; extensible = b; klass = k } =
-  let proto = [horz [text "#proto:"; value p store]] in
-  let code = match c with None -> [] 
-    | Some e -> [horz [text "#code:"; value e store]] in
-  brackets (vert (map (fun x -> squish [x; (text ",")])
-                    (proto@
-                       code@
-                       [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
-                        horz [text "#extensible:"; text (string_of_bool b)]])))
+(* and attrsv store { proto = p; code = c; extensible = b; klass = k } = *)
+(*   let proto = [horz [text "#proto:"; value p store]] in *)
+(*   let code = match c with None -> []  *)
+(*     | Some e -> [horz [text "#code:"; value e store]] in *)
+(*   brackets (vert (map (fun x -> squish [x; (text ",")]) *)
+(*                     (proto@ *)
+(*                        code@ *)
+(*                        [horz [text "#class:"; text ("\"" ^ k ^ "\"")];  *)
+(*                         horz [text "#extensible:"; text (string_of_bool b)]]))) *)
     
-(* TODO: print and parse enum and config *)
-and prop store (f, prop) = match prop with
-  | Data ({value=v; writable=w}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value"; 
-                                                        (* TODO: lookup val in store *)
-                                                        text (Store.print_loc v); text ","; 
-                                                        text "#writable";  
-                                                        text (string_of_bool w);
-                                                        text ",";
-                                                        text "#configurable";
-                                                        text (string_of_bool config)])]
-  | Accessor ({getter=g; setter=s}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                                        text (Store.print_loc g); text ","; 
-                                                        text "#setter";
-                                                        text (Store.print_loc s)])]
+(* (\* TODO: print and parse enum and config *\) *)
+(* and prop store (f, prop) = match prop with *)
+(*   | Data ({value=v; writable=w}, enum, config) -> *)
+(*     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#value";  *)
+(*                                                         (\* TODO: lookup val in store *\) *)
+(*                                                         text (Store.print_loc v); text ",";  *)
+(*                                                         text "#writable";   *)
+(*                                                         text (string_of_bool w); *)
+(*                                                         text ","; *)
+(*                                                         text "#configurable"; *)
+(*                                                         text (string_of_bool config)])] *)
+(*   | Accessor ({getter=g; setter=s}, enum, config) -> *)
+(*     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter"; *)
+(*                                                         text (Store.print_loc g); text ",";  *)
+(*                                                         text "#setter"; *)
+(*                                                         text (Store.print_loc s)])] *)
 ;;
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
 
@@ -171,7 +172,7 @@ let update_dataField o f v = SApp(SId "updateField", [o; f; v])
 
   
   
-let log_z3 = true
+let log_z3 = false
 
 (* communicating with Z3 *)
 

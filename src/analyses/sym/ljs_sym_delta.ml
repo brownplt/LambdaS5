@@ -25,7 +25,9 @@ let typeof ctx v = add_const_str ctx (begin match v with
   | True 
   | False -> "boolean"
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
-    | { attrs = { code = Some cexp }}, _ -> "function"
+    | ConObj { attrs = { code = Some _ }}, _ 
+    | SymObj { attrs = { code = Some _ }}, _ -> "function"
+    | NewSymObj _, _ -> failwith "prim got a NewSymObj"
     | _, _ -> "object"
   end
   | Closure _ -> "lambda"
@@ -129,20 +131,47 @@ let print ctx v =
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
-let object_to_string ctx obj = add_const_str ctx begin
+let rec object_to_string ctx obj = begin
   match obj with
-  | ObjPtr loc -> 
-    let { attrs = {klass = s}}, _ = sto_lookup_obj loc ctx in "[object " ^ s ^ "]"
+  | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
+    | ConObj { attrs = {klass = k_loc} }, ctx
+    | SymObj { attrs = {klass = k_loc} }, ctx ->
+      let (s, ctx) = sto_lookup_val k_loc ctx in 
+      begin match s with
+      | String s -> uncurry return (add_const_str ctx ("[object " ^ s ^ "]"))
+      | SymScalar id -> 
+        (* TODO: add constraint relating id and this result *)
+        uncurry return (add_const_str ctx ("[object " ^ id ^ "]"))
+      | _ -> failwith "Impossible: klass field held a non-string value"
+      end
+    | NewSymObj locs, ctx -> bind (new_sym_obj locs loc "" ctx) 
+      (fun (_, ctx) -> object_to_string ctx obj)
+  end
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
 end
 
-let is_array ctx obj = (begin
+let rec is_array ctx obj = begin
   match obj with
-  | ObjPtr loc -> let { attrs = {klass=k}}, _ = sto_lookup_obj loc ctx in bool (k = "Array")
+  | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
+    | ConObj { attrs = {klass = k_loc} }, ctx
+    | SymObj { attrs = {klass = k_loc} }, ctx ->
+      let (s, ctx) = sto_lookup_val k_loc ctx in 
+      begin match s with
+      | String s -> return (bool (s = "Array")) ctx
+      | SymScalar id -> 
+        let (arrStr, ctx) = const_string "Array" ctx in
+        return True
+         (add_constraint
+            (SAssert (SApp (SId "=", [SId id; SId arrStr]))) ctx)
+      | _ -> failwith "Impossible: klass field held a non-string value"
+      end
+    | NewSymObj locs, ctx -> bind (new_sym_obj locs loc "" ctx) 
+      (fun (_, ctx) -> is_array ctx obj)
+  end
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")
-end, ctx)
+  end
 
 
 let to_int32 ctx v = (begin
@@ -218,31 +247,31 @@ let numstr ctx = function
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "numstr")
 
-let op1 ctx op : value -> value * ctx = match op with
-  | "typeof" -> typeof ctx
-  | "surface-typeof" -> surface_typeof ctx
-  | "primitive?" -> is_primitive ctx
-  | "prim->str" -> prim_to_str ctx
-  | "prim->num" -> prim_to_num ctx
-  | "prim->bool" -> prim_to_bool ctx
-  | "print" -> print ctx
-  | "object-to-string" -> object_to_string ctx
-  | "strlen" -> strlen ctx
-  | "is-array" -> is_array ctx
-  | "to-int32" -> to_int32 ctx
-  | "!" -> nnot ctx
-  | "void" -> void ctx
-  | "floor" -> floor' ctx
-  | "ceil" -> ceil' ctx
-  | "abs" -> absolute ctx
-  | "log" -> log' ctx
-  | "ascii_ntoc" -> ascii_ntoc ctx
-  | "ascii_cton" -> ascii_cton ctx
-  | "to-lower" -> to_lower ctx
-  | "to-upper" -> to_upper ctx
-  | "~" -> bnot ctx
-  | "sin" -> sine ctx
-  | "numstr->num" -> numstr ctx
+let op1 ctx op v : (result list * exresult list) = match op with
+  | "typeof" -> uncurry return (typeof ctx v)
+  | "surface-typeof" -> uncurry return (surface_typeof ctx v)
+  | "primitive?" -> uncurry return (is_primitive ctx v)
+  | "prim->str" -> uncurry return (prim_to_str ctx v)
+  | "prim->num" -> uncurry return (prim_to_num ctx v)
+  | "prim->bool" -> uncurry return (prim_to_bool ctx v)
+  | "print" -> uncurry return (print ctx v)
+  | "object-to-string" -> object_to_string ctx v
+  | "strlen" -> uncurry return (strlen ctx v)
+  | "is-array" -> is_array ctx v
+  | "to-int32" -> uncurry return (to_int32 ctx v)
+  | "!" -> uncurry return (nnot ctx v)
+  | "void" -> uncurry return (void ctx v)
+  | "floor" -> uncurry return (floor' ctx v)
+  | "ceil" -> uncurry return (ceil' ctx v)
+  | "abs" -> uncurry return (absolute ctx v)
+  | "log" -> uncurry return (log' ctx v)
+  | "ascii_ntoc" -> uncurry return (ascii_ntoc ctx v)
+  | "ascii_cton" -> uncurry return (ascii_cton ctx v)
+  | "to-lower" -> uncurry return (to_lower ctx v)
+  | "to-upper" -> uncurry return (to_upper ctx v)
+  | "~" -> uncurry return (bnot ctx v)
+  | "sin" -> uncurry return (sine ctx v)
+  | "numstr->num" -> uncurry return (numstr ctx v)
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 let typeofOp1 op = match op with
   | "NOT" -> (TBool, TBool)
@@ -362,30 +391,6 @@ let abs_eq ctx v1 v2 = (bool begin
 (* TODO: are these all the cases? *)
 end, ctx)
 
-let rec has_property ctx obj field = match obj, field with
-  | ObjPtr loc, String s -> 
-    let { attrs = { proto = pvalue }; conps = props; }, ctx = sto_lookup_obj loc ctx in
-    if (IdMap.mem s props) then (bool true, ctx)
-    else has_property ctx pvalue field
-  (* TODO: handle case when field name is sym? *)
-  | NewSym _, _ | _, NewSym _
-  | SymScalar _, _ 
-  | _, SymScalar _ -> failwith "prim got a symbolic exp"
-  | _ -> (bool false, ctx)
-
-let has_own_property ctx obj field = match obj, field with
-  | ObjPtr loc, String s -> begin
-    let { conps = props; }, ctx = sto_lookup_obj loc ctx in
-    (bool (IdMap.mem s props), ctx)
-  end
-  (* TODO: handle case when field name is sym? *)
-  | ObjPtr loc, _ -> raise (PrimError "has-own-property: field not a string")
-  | _, String s -> raise (PrimError ("has-own-property: obj not an object for field " ^ s))
-  | NewSym _, _ | _, NewSym _
-  | SymScalar _, _ 
-  | _, SymScalar _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "has-own-property: neither an object nor a string")
-
 let base n r = 
   let rec get_digits n l = match n with
     | 97 -> 'a' :: l
@@ -466,50 +471,31 @@ let to_fixed ctx a b = (begin
   | _ -> raise (PrimError "to-fixed didn't get 2 numbers")
 end, ctx)
 
-let rec is_accessor ctx a b = match a, b with
-  | ObjPtr loc, String s ->
-    let { attrs = { proto = pr }; conps = props; }, ctx = sto_lookup_obj loc ctx in
-    if IdMap.mem s props
-    then let prop = IdMap.find s props in
-         match prop with
-         | Data _ -> (False, ctx)
-         | Accessor _ -> (True, ctx)
-    else is_accessor ctx pr b
-  | Null, String s -> raise (PrimError "isAccessor topped out")
-  | NewSym _, _ | _, NewSym _
-  | SymScalar _, _ 
-  (* TODO handle symbolic field names? *)
-  | _, SymScalar _ -> failwith "prim got a symbolic exp"
-  | _ -> raise (PrimError "isAccessor")
-
-let op2 ctx op = match op with
-  | "+" -> arith_sum ctx
-  | "-" -> arith_sub ctx
-  | "/" -> arith_div ctx
-  | "*" -> arith_mul ctx
-  | "%" -> arith_mod ctx
-  | "&" -> bitwise_and ctx
-  | "|" -> bitwise_or ctx
-  | "^" -> bitwise_xor ctx
-  | "<<" -> bitwise_shiftl ctx
-  | ">>" -> bitwise_shiftr ctx
-  | ">>>" -> bitwise_zfshiftr ctx
-  | "<" -> arith_lt ctx
-  | "<=" -> arith_le ctx
-  | ">" -> arith_gt ctx
-  | ">=" -> arith_ge ctx
-  | "stx=" -> stx_eq ctx
-  | "abs=" -> abs_eq ctx
-  | "hasProperty" -> has_property ctx
-  | "hasOwnProperty" -> has_own_property ctx
-  | "string+" -> string_plus ctx
-  | "string<" -> string_lessthan ctx
-  | "base" -> get_base ctx
-  | "char-at" -> char_at ctx
-  | "locale-compare" -> locale_compare ctx
-  | "pow" -> pow ctx
-  | "to-fixed" -> to_fixed ctx
-  | "isAccessor" -> is_accessor ctx
+let op2 ctx op a b = match op with
+  | "+" -> arith_sum ctx a b
+  | "-" -> arith_sub ctx a b
+  | "/" -> arith_div ctx a b
+  | "*" -> arith_mul ctx a b
+  | "%" -> arith_mod ctx a b
+  | "&" -> bitwise_and ctx a b
+  | "|" -> bitwise_or ctx a b
+  | "^" -> bitwise_xor ctx a b
+  | "<<" -> bitwise_shiftl ctx a b
+  | ">>" -> bitwise_shiftr ctx a b
+  | ">>>" -> bitwise_zfshiftr ctx a b
+  | "<" -> arith_lt ctx a b
+  | "<=" -> arith_le ctx a b
+  | ">" -> arith_gt ctx a b
+  | ">=" -> arith_ge ctx a b
+  | "stx=" -> stx_eq ctx a b
+  | "abs=" -> abs_eq ctx a b
+  | "string+" -> string_plus ctx a b
+  | "string<" -> string_lessthan ctx a b
+  | "base" -> get_base ctx a b
+  | "char-at" -> char_at ctx a b
+  | "locale-compare" -> locale_compare ctx a b
+  | "pow" -> pow ctx a b
+  | "to-fixed" -> to_fixed ctx a b
   | _ -> failwith ("no implementation of binary operator: " ^ op)
 let typeofOp2 op = match op with
   | "get_field" -> (TObj, TString, TAny)

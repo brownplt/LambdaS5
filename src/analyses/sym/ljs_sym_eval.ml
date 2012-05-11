@@ -1,4 +1,5 @@
 open Prelude
+open Unix
 module S = Ljs_syntax
 open Format
 open Ljs
@@ -6,7 +7,6 @@ open Ljs_sym_values
 open Ljs_sym_delta
 open Ljs_sym_z3
 open Ljs_pretty
-open Unix
 open SpiderMonkey
 open Exprjs_to_ljs
 open Js_to_exprjs
@@ -14,30 +14,6 @@ open Str
 
 (* flag for debugging *)
 let print_store = true
-
-(* monad *)
-let return v (pc : ctx) = ([(v,pc)], [])
-let throw v (pc : ctx) = ([], [(v, pc)])
-let also_return v pc (rets,exns) = ((v,pc)::rets,exns)
-let also_throw v pc (rets,exns) = (rets,(v,pc)::exns)
-let combine (r1,e1) (r2,e2) = (List.rev_append r1 r2, List.rev_append e1 e2)
-let none = ([],[])
-
-(* usually, the types are
-   bind_both ((ret : result list), (exn : exresult list)) 
-   (f : result -> (result list * exresult list))
-   (g : exresult -> (result list * exresult list)) 
-   : (result list * exresult list)
-   but in fact the function is slightly more polymorphic than that *)
-let bind_both (ret, exn) f g =
-  let f_ret = List.map f ret in
-  let g_exn = List.map g exn in
-  List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
-    (List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
-       none f_ret)
-    g_exn
-let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
-let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
@@ -83,28 +59,37 @@ let set_sym_props o sym_props = { o with symps = sym_props }
 (* EUpdateField-Add *)
 (* ES5 8.12.5, step 6 *)
 
-let set_prop o f prop = match f with
-  | SymField f -> set_sym_props o (IdMap.add f prop (get_sym_props o))
-  | ConField f -> set_con_props o (IdMap.add f prop (get_con_props o))
+let rec set_prop loc o f prop pc = 
+  match o, f with
+  | SymObj o, SymField f -> return (SymObj (set_sym_props o (IdMap.add f prop (get_sym_props o)))) pc
+  | SymObj o, ConField f -> return (SymObj (set_con_props o (IdMap.add f prop (get_con_props o)))) pc
+  | ConObj o, SymField f -> return (ConObj (set_sym_props o (IdMap.add f prop (get_sym_props o)))) pc
+  | ConObj o, ConField f -> return (ConObj (set_con_props o (IdMap.add f prop (get_con_props o)))) pc
+  | NewSymObj locs, _ -> bind (new_sym_obj locs loc "" pc) (fun (o, pc) -> set_prop loc o f prop pc)
 
 let get_prop o f = match f with 
   | SymField f -> IdMap.find f (get_sym_props o)
   | ConField f -> IdMap.find f (get_con_props o)
 
-let add_field_helper force obj_loc field newval pc = 
+let rec add_field_helper force obj_loc field newval pc = 
   match sto_lookup_obj obj_loc pc with
-  | { attrs = { extensible = ext; }} as o, pc ->
+  | ((SymObj { attrs = { extensible = ext; }}) as o), pc
+  | ((ConObj { attrs = { extensible = ext; }}) as o), pc ->
     if not (force || ext) then return (field, None, Undefined) pc else
       let vloc, pc = sto_alloc_val newval pc in
+      (* TODO : Create Accessor fields! *)
       let new_prop = (Data ({ value = vloc; writable = true; }, true, true)) in
-      let newO = set_prop o field new_prop in
-      return (field, Some new_prop, newval) (sto_update_obj obj_loc newO pc)
-  (*| _, _ -> return Undefined pc [> TODO: Check error in case of non-extensible <]*)
-  (* | Value _, _ -> failwith "[interp][add_field] Somehow storing a Value through an ObjPtr" *)
+      bind (set_prop obj_loc o field new_prop pc)
+        (fun (newO, pc) -> 
+          return (field, Some new_prop, newval) (sto_update_obj obj_loc newO pc))
+  | NewSymObj locs, pc -> bind (new_sym_obj locs obj_loc "" pc)
+    (fun (newO, pc) -> 
+      add_field_helper force obj_loc field newval pc)
+  (* [> TODO: Check error in case of non-extensible <]*)
 
 
 
-let add_field loc field v pc = bind (add_field_helper true loc field v pc)
+let add_field loc field v pc = bind (add_field_helper false loc field v pc)
   (fun ((_, _, v), pc) -> return v pc)
 
 let add_field_force loc field v pc = bind (add_field_helper true loc field v pc)
@@ -294,12 +279,15 @@ let check_field field pc =
  * if Null then None
  * if some ObjPtr then lookup 
 *)
-let rec sym_get_prop p pc obj_ptr field =
+let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
   match obj_ptr with
     | NewSym (id, locs) -> failwith "Impossible"
+    | SymScalar id -> 
+      return (field, None)
+        (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
     | Null -> return (field, None) pc
-    | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
-      | { symbolic = is_sym; attrs = { proto = protov; }; conps = conps; symps = symps} as objv, pc -> 
+    | ObjPtr obj_loc -> 
+      let helper is_sym ({ attrs = { proto = ploc; }; conps = conps; symps = symps} as objv) pc =
         let potential_props = begin
           try return (field, Some (get_prop objv field)) pc
           with Not_found -> 
@@ -331,8 +319,12 @@ let rec sym_get_prop p pc obj_ptr field =
             let none_pc = IdMap.fold (not_equal_to_any_of (fun f -> ConField f)) conps none_pc in
             let none_branch = 
               if is_sat none_pc then
-                bind (branch_sym (protov, none_pc)) 
-                  (fun (protov, pc) -> sym_get_prop p pc protov field) 
+                (if check_proto && ad_hoc_proto_depth > 0 then
+                  let (protov, none_pc) = sto_lookup_val ploc none_pc in
+                  bind (branch_sym (protov, none_pc)) 
+                    (fun (protov, pc) ->
+                      sym_get_prop_helper check_proto (ad_hoc_proto_depth - 1) p pc protov field) 
+                else return (field, None) pc)
               else none in
             combine none_branch branches
         end in
@@ -343,18 +335,26 @@ let rec sym_get_prop p pc obj_ptr field =
              * if we're symbolic, then the property *might* have been on us, 
              * or it might never have existed, so return both None and the new prop *)
             if is_sym 
-            then
+            then begin
               let (symv, pc) = new_sym ("get_field at " ^
                                            (string_of_position p)) pc in
               also_return (field, None) pc (add_field_force obj_loc field symv pc)
-            else return (field, None) pc
+            end else return (field, None) pc
           | Some p -> return (field, prop) pc)
-    end
+      in begin match sto_lookup_obj obj_loc pc with
+      | ConObj o, pc -> helper false o pc
+      | SymObj o, pc -> helper true o pc
+      | NewSymObj locs, pc ->
+        bind (new_sym_obj locs obj_loc "" pc) 
+          (fun (newO, pc) ->
+            sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field)
+      end
     | _ -> throw (Throw (String (interp_error p 
            "get_prop on a non-object.  The expression was (get-prop " 
          ^ Ljs_sym_pretty.val_to_string obj_ptr
          ^ " " ^ fst (field_str field pc) ^ ")"))) pc
-
+let sym_get_prop = sym_get_prop_helper true 3
+let sym_get_own_prop = sym_get_prop_helper false 3
 
 let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
@@ -420,8 +420,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc''')
               | _ -> 
                 try
-                  let (ret, pc'') = op1 pc' op e_val in
-                  return ret pc''
+                  op1 pc' op e_val
                 with PrimError msg -> throw (Throw (String msg)) pc'
             with TypeError _ -> none)
           
@@ -450,10 +449,29 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   with TypeError id -> none 
                 end
                 | _ ->
-                  try
-                    let (ret, pc''') = op2 pc'' op e1_val e2_val in
-                    return ret pc'''
-                  with PrimError msg -> throw (Throw (String msg)) pc''))
+                  begin match op with
+                  | "hasProperty" -> 
+                    bind (check_field e2_val pc'')
+                      (fun (field, pc) ->
+                        bind (sym_get_prop p pc e1_val field)
+                          (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
+                  | "hasOwnProperty" ->
+                    bind (check_field e2_val pc'')
+                      (fun (field, pc) ->
+                        bind (sym_get_own_prop p pc e1_val field)
+                          (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
+                  | "isAccessor" ->
+                    bind (check_field e2_val pc'')
+                      (fun (field, pc) ->
+                        bind (sym_get_prop p pc e1_val field)
+                          (fun ((_, prop), ctx) -> 
+                            return (bool (match prop with Some (Accessor _) -> true | _ -> false)) ctx))
+                  | _ -> 
+                    try
+                      let (ret, pc''') = op2 pc'' op e1_val e2_val in
+                      return ret pc'''
+                    with PrimError msg -> throw (Throw (String msg)) pc''
+                  end))
           
       | S.If (p, c, t, f) ->
         bind 
@@ -547,25 +565,31 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             S.extensible = ext;
             S.klass = kls; } ->
 
-          let opt_lift (results, exns) = (map (fun (v, pc) -> (Some v, pc)) results, exns) in
+          let opt_lift ctxs = 
+            bind ctxs
+              (fun (v, pc) -> 
+                let (vloc, pc) = sto_alloc_val v pc in
+                return (Some vloc) pc) in
           bind
             (match valexp with
             | None -> return None pc
             | Some vexp -> opt_lift (eval vexp env pc))
-            (fun (v, pc_v) ->
+            (fun (vloc, pc_v) ->
               bind
                 (match protoexp with
                 | None -> return Undefined pc_v
                 | Some pexp -> eval_sym pexp env pc_v)
                 (fun (p, pc_p) ->
+                  let (ploc, pc_p) = sto_alloc_val p pc_p in
                   bind
                     (match codexp with
                     | None -> return None pc_p
                     | Some cexp -> opt_lift (eval cexp env pc_p))
-                    (fun (c, pc_c) ->
+                    (fun (cloc, pc_c) ->
+                      let (klsloc, pc_c) = sto_alloc_val (String kls) pc_c in
                       let attrsv =
-                        { primval = v; proto = p; code = c;
-                          extensible = ext; klass = kls }
+                        { primval = vloc; proto = ploc; code = cloc;
+                          extensible = ext; klass = klsloc }
                       in
                       let eval_prop prop pc = match prop with
                         | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
@@ -596,8 +620,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                           ([(IdMap.empty, pc_c)], []) props in
                       bind propvs_pcs
                         (fun (propvs, pc_psv) -> 
-                          let objv = { symbolic = false; attrs = attrsv;
-                                       conps = propvs; symps = IdMap.empty; } in
+                          let objv = ConObj { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
                           let (loc, pc_obj) = sto_alloc_obj objv pc_psv in
                           return (ObjPtr loc) pc_obj))))
       end
@@ -727,9 +750,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           match prop with
           | Some (Data ({ writable = true; }, enum, config)) ->
             let vloc, pc = sto_alloc_val newval pc in
-            let newO = set_prop objv f (Data ({ value = vloc; writable = true }, enum, config)) in
-            let (z3field, pc') = field_str f pc in
-            return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc') 
+            bind (set_prop obj_loc objv f (Data ({ value = vloc; writable = true }, enum, config)) pc)
+              (fun (newO, pc) ->
+                let (z3field, pc') = field_str f pc in
+                return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc')) 
           (* TODO what's this?? probably don't need the prev line either *)
           | Some (Accessor ({ setter = sloc; }, _, _)) ->
             let s, pc = sto_lookup_val sloc pc in
@@ -893,14 +917,18 @@ let rec eval_expr expr jsonPath maxDepth pc =
       let err_msg = 
         match v with
         | ObjPtr loc -> begin
-          let { conps = props }, pc = sto_lookup_obj loc pc in
-          try
-            match IdMap.find "message" props with
-            | Data ({ value = msg_val_loc; }, _, _) ->
-              let msg_val, pc = sto_lookup_val msg_val_loc pc in
-              (Ljs_sym_pretty.val_to_string msg_val)
-            | _ -> (Ljs_sym_pretty.val_to_string v)
-          with Not_found -> (Ljs_sym_pretty.val_to_string v)
+          match sto_lookup_obj loc pc with
+          | ConObj { conps = props }, pc 
+          | SymObj { conps = props }, pc -> begin
+            try
+              match IdMap.find "message" props with
+              | Data ({ value = msg_val_loc; }, _, _) ->
+                let msg_val, pc = sto_lookup_val msg_val_loc pc in
+                (Ljs_sym_pretty.val_to_string msg_val)
+              | _ -> (Ljs_sym_pretty.val_to_string v)
+            with Not_found -> (Ljs_sym_pretty.val_to_string v)
+          end
+          | NewSymObj locs, pc -> "Threw a NewSymObj -- what were you thinking??"
         end
         | v -> (Ljs_sym_pretty.val_to_string v) in
       throw (str ("Uncaught exception: " ^ err_msg)) pc

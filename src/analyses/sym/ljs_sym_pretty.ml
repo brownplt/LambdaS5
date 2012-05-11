@@ -29,8 +29,11 @@ let rec value v =
                                brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
                                  
 
-and obj { symbolic = sym; attrs = attrsv; conps = conpsv; symps = sympsv; } = 
-  let prefix = if sym then "@sym" else "@" in
+and obj o = match o with
+  | NewSymObj locs -> horz [text "NewSymObj"; brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
+  | SymObj f -> helper f "@sym"
+  | ConObj f -> helper f "@"
+and helper { attrs = attrsv; conps = conpsv; symps = sympsv; } prefix = 
   if IdMap.is_empty conpsv && IdMap.is_empty sympsv 
   then squish [text prefix; braces (attrs attrsv)]
   else 
@@ -44,13 +47,13 @@ and obj { symbolic = sym; attrs = attrsv; conps = conpsv; symps = sympsv; } =
 
 
 and attrs { proto = p; code = c; extensible = b; klass = k } =
-  let proto = [horz [text "#proto:"; value p]] in
+  let proto = [horz [text "#proto:"; text (Store.print_loc p)]] in
   let code = match c with None -> [] 
-    | Some e -> [horz [text "#code:"; value e]] in
+    | Some e -> [horz [text "#code:"; text (Store.print_loc e)]] in
   brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
                           (proto@
                              code@
-                             [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
+                             [horz [text "#class:"; text (Store.print_loc k)]; 
                               horz [text "#extensible:"; text (string_of_bool b)]])))
 
 (* TODO: print and parse enum and config *)
@@ -103,6 +106,7 @@ and uncastFn t e = match t with
 
 and exp e = 
   match e with
+  | Hint s -> horz [text ";;"; text s]
   | Concrete v -> value v
   | STime t -> horz[text "time:"; int t]
   | SLoc l -> horz[text "&"; text (Store.print_loc l)]
