@@ -42,6 +42,8 @@ type value =
 and objlit =
   | ConObj of objfields
   | SymObj of objfields
+  (* Placeholder for uninitialized sym objects
+   * Holds the locs of all objects in the store when it was created *)
   | NewSymObj of Store.loc list
 and objfields = { attrs: attrsv;
                   conps: propv IdMap.t; (* props with concrete field names *)
@@ -282,25 +284,29 @@ let new_sym_scalar name hint_s pc =
   let (sym_id, pc) = fresh_var name TAny hint_s pc in
   let (sym_loc, pc) = sto_alloc_val (SymScalar sym_id) pc in
   (sym_loc, pc)
+
 let new_opt_sym_val name hint_s pc =
   let (symval, pc') = (new_sym_scalar name hint_s pc) in
   combine (return (Some symval) (hint ("Some " ^ hint_s) pc')) none (* (return None pc) *)
+
 let new_sym_helper locs hint pc = 
   let (sym_id, pc) = fresh_var "" TAny hint pc in
   let (new_loc, pc) = sto_alloc_obj (NewSymObj locs) pc in
-  (* Get locs of all objects in the store so we can branch
-   * once we know the type of this sym value -- 
-   * including the just-allocated location *)
+  (* include the just-allocated location *)
   (NewSym (sym_id, new_loc::locs), pc)
+
 let new_sym hint pc = 
+  (* Get locs of all objects in the store so we can branch
+   * once we know the type of this sym value *)
   new_sym_helper (map fst (Store.bindings pc.store.objs)) hint pc
+
 let new_sym_obj existing_locs loc hint_s pc =
   (* Create a new symbolic object, and add it to the store.
    * This will account for the possibility that the new sym is a
    * pointer pointing to an unknown symbolic object. *)
   bind (new_opt_sym_val "code" "code field" pc)
     (fun (code_loc, pc) ->
-      bind (combine (return true (hint "extensible = true" pc)) none (* (return false pc) *))
+      bind (combine (return true (hint "extensible = true" pc)) (return false pc))
         (fun (extensible, pc) ->
           let (klass_loc, pc) = new_sym_scalar "klass" "klass attr" pc in
           let pc = hint ("new klass at " ^ Store.print_loc klass_loc) pc in

@@ -1,6 +1,6 @@
-// 4, 4, 4, 4, 4, 4
+// 4, 4, 4, 4, 4
 // either o = obj1, o = obj2, o = obj3, or o = new sym obj
-// if o = new sym obj, then either x found or not found twice
+// if o = new sym obj, then either x found or not found on set
 let (obj1 = {[#proto: null,]
     "x": {#value 1, #writable true}
 })

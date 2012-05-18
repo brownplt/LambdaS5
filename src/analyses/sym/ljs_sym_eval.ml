@@ -12,6 +12,8 @@ open Exprjs_to_ljs
 open Js_to_exprjs
 open Str
 
+let max_proto_depth = 1
+
 (* flag for debugging *)
 let print_store = true
 
@@ -282,7 +284,7 @@ let check_field field pc =
 let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
   match obj_ptr with
     | NewSym (id, locs) -> failwith "Impossible"
-    | SymScalar id -> 
+    | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
       return (field, None)
         (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
     | Null -> return (field, None) pc
@@ -353,8 +355,8 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
            "get_prop on a non-object.  The expression was (get-prop " 
          ^ Ljs_sym_pretty.val_to_string obj_ptr
          ^ " " ^ fst (field_str field pc) ^ ")"))) pc
-let sym_get_prop = sym_get_prop_helper true 3
-let sym_get_own_prop = sym_get_prop_helper false 3
+let sym_get_prop = sym_get_prop_helper true max_proto_depth
+let sym_get_own_prop = sym_get_prop_helper false max_proto_depth
 
 let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
@@ -774,6 +776,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                              bind (sym_get_prop p pc' obj_ptrv fv)
                                (fun ((field, prop), pc') -> 
                                  match obj_ptrv with
+                                 | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
                                  | Null -> return Undefined pc'
                                  | ObjPtr obj_loc -> update_prop obj_loc field prop vv [obj_ptrv; argvs] pc'
                                  | _ -> failwith "Impossible -- should be an ObjPtr")))))))
