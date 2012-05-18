@@ -15,7 +15,7 @@ open Str
 let max_proto_depth = 0
 
 (* flag for debugging *)
-let print_store = true
+let print_store = false
 
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
@@ -106,6 +106,15 @@ let add_field_force loc field v pc = bind (add_field_helper true loc field v pc)
 (*   | Data ({ writable = false; }, _, _) -> true *)
 (*   | _ -> false *)
 
+let get_obj_attr attrs attr pc = match attrs, attr with
+  | { proto=ploc }, S.Proto -> sto_lookup_val ploc pc
+  | { extensible=extensible} , S.Extensible -> (bool extensible, pc)
+  | { code=Some cloc}, S.Code -> sto_lookup_val cloc pc
+  | { code=None}, S.Code -> (Null, pc)
+  | { primval=Some pvloc}, S.Primval -> sto_lookup_val pvloc pc
+  | { primval=None}, S.Primval ->
+    failwith "[interp] Got Primval attr of None"
+  | { klass=kloc }, S.Klass -> sto_lookup_val kloc pc
 
 (* Gets an attr of a prop of an object *)
 (*let get_attr attr props field pc = *)
@@ -661,7 +670,19 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                              | _ -> failwith "Impossible -- should be an ObjPtr"))))))
                   
 
-      | S.GetObjAttr _ -> failwith "[sym_eval] GetObjAttr NYI"
+      | S.GetObjAttr (p, oattr, obj_ptr) -> 
+        bind (eval_sym obj_ptr env pc)
+          (fun (obj_ptrv, pc') -> 
+            match obj_ptrv with
+            | SymScalar _ (* TODO assert SymScalar is null *) 
+            | Null -> return Undefined pc'
+            | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc' with
+              | ConObj { attrs = attrs }, pc'
+              | SymObj { attrs = attrs }, pc' -> uncurry return (get_obj_attr attrs oattr pc')
+              | NewSymObj _, _ -> failwith "Impossible!" 
+            end
+            | _ -> throw (Throw (String "GetObjAttr given non-object")) pc')
+
       | S.SetObjAttr _ -> failwith "[sym_eval] SetObjAttr NYI"
  
       (* Invariant on the concrete and symbolic field maps in an object:
