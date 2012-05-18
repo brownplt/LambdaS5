@@ -54,11 +54,12 @@ and
              extensible : bool;
              klass : Store.loc;
              primval : Store.loc option; }
-and
-  propv = 
+and (* Each prop has three attrs: value/accessor, enum, config *)
+  propv =
   | Data of datav * bool * bool
   | Accessor of accessorv * bool * bool
-(* Properties hold the location of their values in the value store *)
+(* Properties hold the location of their values in the value store.
+ * Data props also have annother attr: writable *)
 and datav = { value : Store.loc; writable : bool; }
 and accessorv = { getter : Store.loc; setter : Store.loc; }
    
