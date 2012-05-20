@@ -12,4 +12,4 @@ fi
 ocamlrun ../obj/s5.d.byte -desugar $TMP.ast -print es5 \
         -json ../src/desugar.sh -env ../envs/es5.env \
         -eval
-rm $TMP.ast
+#rm $TMP.ast
