@@ -1,0 +1,7 @@
+Checkout the SES sources here.
+
+The file we're interested in for evaluation is
+
+es-lab-read-only/src/ses/initSESPlus.js
+
+But we may end up tackling others.
