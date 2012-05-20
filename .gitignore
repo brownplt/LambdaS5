@@ -9,6 +9,7 @@ tests/unit-tests/*.swp
 src/*.swp
 tests/test262/test262/
 tests/test262/results*
+tests/ses/es-lab-read-only/
 
 build/
 *~

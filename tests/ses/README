@@ -2,6 +2,9 @@ Checkout the SES sources here.
 
 The file we're interested in for evaluation is
 
-es-lab-read-only/src/ses/initSESPlus.js
+es-lab-test/ses/initSESPlus.js
 
-But we may end up tackling others.
+But we may end up tackling others.  To get all of SES:
+
+svn checkout http://es-lab.googlecode.com/svn/trunk/ es-lab-read-only
+
