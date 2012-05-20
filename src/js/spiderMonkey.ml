@@ -96,8 +96,9 @@ let rec stmt (v : json_type) : stmt =
          handlers are Spidermonkey-specific.  JS only specifies one
          or zero catch blocks. *)
       (match (list (get "handlers" v)) with
-        | handler::_ -> catch handler
-        | [] -> None),
+        | [] -> None
+        | [handler] -> catch handler
+        | _ -> pos_error v "More than one catch handler provided"),
       maybe block (get "finalizer" v))
     | "While" -> While (p, expr (get "test" v), stmt (get "body" v))
     | "DoWhile" -> DoWhile (p, stmt (get "body" v), expr (get "test" v))
