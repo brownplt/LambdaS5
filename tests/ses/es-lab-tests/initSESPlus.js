@@ -974,8 +974,7 @@ var ses;
    * <p>This kludge is safety preserving.
    */
   function test_REGEXP_TEST_EXEC_UNSAFE() {
-// CHEATING(jpolitz):
-//    (/foo/).test('xfoox');
+    (/foo/).test('xfoox');
     var match = new RegExp('(.|\r|\n)*','').exec()[0];
     if (match === 'undefined') { return false; }
     if (match === 'xfoox') { return true; }
@@ -1172,8 +1171,7 @@ var ses;
   function test_NEEDS_DUMMY_SETTER() {
     if (NEEDS_DUMMY_SETTER_repaired) { return false; }
     if (typeof navigator === 'undefined') { return false; }
-// CHEATING(jpolitz)
-//    var ChromeMajorVersionPattern = (/Chrome\/(\d*)\./);
+    var ChromeMajorVersionPattern = (/Chrome\/(\d*)\./);
     var match = ChromeMajorVersionPattern.exec(navigator.userAgent);
     if (!match) { return false; }
     var ver = +match[1];
@@ -1287,8 +1285,7 @@ var ses;
   function test_REPLACE_LEAKS_GLOBAL() {
     var that = 'dummy';
     function capture() { that = this; return 'y';}
-// CHEATING(jpolitz)
-//    'x'.replace(/x/, capture);
+    'x'.replace(/x/, capture);
     if (that === void 0) { return false; }
     if (that === capture) {
       // This case happens on IE10preview2. See
@@ -2614,8 +2611,7 @@ var ses;
       // This turns an undefined radix into a NaN but is ok since NaN
       // is treated as undefined by badParseInt
       radix = +radix;
-// CHEATING(jpolitz)
-//      var isHexOrOctal = /^\s*[+-]?\s*0(x?)/.exec(n);
+      var isHexOrOctal = /^\s*[+-]?\s*0(x?)/.exec(n);
       var isOct = isHexOrOctal ? isHexOrOctal[1] !== 'x' : false;
 
       if (isOct && (radix !== radix || 0 === radix)) {
@@ -3911,8 +3907,7 @@ var ses;
 
    } else if (new Error().stack) {
      (function() {
-// CHEATING(jpolitz)
-//       var FFFramePattern = (/^([^@]*)@(.*?):?(\d*)$/);
+       var FFFramePattern = (/^([^@]*)@(.*?):?(\d*)$/);
 
        // stacktracejs.org suggests that this indicates FF. Really?
        function getCWStack(err) {
@@ -4556,14 +4551,10 @@ var ses;
    * <p>This is only a temporary development hack. TODO(erights): fix.
    */
   function LIMIT_SRC(programSrc) {
-// CHEATING(jpolitz)
-//    if ((/[^\u0000-\u007f]/).test(programSrc)) {
-    if(true) {
+    if ((/[^\u0000-\u007f]/).test(programSrc)) {
       throw new EvalError('Non-ascii text not yet supported');
     }
-// CHEATING(jpolitz)
-//    if ((/\\u/).test(programSrc)) {
-    if(true) {
+    if ((/\\u/).test(programSrc)) {
       throw new EvalError('Backslash-u escape encoded text not yet supported');
     }
   }
@@ -4581,10 +4572,7 @@ var ses;
    *
    * <p>This is only a temporary development hack. TODO(erights): fix.
    */
-  function SHOULD_MATCH_IDENTIFIER() {
-// CHEATING(jpolitz)
-// return (/(\w|\$)+/g);
-}
+  function SHOULD_MATCH_IDENTIFIER() { return (/(\w|\$)+/g); }
 
 
   //////////////// END KLUDGE SWITCHES ///////////
@@ -5259,14 +5247,12 @@ ses.startSES = function(global,
     }
 
 
-// CHEATING(jpolitz)
-//    var directivePattern = (/^['"](?:\w|\s)*['"]$/m);
+    var directivePattern = (/^['"](?:\w|\s)*['"]$/m);
 
     /**
      * A stereotyped form of the CommonJS require statement.
      */
-// CHEATING(jpolitz)
-//    var requirePattern = (/^(?:\w*\s*(?:\w|\$|\.)*\s*=)?\s*require\s*\(\s*['"]((?:\w|\$|\.|\/)+)['"]\s*\)$/m);
+    var requirePattern = (/^(?:\w*\s*(?:\w|\$|\.)*\s*=)?\s*require\s*\(\s*['"]((?:\w|\$|\.|\/)+)['"]\s*\)$/m);
 
     /**
      * As an experiment, recognize a stereotyped prelude of the
