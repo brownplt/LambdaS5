@@ -2,6 +2,7 @@
 open Prelude
 open Json_type
 open Js_syntax
+open Printf
 
 let mk_pos (v : json_type) : Prelude.pos = 
   let jstart = get "start" v in
@@ -18,6 +19,16 @@ let mk_pos (v : json_type) : Prelude.pos =
   } in
   (json_pos_to_prelude_pos jstart, json_pos_to_prelude_pos jend)
 
+let pos_error expr msg = 
+  let string_of_pos p =
+    sprintf "[%s]: Line %d, Col %d - Line %d, Col %d"
+      (fst p).Lexing.pos_fname
+      (fst p).Lexing.pos_lnum
+      (fst p).Lexing.pos_bol
+      (snd p).Lexing.pos_lnum
+      (snd p).Lexing.pos_bol in
+  failwith ((string_of_pos (mk_pos (get "loc" expr))) ^ ":\n" ^ msg)
+
 let maybe (f : json_type -> 'a) (v : json_type) : 'a option =
   match Json_type.is_null v with
     | true -> None
@@ -31,11 +42,12 @@ let literal (v : json_type) : lit = match string (get "type" v) with
   | "Literal" -> begin match get "value" v with
       | Json_type.Null -> Js_syntax.Null
       | Json_type.Bool b -> Js_syntax.Bool b
-      | Float f -> Num f
-      | Int n -> Num (float_of_int n)
-      | String s -> Str s
+      | Json_type.Float f -> Num f
+      | Json_type.Int n -> Num (float_of_int n)
+      | Json_type.String s -> Str s
       | Json_type.Object [("re_lit", String re_val)] -> Regexp re_val
-      | x -> failwith "unexpected literal"
+      | Json_type.Array _ -> pos_error v "Bad/unexpected array literal"
+      | Json_type.Object _ -> pos_error v "Bad/unexpected object literal"
   end
   | typ -> failwith (sprintf "expected Literal, got %s as type" typ)
 
