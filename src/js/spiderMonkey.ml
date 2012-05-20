@@ -92,8 +92,13 @@ let rec stmt (v : json_type) : stmt =
     | "Return" -> Return (p, maybe expr (get "argument" v))
     | "Throw" -> Throw (p, expr (get "argument" v))
     | "Try" -> Try (p, block (get "block" v),
-		    catch (get "handler" v),
-		    maybe block (get "finalizer" v))
+      (* NOTE(jpolitz): We simply take the first handler --- multiple 
+         handlers are Spidermonkey-specific.  JS only specifies one
+         or zero catch blocks. *)
+      (match (list (get "handlers" v)) with
+        | handler::_ -> catch handler
+        | [] -> None),
+      maybe block (get "finalizer" v))
     | "While" -> While (p, expr (get "test" v), stmt (get "body" v))
     | "DoWhile" -> DoWhile (p, stmt (get "body" v), expr (get "test" v))
     | "For" -> 
