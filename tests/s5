@@ -2,8 +2,7 @@
 
 TMP=`mktemp -t js.XXXXXX`
 if [ $# -eq 0 ]; then
-  read -d \0 JS
-  echo $JS > $TMP
+  cat>$TMP
 else
   echo $1 > $TMP
 fi
