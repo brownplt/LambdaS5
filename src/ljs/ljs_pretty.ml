@@ -114,3 +114,9 @@ and prop (f, prop) = match prop with
                                           horz[text "#setter";
                                                exp s]])]
 
+let stack_trace exprs =
+  vert (map (fun expr -> text (string_of_position (pos_of expr))) exprs)
+
+let string_stack_trace =
+  FormatExt.to_string stack_trace
+

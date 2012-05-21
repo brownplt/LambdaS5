@@ -54,8 +54,8 @@ let add_var (objs, vars) new_val =
 type env = Store.loc IdMap.t
 type label = string
 
-exception Break of pos * label * value * store
-exception Throw of pos * value * store
+exception Break of exp list * label * value * store
+exception Throw of exp list * value * store
 
 let pretty_value v = match v with 
   | Num d -> string_of_float d
