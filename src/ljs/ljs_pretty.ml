@@ -115,7 +115,10 @@ and prop (f, prop) = match prop with
                                                exp s]])]
 
 let stack_trace exprs =
-  vert (map (fun expr -> text (string_of_position (pos_of expr))) exprs)
+  let filtered = List.filter (fun expr ->
+    (fst (pos_of expr)) != Lexing.dummy_pos &&
+    (snd (pos_of expr)) != Lexing.dummy_pos) exprs in
+  vert (map (fun expr -> text (string_of_position (pos_of expr))) filtered)
 
 let string_stack_trace =
   FormatExt.to_string stack_trace
