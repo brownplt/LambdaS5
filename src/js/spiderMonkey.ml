@@ -19,15 +19,9 @@ let mk_pos (v : json_type) : Prelude.pos =
   } in
   (json_pos_to_prelude_pos jstart, json_pos_to_prelude_pos jend)
 
+
 let pos_error expr msg = 
-  let string_of_pos p =
-    sprintf "[%s]: Line %d, Col %d - Line %d, Col %d"
-      (fst p).Lexing.pos_fname
-      (fst p).Lexing.pos_lnum
-      (fst p).Lexing.pos_bol
-      (snd p).Lexing.pos_lnum
-      (snd p).Lexing.pos_bol in
-  failwith ((string_of_pos (mk_pos (get "loc" expr))) ^ ":\n" ^ msg)
+  failwith ((Pos.string_of_pos (mk_pos (get "loc" expr))) ^ ":\n" ^ msg)
 
 let maybe (f : json_type -> 'a) (v : json_type) : 'a option =
   match Json_type.is_null v with

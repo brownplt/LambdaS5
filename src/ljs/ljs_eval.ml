@@ -439,17 +439,17 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       begin
         try
           eval e env store
-        with Break (l', v, store) ->
+        with Break (_, l', v, store) ->
           if l = l' then (v, store)
-          else raise (Break (l', v, store))
+          else raise (Break (p, l', v, store))
       end
   | S.Break (p, l, e) ->
       let v, store = eval e env store in
-      raise (Break (l, v, store))
+      raise (Break (p, l, v, store))
   | S.TryCatch (p, body, catch) -> begin
       try
         eval body env store
-      with Throw (v, store) ->
+      with Throw (_, v, store) ->
         let catchv, store = eval catch env store in
         apply p store catchv [v]
     end
@@ -458,15 +458,15 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         let (_, store) = eval body env store in
         eval fin env store
       with
-        | Throw (v, store) ->
+        | Throw (p, v, store) ->
           let (_, store) = eval fin env store in
-          raise (Throw (v, store))
-        | Break (l, v, store) ->
+          raise (Throw (p, v, store))
+        | Break (p, l, v, store) ->
           let (_, store) = eval fin env store in
-          raise (Break (l, v, store))
+          raise (Break (p, l, v, store))
       end
   | S.Throw (p, e) -> let (v, s) = eval e env store in
-    raise (Throw (v, s))
+    raise (Throw (p, v, s))
   | S.Lambda (p, xs, e) -> 
     let alloc_arg argval argname (store, env) =
       let (new_loc, store) = add_var store argval in
@@ -481,7 +481,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
     Closure closure, store
   | S.Eval (p, e) ->
     match eval e env store with
-      | String s, store -> eval_op s env store jsonPath
+      | String s, store -> eval_op p s env store jsonPath
       | v, store -> v, store
 
 
@@ -494,7 +494,7 @@ and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ strin
    only a single file works out. 
 
    TODO(joe): I have no idea what happens on windows. *)
-and eval_op str env store jsonPath = 
+and eval_op p str env store jsonPath = 
   let outchan = open_out "/tmp/curr_eval.js" in
   output_string outchan str;
   close_out outchan;
@@ -507,7 +507,7 @@ and eval_op str env store jsonPath =
   let json_err = regexp (quote "SyntaxError") in
   begin try
     ignore (search_forward json_err buf 0);
-    raise (Throw (String "EvalError", store))
+    raise (Throw (p, String "EvalError", store))
     with Not_found -> ()
   end;
   let ast =
@@ -515,7 +515,7 @@ and eval_op str env store jsonPath =
   let (used_ids, exprjsd) = 
     try
       js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
-    with ParseError _ -> raise (Throw (String "EvalError", store))
+    with ParseError _ -> raise (Throw (p, String "EvalError", store))
     in
   let desugard = exprjs_to_ljs used_ids exprjsd in
   if (IdMap.mem "%global" env) then
@@ -527,7 +527,7 @@ and eval_op str env store jsonPath =
 let rec eval_expr expr jsonPath = try
   eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
 with
-  | Throw (v, store) ->
+  | Throw (p, v, store) ->
       let err_msg = 
         match v with
           | ObjLoc loc ->
@@ -540,6 +540,6 @@ with
                 with Not_found -> string_of_value v store
                 end
           | v -> (pretty_value v) in
-        failwith ("Uncaught exception: " ^ err_msg)
-  | Break (l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
+        failwith (sprintf "%s Uncaught exception: %s" (Pos.string_of_pos p) err_msg)
+  | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
 
