@@ -1,5 +1,9 @@
 open Prelude
 open Ljs_syntax
+open Ljs_pretty
+
+open Format
+open FormatExt
 
 type value =
   | Null
@@ -53,7 +57,7 @@ type label = string
 exception Break of label * value * store
 exception Throw of value * store
 
-let rec pretty_value v = match v with 
+let pretty_value v = match v with 
   | Num d -> string_of_float d
   | String s -> "\"" ^ s ^ "\""
   | True -> "true"
@@ -62,6 +66,51 @@ let rec pretty_value v = match v with
   | Null -> "null"
   | Closure c -> "function"
   | ObjLoc o -> "object"
+
+let pretty_valuef v = text (pretty_value v)
+
+let rec pretty_value_store v store = match v with
+  | ObjLoc loc ->
+    let (avs, props) = get_obj store loc in
+    let proplist = IdMap.fold (fun k v l -> (k, v)::l) props [] in
+      begin match proplist with
+        | [] -> braces (pretty_attrsv avs store)
+        | _ ->
+          braces (vert [pretty_attrsv avs store;
+                        vert (vert_intersperse (text ",")
+                              (map (fun p -> pretty_prop p store) proplist))])
+      end
+  | _ -> pretty_valuef v
+
+and pretty_attrsv ({ proto = p; code = c; extensible = b; klass = k; primval = pv } : attrsv) store =
+  let proto = [horz [text "#proto:"; pretty_valuef p]] in
+  let primval = match pv with None -> []
+    | Some v -> [horz [text "#prim:"; pretty_valuef v]] in
+  let code = match c with None -> [] 
+    | Some v -> [horz [text "#code:"; pretty_valuef v]] in
+  brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
+                          (primval@
+                            proto@
+                             code@
+                             [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
+                              horz [text "#extensible:"; text (string_of_bool b)]])))
+
+and pretty_prop (f, prop) store = match prop with
+  | Data ({value=v; writable=w}, enum, config) ->
+    horz [text ("'" ^ f ^ "'"); text ":"; 
+          braces (horzOrVert [horz [text "#value";
+                                    pretty_valuef v;
+                                    text ","]; 
+                              horz [text "#writable"; text (string_of_bool w); text ","];
+                              horz [text "#configurable"; text (string_of_bool config)]])]
+  | Accessor ({getter=g; setter=s}, enum, config) ->
+    horz [text ("'" ^ f ^ "'"); text ":"; braces (vert [horz [text "#getter";
+                                          pretty_valuef g; text ","];
+                                          horz[text "#setter";
+                                               pretty_valuef s]])]
+
+let string_of_value v store =
+  (FormatExt.to_string (fun v -> pretty_value_store v store) v)
 
 let rec pretty_value_list vs = match vs with
   | (v::vs) -> pretty_value v ^ ", " ^ pretty_value_list vs

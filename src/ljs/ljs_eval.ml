@@ -536,8 +536,8 @@ with
                   match IdMap.find "message" props with
                     | Data ({ value = msg_val; }, _, _) ->
                         (pretty_value msg_val)
-                    | _ -> (pretty_value v)
-                with Not_found -> (pretty_value v)
+                    | _ -> string_of_value v store
+                with Not_found -> string_of_value v store
                 end
           | v -> (pretty_value v) in
         failwith ("Uncaught exception: " ^ err_msg)
