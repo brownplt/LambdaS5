@@ -13,7 +13,7 @@ let rec exp e = match e with
   | Null _ -> text "null"
   | Undefined _ -> text "undefined"
   | Num (_,n) -> text (string_of_float n)
-  | String (_,s) -> text ("\"" ^ s ^ "\"")
+  | String (_,s) -> text ("\"" ^ (String.escaped s) ^ "\"")
   | True _ -> text "true"
   | False _-> text "false"
   | Id (p, x) -> text x
@@ -62,8 +62,8 @@ let rec exp e = match e with
   | Seq (p, e1, e2) ->
     vert [squish [exp e1; text ";"]; exp e2]
   | Let (p, x, e, body) ->
-    horz [text "let"; vert [parens (horz [text x; text "="; exp e]);
-                            opt_braces body]]
+    braces (horz [text "let"; vert [parens (horz [text x; text "="; exp e]);
+                                    exp body]])
   | Rec (p, x, e, body) -> 
     horz [text "rec"; vert [parens (horz [text x; text "="; exp e]);
                             opt_braces body]]
@@ -105,7 +105,7 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; 
-          braces (horzOrVert [horz [text "#value"; exp v; text ","]; 
+          braces (horzOrVert [horz [text "#value"; parens (exp v); text ","]; 
                               horz [text "#writable"; text (string_of_bool w); text ","];
                               horz [text "#configurable"; text (string_of_bool config)]])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
