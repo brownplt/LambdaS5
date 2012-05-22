@@ -105,11 +105,11 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
 and block p b = jss_to_exprjs (J.Block (p, b))
 
 and vdj_to_vde v p = match v with
-  | J.VarDecl (id, e) -> let init_val = match e with
+  | J.VarDecl (id, e) -> match e with
     | None -> E.Undefined (p)
-    | Some x -> jse_to_exprjs x in
-    let context = E.IdExpr (p, "%context") and fld_str = E.String (p, id) in
-    E.AssignExpr (p, context, fld_str, init_val)
+    | Some x -> let init_val = jse_to_exprjs x in
+      let context = E.IdExpr (p, "%context") and fld_str = E.String (p, id) in
+      E.AssignExpr (p, context, fld_str, init_val)
 
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
