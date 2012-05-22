@@ -1,2 +1,2 @@
 var wat = 'wat';
-Array.join(wat - 1) + ' Batman';
+Array(16).join(wat - 1) + ' Batman';
