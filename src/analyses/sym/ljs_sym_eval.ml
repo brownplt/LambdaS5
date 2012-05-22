@@ -324,12 +324,12 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
 
             (*    (c) f is not equal to any of the field names, so we check the prototype *)
             let (f, pc) = field_str field pc in
-            let not_equal_to_any_of wrap_f = (fun f' _ pc ->
+            let assert_neq wrap_f = (fun f' _ pc ->
                 let (f'_id, pc') = field_str (wrap_f f') pc in
                 add_constraint
                   (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc') in
-            let none_pc = IdMap.fold (not_equal_to_any_of (fun f -> SymField f)) symps pc in
-            let none_pc = IdMap.fold (not_equal_to_any_of (fun f -> ConField f)) conps none_pc in
+            let none_pc = IdMap.fold (assert_neq (fun f -> SymField f)) symps pc in
+            let none_pc = IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc in
             let none_branch = 
               if is_sat none_pc then
                 (if check_proto && ad_hoc_proto_depth > 0 then
@@ -344,9 +344,10 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
         bind potential_props (fun ((field, prop), pc) ->
           match prop with
           | None -> 
-            (* if it's possible that the property wasn't found, then
-             * if we're symbolic, then the property *might* have been on us, 
-             * or it might never have existed, so return both None and the new prop *)
+            (* If it's possible that the property wasn't found, then
+             * if this obj is symbolic, the property *might* have existed on this obj, 
+             * or it might never have existed, so return both None and the new prop (and
+             * add the new prop * to the object) *)
             if is_sym 
             then begin
               let (symv, pc) = new_sym ("get_field at " ^
