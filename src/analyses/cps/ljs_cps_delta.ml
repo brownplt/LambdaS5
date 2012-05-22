@@ -28,14 +28,8 @@ let typeof v _ = str begin match v with
   | False _-> "boolean"
   | Object (_, _, { code = Some _ }, _) -> "function"
   | Object _ -> "object"
-  | Closure _ -> "lambda"
+  | Closure _ -> raise (CpsThrow ( "typeof got lambda"))
   | VarCell _ -> failwith "[cps-interp] Can't get typeof VarCell!"
-end
-
-let surface_typeof v store = begin match v with
-  | Closure _ -> raise (CpsThrow ( "surface_typeof got lambda"))
-  | Null _ -> str "object"
-  | _ -> typeof v store
 end
   
 let is_primitive v _ = match v with
@@ -183,7 +177,6 @@ let numstr s _ = match s with
 
 let op1 op : bind_value -> bind_value Store.t -> bind_value = match op with
   | "typeof" -> typeof
-  | "surface-typeof" -> surface_typeof
   | "primitive?" -> is_primitive
   | "prim->str" -> prim_to_str
   | "prim->num" -> prim_to_num

@@ -28,15 +28,9 @@ let typeof store v = str begin match v with
       | ({ code = Some cexp }, _) -> "function"
       | _ -> "object"
   end
-  | Closure _ -> "lambda"
+  | Closure _ -> raise (PrimErr (str "typeof got lambda"))
 end
 
-let surface_typeof store v = begin match v with
-  | Closure _ -> raise (PrimErr (str "surface_typeof got lambda"))
-  | Null -> str "object"
-  | _ -> typeof store v
-end
-  
 let is_primitive store v = match v with
   | Undefined 
   | Null
@@ -187,7 +181,6 @@ let numstr store = function
 
 let op1 store op = match op with
   | "typeof" -> typeof store
-  | "surface-typeof" -> surface_typeof store
   | "primitive?" -> is_primitive store
   | "prim->str" -> prim_to_str store
   | "prim->num" -> prim_to_num store

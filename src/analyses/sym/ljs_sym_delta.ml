@@ -30,16 +30,10 @@ let typeof ctx v = add_const_str ctx (begin match v with
     | NewSymObj _, _ -> failwith "prim got a NewSymObj"
     | _, _ -> "object"
   end
-  | Closure _ -> "lambda"
+  | Closure _ -> raise (PrimError "typeof got lambda")
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
 end)
 
-let surface_typeof ctx v = begin match v with
-  | Closure _ -> raise (PrimError "surface_typeof got lambda")
-  | Null -> add_const_str ctx "object"
-  | _ -> typeof ctx v
-end
-  
 let is_primitive ctx v = match v with
   | Undefined 
   | Null
@@ -249,7 +243,6 @@ let numstr ctx = function
 
 let op1 ctx op v : (result list * exresult list) = match op with
   | "typeof" -> uncurry return (typeof ctx v)
-  | "surface-typeof" -> uncurry return (surface_typeof ctx v)
   | "primitive?" -> uncurry return (is_primitive ctx v)
   | "prim->str" -> uncurry return (prim_to_str ctx v)
   | "prim->num" -> uncurry return (prim_to_num ctx v)
@@ -276,7 +269,6 @@ let op1 ctx op v : (result list * exresult list) = match op with
 let typeofOp1 op = match op with
   | "NOT" -> (TBool, TBool)
   | "typeof" -> (TAny, TString)
-  | "surface-typeof" -> (TAny, TString)
   | "primitive?" -> (TAny, TBool)
   | "prim->str" -> (TAny, TString)
   | "prim->num" -> (TAny, TNum)

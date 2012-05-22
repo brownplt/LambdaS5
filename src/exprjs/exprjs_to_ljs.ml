@@ -235,8 +235,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     | "typeof" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.Op1 (p, "surface-typeof", S.GetField (p, context, fldexpr, noargs_obj))
-        | _ -> S.Op1 (p, "surface-typeof", target)
+          S.Op1 (p, "typeof", S.GetField (p, context, fldexpr, noargs_obj))
+        | _ -> S.Op1 (p, "typeof", target)
       end
     | "delete" -> let result = match exp with
       | E.BracketExpr (pp, obj, fld) -> 
