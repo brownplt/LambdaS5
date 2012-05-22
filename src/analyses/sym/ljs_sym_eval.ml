@@ -445,46 +445,47 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (eval_sym e2 env pc')
               (fun (e2_val, pc'') -> 
                 let (t1, t2, ret_ty) = typeofOp2 op in
-                match e1_val, e2_val with
-                | SymScalar _, SymScalar _
-                | SymScalar _, _
-                | _, SymScalar _ -> begin 
-                  try 
-                    let (sym_e1, pc1) = match e1_val with
-                      | SymScalar id -> (SId id, check_type id t1 pc'')
-                      | _ -> (Concrete e1_val, pc'') in
-                    let (sym_e2, pc2) = match e2_val with
-                      | SymScalar id -> (SId id, check_type id t2 pc1)
-                      | _ -> (Concrete e2_val, pc1) in
-                    let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty ("return from " ^ op) pc2 in
-                    return (SymScalar ret_op)
-                      (add_constraint (SLet (ret_op, SOp2(op, sym_e1, sym_e2))) pc3)
-                  with TypeError id -> none 
-                end
-                | _ ->
-                  begin match op with
-                  | "hasProperty" -> 
-                    bind (check_field e2_val pc'')
-                      (fun (field, pc) ->
-                        bind (sym_get_prop p pc e1_val field)
-                          (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
-                  | "hasOwnProperty" ->
-                    bind (check_field e2_val pc'')
-                      (fun (field, pc) ->
-                        bind (sym_get_own_prop p pc e1_val field)
-                          (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
-                  | "isAccessor" ->
-                    bind (check_field e2_val pc'')
-                      (fun (field, pc) ->
-                        bind (sym_get_prop p pc e1_val field)
-                          (fun ((_, prop), ctx) -> 
-                            return (bool (match prop with Some (Accessor _) -> true | _ -> false)) ctx))
+                (* Special case for op2s on objects *)
+                match op with
+                | "hasProperty" -> 
+                  bind (check_field e2_val pc'')
+                    (fun (field, pc) ->
+                      bind (sym_get_prop p pc e1_val field)
+                        (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
+                | "hasOwnProperty" ->
+                  bind (check_field e2_val pc'')
+                    (fun (field, pc) ->
+                      bind (sym_get_own_prop p pc e1_val field)
+                        (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
+                | "isAccessor" ->
+                  bind (check_field e2_val pc'')
+                    (fun (field, pc) ->
+                      bind (sym_get_prop p pc e1_val field)
+                        (fun ((_, prop), ctx) -> 
+                          return (bool (match prop with Some (Accessor _) -> true | _ -> false)) ctx))
+                | _ -> begin
+                  match e1_val, e2_val with
+                  | SymScalar _, SymScalar _
+                  | SymScalar _, _
+                  | _, SymScalar _ -> begin 
+                    try 
+                      let (sym_e1, pc1) = match e1_val with
+                        | SymScalar id -> (SId id, check_type id t1 pc'')
+                        | _ -> (Concrete e1_val, pc'') in
+                      let (sym_e2, pc2) = match e2_val with
+                        | SymScalar id -> (SId id, check_type id t2 pc1)
+                        | _ -> (Concrete e2_val, pc1) in
+                      let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty ("return from " ^ op) pc2 in
+                      return (SymScalar ret_op)
+                        (add_constraint (SLet (ret_op, SOp2(op, sym_e1, sym_e2))) pc3)
+                    with TypeError id -> none 
+                  end
                   | _ -> 
                     try
-                      let (ret, pc''') = op2 pc'' op e1_val e2_val in
-                      return ret pc'''
+                      let (ret, pc'') = op2 pc'' op e1_val e2_val in
+                      return ret pc''
                     with PrimError msg -> throw (Throw (String msg)) pc''
-                  end))
+                end))
           
       | S.If (p, c, t, f) ->
         bind 

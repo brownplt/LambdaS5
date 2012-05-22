@@ -6,6 +6,9 @@ open Prelude
 open Format
 open FormatExt
 
+let log_z3 = true
+
+
 let rec vert_intersperse a lst = match lst with
   | [] -> []
   | [x] -> [x]
@@ -172,8 +175,6 @@ let update_dataField o f v = SApp(SId "updateField", [o; f; v])
 
   
   
-let log_z3 = false
-
 (* communicating with Z3 *)
 
 
@@ -185,11 +186,6 @@ let is_sat (p : ctx) : bool =
 
 (declare-sort Str)
 (declare-sort Fun)
-(declare-sort Fields)
-
-(define-sort Time () Int)
-(define-sort Loc () Int)
-
 
 (declare-datatypes ()
                    ((Attr Config Enum Writable Value Getter Setter)))
@@ -200,85 +196,10 @@ let is_sat (p : ctx) : bool =
                      (NULL)
                      (BOOL (b Bool))
                      (STR (s Str))
-                     (FUN (f Fun))
-                     (OBJCELL (oc Loc))
-                     (OBJ (fields Fields)))))
-(declare-datatypes ()
-                   ((Prop
-                     (ABSENT)
-                     (Data (value JS) (writable Bool) (enumerable Bool) (config Bool))
-                     (Accessor (getter JS) (setter JS) (enumerable Bool) (config Bool)))))
-(declare-fun Array2Fields ((Array Str Prop)) Fields)
-(declare-fun Fields2Array (Fields) (Array Str Prop))
-(declare-fun get_field (Fields Str) Prop)
-(declare-fun get_attr (Fields Str Attr) JS)
-
-(declare-const sto (Array Time (Array Loc JS)))
-;; (assert (= (select sto 0) ((as const (Array Loc JS)) UNDEF)))
-
-(define-fun lookup ((t Time) (l Loc)) JS
-  (select (select sto t) l))
-
-(define-fun isObj ((o JS)) Bool
-  (and
-   (is-OBJ o)
-   (exists ((a (Array Str Prop)))
-           (and (= (Array2Fields a) (fields o))
-                (= a (Fields2Array (fields o)))))
-   (= (fields o) (Array2Fields (Fields2Array (fields o))))))
-
-(define-fun lookupField ((o JS) (f JS)) Prop
-  (select (Fields2Array (fields o)) (s f)))
-(define-fun hasValue ((o JS) (f JS) (v JS)) Bool
-  (and
-   (isObj o)
-   (is-Data (lookupField o f))
-   (= (value (lookupField o f)) v)))
-(define-fun addFieldPre ((o JS) (f JS)) Bool
-  (and (isObj o) (is-ABSENT (lookupField o f))))
-
-(define-fun addFieldPost ((o2 JS) (o JS) (f JS) (v JS) (w Bool) (e Bool) (c Bool)) Bool
-  (let ((updated (store (Fields2Array (fields o)) (s f) (Data v w e c))))
-    (and
-     (exists ((f Fields)) (and (= (Fields2Array f) updated) (= f (Array2Fields (Fields2Array f)))))
-     (hasValue o2 f v)
-     (= (fields o) (Array2Fields (Fields2Array (fields o))))
-     (= (fields o2) (Array2Fields (Fields2Array (fields o2))))
-     (= o2 (OBJ (Array2Fields updated)))
-     (= updated (Fields2Array (Array2Fields updated)))
-     (= (Array2Fields updated) (Array2Fields (Fields2Array (Array2Fields updated))))
-     (= (Fields2Array (fields o2)) updated)
-     (= (Array2Fields (store updated (s f) (lookupField o f))) (fields o))
-     )))
-
-(define-fun updateData ((p Prop) (v JS)) Prop
-  (Data v (writable p) (enumerable p) (config p)))
-
-(define-fun updateFieldPre ((o JS) (f JS)) Bool
-  (and (isObj o) (is-Data (lookupField o f))))
-
-(define-fun updateFieldPost ((o2 JS) (o JS) (f JS) (v JS)) Bool
-  (let ((updated (store (Fields2Array (fields o)) (s f) (updateData (lookupField o f) v))))
-    (and
-     (exists ((f Fields)) (and (= (Fields2Array f) updated) (= f (Array2Fields (Fields2Array f)))))
-     (hasValue o2 f v)
-     (= (fields o) (Array2Fields (Fields2Array (fields o))))
-     (= (fields o2) (Array2Fields (Fields2Array (fields o2))))
-     (= o2 (OBJ (Array2Fields updated)))
-     (= (Array2Fields updated) (Array2Fields (Fields2Array (Array2Fields updated))))
-     (= (Fields2Array (fields o2)) updated)
-     (= (Array2Fields (store updated (s f) (lookupField o f))) (fields o))
-     )))
-
-(define-fun heapUpdatedAt ((t Time) (l Loc)) Bool
-  (= (select sto t)
-     (store (select sto (- t 1)) l (lookup t l))))
-
+                     (FUN (f Fun)))))
 (declare-fun typeof (JS) Str)
 (declare-fun prim->str (JS) Str)
-(declare-fun hasOwnProperty (Fields Str) Bool)
-(declare-const mtObj (Array Str Prop))
-(assert (= mtObj ((as const (Array Str Prop)) ABSENT)))
+
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
 (define-fun NaN () Real 876545689.24565432)
