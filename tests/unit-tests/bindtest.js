@@ -1,7 +1,7 @@
 var obj = { x : "xxx" };
 
 var f = function(a, b) {
-  return a + b + this.x;
+  return a + b + (this ? this.x : 'undefined');
 }
 
 var boundF = f.bind(obj, "aaa");
@@ -37,3 +37,4 @@ try {
     }
   }
 }
+
