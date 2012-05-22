@@ -6,6 +6,7 @@ module Pos : sig
   type t = pos
   val compare : t -> t -> int
   val before : t -> t -> bool
+  val string_of_pos : t -> string
 end
 
 val dummy_pos : pos

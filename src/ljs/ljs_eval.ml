@@ -180,7 +180,16 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
 
 
 let rec eval jsonPath exp env (store : store) : (value * store) =
-  let eval = eval jsonPath in
+  let eval exp env store =
+    begin try eval jsonPath exp env store
+      with 
+      | Break (exprs, l, v, s) ->
+        raise (Break (exp::exprs, l, v, s))
+      | Throw (exprs, v, s) ->
+        raise (Throw (exp::exprs, v, s))
+      | PrimErr (exprs, v) ->
+        raise (PrimErr (exp::exprs, v))
+    end in
   match exp with
   | S.Hint (_, _, e) -> eval e env store
   | S.Undefined _ -> Undefined, store
@@ -439,17 +448,17 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       begin
         try
           eval e env store
-        with Break (l', v, store) ->
+        with Break (t, l', v, store) ->
           if l = l' then (v, store)
-          else raise (Break (l', v, store))
+          else raise (Break (t, l', v, store))
       end
   | S.Break (p, l, e) ->
       let v, store = eval e env store in
-      raise (Break (l, v, store))
+      raise (Break ([], l, v, store))
   | S.TryCatch (p, body, catch) -> begin
       try
         eval body env store
-      with Throw (v, store) ->
+      with Throw (_, v, store) ->
         let catchv, store = eval catch env store in
         apply p store catchv [v]
     end
@@ -458,15 +467,15 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         let (_, store) = eval body env store in
         eval fin env store
       with
-        | Throw (v, store) ->
+        | Throw (t, v, store) ->
           let (_, store) = eval fin env store in
-          raise (Throw (v, store))
-        | Break (l, v, store) ->
+          raise (Throw (t, v, store))
+        | Break (t, l, v, store) ->
           let (_, store) = eval fin env store in
-          raise (Break (l, v, store))
+          raise (Break (t, l, v, store))
       end
   | S.Throw (p, e) -> let (v, s) = eval e env store in
-    raise (Throw (v, s))
+    raise (Throw ([], v, s))
   | S.Lambda (p, xs, e) -> 
     let alloc_arg argval argname (store, env) =
       let (new_loc, store) = add_var store argval in
@@ -480,10 +489,10 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         eval e env store in
     Closure closure, store
   | S.Eval (p, e) ->
-    match eval e env store with
+    begin match eval e env store with
       | String s, store -> eval_op s env store jsonPath
       | v, store -> v, store
-
+    end
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 
@@ -507,7 +516,7 @@ and eval_op str env store jsonPath =
   let json_err = regexp (quote "SyntaxError") in
   begin try
     ignore (search_forward json_err buf 0);
-    raise (Throw (String "EvalError", store))
+    raise (Throw ([], String "EvalError", store))
     with Not_found -> ()
   end;
   let ast =
@@ -515,7 +524,7 @@ and eval_op str env store jsonPath =
   let (used_ids, exprjsd) = 
     try
       js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
-    with ParseError _ -> raise (Throw (String "EvalError", store))
+    with ParseError _ -> raise (Throw ([], String "EvalError", store))
     in
   let desugard = exprjs_to_ljs used_ids exprjsd in
   if (IdMap.mem "%global" env) then
@@ -527,7 +536,7 @@ and eval_op str env store jsonPath =
 let rec eval_expr expr jsonPath = try
   eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
 with
-  | Throw (v, store) ->
+  | Throw (t, v, store) ->
       let err_msg = 
         match v with
           | ObjLoc loc ->
@@ -536,10 +545,14 @@ with
                   match IdMap.find "message" props with
                     | Data ({ value = msg_val; }, _, _) ->
                         (pretty_value msg_val)
-                    | _ -> (pretty_value v)
-                with Not_found -> (pretty_value v)
+                    | _ -> string_of_value v store
+                with Not_found -> string_of_value v store
                 end
           | v -> (pretty_value v) in
-        failwith ("Uncaught exception: " ^ err_msg)
-  | Break (l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
+        printf "%s\nUncaught exception: %s\n" (string_stack_trace t) err_msg;
+        failwith "Uncaught exception"
+  | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
+  | PrimErr (t, v) ->
+      printf "%s\nUncaught error: %s\n" (string_stack_trace t) (pretty_value v);
+      failwith "Uncaught error"
 

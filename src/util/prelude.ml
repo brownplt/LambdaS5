@@ -28,6 +28,15 @@ module Pos = struct
     p1_end.pos_cnum < p2_start.pos_cnum
     || p1_end.pos_lnum < p2_start.pos_lnum (* may not have cnum info from SpiderMonkey positions *)
     || p1_end.pos_bol < p2_start.pos_bol
+
+  let string_of_pos p =
+    Printf.sprintf "[%s]: Line %d, Col %d - Line %d, Col %d"
+      (fst p).Lexing.pos_fname
+      (fst p).Lexing.pos_lnum
+      (fst p).Lexing.pos_bol
+      (snd p).Lexing.pos_lnum
+      (snd p).Lexing.pos_bol
+
 end
 
 module Int = struct

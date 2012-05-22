@@ -21,8 +21,8 @@ let type_test p v typ =
 let is_object_type p o =
   S.If (p, type_test p o "object", S.True (p), type_test p o "function")
 
-let throw_typ_error p =
-  S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)])
+let throw_typ_error p msg =
+  S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.String (p, msg)])
 
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
@@ -184,17 +184,17 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let constrargs = make_args_obj p (map ejs_to_ljs eargs) in
     S.Let (p, constr_id, ejs_to_ljs econstr,
       S.If (p, S.Op1 (p, "!", type_test p (S.Id (p, constr_id)) "function"),
-        throw_typ_error p, 
+        throw_typ_error p "Constructor was not a function", 
         S.Let (p, pr_id, S.GetField (p, S.Id (p, constr_id), 
                            S.String (p, "prototype"), getterargs),
           S.If (p, undef_test p (S.Id (p, pr_id)),
-            throw_typ_error p,
+            throw_typ_error p "prototype was not defined in new expression",
             S.Seq (p,
               S.If (p, S.Op1 (p, "!", is_object_type p (S.Id (p, pr_id))),
                 S.SetBang (p, pr_id, S.Id (p, "%ObjectProto")), S.Undefined p),
             S.Let (p, newobj, S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
               S.If (p, null_test p (S.GetObjAttr (p, S.Code, S.Id (p, constr_id))),
-                    throw_typ_error p,
+                    throw_typ_error p "Constructor was not applicable",
                     S.Let (p, constr_result, S.App (p, S.Id (p, constr_id), [S.Id (p, newobj); constrargs]),
                     S.If (p, is_object_type p (S.Id (p, constr_result)),
                       S.Id (p, constr_result),
@@ -235,8 +235,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     | "typeof" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.Op1 (p, "surface-typeof", S.GetField (p, context, fldexpr, noargs_obj))
-        | _ -> S.Op1 (p, "surface-typeof", target)
+          S.Op1 (p, "typeof", S.GetField (p, context, fldexpr, noargs_obj))
+        | _ -> S.Op1 (p, "typeof", target)
       end
     | "delete" -> let result = match exp with
       | E.BracketExpr (pp, obj, fld) -> 
@@ -253,7 +253,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
               S.If (p,
                 S.GetAttr (pp, S.Config, sobj, fld_str),
                 S.DeleteField (pp, sobj, fld_str),
-                throw_typ_error p),
+                throw_typ_error p "Deleting non-configurable field"),
               S.True (p))
         end
       | _ -> S.True (p) in result
@@ -749,7 +749,7 @@ and appexpr_check f app p =
   let ftype = mk_id "ftype" in
   let not_function =
     S.Op1 (p, "!", S.Op2 (p, "stx=", S.Id (p, ftype), S.String (p, "function"))) in
-  let error = throw_typ_error p in 
+  let error = throw_typ_error p "Not a function" in 
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
     S.If (p, not_function, error, app))
 

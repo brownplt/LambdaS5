@@ -2,6 +2,7 @@
 open Prelude
 open Json_type
 open Js_syntax
+open Printf
 
 let mk_pos (v : json_type) : Prelude.pos = 
   let jstart = get "start" v in
@@ -18,6 +19,10 @@ let mk_pos (v : json_type) : Prelude.pos =
   } in
   (json_pos_to_prelude_pos jstart, json_pos_to_prelude_pos jend)
 
+
+let pos_error expr msg = 
+  failwith ((Pos.string_of_pos (mk_pos (get "loc" expr))) ^ ":\n" ^ msg)
+
 let maybe (f : json_type -> 'a) (v : json_type) : 'a option =
   match Json_type.is_null v with
     | true -> None
@@ -31,11 +36,12 @@ let literal (v : json_type) : lit = match string (get "type" v) with
   | "Literal" -> begin match get "value" v with
       | Json_type.Null -> Js_syntax.Null
       | Json_type.Bool b -> Js_syntax.Bool b
-      | Float f -> Num f
-      | Int n -> Num (float_of_int n)
-      | String s -> Str s
+      | Json_type.Float f -> Num f
+      | Json_type.Int n -> Num (float_of_int n)
+      | Json_type.String s -> Str s
       | Json_type.Object [("re_lit", String re_val)] -> Regexp re_val
-      | x -> failwith "unexpected literal"
+      | Json_type.Array _ -> pos_error v "Bad/unexpected array literal"
+      | Json_type.Object _ -> pos_error v "Bad/unexpected object literal"
   end
   | typ -> failwith (sprintf "expected Literal, got %s as type" typ)
 
@@ -80,8 +86,14 @@ let rec stmt (v : json_type) : stmt =
     | "Return" -> Return (p, maybe expr (get "argument" v))
     | "Throw" -> Throw (p, expr (get "argument" v))
     | "Try" -> Try (p, block (get "block" v),
-		    catch (get "handler" v),
-		    maybe block (get "finalizer" v))
+      (* NOTE(jpolitz): We simply take the first handler --- multiple 
+         handlers are Spidermonkey-specific.  JS only specifies one
+         or zero catch blocks. *)
+      (match (list (get "handlers" v)) with
+        | [] -> None
+        | [handler] -> catch handler
+        | _ -> pos_error v "More than one catch handler provided"),
+      maybe block (get "finalizer" v))
     | "While" -> While (p, expr (get "test" v), stmt (get "body" v))
     | "DoWhile" -> DoWhile (p, stmt (get "body" v), expr (get "test" v))
     | "For" -> 

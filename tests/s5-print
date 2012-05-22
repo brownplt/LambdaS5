@@ -2,14 +2,13 @@
 
 TMP=`mktemp -t js.XXXXXX`
 if [ $# -eq 0 ]; then
-  read -d \0 JS
-  echo $JS > $TMP
+  cat>$TMP
 else
-  echo $1 > $TMP
+  TMP=$1
 fi
 
 ../bin/js json_print.js $TMP > $TMP.ast
 ocamlrun ../obj/s5.d.byte -desugar $TMP.ast -print es5 \
         -json ../src/desugar.sh -env ../envs/es5.env \
         -eval
-rm $TMP.ast
+#rm $TMP.ast

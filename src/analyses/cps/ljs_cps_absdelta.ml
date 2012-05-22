@@ -1016,15 +1016,6 @@ let typeof v _ =
   | VL.Addrs _ -> vi (SL._Bot ())
   | VL.NotMono _ -> vi (SL._Top ())
 
-let surface_typeof v store = 
-  let module VL = ValueLattice in
-  let module SL = StringLattice in
-  let vi = VL.injectStr in
-  match (VL.asMono v) with
-  | VL.Closure _ -> vi (SL._Bot ())
-  | VL.Null _ ->  vi (SL.injectTypeof(SL.TyObject, v))
-  | _ -> typeof v store
-  
 let is_primitive v _ = 
   let module VL = ValueLattice in
   let module SL = StringLattice in
@@ -1314,7 +1305,6 @@ let numstr s _ = str_to_num_fn (fun s -> (try float_of_string s with Failure _ -
 
 let op1 op : ValueLattice.t -> ValueLattice.t Ljs_cps_values.Store.t -> ValueLattice.t = match op with
   | "typeof" -> typeof
-  | "surface-typeof" -> surface_typeof
   | "primitive?" -> is_primitive
   | "prim->str" -> prim_to_str
   | "prim->num" -> prim_to_num
