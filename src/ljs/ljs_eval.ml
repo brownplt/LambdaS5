@@ -187,6 +187,8 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         raise (Break (exp::exprs, l, v, s))
       | Throw (exprs, v, s) ->
         raise (Throw (exp::exprs, v, s))
+      | PrimErr (exprs, v) ->
+        raise (PrimErr (exp::exprs, v))
     end in
   match exp with
   | S.Hint (_, _, e) -> eval e env store
@@ -550,4 +552,7 @@ with
         printf "%s\nUncaught exception: %s\n" (string_stack_trace t) err_msg;
         failwith "Uncaught exception"
   | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
+  | PrimErr (t, v) ->
+      printf "%s\nUncaught error: %s\n" (string_stack_trace t) (pretty_value v);
+      failwith "Uncaught error"
 

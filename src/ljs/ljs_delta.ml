@@ -2,7 +2,7 @@ open Prelude
 open Ljs_syntax
 open Ljs_values
 
-exception PrimErr of value
+exception PrimErr of exp list * value
 
 let undef = Undefined
 let null = Null
@@ -15,7 +15,7 @@ let bool b = match b with
 
 let to_int v = match v with
   | Num x -> int_of_float x
-  | _ -> raise (PrimErr (str ("expected number, got " ^ pretty_value v)))
+  | _ -> raise (PrimErr ([], str ("expected number, got " ^ pretty_value v)))
 
 let typeof store v = str begin match v with
   | Undefined -> "undefined"
@@ -28,7 +28,7 @@ let typeof store v = str begin match v with
       | ({ code = Some cexp }, _) -> "function"
       | _ -> "object"
   end
-  | Closure _ -> raise (PrimErr (str "typeof got lambda"))
+  | Closure _ -> raise (PrimErr ([], str "typeof got lambda"))
 end
 
 let is_primitive store v = match v with
@@ -69,12 +69,12 @@ let prim_to_str store v = str begin match v with
         else fs
   | True -> "true"
   | False -> "false"
-  | _ -> raise (PrimErr (str "prim_to_str"))
+  | _ -> raise (PrimErr ([], str "prim_to_str"))
 end
 
 let strlen store s = match s with
   | String s -> Num (float_of_int (String.length s))
-  | _ -> raise (PrimErr (str "strlen"))
+  | _ -> raise (PrimErr ([], str "strlen"))
 
 (* Section 9.3, excluding objects *)
 let prim_to_num store v = num begin match v with
@@ -86,7 +86,7 @@ let prim_to_num store v = num begin match v with
   | String "" -> 0.0
   | String s -> begin try float_of_string s
     with Failure _ -> nan end
-  | _ -> raise (PrimErr (str "prim_to_num"))
+  | _ -> raise (PrimErr ([], str "prim_to_num"))
 end
   
 let prim_to_bool store v = bool begin match v with
@@ -110,7 +110,7 @@ let is_extensible store obj = match obj with
       | ({ extensible = true; }, _) -> True
       | _ -> False
   end
-  | _ -> raise (PrimErr (str "is-extensible"))
+  | _ -> raise (PrimErr ([], str "is-extensible"))
 
 (* Implement this here because there's no need to expose the class
    property outside of the delta function *)
@@ -118,19 +118,19 @@ let object_to_string store obj = match obj with
   | ObjLoc loc -> begin match get_obj store loc with
       | ({ klass = s }, _) -> str ("[object " ^ s ^ "]")
   end
-  | _ -> raise (PrimErr (str "object-to-string, wasn't given object"))	
+  | _ -> raise (PrimErr ([], str "object-to-string, wasn't given object"))	
 
 let is_array store obj = match obj with
   | ObjLoc loc -> begin match get_obj store loc with
       | ({ klass = "Array"; }, _) -> True
       | _ -> False
     end
-  | _ -> raise (PrimErr (str "is-array"))	
+  | _ -> raise (PrimErr ([], str "is-array"))	
 
 
 let to_int32 store v = match v with
   | Num d -> Num (float_of_int (int_of_float d))
-  | _ -> raise (PrimErr (str "to-int"))
+  | _ -> raise (PrimErr ([], str "to-int"))
 
 let nnot store e = match e with
   | Undefined -> True
@@ -144,40 +144,40 @@ let nnot store e = match e with
 
 let void store v = Undefined
 
-let floor' store = function Num d -> num (floor d) | _ -> raise (PrimErr (str "floor"))
+let floor' store = function Num d -> num (floor d) | _ -> raise (PrimErr ([], str "floor"))
 
-let ceil' store= function Num d -> num (ceil d) | _ -> raise (PrimErr (str "ceil"))
+let ceil' store= function Num d -> num (ceil d) | _ -> raise (PrimErr ([], str "ceil"))
 
-let absolute store = function Num d -> num (abs_float d) | _ -> raise (PrimErr (str "abs"))
+let absolute store = function Num d -> num (abs_float d) | _ -> raise (PrimErr ([], str "abs"))
 
-let log' store = function Num d -> num (log d ) | _ -> raise (PrimErr (str "log"))
+let log' store = function Num d -> num (log d ) | _ -> raise (PrimErr ([], str "log"))
 
 let ascii_ntoc store n = match n with
   | Num d -> str (String.make 1 (Char.chr (int_of_float d)))
-  | _ -> raise (PrimErr (str "ascii_ntoc")) 
+  | _ -> raise (PrimErr ([], str "ascii_ntoc")) 
 let ascii_cton store c = match c with
   | String s -> Num (float_of_int (Char.code (String.get s 0)))
-  | _ -> raise (PrimErr (str "ascii_cton"))
+  | _ -> raise (PrimErr ([], str "ascii_cton"))
 
 let to_lower store = function
   | String s -> String (String.lowercase s)
-  | _ -> raise (PrimErr (str "to_lower"))
+  | _ -> raise (PrimErr ([], str "to_lower"))
 
 let to_upper store = function
   | String s -> String (String.uppercase s)
-  | _ -> raise (PrimErr (str "to_lower"))
+  | _ -> raise (PrimErr ([], str "to_lower"))
 
 let bnot store = function
   | Num d -> Num (float_of_int (lnot (int_of_float d)))
-  | _ -> raise (PrimErr (str "bnot"))
+  | _ -> raise (PrimErr ([], str "bnot"))
 
 let sine store = function
   | Num d -> Num (sin d)
-  | _ -> raise (PrimErr (str "sin"))
+  | _ -> raise (PrimErr ([], str "sin"))
 
 let numstr store = function
   | String s -> Num (try float_of_string s with Failure _ -> nan)
-  | _ -> raise (PrimErr (str "numstr"))
+  | _ -> raise (PrimErr ([], str "numstr"))
 
 let op1 store op = match op with
   | "typeof" -> typeof store
@@ -207,7 +207,7 @@ let op1 store op = match op with
 
 let arith store s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
-  | v1, v2 -> raise (PrimErr (str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
+  | v1, v2 -> raise (PrimErr ([], str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
                                  (pretty_value v1) ^ ", " ^ (pretty_value v2) ^
                                    "perhaps something wasn't desugared fully?")))
 
@@ -247,11 +247,11 @@ let bitwise_shiftr store v1 v2 = Num (float_of_int ((to_int v1) asr (to_int v2))
 let string_plus store v1 v2 = match v1, v2 with
   | String s1, String s2 ->
       String (s1 ^ s2)
-  | _ -> raise (PrimErr (str "string concatenation"))
+  | _ -> raise (PrimErr ([], str "string concatenation"))
 
 let string_lessthan store v1 v2 = match v1, v2 with
   | String s1, String s2 -> bool (s1 < s2)
-  | _ -> raise (PrimErr (str "string less than"))
+  | _ -> raise (PrimErr ([], str "string less than"))
 
 let stx_eq store v1 v2 = bool begin match v1, v2 with
   | Num x1, Num x2 -> x1 = x2
@@ -292,9 +292,9 @@ let has_own_property store obj field = match obj, field with
   | ObjLoc loc, String s -> 
       let (attrs, props) = get_obj store loc in
         bool (IdMap.mem s props)
-  | ObjLoc loc, _ -> raise (PrimErr (str "has-own-property: field not a string"))
-  | _, String s -> raise (PrimErr (str ("has-own-property: obj not an object for field " ^ s)))
-  | _ -> raise (PrimErr (str "has-own-property: neither an object nor a string"))
+  | ObjLoc loc, _ -> raise (PrimErr ([], str "has-own-property: field not a string"))
+  | _, String s -> raise (PrimErr ([], str ("has-own-property: obj not an object for field " ^ s)))
+  | _ -> raise (PrimErr ([], str "has-own-property: neither an object nor a string"))
 
 let base store n r = 
   let rec get_digits n l = match n with
@@ -326,21 +326,21 @@ let get_base store n r = match n, r with
   | Num x, Num y -> 
     let result = base store (abs_float x) (abs_float y) in
     str (if x < 0.0 then "-" ^ result else result)
-  | _ -> raise (PrimErr (str "base got non-numbers"))
+  | _ -> raise (PrimErr ([], str "base got non-numbers"))
 
 let char_at store a b  = match a, b with
   | String s, Num n ->
     String (String.make 1 (String.get s (int_of_float n)))
-  | _ -> raise (PrimErr (str "char_at didn't get a string and a number"))
+  | _ -> raise (PrimErr ([], str "char_at didn't get a string and a number"))
 
 let locale_compare store a b = match a, b with
   | String r, String s ->
     Num (float_of_int (String.compare r s))
-  | _ -> raise (PrimErr (str "locale_compare didn't get 2 strings"))
+  | _ -> raise (PrimErr ([], str "locale_compare didn't get 2 strings"))
 
 let pow store a b = match a, b with
   | Num base, Num exp -> Num (base ** exp)
-  | _ -> raise (PrimErr (str "pow didn't get 2 numbers"))
+  | _ -> raise (PrimErr ([], str "pow didn't get 2 numbers"))
 
 let to_fixed store a b = match a, b with
   | Num x, Num f -> 
@@ -358,7 +358,7 @@ let to_fixed store a b = match a, b with
         String (fixed_s)
       else let suffix = String.make (fint - decimal_chars) '0' in
         String (s ^ suffix)
-  | _ -> raise (PrimErr (str "to-fixed didn't get 2 numbers"))
+  | _ -> raise (PrimErr ([], str "to-fixed didn't get 2 numbers"))
 
 let rec is_accessor store a b = match a, b with
   | ObjLoc loc, String s ->
@@ -370,8 +370,8 @@ let rec is_accessor store a b = match a, b with
         | Accessor _ -> True
     else let pr = match attrs with { proto = p } -> p in
       is_accessor store pr b
-  | Null, String s -> raise (PrimErr (str "isAccessor topped out"))
-  | _ -> raise (PrimErr (str "isAccessor"))
+  | Null, String s -> raise (PrimErr ([], str "isAccessor topped out"))
+  | _ -> raise (PrimErr ([], str "isAccessor"))
 
 let op2 store op = match op with
   | "+" -> arith_sum store
