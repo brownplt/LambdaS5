@@ -43,6 +43,9 @@ let interp_error pos message =
 
 let throw_str s = throw (Throw (String s))
 
+let assert_null id pc =
+  add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc
+
 (* let string_to_num = *)
 (*   let cache = IdHashtbl.create 10 in *)
 (*   let count = ref 0 in *)
@@ -359,8 +362,7 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
   match obj_ptr with
     | NewSym (id, locs) -> failwith "Impossible"
     | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
-      return (field, None)
-        (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
+      return (field, None) (assert_null id pc)
     | Null -> return (field, None) pc
     | ObjPtr obj_loc -> 
       let helper is_sym ({ attrs = { proto = ploc; }; conps = conps; symps = symps} as objv) pc =
@@ -741,8 +743,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           (fun (obj_ptrv, pc) -> 
             match obj_ptrv with
             | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
-              return Undefined
-                (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
+              return Undefined (assert_null id pc)
             | Null -> return Undefined pc
             | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
               | ConObj { attrs = attrs }, pc
@@ -758,12 +759,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (fun (newattrv, pc) ->
                 match obj_ptrv with
                 | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
-                  return Undefined
-                    (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
+                  return Undefined (assert_null id pc)
                 | Null -> return Undefined pc
-                | ObjPtr obj_loc ->
-                  (*let objv, pc = sto_lookup_obj obj_loc pc with*)
-                  set_obj_attr oattr obj_loc newattrv pc
+                | ObjPtr obj_loc -> set_obj_attr oattr obj_loc newattrv pc
                 | _ -> throw_str "SetObjAttr given non-object" pc))
  
       (* Invariant on the concrete and symbolic field maps in an object:
