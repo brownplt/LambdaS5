@@ -63,7 +63,8 @@ let rec apply p func args pc depth = match func with
                      ("Applied non-function, was actually " ^ 
                          Ljs_sym_pretty.val_to_string func))
 
-(* Creates all possible branches for a symbolic boolean value *)
+(* Creates all possible branches for a symbolic boolean value,
+ * returning results whose values are ocaml bools. *)
 let branch_bool sym_bool pc = match sym_bool with
   | BTrue -> return true pc
   | BFalse -> return false pc
@@ -136,7 +137,7 @@ let branch_bool_wrap sym_bool pc =
   bind (branch_bool sym_bool pc)
     (fun (b, pc) -> return (bool b) pc)
 
-let get_obj_attr attrs attr pc = match attrs, attr with
+let get_obj_attr oattr attrs pc = match attrs, oattr with
   | { proto=ploc }, S.Proto -> uncurry return (sto_lookup_val ploc pc)
   | { extensible=sym_ext}, S.Extensible -> branch_bool_wrap sym_ext pc
   | { code=Some cloc}, S.Code -> uncurry return (sto_lookup_val cloc pc)
@@ -145,6 +146,38 @@ let get_obj_attr attrs attr pc = match attrs, attr with
   | { primval=None}, S.Primval ->
     failwith "[interp] Got Primval attr of None"
   | { klass=sym_klass }, S.Klass -> branch_string sym_klass pc
+
+let set_obj_attr oattr obj_loc newattr pc =
+  let objv, pc = sto_lookup_obj obj_loc pc in
+  let update_attr ({ attrs = attrs } as o) pc = bind
+    (match oattr, newattr with
+    | S.Proto, ObjPtr _
+    | S.Proto, Null ->
+      let ploc, pc = sto_alloc_val newattr pc in
+      return { attrs with proto=ploc } pc
+    | S.Proto, _ ->
+      throw_str ("[interp] Update proto given invalid value: "
+                 ^ Ljs_sym_pretty.val_to_string newattr) pc
+    | S.Extensible, True -> return { attrs with extensible=BTrue } pc
+    | S.Extensible, False -> return { attrs with extensible=BFalse } pc
+      (* TODO do we need to assert that this sym is a bool? *)
+    | S.Extensible, SymScalar id -> return { attrs with extensible=BSym id } pc
+    | S.Extensible, _ ->
+      throw_str ("[interp] Update extensible given invalid value: "
+                 ^ Ljs_sym_pretty.val_to_string newattr) pc
+    | S.Code, _ -> throw_str "[interp] Can't update Code" pc
+    | S.Primval, _ -> throw_str "[interp] Can't update Primval" pc
+    | S.Klass, _ -> throw_str "[interp] Can't update Klass" pc)
+    (fun (newattrs, pc) ->
+       return { o with attrs = newattrs } pc)
+  in
+  bind
+    (match objv with
+    | ConObj o -> bind (update_attr o pc) (fun (newo, pc) -> return (ConObj newo) pc)
+    | SymObj o -> bind (update_attr o pc) (fun (newo, pc) -> return (SymObj newo) pc)
+    | NewSymObj _ -> failwith "Impossible! Should have init'd NewSymObj.")
+    (fun (newo, pc) ->
+      return newattr (sto_update_obj obj_loc newo pc))
 
 (* Gets an attr of a prop of an object *)
 (*let get_attr attr props field pc = *)
@@ -705,20 +738,33 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
       | S.GetObjAttr (p, oattr, obj_ptr) -> 
         bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc') -> 
+          (fun (obj_ptrv, pc) -> 
             match obj_ptrv with
             | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
               return Undefined
                 (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
-            | Null -> return Undefined pc'
-            | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc' with
-              | ConObj { attrs = attrs }, pc'
-              | SymObj { attrs = attrs }, pc' -> get_obj_attr attrs oattr pc'
+            | Null -> return Undefined pc
+            | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
+              | ConObj { attrs = attrs }, pc
+              | SymObj { attrs = attrs }, pc -> get_obj_attr oattr attrs pc
               | NewSymObj _, _ -> failwith "Impossible!" 
             end
-            | _ -> throw_str "GetObjAttr given non-object" pc')
+            | _ -> throw_str "GetObjAttr given non-object" pc)
 
-      | S.SetObjAttr _ -> failwith "[sym_eval] SetObjAttr NYI"
+      | S.SetObjAttr (p, oattr, obj_ptr, newattr) ->
+        bind (eval_sym obj_ptr env pc)
+          (fun (obj_ptrv, pc) -> 
+            bind (eval newattr env pc)
+              (fun (newattrv, pc) ->
+                match obj_ptrv with
+                | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
+                  return Undefined
+                    (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
+                | Null -> return Undefined pc
+                | ObjPtr obj_loc ->
+                  (*let objv, pc = sto_lookup_obj obj_loc pc with*)
+                  set_obj_attr oattr obj_loc newattrv pc
+                | _ -> throw_str "SetObjAttr given non-object" pc))
  
       (* Invariant on the concrete and symbolic field maps in an object:
        *    Every field name in either map is distinct (in the Z3 sense)
