@@ -133,18 +133,18 @@ let rec add_field_helper force obj_loc field newval pc =
       (fun (ext, pc) -> 
         if not (force || ext) then return (field, None, Undefined) pc else
           let vloc, pc = sto_alloc_val newval pc in
-          (* TODO : Create Accessor fields! *)
+          (* TODO : Create Accessor fields once we figure out sym code *)
           let symwrit, pc = new_sym_bool "writable" "add_field writable" pc in
           let symenum, pc = new_sym_bool "enum" "add_field enum" pc in
           let symconf, pc = new_sym_bool "config" "add_field config" pc in
           let new_prop = (Data ({ value = vloc; writable = symwrit; }, symenum, symconf)) in
           bind (set_prop obj_loc o field new_prop pc)
             (fun (newO, pc) -> 
-              return (field, Some new_prop, newval) (sto_update_obj obj_loc newO pc)))
+              return (field, Some new_prop, newval)
+                (sto_update_obj obj_loc newO pc)))
   | NewSymObj locs, pc -> bind (init_sym_obj locs obj_loc "" pc)
     (fun (newO, pc) -> 
       add_field_helper force obj_loc field newval pc)
-  (* [> TODO: Check error in case of non-extensible <]*)
 
 let add_field loc field v pc = bind (add_field_helper false loc field v pc)
   (fun ((_, _, v), pc) -> return v pc)
@@ -799,7 +799,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     (fun (new_obj, pc) ->
                       return newval (sto_update_obj obj_loc new_obj pc))
                 else throw_str "SetField NYI for non-writable fields" pc)
-          (* TODO what's this?? probably don't need the prev line either *)
           | Some (Accessor ({ setter = sloc; }, _, _)) ->
             let s, pc = sto_lookup_val sloc pc in
             apply p s setter_params pc depth
