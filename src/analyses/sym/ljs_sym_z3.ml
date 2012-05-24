@@ -154,27 +154,6 @@ and exp e store =
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
 
 
-let is_equal a b = SApp (SId "=", [a; b])
-let is_not_equal  a b = SNot (is_equal a b)
-
-let is_num t l = SApp(SId "isNum", [t; l])
-let is_undef t l = SApp(SId "isUndef", [t; l])
-let is_null t l = SApp(SId "isNull", [t; l])
-let is_absent t l = SApp(SId "isAbsent", [t; l])
-let is_bool t l = SApp(SId "isBool", [t; l])
-let is_str t l = SApp(SId "isStr", [t; l])
-let is_fun t l = SApp(SId "isFun", [t; l])
-let is_objcell t l = SApp(SId "isObjCell", [t; l])
-let is_obj t l = SApp(SId "isObj", [t; l])
-
-let lookup_store t l = SApp(SId "lookup", [t; l])
-
-let lookup_field o f = SApp(SId "lookupField", [o; f])
-let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])
-let update_dataField o f v = SApp(SId "updateField", [o; f; v])
-
-  
-  
 (* communicating with Z3 *)
 
 

@@ -19,32 +19,12 @@ let print_store = false
 
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
-
-let bool b = match b with
-  | true -> True
-  | false -> False
-    
-let unbool b = match b with
-  | True -> true
-  | False -> false
-  | _ -> failwith ("tried to unbool a non-bool" ^ (Ljs_sym_pretty.val_to_string b))
-
-let symbool b = match b with
-  | true -> BTrue
-  | false -> BFalse
-
-let symboolv b = match b with
-  | True -> BTrue
-  | False -> BFalse
-  | _ -> failwith "tried to symboolv a non-bool"
-
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
 let throw_str s = throw (Throw (String s))
-
-let assert_null id pc =
-  add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc
+  
+let add_assert_null id = add_assert (is_equal (SId id) (Concrete Null))
 
 (* let string_to_num = *)
 (*   let cache = IdHashtbl.create 10 in *)
@@ -84,7 +64,7 @@ let branch_string sym_str pc = match sym_str with
 (* If given a NewSym, initializes it, creating a branch for
  * every possible value it could be (either an ObjPtr to every
  * object that was in the store when it was created, or a SymScalar). *)
-let branch_sym (v, pc) = 
+let branch_sym v pc = 
   match v with
   | NewSym (id, obj_locs) ->
     let branch newval pc = return newval
@@ -127,8 +107,8 @@ let get_prop o f = match f with
 
 let rec add_field_helper force obj_loc field newval pc = 
   match sto_lookup_obj obj_loc pc with
-  | ((SymObj { attrs = { extensible = symext; }}) as o), pc
-  | ((ConObj { attrs = { extensible = symext; }}) as o), pc ->
+  | ((SymObj { attrs = { extensible = symext; }}) as o)
+  | ((ConObj { attrs = { extensible = symext; }}) as o) ->
     bind (branch_bool symext pc)
       (fun (ext, pc) -> 
         if not (force || ext) then return (field, None, Undefined) pc else
@@ -142,7 +122,7 @@ let rec add_field_helper force obj_loc field newval pc =
             (fun (newO, pc) -> 
               return (field, Some new_prop, newval)
                 (sto_update_obj obj_loc newO pc)))
-  | NewSymObj locs, pc -> bind (init_sym_obj locs obj_loc "" pc)
+  | NewSymObj locs -> bind (init_sym_obj locs obj_loc "init_sym_obj add_field" pc)
     (fun (newO, pc) -> 
       add_field_helper force obj_loc field newval pc)
 
@@ -167,17 +147,16 @@ let branch_bool_wrap sym_bool pc =
     (fun (b, pc) -> return (bool b) pc)
 
 let get_obj_attr oattr attrs pc = match attrs, oattr with
-  | { proto=ploc }, S.Proto -> uncurry return (sto_lookup_val ploc pc)
+  | { proto=ploc }, S.Proto -> return (sto_lookup_val ploc pc) pc
   | { extensible=sym_ext}, S.Extensible -> branch_bool_wrap sym_ext pc
-  | { code=Some cloc}, S.Code -> uncurry return (sto_lookup_val cloc pc)
+  | { code=Some cloc}, S.Code -> return (sto_lookup_val cloc pc) pc
   | { code=None}, S.Code -> return Null pc
-  | { primval=Some pvloc}, S.Primval -> uncurry return (sto_lookup_val pvloc pc)
+  | { primval=Some pvloc}, S.Primval -> return (sto_lookup_val pvloc pc) pc
   | { primval=None}, S.Primval ->
     failwith "[interp] Got Primval attr of None"
   | { klass=sym_klass }, S.Klass -> branch_string sym_klass pc
 
 let set_obj_attr oattr obj_loc newattr pc =
-  let objv, pc = sto_lookup_obj obj_loc pc in
   let update_attr ({ attrs = attrs } as o) pc = bind
     (match oattr, newattr with
     | S.Proto, ObjPtr _
@@ -201,7 +180,7 @@ let set_obj_attr oattr obj_loc newattr pc =
        return { o with attrs = newattrs } pc)
   in
   bind
-    (match objv with
+    (match sto_lookup_obj obj_loc pc with
     | ConObj o -> bind (update_attr o pc) (fun (newo, pc) -> return (ConObj newo) pc)
     | SymObj o -> bind (update_attr o pc) (fun (newo, pc) -> return (SymObj newo) pc)
     | NewSymObj _ -> failwith "Impossible! Should have init'd NewSymObj.")
@@ -217,9 +196,9 @@ let get_attr attr prop pc = match prop, attr with
 | Data (_, sym_enum, _), S.Enum
 | Accessor (_, sym_enum, _), S.Enum -> branch_bool_wrap sym_enum pc
 | Data ({ writable = sym_writ; }, _, _), S.Writable -> branch_bool_wrap sym_writ pc
-| Data ({ value = vloc; }, _, _), S.Value -> uncurry return (sto_lookup_val vloc pc)
-| Accessor ({ getter = gloc; }, _, _), S.Getter -> uncurry return (sto_lookup_val gloc pc)
-| Accessor ({ setter = sloc; }, _, _), S.Setter -> uncurry return (sto_lookup_val sloc pc)
+| Data ({ value = vloc; }, _, _), S.Value -> return (sto_lookup_val vloc pc) pc
+| Accessor ({ getter = gloc; }, _, _), S.Getter -> return (sto_lookup_val gloc pc) pc
+| Accessor ({ setter = sloc; }, _, _), S.Setter -> return (sto_lookup_val sloc pc) pc
 | _ -> failwith "bad access of attribute"
 
 (*
@@ -237,7 +216,7 @@ let get_attr attr prop pc = match prop, attr with
   b. Writable, which can change true->false
 *)
 let set_attr attr obj_loc field prop newval pc =
-  let objv, pc = sto_lookup_obj obj_loc pc in
+  let objv = sto_lookup_obj obj_loc pc in
   let ext_branches = match objv with
   | ConObj { attrs = { extensible = ext; } }
   | SymObj { attrs = { extensible = ext; } } -> branch_bool ext pc
@@ -360,26 +339,22 @@ let check_field field pc =
  * if Null then None
  * if some ObjPtr then lookup 
 *)
+(* TODO comments for this function *)
 let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
   match obj_ptr with
     | NewSym (id, locs) -> failwith "Impossible"
-    | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
-      return (field, None) (assert_null id pc)
+    | SymScalar id -> return (field, None) (add_assert_null id pc)
     | Null -> return (field, None) pc
     | ObjPtr obj_loc -> 
       let helper is_sym ({ attrs = { proto = ploc; }; conps = conps; symps = symps} as objv) pc =
         let potential_props = begin
           try return (field, Some (get_prop objv field)) pc
           with Not_found -> 
-            (* object exists, but field isn't found in the same_props *)
-            (*    (a) f is equal to one of the [diff] field names *)
-            (*    (b) f is equal to one of the [same] field names *)
             let prop_branches wrap_f props = IdMap.fold
               (fun f' v' branches ->
-                let (f'_id, pc') = field_str (wrap_f f') pc in
-                let (f, pc') = field_str field pc' in
-                let pc'' = add_constraint
-                  (SAssert (SApp (SId "=", [SId f; SId f'_id]))) pc' in
+                let (f'str, pc') = field_str (wrap_f f') pc in
+                let (fstr, pc') = field_str field pc' in
+                let pc'' = add_assert (is_equal (SId fstr) (SId f'str)) pc' in
                 let new_branch = if is_sat pc'' 
                   then (return ((wrap_f f'), Some v') pc'')
                   else none in
@@ -388,20 +363,17 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
             in
             let branches = combine (prop_branches (fun f -> ConField f) conps)
               (prop_branches (fun f -> SymField f) symps) in
-
-            (*    (c) f is not equal to any of the field names, so we check the prototype *)
-            let (f, pc) = field_str field pc in
-            let assert_neq wrap_f = (fun f' _ pc ->
-                let (f'_id, pc') = field_str (wrap_f f') pc in
-                add_constraint
-                  (SAssert (SNot (SApp (SId "=", [SId f; SId f'_id])))) pc') in
+            let (fstr, pc) = field_str field pc in
+            let assert_neq wrap_f =
+              (fun f' _ pc ->
+                let (f'str, pc') = field_str (wrap_f f') pc in
+                add_assert (is_not_equal (SId fstr) (SId f'str)) pc') in
             let none_pc = IdMap.fold (assert_neq (fun f -> SymField f)) symps pc in
             let none_pc = IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc in
             let none_branch = 
               if is_sat none_pc then
                 (if check_proto && ad_hoc_proto_depth > 0 then
-                  let (protov, none_pc) = sto_lookup_val ploc none_pc in
-                  bind (branch_sym (protov, none_pc)) 
+                  bind (branch_sym (sto_lookup_val ploc none_pc) none_pc)
                     (fun (protov, pc) ->
                       sym_get_prop_helper check_proto (ad_hoc_proto_depth - 1) p pc protov field) 
                 else return (field, None) pc)
@@ -423,10 +395,10 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
             end else return (field, None) pc
           | Some p -> return (field, prop) pc)
       in begin match sto_lookup_obj obj_loc pc with
-      | ConObj o, pc -> helper false o pc
-      | SymObj o, pc -> helper true o pc
-      | NewSymObj locs, pc ->
-        bind (init_sym_obj locs obj_loc "" pc) 
+      | ConObj o -> helper false o pc
+      | SymObj o -> helper true o pc
+      | NewSymObj locs ->
+        bind (init_sym_obj locs obj_loc "init_sym_obj sym_get_prop" pc) 
           (fun (newO, pc) ->
             sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field)
       end
@@ -449,7 +421,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
      * which determines whether e is a scalar or a pointer. For instance, the expression
      * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
      * In either case, eval_sym should be used to evaluate e. *)
-    let eval_sym exp env pc = bind (eval exp env pc) branch_sym in
+    let eval_sym exp env pc = bind (eval exp env pc) (uncurry branch_sym) in
 
     match exp with
       | S.Hint (_, _, e) -> eval e env pc
@@ -459,14 +431,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Num (_, n) -> return (Num n) pc
       | S.True _ -> return True pc
       | S.False _ -> return False pc
-      | S.Id (p, x) -> (uncurry return) begin
+      | S.Id (p, x) -> begin
         if x = "%%newsym" then 
-          new_sym ("%%newsym at " ^ (string_of_position p)) pc
+          uncurry return
+            (new_sym ("%%newsym at " ^ (string_of_position p)) pc)
         else
-          try sto_lookup_val (IdMap.find x env) pc
+          try return (sto_lookup_val (IdMap.find x env) pc) pc
           with Not_found -> failwith (interp_error p
             ("Unbound identifier: " ^ x ^ " in identifier lookup at "))
-        end
+      end
 
       | S.Lambda (p, xs, e) -> 
         let bind_arg arg x (m, pc) = 
@@ -634,10 +607,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       end
 
       | S.Object (p, attrs, props) -> begin 
-        (* TODO which of these do we need to eval_sym? *)
+        (* TODO which of these do we need to eval_sym? 
+         * probably none, because they aren't user facing *)
         match attrs with
         | { S.primval = valexp;
-            S.proto = protoexp;
+            S.proto = protoexp; (* TODO look in spec to see if prototype can be declared *)
             S.code = codexp;
             S.extensible = ext;
             S.klass = kls; } ->
@@ -739,13 +713,12 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         bind (eval_sym obj_ptr env pc)
           (fun (obj_ptrv, pc) -> 
             match obj_ptrv with
-            | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
-              return Undefined (assert_null id pc)
+            | SymScalar id -> return Undefined (add_assert_null id pc)
             | Null -> return Undefined pc
             | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
-              | ConObj { attrs = attrs }, pc
-              | SymObj { attrs = attrs }, pc -> get_obj_attr oattr attrs pc
-              | NewSymObj _, _ -> failwith "Impossible!" 
+              | ConObj { attrs = attrs }
+              | SymObj { attrs = attrs } -> get_obj_attr oattr attrs pc
+              | NewSymObj _ -> failwith "Impossible!" 
             end
             | _ -> throw_str "GetObjAttr given non-object" pc)
 
@@ -755,8 +728,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind (eval_sym newattr env pc) (* eval_sym b/c it could be a proto *)
               (fun (newattrv, pc) ->
                 match obj_ptrv with
-                | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
-                  return Undefined (assert_null id pc)
+                | SymScalar id -> return Undefined (add_assert_null id pc)
                 | Null -> return Undefined pc
                 | ObjPtr obj_loc -> set_obj_attr oattr obj_loc newattrv pc
                 | _ -> throw_str "SetObjAttr given non-object" pc))
@@ -780,15 +752,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                          bind (sym_get_prop p pc' obj_ptrv fv)
                            (fun ((_, prop), pc') -> match prop with
                            | Some (Data ({ value = vloc; }, _, _)) ->
-                             (uncurry return) (sto_lookup_val vloc pc')
+                             return (sto_lookup_val vloc pc') pc
                            | Some (Accessor ({ getter = gloc; }, _, _)) ->
-                             let g, pc' = sto_lookup_val gloc pc' in
+                             let g = sto_lookup_val gloc pc' in
                              apply p g [obj_ptrv; argsv] pc' depth
                            | None -> return Undefined pc'))))))
 
       | S.SetField (p, obj_ptr, f, v, args) ->
         let update_prop obj_loc f prop newval setter_params pc = 
-          let (objv, pc) = sto_lookup_obj obj_loc pc in
+          let objv = sto_lookup_obj obj_loc pc in
           match prop with
           | Some (Data ({ writable = sym_writ; }, enum, config)) ->
             bind (branch_bool sym_writ pc)
@@ -800,8 +772,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                       return newval (sto_update_obj obj_loc new_obj pc))
                 else throw_str "SetField NYI for non-writable fields" pc)
           | Some (Accessor ({ setter = sloc; }, _, _)) ->
-            let s, pc = sto_lookup_val sloc pc in
-            apply p s setter_params pc depth
+            apply p (sto_lookup_val sloc pc) setter_params pc depth
           | None -> add_field obj_loc f newval pc
         in
         bind (eval_sym obj_ptr env pc)
@@ -951,17 +922,17 @@ let rec eval_expr expr jsonPath maxDepth pc =
         match v with
         | ObjPtr loc -> begin
           match sto_lookup_obj loc pc with
-          | ConObj { conps = props }, pc 
-          | SymObj { conps = props }, pc -> begin
+          | ConObj { conps = props } 
+          | SymObj { conps = props } -> begin
             try
               match IdMap.find "message" props with
               | Data ({ value = msg_val_loc; }, _, _) ->
-                let msg_val, pc = sto_lookup_val msg_val_loc pc in
+                let msg_val = sto_lookup_val msg_val_loc pc in
                 (Ljs_sym_pretty.val_to_string msg_val)
               | _ -> (Ljs_sym_pretty.val_to_string v)
             with Not_found -> (Ljs_sym_pretty.val_to_string v)
           end
-          | NewSymObj locs, pc -> "Threw a NewSymObj -- what were you thinking??"
+          | NewSymObj locs -> "Threw a NewSymObj -- what were you thinking??"
         end
         | v -> (Ljs_sym_pretty.val_to_string v) in
       throw_str ("Uncaught exception: " ^ err_msg) pc

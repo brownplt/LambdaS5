@@ -107,6 +107,27 @@ type env = Store.loc IdMap.t
 (* Used within GetField and SetField only *)
 type field_type = SymField of id | ConField of id
 
+let is_equal a b = SApp (SId "=", [a; b])
+let is_not_equal a b = SNot (is_equal a b)
+
+(* TODO what are these? *)
+let is_num t l = SApp(SId "isNum", [t; l])
+let is_undef t l = SApp(SId "isUndef", [t; l])
+let is_null t l = SApp(SId "isNull", [t; l])
+let is_absent t l = SApp(SId "isAbsent", [t; l])
+let is_bool t l = SApp(SId "isBool", [t; l])
+let is_str t l = SApp(SId "isStr", [t; l])
+let is_fun t l = SApp(SId "isFun", [t; l])
+let is_objcell t l = SApp(SId "isObjCell", [t; l])
+let is_obj t l = SApp(SId "isObj", [t; l])
+
+let lookup_store t l = SApp(SId "lookup", [t; l])
+
+let lookup_field o f = SApp(SId "lookupField", [o; f])
+let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])
+let update_dataField o f v = SApp(SId "updateField", [o; f; v])
+  
+
 (* monad *)
 let return v (pc : ctx) = ([(v,pc)], [])
 let throw v (pc : ctx) = ([], [(v, pc)])
@@ -192,6 +213,9 @@ let add_constraint c ctx =
 let add_constraints cs ctx =
   { ctx with constraints = List.rev_append cs ctx.constraints }
 
+let add_assert a = add_constraint (SAssert a)
+let add_let a b = add_constraint (SLet (a, b))
+
 let sto_alloc_val v ctx = 
   let (loc, sto) = Store.alloc v ctx.store.vals in
 (*   Printf.eprintf "allocing loc %s in vals\n" (Store.print_loc loc); *)
@@ -212,11 +236,11 @@ let sto_update_obj loc ov ctx =
 
 let sto_lookup_obj loc ctx = 
 (*   Printf.eprintf "looking for %s in objs\n" (Store.print_loc loc); *)
-  (Store.lookup loc ctx.store.objs, ctx)
+  Store.lookup loc ctx.store.objs
 
 let sto_lookup_val loc ctx = 
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
-  (Store.lookup loc ctx.store.vals, ctx)
+  Store.lookup loc ctx.store.vals
 
 let hint s pc = add_constraint (Hint s) pc
 

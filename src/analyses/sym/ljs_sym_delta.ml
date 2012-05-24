@@ -12,6 +12,20 @@ exception PrimError of string
 let bool b = match b with
   | true -> True
   | false -> False
+    
+let unbool b = match b with
+  | True -> true
+  | False -> false
+  | _ -> failwith ("tried to unbool a non-bool" ^ (Ljs_sym_pretty.val_to_string b))
+
+let symbool b = match b with
+  | true -> BTrue
+  | false -> BFalse
+
+let symboolv b = match b with
+  | True -> BTrue
+  | False -> BFalse
+  | _ -> failwith "tried to symboolv a non-bool"
 
 let to_int ctx v = match v with
   | Num x -> int_of_float x
@@ -25,10 +39,10 @@ let typeof ctx v = add_const_str ctx (begin match v with
   | True 
   | False -> "boolean"
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
-    | ConObj { attrs = { code = Some _ }}, _ 
-    | SymObj { attrs = { code = Some _ }}, _ -> "function"
-    | NewSymObj _, _ -> failwith "prim got a NewSymObj"
-    | _, _ -> "object"
+    | ConObj { attrs = { code = Some _ }} 
+    | SymObj { attrs = { code = Some _ }} -> "function"
+    | NewSymObj _ -> failwith "prim got a NewSymObj"
+    | _ -> "object"
   end
   | Closure _ -> raise (PrimError "typeof got lambda")
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
@@ -128,16 +142,17 @@ let print ctx v =
 let rec object_to_string ctx obj = begin
   match obj with
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
-    | ConObj { attrs = {klass = symk} }, ctx
-    | SymObj { attrs = {klass = symk} }, ctx ->
+    | ConObj { attrs = {klass = symk} }
+    | SymObj { attrs = {klass = symk} } ->
       begin match symk with
       | SString s -> uncurry return (add_const_str ctx ("[object " ^ s ^ "]"))
       | SSym id -> 
         (* TODO: add constraint relating id and this result *)
         uncurry return (add_const_str ctx ("[object " ^ id ^ "]"))
       end
-    | NewSymObj locs, ctx -> bind (init_sym_obj locs loc "" ctx) 
-      (fun (_, ctx) -> object_to_string ctx obj)
+    | NewSymObj locs ->
+      bind (init_sym_obj locs loc "object_to_string init_sym_obj" ctx) 
+        (fun (_, ctx) -> object_to_string ctx obj)
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
@@ -146,18 +161,16 @@ end
 let rec is_array ctx obj = begin
   match obj with
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
-    | ConObj { attrs = {klass = symk} }, ctx
-    | SymObj { attrs = {klass = symk} }, ctx ->
+    | ConObj { attrs = {klass = symk} }
+    | SymObj { attrs = {klass = symk} } ->
       begin match symk with
       | SString s -> return (bool (s = "Array")) ctx
       | SSym id -> 
         let (arrStr, ctx) = const_string "Array" ctx in
-        return True
-         (add_constraint
-            (SAssert (SApp (SId "=", [SId id; SId arrStr]))) ctx)
+        return True (add_assert (is_equal (SId id) (SId arrStr)) ctx)
         (* TODO false branch? *)
       end
-    | NewSymObj locs, ctx -> bind (init_sym_obj locs loc "" ctx) 
+    | NewSymObj locs -> bind (init_sym_obj locs loc "" ctx) 
       (fun (_, ctx) -> is_array ctx obj)
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"
@@ -238,31 +251,35 @@ let numstr ctx = function
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "numstr")
 
-let op1 ctx op v : (result list * exresult list) = match op with
-  | "typeof" -> uncurry return (typeof ctx v)
-  | "primitive?" -> uncurry return (is_primitive ctx v)
-  | "prim->str" -> uncurry return (prim_to_str ctx v)
-  | "prim->num" -> uncurry return (prim_to_num ctx v)
-  | "prim->bool" -> uncurry return (prim_to_bool ctx v)
-  | "print" -> uncurry return (print ctx v)
-  | "object-to-string" -> object_to_string ctx v
-  | "strlen" -> uncurry return (strlen ctx v)
-  | "is-array" -> is_array ctx v
-  | "to-int32" -> uncurry return (to_int32 ctx v)
-  | "!" -> uncurry return (nnot ctx v)
-  | "void" -> uncurry return (void ctx v)
-  | "floor" -> uncurry return (floor' ctx v)
-  | "ceil" -> uncurry return (ceil' ctx v)
-  | "abs" -> uncurry return (absolute ctx v)
-  | "log" -> uncurry return (log' ctx v)
-  | "ascii_ntoc" -> uncurry return (ascii_ntoc ctx v)
-  | "ascii_cton" -> uncurry return (ascii_cton ctx v)
-  | "to-lower" -> uncurry return (to_lower ctx v)
-  | "to-upper" -> uncurry return (to_upper ctx v)
-  | "~" -> uncurry return (bnot ctx v)
-  | "sin" -> uncurry return (sine ctx v)
-  | "numstr->num" -> uncurry return (numstr ctx v)
+let op1 ctx op v : (result list * exresult list) =
+  let r f ctx v = uncurry return (f ctx v) in
+  let op1_fun = match op with
+  | "typeof" -> r typeof
+  | "primitive?" -> r is_primitive
+  | "prim->str" -> r prim_to_str
+  | "prim->num" -> r prim_to_num
+  | "prim->bool" -> r prim_to_bool
+  | "print" -> r print
+  | "object-to-string" -> object_to_string
+  | "strlen" -> r strlen
+  | "is-array" -> is_array
+  | "to-int32" -> r to_int32
+  | "!" -> r nnot
+  | "void" -> r void
+  | "floor" -> r floor'
+  | "ceil" -> r ceil'
+  | "abs" -> r absolute
+  | "log" -> r log'
+  | "ascii_ntoc" -> r ascii_ntoc
+  | "ascii_cton" -> r ascii_cton
+  | "to-lower" -> r to_lower
+  | "to-upper" -> r to_upper
+  | "~" -> r bnot
+  | "sin" -> r sine
+  | "numstr->num" -> r numstr
   | _ -> failwith ("no implementation of unary operator: " ^ op)
+  in op1_fun ctx v
+
 let typeofOp1 op = match op with
   | "NOT" -> (TBool, TBool)
   | "typeof" -> (TAny, TString)
