@@ -253,7 +253,7 @@ let alloc_sym_scalar name hint_s pc =
 let alloc_sym_scalar_opt name hint_s pc =
   let (sym_loc, pc') = alloc_sym_scalar name hint_s pc in
   combine
-    (return (Some sym_loc) (hint ("Some " ^ hint_s) pc'))
+    (return (Some sym_loc) pc')
     (return None pc)
 
 (* Creates a new symbolic boolean to be used as an attr *)
@@ -269,8 +269,8 @@ let new_sym_string name hint_s pc =
 (* Creates a NewSym given a list of locs. Should only be used alone when creating the
  * prototypes for symbolic objects (since a sym obj's proto uses the same list of locs.
  * All other new sym allocation should use new_sym *)
-let new_sym_from_locs locs hint pc = 
-  let (sym_id, pc) = fresh_var "" TAny hint pc in
+let new_sym_from_locs locs name hint pc = 
+  let (sym_id, pc) = fresh_var name TAny hint pc in
   (* Create a new symbolic object placeholder, and add it to the store.
    * This will account for the possibility that the new sym is a
    * pointer to an unknown symbolic object. This obj will be init'd later 
@@ -283,7 +283,7 @@ let new_sym_from_locs locs hint pc =
 let new_sym hint pc = 
   (* Get locs of all objects in the store so we can branch
    * once we know the type of this sym value *)
-  new_sym_from_locs (map fst (Store.bindings pc.store.objs)) hint pc
+  new_sym_from_locs (map fst (Store.bindings pc.store.objs)) "" hint pc
 
 (* Creates a new sym obj whose attributes are all symbolic. Most are scalars, or scalar
  * opts, except for the prototype, which could be a scalar (hopefully Null) or an obj, so
@@ -295,7 +295,7 @@ let init_sym_obj locs loc hint_s pc =
   let (sym_klass, pc) = new_sym_string "klass" "klass attr" pc in
   (*let pc = hint ("new klass at " ^ Store.print_loc klass_loc) pc in*)
   bind (uncurry return (new_sym_from_locs locs "proto"
-                          (hint ("new %proto for " ^ (Store.print_loc loc)) pc)))
+                          ("new %proto for " ^ (Store.print_loc loc)) pc))
     (fun (proto, pc) ->
       let (proto_loc, pc) = sto_alloc_val proto pc in
       bind (alloc_sym_scalar_opt "code" "code attr" pc)

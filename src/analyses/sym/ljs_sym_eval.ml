@@ -24,7 +24,7 @@ let interp_error pos message =
 
 let throw_str s = throw (Throw (String s))
   
-let add_assert_null id = add_assert (is_equal (SId id) (Concrete Null))
+let is_null_sym id = is_equal (SId id) (Concrete Null)
 
 (* let string_to_num = *)
 (*   let cache = IdHashtbl.create 10 in *)
@@ -343,7 +343,7 @@ let check_field field pc =
 let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
   match obj_ptr with
     | NewSym (id, locs) -> failwith "Impossible"
-    | SymScalar id -> return (field, None) (add_assert_null id pc)
+    | SymScalar id -> return (field, None) (add_assert (is_null_sym id) pc)
     | Null -> return (field, None) pc
     | ObjPtr obj_loc -> 
       let helper is_sym ({ attrs = { proto = ploc; }; conps = conps; symps = symps} as objv) pc =
@@ -713,7 +713,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         bind (eval_sym obj_ptr env pc)
           (fun (obj_ptrv, pc) -> 
             match obj_ptrv with
-            | SymScalar id -> return Undefined (add_assert_null id pc)
+            | SymScalar id -> return Undefined (add_assert (is_null_sym id) pc)
             | Null -> return Undefined pc
             | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
               | ConObj { attrs = attrs }
@@ -728,7 +728,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind (eval_sym newattr env pc) (* eval_sym b/c it could be a proto *)
               (fun (newattrv, pc) ->
                 match obj_ptrv with
-                | SymScalar id -> return Undefined (add_assert_null id pc)
+                | SymScalar id -> return Undefined (add_assert (is_null_sym id) pc)
                 | Null -> return Undefined pc
                 | ObjPtr obj_loc -> set_obj_attr oattr obj_loc newattrv pc
                 | _ -> throw_str "SetObjAttr given non-object" pc))
