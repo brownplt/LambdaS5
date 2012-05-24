@@ -44,7 +44,7 @@ let hex = ['0'-'9' 'A'-'f' 'a'-'f']
 let hex_lit = ("0x" | "0X") hex+
 
 let dec_lit = 
-  (dec_int_lit '.' dec_digit* expt_part?) | 
+  (signed_int '.' dec_digit* expt_part?) | 
   ('.' dec_digit+ expt_part?) |
   (dec_int_lit expt_part?)
 
