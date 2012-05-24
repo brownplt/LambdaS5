@@ -20,6 +20,10 @@ type jsType =
 type typeEnv = (jsType * string) IdMap.t
 exception TypeError of string
 
+(* Used internally where we can have symbolic values or concrete values,
+ * namely for attrs *)
+type symbool = BTrue | BFalse | BSym of id
+type symstring = SString of string | SSym of id
 
 type value =
   (* Scalar types *)
@@ -50,17 +54,17 @@ and objfields = { attrs: attrsv;
                   symps: propv IdMap.t; } (* props with symbolic field names *)
 and
   attrsv = { code : Store.loc option; (* will be a Closure *)
-             proto : Store.loc;
-             extensible : bool;
-             klass : Store.loc;
+             proto : Store.loc; (* ObjPtr, Null, or SymScalar asserted to be Null *)
+             extensible : symbool;
+             klass : symstring; (* string *)
              primval : Store.loc option; }
 and (* Each prop has three attrs: value/accessor, enum, config *)
   propv =
-  | Data of datav * bool * bool
-  | Accessor of accessorv * bool * bool
+  | Data of datav * symbool * symbool
+  | Accessor of accessorv * symbool * symbool
 (* Properties hold the location of their values in the value store.
  * Data props also have annother attr: writable *)
-and datav = { value : Store.loc; writable : bool; }
+and datav = { value : Store.loc; writable : symbool; }
 and accessorv = { getter : Store.loc; setter : Store.loc; }
    
 and exval = 
@@ -281,45 +285,68 @@ let sto_lookup_val loc ctx =
 
 let hint s pc = add_constraint (Hint s) pc
 
-let new_sym_scalar name hint_s pc =
+(* Returns the loc of a newly allocated SymScalar *)
+let alloc_sym_scalar name hint_s pc =
   let (sym_id, pc) = fresh_var name TAny hint_s pc in
   let (sym_loc, pc) = sto_alloc_val (SymScalar sym_id) pc in
   (sym_loc, pc)
 
-let new_opt_sym_val name hint_s pc =
-  let (symval, pc') = (new_sym_scalar name hint_s pc) in
-  combine (return (Some symval) (hint ("Some " ^ hint_s) pc')) none (* (return None pc) *)
+let alloc_sym_scalar_opt name hint_s pc =
+  let (sym_loc, pc') = alloc_sym_scalar name hint_s pc in
+  combine
+    (return (Some sym_loc) (hint ("Some " ^ hint_s) pc'))
+    (return None pc)
 
-let new_sym_helper locs hint pc = 
+(* Creates a new symbolic boolean to be used as an attr *)
+let new_sym_bool name hint_s pc =
+  let (sym_id, pc) = fresh_var name TBool hint_s pc in
+  (BSym sym_id, pc)
+
+(* Creates a new symbolic string to be used as an attr *)
+let new_sym_string name hint_s pc =
+  let (sym_id, pc) = fresh_var name TString hint_s pc in
+  (SSym sym_id, pc)
+
+(* Creates a NewSym given a list of locs. Should only be used alone when creating the
+ * prototypes for symbolic objects (since a sym obj's proto uses the same list of locs.
+ * All other new sym allocation should use new_sym *)
+let new_sym_from_locs locs hint pc = 
   let (sym_id, pc) = fresh_var "" TAny hint pc in
+  (* Create a new symbolic object placeholder, and add it to the store.
+   * This will account for the possibility that the new sym is a
+   * pointer to an unknown symbolic object. This obj will be init'd later 
+   * using init_sym_obj below. *)
   let (new_loc, pc) = sto_alloc_obj (NewSymObj locs) pc in
   (* include the just-allocated location *)
   (NewSym (sym_id, new_loc::locs), pc)
 
+(* Creates a new symbolic value. Does not allocate it in the store. *)
 let new_sym hint pc = 
   (* Get locs of all objects in the store so we can branch
    * once we know the type of this sym value *)
-  new_sym_helper (map fst (Store.bindings pc.store.objs)) hint pc
+  new_sym_from_locs (map fst (Store.bindings pc.store.objs)) hint pc
 
-let new_sym_obj existing_locs loc hint_s pc =
-  (* Create a new symbolic object, and add it to the store.
-   * This will account for the possibility that the new sym is a
-   * pointer pointing to an unknown symbolic object. *)
-  bind (new_opt_sym_val "code" "code field" pc)
-    (fun (code_loc, pc) ->
-      bind (combine (return true (hint "extensible = true" pc)) (return false pc))
-        (fun (extensible, pc) ->
-          let (klass_loc, pc) = new_sym_scalar "klass" "klass attr" pc in
-          let pc = hint ("new klass at " ^ Store.print_loc klass_loc) pc in
-          bind (new_opt_sym_val "primval" "primval attr" pc)
-            (fun (primval_loc, pc) ->
-              bind (uncurry return (new_sym_helper existing_locs "proto" (hint ("new %proto for " ^ (Store.print_loc loc)) pc)))
-                (fun (proto, pc) ->
-                  let (proto_loc, pc) = sto_alloc_val proto pc in
-                  let ret = (SymObj {
-                    attrs = { code = code_loc; proto = proto_loc; extensible = extensible;
-                              klass = klass_loc; primval = primval_loc };
-                    conps = IdMap.empty;
-                    symps = IdMap.empty
-                  }) in
-                  return ret (sto_update_obj loc ret pc)))))
+(* Creates a new sym obj whose attributes are all symbolic. Most are scalars, or scalar
+ * opts, except for the prototype, which could be a scalar (hopefully Null) or an obj, so
+ * we use a NewSym. The locs for this NewSym (i.e., the locs of every object it could be
+ * equal to) should be the same as the locs for the sym obj we are init'ing, since the
+ * proto would had to have exist before this obj. *)
+let init_sym_obj locs loc hint_s pc =
+  let (sym_ext, pc) = new_sym_bool "extensible" "extensible attr" pc in
+  let (sym_klass, pc) = new_sym_string "klass" "klass attr" pc in
+  (*let pc = hint ("new klass at " ^ Store.print_loc klass_loc) pc in*)
+  bind (uncurry return (new_sym_from_locs locs "proto"
+                          (hint ("new %proto for " ^ (Store.print_loc loc)) pc)))
+    (fun (proto, pc) ->
+      let (proto_loc, pc) = sto_alloc_val proto pc in
+      bind (alloc_sym_scalar_opt "code" "code attr" pc)
+        (fun (code_loc_opt, pc) ->
+          bind (alloc_sym_scalar_opt "primval" "primval attr" pc)
+            (fun (pv_loc_opt, pc) ->
+              let ret = (SymObj {
+                attrs = { code = code_loc_opt; proto = proto_loc; extensible = sym_ext;
+                          klass = sym_klass; primval = pv_loc_opt };
+                conps = IdMap.empty;
+                symps = IdMap.empty
+              }) in
+              return ret (sto_update_obj loc ret pc))))

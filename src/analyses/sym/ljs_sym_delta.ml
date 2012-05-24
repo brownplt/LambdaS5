@@ -128,17 +128,15 @@ let print ctx v =
 let rec object_to_string ctx obj = begin
   match obj with
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
-    | ConObj { attrs = {klass = k_loc} }, ctx
-    | SymObj { attrs = {klass = k_loc} }, ctx ->
-      let (s, ctx) = sto_lookup_val k_loc ctx in 
-      begin match s with
-      | String s -> uncurry return (add_const_str ctx ("[object " ^ s ^ "]"))
-      | SymScalar id -> 
+    | ConObj { attrs = {klass = symk} }, ctx
+    | SymObj { attrs = {klass = symk} }, ctx ->
+      begin match symk with
+      | SString s -> uncurry return (add_const_str ctx ("[object " ^ s ^ "]"))
+      | SSym id -> 
         (* TODO: add constraint relating id and this result *)
         uncurry return (add_const_str ctx ("[object " ^ id ^ "]"))
-      | _ -> failwith "Impossible: klass field held a non-string value"
       end
-    | NewSymObj locs, ctx -> bind (new_sym_obj locs loc "" ctx) 
+    | NewSymObj locs, ctx -> bind (init_sym_obj locs loc "" ctx) 
       (fun (_, ctx) -> object_to_string ctx obj)
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"
@@ -148,19 +146,18 @@ end
 let rec is_array ctx obj = begin
   match obj with
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
-    | ConObj { attrs = {klass = k_loc} }, ctx
-    | SymObj { attrs = {klass = k_loc} }, ctx ->
-      let (s, ctx) = sto_lookup_val k_loc ctx in 
-      begin match s with
-      | String s -> return (bool (s = "Array")) ctx
-      | SymScalar id -> 
+    | ConObj { attrs = {klass = symk} }, ctx
+    | SymObj { attrs = {klass = symk} }, ctx ->
+      begin match symk with
+      | SString s -> return (bool (s = "Array")) ctx
+      | SSym id -> 
         let (arrStr, ctx) = const_string "Array" ctx in
         return True
          (add_constraint
             (SAssert (SApp (SId "=", [SId id; SId arrStr]))) ctx)
-      | _ -> failwith "Impossible: klass field held a non-string value"
+        (* TODO false branch? *)
       end
-    | NewSymObj locs, ctx -> bind (new_sym_obj locs loc "" ctx) 
+    | NewSymObj locs, ctx -> bind (init_sym_obj locs loc "" ctx) 
       (fun (_, ctx) -> is_array ctx obj)
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"

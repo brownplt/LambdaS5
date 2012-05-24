@@ -9,6 +9,14 @@ let rec vert_intersperse a lst = match lst with
   | [x] -> [x]
   | x :: xs -> squish [x; a] :: (vert_intersperse a xs)
 
+let symbool b = match b with
+  | BTrue -> text "true" 
+  | BFalse -> text "false"
+  | BSym id -> text id 
+let symstring s = match s with
+  | SString str -> text str 
+  | SSym id -> text id 
+
 let rec value v = 
   match v with
   | Null -> text "null"
@@ -53,8 +61,8 @@ and attrs { proto = p; code = c; extensible = b; klass = k } =
   brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
                           (proto@
                              code@
-                             [horz [text "#class:"; text (Store.print_loc k)]; 
-                              horz [text "#extensible:"; text (string_of_bool b)]])))
+                             [horz [text "#class:"; symstring k]; 
+                              horz [text "#extensible:"; symbool b]])))
 
 (* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
@@ -62,10 +70,10 @@ and prop (f, prop) = match prop with
     horz [text f; text ":"; braces (horz [text "#value"; 
                                                         text (Store.print_loc v); text ",";
                                                         text "#writable";  
-                                                        text (string_of_bool w);
+                                                        symbool w;
                                                         text ",";
                                                         text "#configurable";
-                                                        text (string_of_bool config)])]
+                                                        symbool config;])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
                                                         text (Store.print_loc g); text ",";
