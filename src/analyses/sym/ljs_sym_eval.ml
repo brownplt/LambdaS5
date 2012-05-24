@@ -81,21 +81,49 @@ let branch_string sym_str pc = match sym_str with
    * examine use cases and figure out what to do here. *)
   | SSym id -> return (SymScalar id) pc
 
-let get_con_props { conps = con_props } = con_props
-let get_sym_props { symps = sym_props } = sym_props
-let set_con_props o con_props = { o with conps = con_props }
-let set_sym_props o sym_props = { o with symps = sym_props }
+(* If given a NewSym, initializes it, creating a branch for
+ * every possible value it could be (either an ObjPtr to every
+ * object that was in the store when it was created, or a SymScalar). *)
+let branch_sym (v, pc) = 
+  match v with
+  | NewSym (id, obj_locs) ->
+    let branch newval pc = return newval
+      (* Update every location in the store that has a NewSym
+       * with the same id, since that sym value has now been init'd *)
+      { pc with store = { pc.store with vals =
+          Store.mapi
+            (fun loc v -> match v with
+            | NewSym (id', _) -> if id' = id then newval else v
+            | _ -> v)
+            pc.store.vals }}
+    in
+    combine
+      (* One branch for if its a scalar *)
+      (branch (SymScalar id) pc)
+      (* One branch for each object it could point to *)
+      (List.fold_left
+         (fun branches obj_loc ->
+           combine (branch (ObjPtr obj_loc) pc) branches)
+         none obj_locs)
+  | _ -> return v pc
+
+let get_conps { conps = conps } = conps
+let get_symps { symps = symps } = symps
+let set_conps o conps = { o with conps = conps }
+let set_symps o symps = { o with symps = symps }
 
 let rec set_prop loc o f prop pc = match o, f with
-  | SymObj o, SymField f -> return (SymObj (set_sym_props o (IdMap.add f prop (get_sym_props o)))) pc
-  | SymObj o, ConField f -> return (SymObj (set_con_props o (IdMap.add f prop (get_con_props o)))) pc
-  | ConObj o, SymField f -> return (ConObj (set_sym_props o (IdMap.add f prop (get_sym_props o)))) pc
-  | ConObj o, ConField f -> return (ConObj (set_con_props o (IdMap.add f prop (get_con_props o)))) pc
-  | NewSymObj locs, _ -> bind (init_sym_obj locs loc "" pc) (fun (o, pc) -> set_prop loc o f prop pc)
+  | SymObj o, SymField f -> return (SymObj (set_symps o (IdMap.add f prop (get_symps o)))) pc
+  | SymObj o, ConField f -> return (SymObj (set_conps o (IdMap.add f prop (get_conps o)))) pc
+  | ConObj o, SymField f -> return (ConObj (set_symps o (IdMap.add f prop (get_symps o)))) pc
+  | ConObj o, ConField f -> return (ConObj (set_conps o (IdMap.add f prop (get_conps o)))) pc
+  | NewSymObj locs, _ ->
+    bind (init_sym_obj locs loc "init_sym_obj set_prop" pc)
+      (fun (o, pc) -> set_prop loc o f prop pc)
 
 let get_prop o f = match f with 
-  | SymField f -> IdMap.find f (get_sym_props o)
-  | ConField f -> IdMap.find f (get_con_props o)
+  | SymField f -> IdMap.find f (get_symps o)
+  | ConField f -> IdMap.find f (get_conps o)
 
 let rec add_field_helper force obj_loc field newval pc = 
   match sto_lookup_obj obj_loc pc with
@@ -117,8 +145,6 @@ let rec add_field_helper force obj_loc field newval pc =
     (fun (newO, pc) -> 
       add_field_helper force obj_loc field newval pc)
   (* [> TODO: Check error in case of non-extensible <]*)
-
-
 
 let add_field loc field v pc = bind (add_field_helper false loc field v pc)
   (fun ((_, _, v), pc) -> return v pc)
@@ -303,8 +329,7 @@ let set_attr attr obj_loc field prop newval pc =
     in
     bind (set_prop obj_loc objv field newprop pc)
       (fun (new_obj, pc) ->
-        let (z3field, pc') = field_str field pc in
-        return (bool true) (sto_update_field obj_loc new_obj (SymScalar z3field) (Concrete newval) pc')))
+        return True (sto_update_obj obj_loc new_obj pc)))
 
 (* 8.10.5, steps 7/8 "If iscallable(getter) is false and getter is not
    undefined..." *)
@@ -317,29 +342,6 @@ let set_attr attr obj_loc field prop newval pc =
 (*   | Undefined -> false *)
 (*   | _ -> false *)
     
-let branch_sym (v, pc) = 
-  match v with
-  | NewSym (id, obj_locs) ->
-    let branch newval pc = return newval
-      (* Update every location in the store that has a NewSym
-       * with the same id, since that sym value has now been init'd *)
-      { pc with store = { pc.store with vals =
-          Store.mapi
-            (fun loc v -> match v with
-            | NewSym (id', _) -> if id' = id then newval else v
-            | _ -> v)
-            pc.store.vals }}
-    in
-    combine
-      (* One branch for if its a scalar *)
-      (branch (SymScalar id) pc)
-      (* One branch for each object it could point to *)
-      (List.fold_left
-         (fun branches obj_loc ->
-           combine (branch (ObjPtr obj_loc) pc) branches)
-         none obj_locs)
-  | _ -> return v pc
-
 let check_field field pc = 
   match field with
   | String f    -> return (ConField f) pc
@@ -446,12 +448,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
     (* eval_sym should be called to eval an expression e that is part of an expression
      * which determines whether e is a scalar or a pointer. For instance, the expression
      * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
-     * In either case, eval_sym should be used to evaluate e.
-     * 
-     * First evals e, then checks if the result is a NewSym.
-     * If so, initializes it (TODO explain init'ing) and returns the new value.
-     * If not, then just returns the value stored for that id.
-     *)
+     * In either case, eval_sym should be used to evaluate e. *)
     let eval_sym exp env pc = bind (eval exp env pc) branch_sym in
 
     match exp with
@@ -755,7 +752,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.SetObjAttr (p, oattr, obj_ptr, newattr) ->
         bind (eval_sym obj_ptr env pc)
           (fun (obj_ptrv, pc) -> 
-            bind (eval newattr env pc)
+            bind (eval_sym newattr env pc) (* eval_sym b/c it could be a proto *)
               (fun (newattrv, pc) ->
                 match obj_ptrv with
                 | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
@@ -799,9 +796,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 if writ then
                   let vloc, pc = sto_alloc_val newval pc in
                   bind (set_prop obj_loc objv f (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
-                    (fun (newO, pc) ->
-                      let (z3field, pc') = field_str f pc in
-                      return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc')) 
+                    (fun (new_obj, pc) ->
+                      return newval (sto_update_obj obj_loc new_obj pc))
                 else throw_str "SetField NYI for non-writable fields" pc)
           (* TODO what's this?? probably don't need the prev line either *)
           | Some (Accessor ({ setter = sloc; }, _, _)) ->
