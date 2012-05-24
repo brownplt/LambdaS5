@@ -41,6 +41,7 @@ let symboolv b = match b with
 let interp_error pos message =
   "[interp] (" ^ string_of_position pos ^ ") " ^ message
 
+let throw_str s = throw (Throw (String s))
 
 (* let string_to_num = *)
 (*   let cache = IdHashtbl.create 10 in *)
@@ -101,7 +102,6 @@ let rec add_field_helper force obj_loc field newval pc =
         if not (force || ext) then return (field, None, Undefined) pc else
           let vloc, pc = sto_alloc_val newval pc in
           (* TODO : Create Accessor fields! *)
-          (* TODO!!! : Create all possible props here! *)
           let symwrit, pc = new_sym_bool "writable" "add_field writable" pc in
           let symenum, pc = new_sym_bool "enum" "add_field enum" pc in
           let symconf, pc = new_sym_bool "config" "add_field config" pc in
@@ -308,8 +308,8 @@ let check_field field pc =
   match field with
   | String f    -> return (ConField f) pc
   | SymScalar f -> return (SymField f) pc
-  | _ -> throw (Throw (String ("get_field called with non-string/sym field: " ^
-                                  Ljs_sym_pretty.val_to_string field))) pc
+  | _ -> throw_str ("get_field called with non-string/sym field: " ^
+                                  Ljs_sym_pretty.val_to_string field) pc
 
 (* Assume we are given field = String or SymScalar, and obj = Null or ObjPtr, then
    To Lookup a field on an obj: 
@@ -393,10 +393,10 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
           (fun (newO, pc) ->
             sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field)
       end
-    | _ -> throw (Throw (String (interp_error p 
+    | _ -> throw_str (interp_error p 
            "get_prop on a non-object.  The expression was (get-prop " 
          ^ Ljs_sym_pretty.val_to_string obj_ptr
-         ^ " " ^ fst (field_str field pc) ^ ")"))) pc
+         ^ " " ^ fst (field_str field pc) ^ ")") pc
 let sym_get_prop = sym_get_prop_helper true max_proto_depth
 let sym_get_own_prop = sym_get_prop_helper false max_proto_depth
 
@@ -465,7 +465,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               | _ -> 
                 try
                   op1 pc' op e_val
-                with PrimError msg -> throw (Throw (String msg)) pc'
+                with PrimError msg -> throw_str msg pc'
             with TypeError _ -> none)
           
       | S.Op2 (p, op, e1, e2) -> 
@@ -515,7 +515,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     try
                       let (ret, pc'') = op2 pc'' op e1_val e2_val in
                       return ret pc''
-                    with PrimError msg -> throw (Throw (String msg)) pc''
+                    with PrimError msg -> throw_str msg pc''
                 end))
           
       | S.If (p, c, t, f) ->
@@ -707,14 +707,16 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         bind (eval_sym obj_ptr env pc)
           (fun (obj_ptrv, pc') -> 
             match obj_ptrv with
-            | SymScalar _ (* TODO assert SymScalar is null *) 
+            | SymScalar id -> (* TODO do we also need a branch where we throw a type error? *)
+              return Undefined
+                (add_constraint (SAssert (SApp (SId "=", [SId id; Concrete Null]))) pc)
             | Null -> return Undefined pc'
             | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc' with
               | ConObj { attrs = attrs }, pc'
               | SymObj { attrs = attrs }, pc' -> get_obj_attr attrs oattr pc'
               | NewSymObj _, _ -> failwith "Impossible!" 
             end
-            | _ -> throw (Throw (String "GetObjAttr given non-object")) pc')
+            | _ -> throw_str "GetObjAttr given non-object" pc')
 
       | S.SetObjAttr _ -> failwith "[sym_eval] SetObjAttr NYI"
  
@@ -756,7 +758,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     (fun (newO, pc) ->
                       let (z3field, pc') = field_str f pc in
                       return newval (sto_update_field obj_loc newO (SymScalar z3field) (Concrete newval) pc')) 
-                else throw (Throw (String "SetField NYI for non-writable fields")) pc)
+                else throw_str "SetField NYI for non-writable fields" pc)
           (* TODO what's this?? probably don't need the prev line either *)
           | Some (Accessor ({ setter = sloc; }, _, _)) ->
             let s, pc = sto_lookup_val sloc pc in
@@ -885,7 +887,7 @@ and eval_op str env jsonPath maxDepth pc =
   let json_err = regexp (quote "SyntaxError") in
   try
     ignore (search_forward json_err buf 0);
-    throw (Throw (String "EvalError")) pc
+    throw_str "EvalError" pc
   with Not_found -> begin
     let ast =
       parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
@@ -898,7 +900,7 @@ and eval_op str env jsonPath maxDepth pc =
          eval jsonPath maxDepth 0 desugard env pc (* TODO: which env? *))
       else
         (failwith "no global")
-    with ParseError _ -> throw (Throw (String "EvalError")) pc
+    with ParseError _ -> throw_str "EvalError" pc
   end
 
 let rec eval_expr expr jsonPath maxDepth pc = 
@@ -923,5 +925,5 @@ let rec eval_expr expr jsonPath maxDepth pc =
           | NewSymObj locs, pc -> "Threw a NewSymObj -- what were you thinking??"
         end
         | v -> (Ljs_sym_pretty.val_to_string v) in
-      throw (str ("Uncaught exception: " ^ err_msg)) pc
-    | Break (l, v) -> throw (str ("Broke to top of execution, missed label: " ^ l)) pc)
+      throw_str ("Uncaught exception: " ^ err_msg) pc
+    | Break (l, v) -> throw_str ("Broke to top of execution, missed label: " ^ l) pc)
