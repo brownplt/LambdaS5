@@ -105,6 +105,13 @@ let get_prop o f = match f with
   | SymField f -> IdMap.find f (get_symps o)
   | ConField f -> IdMap.find f (get_conps o)
 
+let delete_prop o f = match o, f with 
+  | SymObj o, SymField f -> SymObj (set_symps o (IdMap.remove f (get_symps o)))
+  | SymObj o, ConField f -> SymObj (set_conps o (IdMap.remove f (get_conps o)))
+  | ConObj o, SymField f -> ConObj (set_symps o (IdMap.remove f (get_symps o)))
+  | ConObj o, ConField f -> ConObj (set_conps o (IdMap.remove f (get_conps o)))
+  | NewSymObj _, _ -> failwith "Impossible! Should have init'd NewSymObj before delete_prop"
+
 let rec add_field_helper force obj_loc field newval pc = 
   match sto_lookup_obj obj_loc pc with
   | ((SymObj { attrs = { extensible = symext; }}) as o)
@@ -222,35 +229,35 @@ let set_attr attr obj_loc field prop newval pc =
   | SymObj { attrs = { extensible = ext; } } -> branch_bool ext pc
   | NewSymObj _ -> failwith "Impossible! set_attr given NewSymObj"
   in
-  bind ext_branches (fun (ext, pc) ->
-    let newprop, pc = match prop with
+  let make_new_prop ext pc =
+    match prop with
     | None ->
       if ext then match attr with
       | S.Getter ->
         let vloc, pc = sto_alloc_val newval pc in 
         let uloc, pc = sto_alloc_val Undefined pc in
-        (Accessor ({ getter = vloc; setter = uloc; },
-                  BFalse, BFalse), pc)
+        return (Accessor ({ getter = vloc; setter = uloc; },
+                  BFalse, BFalse)) pc
       | S.Setter ->
         let vloc, pc = sto_alloc_val newval pc in 
         let uloc, pc = sto_alloc_val Undefined pc in
-        (Accessor ({ getter = uloc; setter = vloc; },
-                  BFalse, BFalse), pc)
+        return (Accessor ({ getter = uloc; setter = vloc; },
+                  BFalse, BFalse)) pc
       | S.Value ->
         let vloc, pc = sto_alloc_val newval pc in 
-        (Data ({ value = vloc; writable = BFalse; }, BFalse, BFalse), pc)
+        return (Data ({ value = vloc; writable = BFalse; }, BFalse, BFalse)) pc
       | S.Writable ->
         let uloc, pc = sto_alloc_val Undefined pc in
-        (Data ({ value = uloc; writable = symboolv newval },
-              BFalse, BFalse), pc)
+        return (Data ({ value = uloc; writable = symboolv newval },
+              BFalse, BFalse)) pc
       | S.Enum ->
         let uloc, pc = sto_alloc_val Undefined pc in
-        (Data ({ value = uloc; writable = BFalse },
-              symboolv newval, BTrue), pc)
+        return (Data ({ value = uloc; writable = BFalse },
+              symboolv newval, BTrue)) pc
       | S.Config ->
         let uloc, pc = sto_alloc_val Undefined pc in
-        (Data ({ value = uloc; writable = BFalse },
-              BTrue, symboolv newval), pc)
+        return (Data ({ value = uloc; writable = BFalse },
+              BTrue, symboolv newval)) pc
       else
         failwith "[interp] Extending inextensible object ."
     | Some prop ->
@@ -260,55 +267,66 @@ let set_attr attr obj_loc field prop newval pc =
       begin match prop, attr, newval with
         (* S.Writable true -> false when configurable is false *)
         | Data ({ writable = BTrue } as d, enum, config), S.Writable, new_w ->
-          (Data ({ d with writable = symboolv new_w }, enum, config), pc)
+          return (Data ({ d with writable = symboolv new_w }, enum, config)) pc
         | Data (d, enum, BTrue), S.Writable, new_w ->
-          (Data ({ d with writable = symboolv new_w }, enum, BTrue), pc)
+          return (Data ({ d with writable = symboolv new_w }, enum, BTrue)) pc
         (* Updating values only checks writable *)
         | Data ({ writable = BTrue } as d, enum, config), S.Value, v ->
           let vloc, pc = sto_alloc_val v pc in
-          (Data ({ d with value = vloc }, enum, config), pc)
+          return (Data ({ d with value = vloc }, enum, config)) pc
         (* If we had a data property, update it to an accessor *)
         | Data (d, enum, BTrue), S.Setter, setterv ->
           let sloc, pc = sto_alloc_val setterv pc in
           let uloc, pc = sto_alloc_val Undefined pc in
-          (Accessor ({ getter = uloc; setter = sloc }, enum, BTrue), pc)
+          return (Accessor ({ getter = uloc; setter = sloc }, enum, BTrue)) pc
         | Data (d, enum, BTrue), S.Getter, getterv ->
           let gloc, pc = sto_alloc_val getterv pc in
           let uloc, pc = sto_alloc_val Undefined pc in
-          (Accessor ({ getter = gloc; setter = uloc }, enum, BTrue), pc)
+          return (Accessor ({ getter = gloc; setter = uloc }, enum, BTrue)) pc
         (* Accessors can update their getter and setter properties *)
         | Accessor (a, enum, BTrue), S.Getter, getterv ->
           let gloc, pc = sto_alloc_val getterv pc in
-          (Accessor ({ a with getter = gloc }, enum, BTrue), pc)
+          return (Accessor ({ a with getter = gloc }, enum, BTrue)) pc
         | Accessor (a, enum, BTrue), S.Setter, setterv ->
           let sloc, pc = sto_alloc_val setterv pc in
-          (Accessor ({ a with setter = sloc }, enum, BTrue), pc)
+          return (Accessor ({ a with setter = sloc }, enum, BTrue)) pc
         (* An accessor can be changed into a data property *)
         | Accessor (a, enum, BTrue), S.Value, v ->
           let vloc, pc = sto_alloc_val v pc in
-          (Data ({ value = vloc; writable = BFalse; }, enum, BTrue), pc)
+          return (Data ({ value = vloc; writable = BFalse; }, enum, BTrue)) pc
         | Accessor (a, enum, BTrue), S.Writable, w ->
           let uloc, pc = sto_alloc_val Undefined pc in
-          (Data ({ value = uloc; writable = symboolv w; }, enum, BTrue), pc)
+          return (Data ({ value = uloc; writable = symboolv w; }, enum, BTrue)) pc
         (* enumerable and configurable need configurable=true *)
         | Data (d, _, BTrue), S.Enum, new_enum ->
-          (Data (d, symboolv new_enum, BTrue), pc)
+          return (Data (d, symboolv new_enum, BTrue)) pc
         | Data (d, enum, BTrue), S.Config, new_config ->
-          (Data (d, enum, symboolv new_config), pc)
+          return (Data (d, enum, symboolv new_config)) pc
         | Data (d, enum, BFalse), S.Config, False ->
-          (Data (d, enum, BFalse), pc)
+          return (Data (d, enum, BFalse)) pc
         | Accessor (a, enum, BTrue), S.Config, new_config ->
-          (Accessor (a, enum, symboolv new_config), pc)
+          return (Accessor (a, enum, symboolv new_config)) pc
         | Accessor (a, enum, BTrue), S.Enum, new_enum ->
-          (Accessor (a, symboolv new_enum, BTrue), pc)
+          return (Accessor (a, symboolv new_enum, BTrue)) pc
         | Accessor (a, enum, BFalse), S.Config, False ->
-          (Accessor (a, enum, BFalse), pc)
-        | _ -> failwith "[interp] bad property set"
+          return (Accessor (a, enum, BFalse)) pc
+        | _ ->
+          let fstr, pc = field_str field pc in
+          throw_str ("[interp] Can't set attr "
+                ^ Ljs_syntax.string_of_attr attr
+                ^ " for field "
+                ^ (FormatExt.to_string Ljs_sym_pretty.prop) (fstr, prop)
+                ^ " with new value "
+                ^ Ljs_sym_pretty.val_to_string newval) pc
       end
     in
-    bind (set_prop obj_loc objv field newprop pc)
-      (fun (new_obj, pc) ->
-        return True (sto_update_obj obj_loc new_obj pc)))
+    bind ext_branches
+      (fun (ext, pc) ->
+        bind (make_new_prop ext pc)
+          (fun (newprop, pc) ->
+            bind (set_prop obj_loc objv field newprop pc)
+              (fun (new_obj, pc) ->
+                return True (sto_update_obj obj_loc new_obj pc))))
 
 (* 8.10.5, steps 7/8 "If iscallable(getter) is false and getter is not
    undefined..." *)
@@ -698,15 +716,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (fun (fv, pc_f) -> 
                 bind (eval newval env pc_f)
                   (fun (newvalv, pc_v) -> 
-                    (bind (check_field fv pc_v)
-                       (fun (fv, pc') -> 
-                         bind (sym_get_prop p pc' obj_ptrv fv)
-                           (fun ((field, prop), pc') -> 
-                             match obj_ptrv with
-                             | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
-                             | Null -> return Undefined pc'
-                             | ObjPtr obj_loc -> set_attr attr obj_loc field prop newvalv pc'
-                             | _ -> failwith "Impossible -- should be an ObjPtr"))))))
+                    bind (check_field fv pc_v)
+                      (fun (fv, pc') -> 
+                        bind (sym_get_prop p pc' obj_ptrv fv)
+                          (fun ((field, prop), pc') -> 
+                            match obj_ptrv with
+                            | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
+                            | Null -> return Undefined pc'
+                            | ObjPtr obj_loc -> set_attr attr obj_loc field prop newvalv pc'
+                            | _ -> failwith "Impossible -- should be an ObjPtr")))))
                   
 
       | S.GetObjAttr (p, oattr, obj_ptr) -> 
@@ -747,16 +765,16 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (fun (fv, pc_f) -> 
                 bind (eval args env pc_f)
                   (fun (argsv, pc') ->
-                    (bind (check_field fv pc')
-                       (fun (fv, pc') -> 
-                         bind (sym_get_prop p pc' obj_ptrv fv)
-                           (fun ((_, prop), pc') -> match prop with
-                           | Some (Data ({ value = vloc; }, _, _)) ->
-                             return (sto_lookup_val vloc pc') pc
-                           | Some (Accessor ({ getter = gloc; }, _, _)) ->
-                             let g = sto_lookup_val gloc pc' in
-                             apply p g [obj_ptrv; argsv] pc' depth
-                           | None -> return Undefined pc'))))))
+                    bind (check_field fv pc')
+                      (fun (fv, pc') -> 
+                        bind (sym_get_prop p pc' obj_ptrv fv)
+                          (fun ((_, prop), pc') -> match prop with
+                          | Some (Data ({ value = vloc; }, _, _)) ->
+                            return (sto_lookup_val vloc pc') pc
+                          | Some (Accessor ({ getter = gloc; }, _, _)) ->
+                            let g = sto_lookup_val gloc pc' in
+                            apply p g [obj_ptrv; argsv] pc' depth
+                          | None -> return Undefined pc')))))
 
       | S.SetField (p, obj_ptr, f, v, args) ->
         let update_prop obj_loc f prop newval setter_params pc = 
@@ -783,42 +801,39 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (fun (vv, pc_v) -> 
                     bind (eval args env pc_v)
                       (fun (argvs, pc_a) ->
-                        (bind (check_field fv pc_a)
-                           (fun (fv, pc') -> 
-                             bind (sym_get_prop p pc' obj_ptrv fv)
-                               (fun ((field, prop), pc') -> 
-                                 match obj_ptrv with
-                                 | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
-                                 | Null -> return Undefined pc'
-                                 | ObjPtr obj_loc -> update_prop obj_loc field prop vv [obj_ptrv; argvs] pc'
-                                 | _ -> failwith "Impossible -- should be an ObjPtr")))))))
+                        bind (check_field fv pc_a)
+                          (fun (fv, pc') -> 
+                            bind (sym_get_prop p pc' obj_ptrv fv)
+                              (fun ((field, prop), pc') -> 
+                                match obj_ptrv with
+                                | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
+                                | Null -> return Undefined pc'
+                                | ObjPtr obj_loc -> update_prop obj_loc field prop vv [obj_ptrv; argvs] pc'
+                                | _ -> failwith "Impossible -- should be an ObjPtr"))))))
 
-      (*
-        | S.DeleteField (p, obj, f) ->
-        let obj_val = eval obj env in
-        let f_val = eval f env in begin
-        match (obj_val, f_val) with
-        | (ObjPtr c, String s) -> 
-        begin match !c with
-        | (attrs, props) -> begin try
-        match IdMap.find s props with
-        | Data (_, _, true) 
-        | Accessor (_, _, true) ->
-        begin
-        c := (attrs, IdMap.remove s props);
-        True
-        end
-        | _ -> False
-        with Not_found -> False
-        end
-        end
-        | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
-        ^ string_of_position p 
-        ^ ". Instead, it got " 
-        ^ Ljs_sym_pretty.to_string obj_val
-        ^ " and " 
-        ^ Ljs_sym_pretty.to_string f_val)
-        end *)
+      | S.DeleteField (p, obj_ptr, f) ->
+        bind (eval_sym obj_ptr env pc)
+          (fun (obj_ptrv, pc) -> 
+            bind (eval_sym f env pc) 
+              (fun (fv, pc) -> 
+                bind (check_field fv pc)
+                  (fun (fv, pc) -> 
+                    (* get own prop since we don't want to check proto *)
+                    bind (sym_get_own_prop p pc obj_ptrv fv)
+                      (fun ((field, prop), pc) -> 
+                        match obj_ptrv with
+                        | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
+                        | Null -> return Undefined pc (* TODO is this right? *)
+                        | ObjPtr obj_loc -> begin
+                          let objv = sto_lookup_obj obj_loc pc in
+                          match prop with
+                          | Some (Data (_, _, BTrue))
+                          | Some (Accessor (_, _, BTrue)) ->
+                            let new_obj = delete_prop objv field in
+                            return True (sto_update_obj obj_loc new_obj pc)
+                          | _ -> return False pc
+                        end
+                        | _ -> failwith "Impossible -- should be an ObjPtr"))))
 
 
       | S.OwnFieldNames _ -> failwith "[ljs_sym_eval] OwnFieldNames NYI"
@@ -863,7 +878,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         | String s -> eval_op s env jsonPath
         | v -> v
       *)
-      | S.DeleteField _ -> failwith "[interp] not yet implemented (DeleteField)"
       | S.Eval _ -> failwith "[interp] not yet implemented (Eval)"
 
 
