@@ -185,8 +185,10 @@ let is_sat (p : ctx) : bool =
 " in
 
 
-  let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   let { constraints = cs; vars = vs; store = store } = p in
+  match cs with [] -> true | _ ->
+
+  let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
   IdMap.iter
