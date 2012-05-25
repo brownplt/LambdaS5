@@ -716,7 +716,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (fun (fv, pc_f) -> 
                 bind (check_field fv pc_f)
                    (fun (fv, pc') -> 
-                     bind (sym_get_prop p pc' obj_ptrv fv)
+                     (* get own prop since we shouldn't check proto *)
+                     bind (sym_get_own_prop p pc' obj_ptrv fv)
                        (fun ((_, prop_opt), pc') -> match prop_opt with
                        | Some prop -> get_attr attr prop pc'
                        | None -> return Undefined pc'))))
@@ -727,29 +728,30 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind (eval_sym field env pc_o) 
               (fun (fv, pc_f) -> 
                 bind (eval newval env pc_f)
-                  (fun (newvalv, pc_v) -> 
+                  (fun (newvalv, pc_v) ->
                     bind (check_field fv pc_v)
                       (fun (fv, pc') -> 
-                        bind (sym_get_prop p pc' obj_ptrv fv)
+                        (* get own prop since we shouldn't check proto *)
+                        bind (sym_get_own_prop p pc' obj_ptrv fv)
                           (fun ((field, prop), pc') -> 
                             match obj_ptrv with
-                            | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
-                            | Null -> return Undefined pc'
                             | ObjPtr obj_loc -> set_attr attr obj_loc field prop newvalv pc'
-                            | _ -> failwith "Impossible -- should be an ObjPtr")))))
+                            | SymScalar id -> throw_str "SetAttr given SymScalar" pc
+                            | Null -> throw_str "SetAttr given Null" pc
+                            | _ -> failwith "SetAttr given non-object")))))
                   
 
       | S.GetObjAttr (p, oattr, obj_ptr) -> 
         bind (eval_sym obj_ptr env pc)
           (fun (obj_ptrv, pc) -> 
             match obj_ptrv with
-            | SymScalar id -> return Undefined (add_assert (is_null_sym id) pc)
-            | Null -> return Undefined pc
             | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
               | ConObj { attrs = attrs }
               | SymObj { attrs = attrs } -> get_obj_attr oattr attrs pc
               | NewSymObj _ -> failwith "Impossible!" 
             end
+            | SymScalar id -> throw_str "GetObjAttr given SymScalar" pc
+            | Null -> throw_str "GetObjAttr given Null" pc
             | _ -> throw_str "GetObjAttr given non-object" pc)
 
       | S.SetObjAttr (p, oattr, obj_ptr, newattr) ->
@@ -758,9 +760,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind (eval_sym newattr env pc) (* eval_sym b/c it could be a proto *)
               (fun (newattrv, pc) ->
                 match obj_ptrv with
-                | SymScalar id -> return Undefined (add_assert (is_null_sym id) pc)
-                | Null -> return Undefined pc
                 | ObjPtr obj_loc -> set_obj_attr oattr obj_loc newattrv pc
+                | SymScalar id -> throw_str "SetObjAttr given SymScalar" pc
+                | Null -> throw_str "SetObjAttr given Null" pc
                 | _ -> throw_str "SetObjAttr given non-object" pc))
  
       (* Invariant on the concrete and symbolic field maps in an object:
@@ -835,7 +837,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                       (fun ((field, prop), pc) -> 
                         match obj_ptrv with
                         | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
-                        | Null -> return Undefined pc (* TODO is this right? *)
+                        | Null -> throw_str "DeleteField got a non-object" pc (* TODO is this right? *)
                         | ObjPtr obj_loc -> begin
                           let objv = sto_lookup_obj obj_loc pc in
                           match prop with
