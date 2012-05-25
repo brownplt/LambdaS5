@@ -6,17 +6,12 @@ var f = function() { return 22; };
 // Should be able to change to an accessor
 Object.defineProperty(obj, "x", {get: f});
 var desc = Object.getOwnPropertyDescriptor(obj, "x");
-print(desc.writable);
-print(desc.get);
-print(desc.set);
-print(desc.configurable);
-print(obj.x);
 if (
-  //  desc.writable === undefined &&
+    desc.writable === undefined &&
     desc.get === f &&
     desc.set === undefined &&
     desc.configurable === true &&
-  //  desc.enumerable === false &&
+    desc.enumerable === false &&
     obj.x === 22
   ) {
   print("passed");
