@@ -57,6 +57,7 @@ module S5 = struct
       printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);
       print_newline())
       results
+    (*List.iter (fun (Ljs_sym_values.Throw v, p) -> printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v); print_newline()) exns*)
   (* close_in inch; close_out outch *)
 
   let env (path : string) : unit =

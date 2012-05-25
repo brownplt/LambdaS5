@@ -25,7 +25,7 @@ let symbool b = match b with
 let symboolv b = match b with
   | True -> BTrue
   | False -> BFalse
-  | _ -> failwith "tried to symboolv a non-bool"
+  | _ -> failwith ("tried to symboolv a non-bool: " ^ Ljs_sym_pretty.val_to_string b)
 
 let to_int ctx v = match v with
   | Num x -> int_of_float x

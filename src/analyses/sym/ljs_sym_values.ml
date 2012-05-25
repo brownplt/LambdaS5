@@ -291,7 +291,6 @@ let new_sym hint pc =
 let init_sym_obj locs loc hint_s pc =
   let (sym_ext, pc) = new_sym_bool "extensible" "extensible attr" pc in
   let (sym_klass, pc) = new_sym_string "klass" "klass attr" pc in
-  (*let pc = hint ("new klass at " ^ Store.print_loc klass_loc) pc in*)
   bind (uncurry return (new_sym_from_locs locs "proto"
                           ("new %proto for " ^ (Store.print_loc loc)) pc))
     (fun (proto, pc) ->

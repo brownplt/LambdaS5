@@ -234,7 +234,7 @@ let set_attr attr obj_loc field prop newval pc =
   | SymObj { attrs = { extensible = ext; } } -> branch_bool ext pc
   | NewSymObj _ -> failwith "Impossible! set_attr given NewSymObj"
   in
-  let make_new_prop ext pc =
+  let make_updated_prop ext pc =
     match prop with
     | None ->
       if ext then match attr with
@@ -316,7 +316,7 @@ let set_attr attr obj_loc field prop newval pc =
         | Accessor (a, enum, BFalse), S.Config, False ->
           return (Accessor (a, enum, BFalse)) pc
         | _ ->
-          let fstr, pc = field_str field pc in
+          let fstr = match field with ConField f | SymField f -> f in
           throw_str ("[interp] Can't set attr "
             ^ Ljs_syntax.string_of_attr attr
             ^ " for field "
@@ -327,7 +327,7 @@ let set_attr attr obj_loc field prop newval pc =
     in
     bind ext_branches
       (fun (ext, pc) ->
-        bind (make_new_prop ext pc)
+        bind (make_updated_prop ext pc)
           (fun (newprop, pc) ->
             bind (set_prop obj_loc objv field newprop pc)
               (fun (new_obj, pc) ->
