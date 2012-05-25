@@ -373,31 +373,33 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
         let potential_props = begin
           try return (field, Some (get_prop objv field)) pc
           with Not_found -> 
+            let fstr, pc = field_str field pc in
             let prop_branches wrap_f props = IdMap.fold
               (fun f' v' branches ->
                 let field' = wrap_f f' in
-                let (f'str, pc') = field_str field' pc in
-                let (fstr, pc') = field_str field pc' in
-                let pc'' = add_assert (is_equal (SId fstr) (SId f'str)) pc' in
+                let f'str, pc = field_str field' pc in
+                let pc = add_assert (is_equal (SId fstr) (SId f'str)) pc in
                 let new_branch =
-                  match field, field' with
-                  | ConField _, ConField _ -> none
-                  | _, _ ->
-                    if is_sat pc'' 
-                    then (return (field', Some v') pc'')
-                    else none
+                  if is_sat pc 
+                  then (return (field', Some v') pc)
+                  else none
                 in combine new_branch branches)
               props none
             in
-            let branches = combine (prop_branches (fun f -> ConField f) conps)
-              (prop_branches (fun f -> SymField f) symps) in
-            let (fstr, pc) = field_str field pc in
+            let con_branches = match field with
+            | ConField f -> none
+            | SymField f -> prop_branches (fun f -> ConField f) conps
+            in
+            let branches = combine con_branches (prop_branches (fun f -> SymField f) symps) in
             let assert_neq wrap_f =
               (fun f' _ pc ->
-                let (f'str, pc') = field_str (wrap_f f') pc in
-                add_assert (is_not_equal (SId fstr) (SId f'str)) pc') in
+                let f'str, pc = field_str (wrap_f f') pc in
+                add_assert (is_not_equal (SId fstr) (SId f'str)) pc) in
             let none_pc = IdMap.fold (assert_neq (fun f -> SymField f)) symps pc in
-            let none_pc = IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc in
+            let none_pc = match field with
+            | ConField f -> none_pc
+            | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc
+            in
             let none_branch = 
               if is_sat none_pc then
                 (if check_proto && ad_hoc_proto_depth > 0 then
