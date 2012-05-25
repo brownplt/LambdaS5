@@ -121,14 +121,19 @@ let rec add_field_helper force obj_loc field newval pc =
         if not (force || ext) then return (field, None, Undefined) pc else
           let vloc, pc = sto_alloc_val newval pc in
           (* TODO : Create Accessor fields once we figure out sym code *)
-          let symwrit, pc = new_sym_bool "writable" "add_field writable" pc in
-          let symenum, pc = new_sym_bool "enum" "add_field enum" pc in
-          let symconf, pc = new_sym_bool "config" "add_field config" pc in
-          let new_prop = (Data ({ value = vloc; writable = symwrit; }, symenum, symconf)) in
+          let new_prop =
+            if force then (* Only want a sym prop if called by get_prop *)
+              let symwrit, pc = new_sym_bool "writable" "add_field writable" pc in
+              let symenum, pc = new_sym_bool "enum" "add_field enum" pc in
+              let symconf, pc = new_sym_bool "config" "add_field config" pc in
+              (Data ({ value = vloc; writable = symwrit; }, symenum, symconf))
+            else
+              (Data ({ value = vloc; writable = BTrue; }, BTrue, BTrue))
+          in
           bind (set_prop obj_loc o field new_prop pc)
-            (fun (newO, pc) -> 
+            (fun (new_obj, pc) -> 
               return (field, Some new_prop, newval)
-                (sto_update_obj obj_loc newO pc)))
+                (sto_update_obj obj_loc new_obj pc)))
   | NewSymObj locs -> bind (init_sym_obj locs obj_loc "init_sym_obj add_field" pc)
     (fun (newO, pc) -> 
       add_field_helper force obj_loc field newval pc)
@@ -313,11 +318,11 @@ let set_attr attr obj_loc field prop newval pc =
         | _ ->
           let fstr, pc = field_str field pc in
           throw_str ("[interp] Can't set attr "
-                ^ Ljs_syntax.string_of_attr attr
-                ^ " for field "
-                ^ (FormatExt.to_string Ljs_sym_pretty.prop) (fstr, prop)
-                ^ " with new value "
-                ^ Ljs_sym_pretty.val_to_string newval) pc
+            ^ Ljs_syntax.string_of_attr attr
+            ^ " for field "
+            ^ (FormatExt.to_string Ljs_sym_pretty.prop) (fstr, prop)
+            ^ " with new value "
+            ^ Ljs_sym_pretty.val_to_string newval) pc
       end
     in
     bind ext_branches
