@@ -31,7 +31,8 @@ let to_int ctx v = match v with
   | Num x -> int_of_float x
   | _ -> raise (PrimError ("expected number, got " ^ Ljs_sym_pretty.val_to_string v))
 
-let typeof ctx v = add_const_str ctx (begin match v with
+let typeof ctx v = 
+  let typestr = match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | String _ -> "string"
@@ -46,7 +47,8 @@ let typeof ctx v = add_const_str ctx (begin match v with
   end
   | Closure _ -> raise (PrimError "typeof got lambda")
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
-end)
+  in 
+  (String typestr, add_const_string typestr ctx)
 
 let is_primitive ctx v = match v with
   | Undefined 
@@ -70,7 +72,7 @@ let float_str ctx n =
   in (s, ctx)
 
 let prim_to_str ctx v = 
-  add_const_str ctx begin match v with
+  let primstr = match v with
   | Undefined -> "undefined"
   | Null -> "null"
   | String s -> s
@@ -96,7 +98,8 @@ let prim_to_str ctx v =
   | False -> "false"
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "prim_to_num")
-  end 
+  in
+  (String primstr, add_const_string primstr ctx)
 
 let strlen ctx s = match s with
   | String s -> (Num (float_of_int (String.length s)), ctx)
@@ -144,12 +147,11 @@ let rec object_to_string ctx obj = begin
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
     | ConObj { attrs = {klass = symk} }
     | SymObj { attrs = {klass = symk} } ->
-      begin match symk with
-      | SString s -> uncurry return (add_const_str ctx ("[object " ^ s ^ "]"))
-      | SSym id -> 
-        (* TODO: add constraint relating id and this result *)
-        uncurry return (add_const_str ctx ("[object " ^ id ^ "]"))
-      end
+      let objstr = match symk with
+      | SString s -> "[object " ^ s ^ "]"
+      (* TODO: add constraint relating id and this result *)
+      | SSym id -> "[object " ^ id ^ "]"
+      in return (String objstr) (add_const_string objstr ctx)
     | NewSymObj locs ->
       bind (init_sym_obj locs loc "object_to_string init_sym_obj" ctx) 
         (fun (_, ctx) -> object_to_string ctx obj)
@@ -217,7 +219,9 @@ let log' ctx = function Num d -> (num (log d ), ctx)
   | _ -> raise (PrimError "log")
 
 let ascii_ntoc ctx n = match n with
-  | Num d -> add_const_str ctx (String.make 1 (Char.chr (int_of_float d)))
+  | Num d ->
+    let str = String.make 1 (Char.chr (int_of_float d)) in
+    (String str, add_const_string str ctx)
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "ascii_ntoc")
 
@@ -425,8 +429,9 @@ let base n r =
 
 let get_base ctx n r = match n, r with
   | Num x, Num y -> 
-    let result = base (abs_float x) (abs_float y) in
-    add_const_str ctx (if x < 0.0 then "-" ^ result else result)
+    let prefix = if x < 0.0 then "-"  else "" in
+    let result = prefix ^ (base (abs_float x) (abs_float y)) in
+    (String result, add_const_string result ctx)
   | NewSym _, _ | _, NewSym _
   | SymScalar _, _ 
   | _, SymScalar _ -> failwith "prim got a symbolic exp"
@@ -477,32 +482,34 @@ let to_fixed ctx a b = (begin
   | _ -> raise (PrimError "to-fixed didn't get 2 numbers")
 end, ctx)
 
-let op2 ctx op a b = match op with
-  | "+" -> arith_sum ctx a b
-  | "-" -> arith_sub ctx a b
-  | "/" -> arith_div ctx a b
-  | "*" -> arith_mul ctx a b
-  | "%" -> arith_mod ctx a b
-  | "&" -> bitwise_and ctx a b
-  | "|" -> bitwise_or ctx a b
-  | "^" -> bitwise_xor ctx a b
-  | "<<" -> bitwise_shiftl ctx a b
-  | ">>" -> bitwise_shiftr ctx a b
-  | ">>>" -> bitwise_zfshiftr ctx a b
-  | "<" -> arith_lt ctx a b
-  | "<=" -> arith_le ctx a b
-  | ">" -> arith_gt ctx a b
-  | ">=" -> arith_ge ctx a b
-  | "stx=" -> stx_eq ctx a b
-  | "abs=" -> abs_eq ctx a b
-  | "string+" -> string_plus ctx a b
-  | "string<" -> string_lessthan ctx a b
-  | "base" -> get_base ctx a b
-  | "char-at" -> char_at ctx a b
-  | "locale-compare" -> locale_compare ctx a b
-  | "pow" -> pow ctx a b
-  | "to-fixed" -> to_fixed ctx a b
+let op2 ctx op a b =
+  let op2_fun = match op with
+  | "+" -> arith_sum
+  | "-" -> arith_sub
+  | "/" -> arith_div
+  | "*" -> arith_mul
+  | "%" -> arith_mod
+  | "&" -> bitwise_and
+  | "|" -> bitwise_or
+  | "^" -> bitwise_xor
+  | "<<" -> bitwise_shiftl
+  | ">>" -> bitwise_shiftr
+  | ">>>" -> bitwise_zfshiftr
+  | "<" -> arith_lt
+  | "<=" -> arith_le
+  | ">" -> arith_gt
+  | ">=" -> arith_ge
+  | "stx=" -> stx_eq
+  | "abs=" -> abs_eq
+  | "string+" -> string_plus
+  | "string<" -> string_lessthan
+  | "base" -> get_base
+  | "char-at" -> char_at
+  | "locale-compare" -> locale_compare
+  | "pow" -> pow
+  | "to-fixed" -> to_fixed
   | _ -> failwith ("no implementation of binary operator: " ^ op)
+  in op2_fun ctx a b
 let typeofOp2 op = match op with
   | "get_field" -> (TObj, TString, TAny)
   | "+" -> (TNum, TNum, TNum)

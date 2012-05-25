@@ -375,13 +375,18 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
           with Not_found -> 
             let prop_branches wrap_f props = IdMap.fold
               (fun f' v' branches ->
-                let (f'str, pc') = field_str (wrap_f f') pc in
+                let field' = wrap_f f' in
+                let (f'str, pc') = field_str field' pc in
                 let (fstr, pc') = field_str field pc' in
                 let pc'' = add_assert (is_equal (SId fstr) (SId f'str)) pc' in
-                let new_branch = if is_sat pc'' 
-                  then (return ((wrap_f f'), Some v') pc'')
-                  else none in
-                combine new_branch branches)
+                let new_branch =
+                  match field, field' with
+                  | ConField _, ConField _ -> none
+                  | _, _ ->
+                    if is_sat pc'' 
+                    then (return (field', Some v') pc'')
+                    else none
+                in combine new_branch branches)
               props none
             in
             let branches = combine (prop_branches (fun f -> ConField f) conps)
@@ -450,7 +455,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Hint (_, _, e) -> eval e env pc
       | S.Undefined _ -> return Undefined pc 
       | S.Null _ -> return Null pc 
-      | S.String (_, s) -> let (_, pc) = add_const_str pc s in return (String s) pc
+      | S.String (_, s) -> return (String s) (add_const_string s pc)
       | S.Num (_, n) -> return (Num n) pc
       | S.True _ -> return True pc
       | S.False _ -> return False pc

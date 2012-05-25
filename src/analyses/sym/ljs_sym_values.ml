@@ -180,14 +180,12 @@ let fresh_var =
     let nvar = "%%" ^ prefix ^ (string_of_int !count) in
     (nvar, (add_var nvar t hint pc)))
 
-let const_string f pc = 
-  let str = "S_" ^ f in
+let const_string s pc = 
+  let str = "S_" ^ s in
   if has_var str pc then (str, pc)
-  else (str, (add_var str TString f pc))
+  else (str, (add_var str TString s pc))
 
-let add_const_str pc s =
-  let (s_id, pc') = const_string s pc in
-  (SymScalar s_id, pc')
+let add_const_string s pc = snd (const_string s pc)
 
 let field_str field ctx = 
   match field with
