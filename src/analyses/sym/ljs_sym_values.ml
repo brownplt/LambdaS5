@@ -261,7 +261,7 @@ let new_sym_bool name hint_s pc =
 
 (* Creates a new symbolic string to be used as an attr *)
 let new_sym_string name hint_s pc =
-  let (sym_id, pc) = fresh_var name TString hint_s pc in
+  let (sym_id, pc) = fresh_var name TSymString hint_s pc in
   (SSym sym_id, pc)
 
 (* Creates a NewSym given a list of locs. Should only be used alone when creating the
