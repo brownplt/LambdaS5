@@ -46,15 +46,6 @@ let rec get_prop p store obj field =
          ^ pretty_value obj 
          ^ " " ^ field ^ ")")
 
-(* Both functions (because a property can satisfy writable and not_writable) *)
-let rec writable prop = match prop with
-  | Data ({ writable = true; }, _, _) -> true
-  | _ -> false
-
-let rec not_writable prop = match prop with
-  | Data ({ writable = false; }, _, _) -> true
-  | _ -> false
-
 let get_obj_attr attrs attr = match attrs, attr with
   | { proto=proto }, S.Proto -> proto
   | { extensible=extensible} , S.Extensible -> bool extensible
