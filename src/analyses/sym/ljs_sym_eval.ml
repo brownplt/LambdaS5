@@ -517,12 +517,12 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   bind (check_field e2_val pc'')
                     (fun (field, pc) ->
                       bind (sym_get_prop p pc e1_val field)
-                        (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
+                        (fun ((_, prop), ctx) -> return (bool (prop <> None)) ctx))
                 | "hasOwnProperty" ->
                   bind (check_field e2_val pc'')
                     (fun (field, pc) ->
                       bind (sym_get_own_prop p pc e1_val field)
-                        (fun ((_, prop), ctx) -> return (bool (prop = None)) ctx))
+                        (fun ((_, prop), ctx) -> return (bool (prop <> None)) ctx))
                 | "isAccessor" ->
                   bind (check_field e2_val pc'')
                     (fun (field, pc) ->
