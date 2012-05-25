@@ -158,9 +158,9 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
               Accessor (a, unbool new_enum, true)
             | Accessor (a, enum, false), S.Config, False ->
               Accessor (a, enum, false)
-            | _ -> failwith ("[interp] bad property set "
+            | _ -> raise (PrimErr ([], String ("[interp] bad property set "
                     ^ (pretty_value obj) ^ " " ^ f_str ^ " " ^
-                    (S.string_of_attr attr) ^ " " ^ (pretty_value newval))
+                    (S.string_of_attr attr) ^ " " ^ (pretty_value newval))))
         in begin
             let store = set_obj store loc 
               (attrsv, IdMap.add f_str newprop props) in
@@ -269,7 +269,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                                enum, config))
                         props) in
                 v_value, store
-              | Some (Data _) -> failwith "Field not writable!"
+              | Some (Data _) -> raise (PrimErr ([], String ("Field " ^ s ^ " not writable!")))
               | Some (Accessor ({ setter = setterv; }, enum, config)) ->
                 (* 8.12.5, step 5 *)
                 apply p store setterv [obj_value; args_value]
