@@ -805,7 +805,18 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (fun (writ, pc) -> 
                 if writ then
                   let vloc, pc = sto_alloc_val newval pc in
-                  bind (set_prop obj_loc objv f (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
+                  let (enum, config) =
+                    (* Copied from concrete evaluator.
+                     * If we found the prop on the proto,
+                     * enum and config should be true *)
+                    match objv with ConObj o | SymObj o -> begin
+                    try let _ = get_prop o f in (enum, config)
+                    with Not_found -> (BTrue, BTrue)
+                    end | _ -> failwith "Impossible! update_prop shouldn't get NewSymObj"
+                  in
+                  bind
+                    (set_prop obj_loc objv f
+                          (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
                     (fun (new_obj, pc) ->
                       return newval (sto_update_obj obj_loc new_obj pc))
                 else throw_str "SetField NYI for non-writable fields" pc)
