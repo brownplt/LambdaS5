@@ -227,7 +227,7 @@ let get_attr attr prop pc = match prop, attr with
   a. Value, which checks Writable
   b. Writable, which can change true->false
 *)
-let set_attr attr obj_loc field prop newval pc =
+let set_attr p attr obj_loc field prop newval pc =
   let objv = sto_lookup_obj obj_loc pc in
   let ext_branches = match objv with
   | ConObj { attrs = { extensible = ext; } }
@@ -317,12 +317,12 @@ let set_attr attr obj_loc field prop newval pc =
           return (Accessor (a, enum, BFalse)) pc
         | _ ->
           let fstr = match field with ConField f | SymField f -> f in
-          throw_str ("[interp] Can't set attr "
+          throw_str (interp_error p ("Can't set attr "
             ^ Ljs_syntax.string_of_attr attr
-            ^ " for field "
-            ^ (FormatExt.to_string Ljs_sym_pretty.prop) (fstr, prop)
-            ^ " with new value "
-            ^ Ljs_sym_pretty.val_to_string newval) pc
+            ^ " to "
+            ^ Ljs_sym_pretty.val_to_string newval
+            ^ " for field: "
+            ^ (FormatExt.to_string Ljs_sym_pretty.prop) (fstr, prop))) pc
       end
     in
     bind ext_branches
@@ -735,7 +735,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                         bind (sym_get_own_prop p pc' obj_ptrv fv)
                           (fun ((field, prop), pc') -> 
                             match obj_ptrv with
-                            | ObjPtr obj_loc -> set_attr attr obj_loc field prop newvalv pc'
+                            | ObjPtr obj_loc -> set_attr p attr obj_loc field prop newvalv pc'
                             | SymScalar id -> throw_str "SetAttr given SymScalar" pc
                             | Null -> throw_str "SetAttr given Null" pc
                             | _ -> failwith "SetAttr given non-object")))))
