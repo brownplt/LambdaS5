@@ -12,7 +12,7 @@ open Exprjs_to_ljs
 open Js_to_exprjs
 open Str
 
-let max_proto_depth = 0
+let max_sym_proto_depth = 1
 
 (* flag for debugging *)
 let print_store = false
@@ -363,7 +363,7 @@ let check_field field pc =
  * if some ObjPtr then lookup 
 *)
 (* TODO comments for this function *)
-let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
+let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
   match obj_ptr with
     | NewSym (id, locs) -> failwith "Impossible"
     | SymScalar id -> return (field, None) (add_assert (is_null_sym id) pc)
@@ -401,13 +401,16 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
             | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc
             in
             let none_branch = 
-              if is_sat none_pc then
-                (if check_proto && ad_hoc_proto_depth > 0 then
+              if not (is_sat none_pc) then none else
+                if check_proto && sym_proto_depth > 0 then
                   bind (branch_sym (sto_lookup_val ploc none_pc) none_pc)
                     (fun (protov, pc) ->
-                      sym_get_prop_helper check_proto (ad_hoc_proto_depth - 1) p pc protov field) 
-                else return (field, None) pc)
-              else none in
+                      let sym_proto_depth' =
+                        if is_sym
+                        then sym_proto_depth - 1
+                        else sym_proto_depth in
+                      sym_get_prop_helper check_proto sym_proto_depth' p pc protov field) 
+                else return (field, None) pc in
             combine none_branch branches
         end in
         bind potential_props (fun ((field, prop), pc) ->
@@ -430,14 +433,14 @@ let rec sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field =
       | NewSymObj locs ->
         bind (init_sym_obj locs obj_loc "init_sym_obj sym_get_prop" pc) 
           (fun (newO, pc) ->
-            sym_get_prop_helper check_proto ad_hoc_proto_depth p pc obj_ptr field)
+            sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field)
       end
     | _ -> throw_str (interp_error p 
            "get_prop on a non-object.  The expression was (get-prop " 
          ^ Ljs_sym_pretty.val_to_string obj_ptr
          ^ " " ^ fst (field_str field pc) ^ ")") pc
-let sym_get_prop = sym_get_prop_helper true max_proto_depth
-let sym_get_own_prop = sym_get_prop_helper false max_proto_depth
+let sym_get_prop = sym_get_prop_helper true max_sym_proto_depth
+let sym_get_own_prop = sym_get_prop_helper false max_sym_proto_depth
 
 let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
