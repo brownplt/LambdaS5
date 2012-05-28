@@ -1,0 +1,9 @@
+To update Spidermonkey for your architecture, follow the instructions here:
+
+https://developer.mozilla.org/En/SpiderMonkey/Build_Documentation
+
+Then, copy the binary from the js/ directory of that installation here, with the filename:
+
+js-1.8.5-<result of running uname>-<result of running arch>
+
+
