@@ -867,8 +867,47 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                         | _ -> failwith "Impossible -- should be an ObjPtr"))))
 
 
-      | S.OwnFieldNames _ -> failwith "[ljs_sym_eval] OwnFieldNames NYI"
-          
+      | S.OwnFieldNames (p, obj_ptr) ->
+        bind (eval_sym obj_ptr env pc)
+          (fun (obj_ptrv, pc) ->
+            match obj_ptrv with
+            | ObjPtr obj_loc ->
+              begin match sto_lookup_obj obj_loc pc with
+              | ConObj { conps = conps; symps = symps }
+              | SymObj { conps = conps; symps = symps } ->
+                let add_name n x (m, pc) =
+                  let nloc, pc = sto_alloc_val n pc in
+                  (IdMap.add (string_of_int x)
+                    (Data ({ value = nloc; writable = BFalse; }, BFalse, BFalse)) m, pc)
+                in
+                let con_names = IdMap.fold (fun k v l -> (String k :: l)) conps [] in
+                let sym_names = IdMap.fold (fun k v l -> (SymScalar k :: l)) symps [] in
+                let namelist = con_names @ sym_names in
+                let props, pc =
+                  List.fold_right2 add_name namelist
+                    (iota (List.length namelist)) (IdMap.empty, pc)
+                in
+                let d = float_of_int (List.length namelist) in
+                let dloc, pc = sto_alloc_val (Num d) pc in
+                let final_props =
+                  IdMap.add "length"
+                    (Data ({ value = dloc; writable = BFalse; }, BFalse, BFalse))
+                    props
+                in
+                let ploc, pc = sto_alloc_val Null pc in
+                let new_loc, pc = sto_alloc_obj (ConObj {
+                  conps = final_props; symps = IdMap.empty;
+                  attrs = {
+                    code = None; proto = ploc; extensible = BFalse;
+                    klass = SString "LambdaJS internal"; primval = None;
+                  }
+                }) pc in
+                return (ObjPtr new_loc) pc
+              | NewSymObj _ -> failwith "OwnFieldNames got a NewSymObj"
+              end
+            | _ -> throw_str "OwnFieldNames got a non-object" pc)
+
+
       | S.Label (p, l, e) -> begin
         bind_exn
           (eval e env pc)
