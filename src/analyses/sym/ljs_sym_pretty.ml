@@ -64,13 +64,15 @@ and attrs { proto = p; code = c; extensible = b; klass = k } =
                              [horz [text "#class:"; sstring k]; 
                               horz [text "#extensible:"; sbool b]])))
 
-(* TODO: print and parse enum and config *)
 and prop (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text f; text ":"; braces (horz [text "#value"; 
                                                         text (Store.print_loc v); text ",";
                                                         text "#writable";  
                                                         sbool w;
+                                                        text ",";
+                                                        text "#enumerable";
+                                                        sbool enum;
                                                         text ",";
                                                         text "#configurable";
                                                         sbool config;])]
