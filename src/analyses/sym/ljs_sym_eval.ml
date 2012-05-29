@@ -448,7 +448,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if print_store then printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);
-  if (depth >= maxDepth) then none
+  if (depth >= maxDepth)
+  then throw_str ("Reached max recursion depth " ^ (string_of_int maxDepth)) pc
   else 
     let nestedEval = eval jsonPath maxDepth in
     let eval = eval jsonPath maxDepth depth in 

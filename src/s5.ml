@@ -50,7 +50,7 @@ module S5 = struct
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
     (* let (inch, outch) = z3 in begin *)
     let (results, exns) = 
-      Ljs_sym_eval.eval_expr !srcES5 !jsonPath 25 Ljs_sym_values.mtPath in
+      Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath in
     List.iter
       (fun (v, p) ->
         printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
