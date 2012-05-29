@@ -51,13 +51,22 @@ module S5 = struct
     (* let (inch, outch) = z3 in begin *)
     let (results, exns) = 
       Ljs_sym_eval.eval_expr !srcES5 !jsonPath 25 Ljs_sym_values.mtPath in
-    List.iter (fun (v, p) -> printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
-      List.iter (fun c -> printf "%s\n" 
-        (Ljs_sym_z3.to_string c p)) p.Ljs_sym_values.constraints;
-      printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);
-      print_newline())
-      results
-    (*List.iter (fun (Ljs_sym_values.Throw v, p) -> printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v); print_newline()) exns*)
+    List.iter
+      (fun (v, p) ->
+        printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
+        List.iter
+          (fun c ->
+            printf "%s\n" (Ljs_sym_z3.to_string c p))
+          p.Ljs_sym_values.constraints;
+        (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
+        print_newline())
+      results;
+    List.iter
+      (fun (v, p) -> match v with
+        | Ljs_sym_values.Throw v ->
+          printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
+        | _ -> printf "Exn: something other than a Throw\n")
+      exns
   (* close_in inch; close_out outch *)
 
   let env (path : string) : unit =
