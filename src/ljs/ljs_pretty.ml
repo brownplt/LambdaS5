@@ -114,29 +114,11 @@ and prop (f, prop) = match prop with
                                           horz[text "#setter";
                                                exp s]])]
 
-
-(* Remove duplicate leading chains (like the environment) from a trace *)
-let remove_prefix_dups exprs =
-  match exprs with
-  | [] -> []
-  | v::rest ->
-    v::(snd
-      (List.fold_left (fun (first, trace) expr ->
-        match first with
-        | Some expr' ->
-            let nm e = (fst (pos_of e)).Lexing.pos_fname in
-            if nm expr = nm expr' then (first, trace) else (None, trace@[expr])
-        | None -> (None, trace@[expr])
-      ) (Some v, []) rest))
-
-let filter_dummies exprs =
-  List.filter (fun expr ->
-    (fst (pos_of expr)) != Lexing.dummy_pos &&
-    (snd (pos_of expr)) != Lexing.dummy_pos) exprs
-
 let stack_trace exprs =
-  let filtered = remove_prefix_dups (filter_dummies exprs) in
-    vert (map (fun expr -> text (string_of_position (pos_of expr))) filtered)
+  let filtered = List.filter (fun expr ->
+    (fst (pos_of expr)) != Lexing.dummy_pos &&
+    (snd (pos_of expr)) != Lexing.dummy_pos) exprs in
+  vert (map (fun expr -> text (string_of_position (pos_of expr))) filtered)
 
 let string_stack_trace =
   FormatExt.to_string stack_trace
