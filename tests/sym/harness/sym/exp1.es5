@@ -1,5 +1,5 @@
 // "x=0", "x!=0"
-let (x = %%newsym)
+let (x = NEWSYM)
 if (prim("stx=", x, prim("+", x, x))) {
     if (prim("stx=", x, 0)) {
         "x=0"

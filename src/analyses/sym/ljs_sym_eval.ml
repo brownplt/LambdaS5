@@ -467,9 +467,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.True _ -> return True pc
       | S.False _ -> return False pc
       | S.Id (p, x) -> begin
-        if x = "%%newsym" then 
+        if x = "NEWSYM" then 
           uncurry return
-            (new_sym ("%%newsym at " ^ (string_of_position p)) pc)
+            (new_sym ("NEWSYM at " ^ (string_of_position p)) pc)
         else
           try return (sto_lookup_val (IdMap.find x env) pc) pc
           with Not_found -> failwith (interp_error p

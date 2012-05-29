@@ -1,5 +1,5 @@
 // "ok", undefined 
-let (x = %%newsym)
+let (x = NEWSYM)
 let (multX =
     let (y = x) {
         func(a) { prim("*", a, y) }

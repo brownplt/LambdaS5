@@ -177,7 +177,7 @@ let fresh_var =
   let count = ref 0 in
   (fun prefix t hint pc ->
     incr count;
-    let nvar = "%%" ^ prefix ^ (string_of_int !count) in
+    let nvar = "%" ^ prefix ^ (string_of_int !count) in
     (nvar, (add_var nvar t hint pc)))
 
 let const_string s pc = 

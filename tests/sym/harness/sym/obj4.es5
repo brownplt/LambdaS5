@@ -2,7 +2,7 @@
 let (obj1 = {[#proto: null,]
     "x": {#value 1, #writable true}
 })
-let (o = %%newsym)
+let (o = NEWSYM)
 if (prim("stx=", o, obj1)) {
     prim("+", o["x"], 1)
 } else {
