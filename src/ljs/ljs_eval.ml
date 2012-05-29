@@ -540,10 +540,10 @@ with
                 with Not_found -> string_of_value v store
                 end
           | v -> (pretty_value v) in
-        printf "%s\nUncaught exception: %s\n" (string_stack_trace t) err_msg;
+        eprintf "%s\nUncaught exception: %s\n" (string_stack_trace t) err_msg;
         failwith "Uncaught exception"
   | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
   | PrimErr (t, v) ->
-      printf "%s\nUncaught error: %s\n" (string_stack_trace t) (pretty_value v);
+      eprintf "%s\nUncaught error: %s\n" (string_stack_trace t) (pretty_value v);
       failwith "Uncaught error"
 
