@@ -13,6 +13,7 @@ open Js_to_exprjs
 open Str
 
 let max_sym_proto_depth = 1
+let new_sym_keyword = "NEWSYM"
 
 (* flag for debugging *)
 let print_store = false
@@ -468,9 +469,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.True _ -> return True pc
       | S.False _ -> return False pc
       | S.Id (p, x) -> begin
-        if x = "NEWSYM" then 
+        (* This catches new syms in handwritten LJS, but not desugared JS.
+         * Desugared JS new syms are caught in GetField. *)
+        if x = new_sym_keyword then
           uncurry return
-            (new_sym ("NEWSYM at " ^ (string_of_position p)) pc)
+            (new_sym (new_sym_keyword ^ " at " ^ (string_of_position p)) pc)
         else
           try return (sto_lookup_val (IdMap.find x env) pc) pc
           with Not_found -> failwith (interp_error p
@@ -500,7 +503,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               match e_val with
               | SymScalar id -> 
                 let pc'' = check_type id t pc' in
-                let (ret_op1, pc''') = fresh_var ("P1_" ^ op ^ "_") ret_ty ("return from " ^ op) pc'' in
+                let (ret_op1, pc''') = fresh_var ("P1_" ^ op ^ "_") ret_ty
+                  ("return from " ^ op ^ " " ^ string_of_position p) pc'' in
                 return (SymScalar ret_op1)
                   (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc''')
               | _ -> 
@@ -520,11 +524,18 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 (* Special case for op2s on objects *)
                 match op with
                 | "hasProperty" -> 
+
+                  (* In desugared JS, hasProperty is called on the global object
+                   * for our special keyword and we need to fake it returning true. *)
+                  begin match e2_val with String fstr
+                  when fstr = new_sym_keyword -> return True pc | _ ->
+
                   bind (check_field e2_val pc'')
                     (fun (field, pc) ->
                       bind (sym_get_prop p pc e1_val field)
                         (fun ((_, prop), ctx) ->
                            return (bool (prop <> None)) ctx))
+                  end
                 | "hasOwnProperty" ->
                   bind (check_field e2_val pc'')
                     (fun (field, pc) ->
@@ -548,7 +559,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                       let (sym_e2, pc2) = match e2_val with
                         | SymScalar id -> (SId id, check_type id t2 pc1)
                         | _ -> (Concrete e2_val, pc1) in
-                      let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty ("return from " ^ op) pc2 in
+                      let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty
+                        ("return from " ^ op ^ " " ^ string_of_position p) pc2 in
                       return (SymScalar ret_op)
                         (add_constraint (SLet (ret_op, SOp2(op, sym_e1, sym_e2))) pc3)
                     with TypeError id -> none 
@@ -784,6 +796,14 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           (fun (obj_ptrv, pc_o) -> 
             bind (eval_sym f env pc_o) 
               (fun (fv, pc_f) -> 
+
+                (* In desugared JS, GetField is called on the global object
+                 * with our new sym keyword, so we catch it here to make a new sym *)
+                match fv with String fstr when fstr = new_sym_keyword ->
+                  uncurry return
+                    (new_sym (new_sym_keyword ^ " at " ^ (string_of_position p)) pc)
+                | _ ->
+
                 bind (eval args env pc_f)
                   (fun (argsv, pc') ->
                     bind (check_field fv pc')
