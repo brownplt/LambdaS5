@@ -25,6 +25,7 @@ let symbool b = match b with
 let symboolv b = match b with
   | True -> BTrue
   | False -> BFalse
+  | SymScalar id -> BSym id
   | _ -> failwith ("tried to symboolv a non-bool: " ^ Ljs_sym_pretty.val_to_string b)
 
 let to_int ctx v = match v with
@@ -42,7 +43,7 @@ let typeof ctx v =
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
     | ConObj { attrs = { code = Some _ }} 
     | SymObj { attrs = { code = Some _ }} -> "function"
-    | NewSymObj _ -> failwith "prim got a NewSymObj"
+    | NewSymObj _ -> failwith "typeof got NewSymObj"
     | _ -> "object"
   end
   | Closure _ -> raise (PrimError "typeof got lambda")
