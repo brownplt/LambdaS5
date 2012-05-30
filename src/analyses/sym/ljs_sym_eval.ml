@@ -502,10 +502,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         bind 
           (eval_sym e env pc)
           (fun (ev, pc) -> 
-            let (t,ret_ty) = typeofOp1 op in 
             try
               match ev with
               | SymScalar id -> 
+                let (t,ret_ty) = typeofOp1 op in 
                 let pc = check_type id t pc in
                 let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
                   ("return from " ^ op ^ " " ^ string_of_position p) pc in

@@ -7,8 +7,8 @@ open Ljs_syntax
 type jsType = 
   | TNull
   | TUndef
-  | TString
-  | TSymString
+  | TString (* used only for concrete strings *)
+  | TSymString (* used only for symbolic values *)
   | TBool
   | TNum
   | TObj

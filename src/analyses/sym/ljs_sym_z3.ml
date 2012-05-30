@@ -86,6 +86,7 @@ and exp e store =
     | TNum -> parens (horz [text "n"; e])
     | TBool -> parens (horz [text "b"; e])
     | TString -> parens (horz [text "s"; e])
+    | TSymString -> parens (horz [text "s"; e])
     | TFun _ -> parens (horz [text "f"; e])
     | TObj -> parens (horz [text "fields"; e])
     | _ -> e in
@@ -93,6 +94,7 @@ and exp e store =
     | TNum -> parens (horz [text "NUM"; e])
     | TBool -> parens (horz [text "BOOL"; e])
     | TString -> parens (horz [text "STR"; e])
+    | TSymString -> parens (horz [text "STR"; e])
     | TFun _ -> parens (horz [text "FUN"; e])
     | TObj -> parens (horz [text "OBJ"; e])
     | _ -> e in
