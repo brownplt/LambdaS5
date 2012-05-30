@@ -41,11 +41,15 @@ let rec apply p func args pc depth = match func with
   | ObjPtr obj_loc ->
     begin match sto_lookup_obj obj_loc pc with
     | ConObj { attrs = { code = Some cloc }}
-    | SymObj { attrs = { code = Some cloc }} -> apply p (sto_lookup_val cloc pc) args pc depth
+    | SymObj { attrs = { code = Some cloc }} ->
+      apply p (sto_lookup_val cloc pc) args pc depth
     | NewSymObj _ -> failwith (interp_error p ("Apply got NewSymObj"))
-    | _ -> failwith (interp_error p ("Applied an object without a code attribute"))
+    | o -> throw_str (interp_error p
+                        ("Applied an object without a code attribute: "
+                        ^ Ljs_sym_pretty.obj_to_string o)) pc
     end
-  | SymScalar id -> throw_str ("Tried to apply symbolic function " ^ id) pc
+  | SymScalar id -> throw_str (interp_error p
+                                 ("Tried to apply a symbolic value: " ^ id)) pc
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
                          Ljs_sym_pretty.val_to_string func))
