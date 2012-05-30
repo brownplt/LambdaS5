@@ -813,18 +813,18 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     (new_sym (new_sym_keyword ^ " at " ^ (string_of_position p)) pc)
                 | _ ->
 
-                bind (eval args env pc_f)
-                  (fun (argsv, pc') ->
-                    bind (check_field fv pc')
-                      (fun (fv, pc') -> 
-                        bind (sym_get_prop p pc' obj_ptrv fv)
-                          (fun ((_, prop), pc') -> match prop with
+                bind (eval args env pc)
+                  (fun (argsv, pc) ->
+                    bind (check_field fv pc)
+                      (fun (fv, pc) -> 
+                        bind (sym_get_prop p pc obj_ptrv fv)
+                          (fun ((_, prop), pc) -> match prop with
                           | Some (Data ({ value = vloc; }, _, _)) ->
-                            return (sto_lookup_val vloc pc') pc
+                            return (sto_lookup_val vloc pc) pc
                           | Some (Accessor ({ getter = gloc; }, _, _)) ->
-                            let g = sto_lookup_val gloc pc' in
-                            apply p g [obj_ptrv; argsv] pc' depth
-                          | None -> return Undefined pc')))))
+                            let g = sto_lookup_val gloc pc in
+                            apply p g [obj_ptrv; argsv] pc depth
+                          | None -> return Undefined pc)))))
 
       | S.SetField (p, obj_ptr, f, v, args) ->
         let update_prop obj_loc f prop newval setter_params pc = 
