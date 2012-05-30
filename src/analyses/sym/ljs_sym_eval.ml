@@ -500,21 +500,27 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Op1 (p, op, e) ->
         bind 
           (eval_sym e env pc)
-          (fun (e_val, pc') -> 
+          (fun (ev, pc) -> 
             let (t,ret_ty) = typeofOp1 op in 
-            try 
-              match e_val with
+            try
+              match ev with
               | SymScalar id -> 
-                let pc'' = check_type id t pc' in
-                let (ret_op1, pc''') = fresh_var ("P1_" ^ op ^ "_") ret_ty
-                  ("return from " ^ op ^ " " ^ string_of_position p) pc'' in
+                let pc = check_type id t pc in
+                let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
+                  ("return from " ^ op ^ " " ^ string_of_position p) pc in
                 return (SymScalar ret_op1)
-                  (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc''')
-              | _ -> 
-                try
-                  op1 pc' op e_val
-                with PrimError msg -> throw_str msg pc'
-            with TypeError _ -> none)
+                  (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc)
+              | ObjPtr obj_loc ->
+                begin match sto_lookup_obj obj_loc pc with
+                | NewSymObj locs ->
+                  bind (init_sym_obj locs obj_loc "op1 init_sym_obj" pc)
+                    (fun (_, pc) -> op1 pc op ev)
+                | _ -> op1 pc op ev
+                end
+              | _ -> op1 pc op ev
+            with
+            | PrimError msg -> throw_str msg pc
+            | TypeError _ -> none)
           
       | S.Op2 (p, op, e1, e2) -> 
         bind
