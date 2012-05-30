@@ -137,9 +137,11 @@ let rec add_field_helper force obj_loc field newval pc =
             (fun (new_obj, pc) -> 
               return (field, Some new_prop, newval)
                 (sto_update_obj obj_loc new_obj pc)))
-  | NewSymObj locs -> bind (init_sym_obj locs obj_loc "init_sym_obj add_field" pc)
-    (fun (newO, pc) -> 
-      add_field_helper force obj_loc field newval pc)
+  | NewSymObj locs ->
+    bind
+      (init_sym_obj locs obj_loc "init_sym_obj add_field" pc)
+      (fun (_, pc) -> 
+        add_field_helper force obj_loc field newval pc)
 
 let add_field loc field v pc = bind (add_field_helper false loc field v pc)
   (fun ((_, _, v), pc) -> return v pc)
@@ -368,80 +370,81 @@ let check_field field pc =
 (* TODO comments for this function *)
 let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
   match obj_ptr with
-    | NewSym (id, locs) -> failwith "Impossible"
-    | SymScalar id -> return (field, None) (add_assert (is_null_sym id) pc)
-    | Null -> return (field, None) pc
-    | ObjPtr obj_loc -> 
-      let helper is_sym ({ attrs = { proto = ploc; }; conps = conps; symps = symps} as objv) pc =
-        let potential_props = begin
-          try return (field, Some (get_prop objv field)) pc
-          with Not_found -> 
-            let fstr, pc = field_str field pc in
-            let prop_branches wrap_f props = IdMap.fold
-              (fun f' v' branches ->
-                let field' = wrap_f f' in
-                let f'str, pc = field_str field' pc in
-                let pc = add_assert (is_equal (SId fstr) (SId f'str)) pc in
-                let new_branch =
-                  if is_sat pc 
-                  then (return (field', Some v') pc)
-                  else none
-                in combine new_branch branches)
-              props none
-            in
-            let con_branches = match field with
-            | ConField f -> none
-            | SymField f -> prop_branches (fun f -> ConField f) conps
-            in
-            let branches = combine con_branches (prop_branches (fun f -> SymField f) symps) in
-            let assert_neq wrap_f =
-              (fun f' _ pc ->
-                let f'str, pc = field_str (wrap_f f') pc in
-                add_assert (is_not_equal (SId fstr) (SId f'str)) pc) in
-            let none_pc = IdMap.fold (assert_neq (fun f -> SymField f)) symps pc in
-            let none_pc = match field with
-            | ConField f -> none_pc
-            | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc
-            in
-            let none_branch = 
-              if not (is_sat none_pc) then none else
-                if check_proto && sym_proto_depth > 0 then
-                  bind (branch_sym (sto_lookup_val ploc none_pc) none_pc)
-                    (fun (protov, pc) ->
-                      let sym_proto_depth' =
-                        if is_sym
-                        then sym_proto_depth - 1
-                        else sym_proto_depth in
-                      sym_get_prop_helper check_proto sym_proto_depth' p pc protov field) 
-                else return (field, None) pc in
-            combine none_branch branches
-        end in
-        bind potential_props (fun ((field, prop), pc) ->
-          match prop with
-          | None -> 
-            (* If it's possible that the property wasn't found, then
-             * if this obj is symbolic, the property *might* have existed on this obj, 
-             * or it might never have existed, so return both None and the new prop (and
-             * add the new prop * to the object) *)
-            if is_sym 
-            then begin
-              let (symv, pc) = new_sym ("get_field at " ^
+  | NewSym (id, locs) -> failwith "Impossible"
+  | SymScalar id -> return (field, None) (add_assert (is_null_sym id) pc)
+  | Null -> return (field, None) pc
+  | ObjPtr obj_loc -> 
+    let helper is_sym ({ attrs = { proto = ploc; }; conps = conps; symps = symps} as objv) pc =
+      let potential_props = begin
+        try return (field, Some (get_prop objv field)) pc
+        with Not_found -> 
+          let fstr, pc = field_str field pc in
+          let prop_branches wrap_f props = IdMap.fold
+            (fun f' v' branches ->
+              let field' = wrap_f f' in
+              let f'str, pc = field_str field' pc in
+              let pc = add_assert (is_equal (SId fstr) (SId f'str)) pc in
+              let new_branch =
+                if is_sat pc 
+                then (return (field', Some v') pc)
+                else none
+              in combine new_branch branches)
+            props none
+          in
+          let con_branches = match field with
+          | ConField f -> none
+          | SymField f -> prop_branches (fun f -> ConField f) conps
+          in
+          let branches = combine con_branches (prop_branches (fun f -> SymField f) symps) in
+          let assert_neq wrap_f =
+            (fun f' _ pc ->
+              let f'str, pc = field_str (wrap_f f') pc in
+              add_assert (is_not_equal (SId fstr) (SId f'str)) pc) in
+          let none_pc = IdMap.fold (assert_neq (fun f -> SymField f)) symps pc in
+          let none_pc = match field with
+          | ConField f -> none_pc
+          | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc
+          in
+          let none_branch = 
+            if not (is_sat none_pc) then none else
+              if check_proto && sym_proto_depth > 0 then
+                bind (branch_sym (sto_lookup_val ploc none_pc) none_pc)
+                  (fun (protov, pc) ->
+                    let sym_proto_depth' =
+                      if is_sym
+                      then sym_proto_depth - 1
+                      else sym_proto_depth in
+                    sym_get_prop_helper check_proto sym_proto_depth' p pc protov field) 
+              else return (field, None) pc in
+          combine none_branch branches
+      end in
+      bind potential_props (fun ((field, prop), pc) ->
+        match prop with
+        | None -> 
+          (* If it's possible that the property wasn't found, then
+           * if this obj is symbolic, the property *might* have existed on this obj, 
+           * or it might never have existed, so return both None and the new prop (and
+           * add the new prop to the object) *)
+          combine
+            (return (field, None) pc)
+            (if is_sym then 
+              let symv, pc = new_sym ("get_field at " ^
                                            (string_of_position p)) pc in
-              also_return (field, None) pc (add_field_force obj_loc field symv pc)
-            end else return (field, None) pc
-          | Some p -> return (field, prop) pc)
-      in begin match sto_lookup_obj obj_loc pc with
-      | ConObj o -> helper false o pc
-      | SymObj o -> helper true o pc
-      | NewSymObj locs ->
-        bind (init_sym_obj locs obj_loc "init_sym_obj sym_get_prop" pc) 
-          (fun (newO, pc) ->
-            sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field)
-      end
-    | _ -> throw_str (interp_error p 
-           "get_prop on a non-object.  The expression was (get-prop " 
-         ^ Ljs_sym_pretty.val_to_string obj_ptr
-         ^ " " ^ fst (field_str field pc) ^ ")") pc
+              add_field_force obj_loc field symv pc
+            else none)
+        | Some p -> return (field, prop) pc)
+    in begin match sto_lookup_obj obj_loc pc with
+    | ConObj o -> helper false o pc
+    | SymObj o -> helper true o pc
+    | NewSymObj locs ->
+      bind (init_sym_obj locs obj_loc "init_sym_obj sym_get_prop" pc) 
+        (fun (_, pc) ->
+          sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field)
+    end
+  | _ -> throw_str (interp_error p 
+         "get_prop on a non-object.  The expression was (get-prop " 
+       ^ Ljs_sym_pretty.val_to_string obj_ptr
+       ^ " " ^ fst (field_str field pc) ^ ")") pc
 let sym_get_prop = sym_get_prop_helper true max_sym_proto_depth
 let sym_get_own_prop = sym_get_prop_helper false max_sym_proto_depth
 
@@ -629,9 +632,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Let (p, x, e, body) ->
         bind
           (eval e env pc)
-          (fun (e_val, pc') -> 
-            let (loc, pc'') = sto_alloc_val e_val pc' in 
-            eval body (IdMap.add x loc env) pc'')
+          (fun (e_val, pc) -> 
+            let loc, pc = sto_alloc_val e_val pc in 
+            eval body (IdMap.add x loc env) pc)
           
       | S.Rec (p, x, e, body) ->
         let (loc, pc') = sto_alloc_val Undefined pc in
@@ -793,9 +796,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
        *)
       | S.GetField (p, obj_ptr, f, args) -> 
         bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc_o) -> 
-            bind (eval_sym f env pc_o) 
-              (fun (fv, pc_f) -> 
+          (fun (obj_ptrv, pc) -> 
+            bind (eval_sym f env pc) 
+              (fun (fv, pc) -> 
 
                 (* In desugared JS, GetField is called on the global object
                  * with our new sym keyword, so we catch it here to make a new sym *)
@@ -825,7 +828,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             bind (branch_bool sym_writ pc)
               (fun (writ, pc) -> 
                 if writ then
-                  let vloc, pc = sto_alloc_val newval pc in
                   let (enum, config) =
                     (* Copied from concrete evaluator.
                      * If we found the prop on the proto,
@@ -835,6 +837,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     with Not_found -> (BTrue, BTrue)
                     end | _ -> failwith "Impossible! update_prop shouldn't get NewSymObj"
                   in
+                  let vloc, pc = sto_alloc_val newval pc in
                   bind
                     (set_prop obj_loc objv f
                           (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
