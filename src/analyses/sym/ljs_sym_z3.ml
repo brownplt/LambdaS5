@@ -178,6 +178,7 @@ let is_sat (p : ctx) : bool =
                      (FUN (f Fun)))))
 (declare-fun typeof (JS) Str)
 (declare-fun prim->str (JS) Str)
+(declare-fun prim->bool (JS) Bool)
 
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
