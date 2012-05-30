@@ -45,6 +45,7 @@ let rec apply p func args pc depth = match func with
     | NewSymObj _ -> failwith (interp_error p ("Apply got NewSymObj"))
     | _ -> failwith (interp_error p ("Applied an object without a code attribute"))
     end
+  | SymScalar id -> throw_str ("Tried to apply symbolic function " ^ id) pc
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
                          Ljs_sym_pretty.val_to_string func))
