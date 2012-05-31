@@ -530,11 +530,10 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       | S.Op2 (p, op, e1, e2) -> 
         bind
           (eval_sym e1 env pc)
-          (fun (e1_val, pc') ->
+          (fun (e1_val, pc) ->
             bind 
-              (eval_sym e2 env pc')
-              (fun (e2_val, pc'') -> 
-                let (t1, t2, ret_ty) = typeofOp2 op in
+              (eval_sym e2 env pc)
+              (fun (e2_val, pc) -> 
                 (* Special case for op2s on objects *)
                 match op with
                 | "hasProperty" -> 
@@ -544,46 +543,57 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   begin match e2_val with String fstr
                   when fstr = new_sym_keyword -> return True pc | _ ->
 
-                  bind (check_field e2_val pc'')
+                  bind (check_field e2_val pc)
                     (fun (field, pc) ->
                       bind (sym_get_prop p pc e1_val field)
-                        (fun ((_, prop), ctx) ->
-                           return (bool (prop <> None)) ctx))
+                        (fun ((_, prop), pc) ->
+                           return (bool (prop <> None)) pc))
                   end
                 | "hasOwnProperty" ->
-                  bind (check_field e2_val pc'')
+                  bind (check_field e2_val pc)
                     (fun (field, pc) ->
                       bind (sym_get_own_prop p pc e1_val field)
-                        (fun ((_, prop), ctx) -> return (bool (prop <> None)) ctx))
+                        (fun ((_, prop), pc) ->
+                           return (bool (prop <> None)) pc))
                 | "isAccessor" ->
-                  bind (check_field e2_val pc'')
+                  bind (check_field e2_val pc)
                     (fun (field, pc) ->
                       bind (sym_get_prop p pc e1_val field)
-                        (fun ((_, prop), ctx) -> 
-                          return (bool (match prop with Some (Accessor _) -> true | _ -> false)) ctx))
+                        (fun ((_, prop), pc) -> 
+                          return (bool (match prop with
+                            Some (Accessor _) -> true | _ -> false)) pc))
                 | _ -> begin
                   match e1_val, e2_val with
                   | SymScalar _, SymScalar _
                   | SymScalar _, _
                   | _, SymScalar _ -> begin 
+                    let t1, t2, ret_ty = typeofOp2 op in
                     try 
-                      let (sym_e1, pc1) = match e1_val with
-                        | SymScalar id -> (SId id, check_type id t1 pc'')
-                        | _ -> (Concrete e1_val, pc'') in
-                      let (sym_e2, pc2) = match e2_val with
-                        | SymScalar id -> (SId id, check_type id t2 pc1)
-                        | _ -> (Concrete e2_val, pc1) in
-                      let (ret_op, pc3) = fresh_var ("P2_" ^ op ^ "_") ret_ty
-                        ("return from " ^ op ^ " " ^ string_of_position p) pc2 in
-                      return (SymScalar ret_op)
-                        (add_constraint (SLet (ret_op, SOp2(op, sym_e1, sym_e2))) pc3)
+                      let sym_e1, pc = match e1_val with
+                        | SymScalar id -> (SId id, check_type id t1 pc)
+                        | _ -> (Concrete e1_val, pc) in
+                      let sym_e2, pc = match e2_val with
+                        | SymScalar id -> (SId id, check_type id t2 pc)
+                        | _ -> (Concrete e2_val, pc) in
+                      (* Special case for stx=, result depends both on
+                       * vals being equal and types of vals being equal *)
+                      let res_exp = if op = "stx="
+                        then SUncastJS (TBool, SAnd [
+                          is_equal sym_e1 sym_e2;
+                          is_equal (SOp1("typeof", sym_e1)) (SOp1("typeof", sym_e2))
+                        ])
+                        else SOp2(op, sym_e1, sym_e2)
+                      in
+                      let (res_var, pc) = fresh_var ("P2_" ^ op ^ "_") ret_ty
+                        ("return from " ^ op ^ " " ^ string_of_position p) pc in
+                      return (SymScalar res_var) (add_let res_var res_exp pc)
                     with TypeError id -> none 
                   end
                   | _ -> 
                     try
-                      let (ret, pc'') = op2 pc'' op e1_val e2_val in
-                      return ret pc''
-                    with PrimError msg -> throw_str msg pc''
+                      let (ret, pc) = op2 pc op e1_val e2_val in
+                      return ret pc
+                    with PrimError msg -> throw_str msg pc
                 end))
           
       | S.If (p, c, t, f) ->
