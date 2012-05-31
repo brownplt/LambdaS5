@@ -85,16 +85,16 @@ and exp e store =
   let castFn t e = match t with
     | TNum -> parens (horz [text "n"; e])
     | TBool -> parens (horz [text "b"; e])
+    | TSymString
     | TString -> parens (horz [text "s"; e])
-    | TSymString -> parens (horz [text "s"; e])
     | TFun _ -> parens (horz [text "f"; e])
     | TObj -> parens (horz [text "fields"; e])
     | _ -> e in
   let uncastFn t e = match t with
     | TNum -> parens (horz [text "NUM"; e])
     | TBool -> parens (horz [text "BOOL"; e])
+    | TSymString
     | TString -> parens (horz [text "STR"; e])
-    | TSymString -> parens (horz [text "STR"; e])
     | TFun _ -> parens (horz [text "FUN"; e])
     | TObj -> parens (horz [text "OBJ"; e])
     | _ -> e in
@@ -155,18 +155,78 @@ and exp e store =
 ;;
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
 
+(*let ty_to_typeof tp = match tp with*)
+(*  | TNull -> Some "null"*)
+(*  | TUndef -> Some "undefined"*)
+(*  | TSymString*)
+(*  | TString -> Some "string"*)
+(*  | TBool -> Some "boolean"*)
+(*  | TNum -> Some "number"*)
+(*  | TObj -> Some "object"*)
+(*  | TFun _ -> Some "function"*)
+(*  | TAny -> None*)
+(*  | TData -> None*)
+(*  | TAccessor -> None*)
 
 (* communicating with Z3 *)
 
+let uncastTy ty = match ty with
+  | TNull -> Some "NULL"
+  | TUndef -> Some "UNDEF"
+  | TNum -> Some "NUM"
+  | TString -> Some "STR"
+  | TBool -> Some "BOOL"
+  | TFun _ -> Some "FUN"
+  | _ -> None
 
-let is_sat (p : ctx) : bool =
-  let z3prelude = "\
+let def_op1 name out_ty else_val func = 
+  let header = "(define-fun " ^ name ^ " ((x JS)) "
+    ^ out_ty ^ "\n" in
+  header ^
+  (List.fold_left
+    (fun def ty ->
+      match uncastTy ty with
+      | None -> def
+      | Some tystr -> "   (if (is-" ^ tystr ^ " x) "
+        ^ func ty ^ "\n" ^ def ^ ")")
+    ("     " ^ else_val)
+    [TNull; TUndef; TString; TBool; TNum; TFun 0]) ^ ")\n"
+
+let op1_defs =
+  def_op1 "prim->bool" "Bool" "true"
+    (fun ty -> match ty with
+    | TNull
+    | TUndef -> "false"
+    | TString -> "(not (= (length (s x)) 0.))"
+    | TBool -> "(b x)"
+    | TNum -> "(not (or (= (n x) NaN) (= (n x) 0.)))"
+    | TFun _ -> "true"
+    | _ -> failwith "Shouldn't hit")
+  ^
+  def_op1 "typeof" "Str" "(s S_undefined)"
+    (fun ty -> "(s S_" ^
+      (match ty with
+      | TNull -> "null"
+      | TUndef -> "undefined"
+      | TString -> "string"
+      | TBool -> "boolean"
+      | TNum -> "number"
+      | TFun _ -> "function"
+      | _ -> failwith "Shouldn't hit")
+      ^ ")")
+
+let z3prelude = "\
 (set-option :produce-models true)
 (set-option :auto-config false)
 (set-option :model-compact true)
 
-(declare-sort Str)
 (declare-sort Fun)
+(declare-sort Str)
+(declare-fun length (Str) Real)
+
+(define-fun neg_inf () Real (- 0.0 1234567890.984321))
+(define-fun inf () Real 12345678.321)
+(define-fun NaN () Real 876545689.24565432)
 
 (declare-datatypes ()
                    ((Attr Config Enum Writable Value Getter Setter)))
@@ -178,28 +238,32 @@ let is_sat (p : ctx) : bool =
                      (BOOL (b Bool))
                      (STR (s Str))
                      (FUN (f Fun)))))
-(declare-fun typeof (JS) Str)
-(declare-fun prim->str (JS) Str)
-(declare-fun prim->bool (JS) Bool)
+(declare-fun prim->str (JS) Str)\n"
 
-(define-fun neg_inf () Real (- 0.0 1234567890.984321))
-(define-fun inf () Real 12345678.321)
-(define-fun NaN () Real 876545689.24565432)
-" in
+let is_sat (p : ctx) : bool =
+  match p.constraints with [] -> true | _ ->
 
+  (* Add all typeof strs to vars so that we can use them
+   * to define typeof to z3 later *)
+  let p =
+    List.fold_left
+      (fun pc type_str -> add_const_string type_str pc)
+      p
+      ["undefined"; "null"; "string"; "number"; "boolean"; "function"; "object"]
+  in
 
   let { constraints = cs; vars = vs; store = store } = p in
-  match cs with [] -> true | _ ->
 
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
+
   IdMap.iter
     (fun id (tp, hint) -> 
       let assertion =
         match tp with
         | TNull -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NULL %s))\n" id hint id
-        | TUndef -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (i-UNDEF %s))\n" id hint id
+        | TUndef -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-UNDEF %s))\n" id hint id
         | TString
         | TSymString -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-STR %s))\n" id hint id
         | TBool -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-BOOL %s))\n" id hint id
@@ -221,9 +285,13 @@ let is_sat (p : ctx) : bool =
   let strvs = IdMap.filter (fun _ (tp, _) -> tp = TString) vs in
   if not (IdMap.is_empty strvs) then begin
     let distinctStrs = IdMap.fold (fun id _ acc -> id ^ " " ^ acc) strvs "" in
-    if log_z3 then Printf.printf "(assert (distinct %s))\n" distinctStrs;
+    if log_z3 then Printf.printf "(assert (distinct %s))\n\n" distinctStrs;
     output_string outch (Printf.sprintf "(assert (distinct %s))\n" distinctStrs);
   end;
+
+  if log_z3 then Printf.printf ";; Operators:\n";
+  if log_z3 then Printf.printf "%s\n" op1_defs;
+  output_string outch op1_defs; output_string outch "\n";
 
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc constraintExp = 
@@ -241,7 +309,7 @@ let is_sat (p : ctx) : bool =
   flush stdout;
   let res = input_line inch in
   close_in inch; 
-  if log_z3 then Printf.printf "z3 said: %s\n" res;
+  if log_z3 then Printf.printf "z3 said: %s\n\n" res;
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
   (res = "sat")
     
