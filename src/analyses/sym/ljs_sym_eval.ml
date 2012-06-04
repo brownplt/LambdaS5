@@ -463,555 +463,555 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if print_store then printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);
   if (depth >= maxDepth)
-  then throw_str ("Reached max recursion depth " ^ (string_of_int maxDepth)) pc
-  else 
-    let nestedEval = eval jsonPath maxDepth in
-    let eval = eval jsonPath maxDepth depth in 
-    (* eval_sym should be called to eval an expression e that is part of an expression
-     * which determines whether e is a scalar or a pointer. For instance, the expression
-     * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
-     * In either case, eval_sym should be used to evaluate e. *)
-    let eval_sym exp env pc = bind (eval exp env pc) (uncurry branch_sym) in
-    (* eval_hide evaluates expressions and looks for hints to specify if the resulting
-     * object should be marked as hidden when inserted into the obj store.
-     * Hidden objects won't be included in the loc lists of new syms. *)
-    let eval_hide exp env pc =
-      let hide, exp2 = match exp with
-      | S.Hint (_, hint, exp2) -> hint = hide_hint_keyword, exp2
-      | _ -> false, exp
-      in
-      match exp2 with
-      | S.Object (p, attrse, propse) ->
-        (* TODO which of these do we need to eval_sym? 
-         * probably none, because they aren't user facing *)
-        begin match attrse with
-        | { S.primval = valexp;
-            S.proto = protoexp; (* TODO look in spec to see if prototype can be declared *)
-            S.code = codexp;
-            S.extensible = ext;
-            S.klass = kls; } ->
+  then throw_str ("Reached max recursion depth " ^ (string_of_int maxDepth)) pc else 
 
-          let opt_lift ctxs = 
-            bind ctxs
-              (fun (v, pc) -> 
-                let (vloc, pc) = sto_alloc_val v pc in
-                return (Some vloc) pc) in
-          bind
-            (match valexp with
-            | None -> return None pc
-            | Some vexp -> opt_lift (eval vexp env pc))
-            (fun (vloc, pc_v) ->
-              bind
-                (match protoexp with
-                | None -> return Undefined pc_v
-                | Some pexp -> eval_sym pexp env pc_v)
-                (fun (p, pc_p) ->
-                  let (ploc, pc_p) = sto_alloc_val p pc_p in
-                  bind
-                    (match codexp with
-                    | None -> return None pc_p
-                    | Some cexp -> opt_lift (eval cexp env pc_p))
-                    (fun (cloc, pc_c) ->
-                      let attrsv =
-                        { primval = vloc; proto = ploc; code = cloc;
-                          extensible = symbool ext; klass = SString kls }
-                      in
-                      let eval_prop prop pc = match prop with
-                        | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
-                          bind (eval vexp env pc)
-                            (fun (v2, pc_v2) ->
-                              let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
-                              return (Data ({ value = v2loc; writable = symbool w; },
-                                            symbool enum, symbool config)) pc_v2)
-                        (* TODO do we need eval_sym? *)
-                        | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
-                          bind (eval ge env pc)
-                            (fun (v2, pc_v2) ->
-                              let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
-                              bind (eval se env pc_v2)
-                                (fun (v3, pc_v3) ->
-                                  let v3loc, pc_v3 = sto_alloc_val v3 pc_v3 in
-                                  return (Accessor ({ getter = v2loc; setter = v3loc},
-                                                    symbool enum, symbool config)) pc_v3))
-                      in
-                      let propvs_pcs  = 
-                        List.fold_left
-                          (fun maps_pcs (name, prop) -> 
-                            bind maps_pcs
-                              (fun (map, pc) ->
-                                bind 
-                                  (eval_prop prop pc)
-                                  (fun (propv, pc_v) -> 
-                                    let (_, pc') = const_string name pc_v in
-                                    return (IdMap.add name propv map) pc')))
-                          ([(IdMap.empty, pc_c)], []) propse in
-                      bind propvs_pcs
-                        (fun (propvs, pc_psv) -> 
-                          let objv = ConObj { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
-                          let (loc, pc_obj) = sto_alloc_obj objv hide pc_psv in
-                          return (ObjPtr loc) pc_obj))))
-      end
-      | _ -> eval exp2 env pc
+  let nestedEval = eval jsonPath maxDepth in
+  let eval = eval jsonPath maxDepth depth in 
+  (* eval_sym should be called to eval an expression e that is part of an expression
+   * which determines whether e is a scalar or a pointer. For instance, the expression
+   * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
+   * In either case, eval_sym should be used to evaluate e. *)
+  let eval_sym exp env pc = bind (eval exp env pc) (uncurry branch_sym) in
+  (* eval_hide evaluates expressions and looks for hints to specify if the resulting
+   * object should be marked as hidden when inserted into the obj store.
+   * Hidden objects won't be included in the loc lists of new syms. *)
+  let eval_hide exp env pc =
+    let hide, exp2 = match exp with
+    | S.Hint (_, hint, exp2) -> hint = hide_hint_keyword, exp2
+    | _ -> false, exp
     in
+    match exp2 with
+    | S.Object (p, attrse, propse) ->
+      (* TODO which of these do we need to eval_sym? 
+       * probably none, because they aren't user facing *)
+      begin match attrse with
+      | { S.primval = valexp;
+          S.proto = protoexp; (* TODO look in spec to see if prototype can be declared *)
+          S.code = codexp;
+          S.extensible = ext;
+          S.klass = kls; } ->
 
-    match exp with
-      | S.Hint (_, _, e) -> eval e env pc
-      | S.Undefined _ -> return Undefined pc 
-      | S.Null _ -> return Null pc 
-      | S.String (_, s) -> return (String s) (add_const_string s pc)
-      | S.Num (_, n) -> return (Num n) pc
-      | S.True _ -> return True pc
-      | S.False _ -> return False pc
-      | S.Id (p, x) -> begin
-        (* This catches new syms in handwritten LJS, but not desugared JS.
-         * Desugared JS new syms are caught in GetField. *)
-        if x = new_sym_keyword then
-          uncurry return
-            (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
-        else
-          try return (sto_lookup_val (IdMap.find x env) pc) pc
-          with Not_found -> failwith (interp_error p
-            ("Unbound identifier: " ^ x ^ " in identifier lookup at "))
-      end
-
-      | S.Lambda (p, xs, e) -> 
-        let bind_arg arg x (m, pc) = 
-          let (loc, pc') = sto_alloc_val arg pc in 
-          (IdMap.add x loc m, pc')
-        in
-        return 
-          (Closure (fun args pc depth -> 
-            if (List.length args) != (List.length xs) then
-              arity_mismatch_err p xs args pc
-            else
-              let (env_xs, pc_xs) = (List.fold_right2 bind_arg args xs (env, pc)) in
-              nestedEval (depth+1) e env_xs pc_xs))
-          pc
-
-      | S.Op1 (p, op, e) ->
-        bind 
-          (eval_sym e env pc)
-          (fun (ev, pc) -> 
-            try
-              match ev with
-              | SymScalar id -> 
-                let (t,ret_ty) = typeofOp1 op in 
-                let pc = check_type id t pc in
-                let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
-                  ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
-                return (SymScalar ret_op1)
-                  (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc)
-              | ObjPtr obj_loc ->
-                begin match sto_lookup_obj obj_loc pc with
-                | NewSymObj locs ->
-                  bind (init_sym_obj locs obj_loc "op1 init_sym_obj" pc)
-                    (fun (_, pc) -> op1 pc op ev)
-                | _ -> op1 pc op ev
-                end
-              | _ -> op1 pc op ev
-            with
-            | PrimError msg -> throw_str msg pc
-            | TypeError _ -> none)
-          
-      | S.Op2 (p, op, e1, e2) -> 
+        let opt_lift ctxs = 
+          bind ctxs
+            (fun (v, pc) -> 
+              let (vloc, pc) = sto_alloc_val v pc in
+              return (Some vloc) pc) in
         bind
-          (eval_sym e1 env pc)
-          (fun (e1_val, pc) ->
-            bind 
-              (eval_sym e2 env pc)
-              (fun (e2_val, pc) -> 
-                (* Special case for op2s on objects *)
-                match op with
-                | "hasProperty" -> 
+          (match valexp with
+          | None -> return None pc
+          | Some vexp -> opt_lift (eval vexp env pc))
+          (fun (vloc, pc_v) ->
+            bind
+              (match protoexp with
+              | None -> return Undefined pc_v
+              | Some pexp -> eval_sym pexp env pc_v)
+              (fun (p, pc_p) ->
+                let (ploc, pc_p) = sto_alloc_val p pc_p in
+                bind
+                  (match codexp with
+                  | None -> return None pc_p
+                  | Some cexp -> opt_lift (eval cexp env pc_p))
+                  (fun (cloc, pc_c) ->
+                    let attrsv =
+                      { primval = vloc; proto = ploc; code = cloc;
+                        extensible = symbool ext; klass = SString kls }
+                    in
+                    let eval_prop prop pc = match prop with
+                      | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
+                        bind (eval vexp env pc)
+                          (fun (v2, pc_v2) ->
+                            let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
+                            return (Data ({ value = v2loc; writable = symbool w; },
+                                          symbool enum, symbool config)) pc_v2)
+                      (* TODO do we need eval_sym? *)
+                      | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
+                        bind (eval ge env pc)
+                          (fun (v2, pc_v2) ->
+                            let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
+                            bind (eval se env pc_v2)
+                              (fun (v3, pc_v3) ->
+                                let v3loc, pc_v3 = sto_alloc_val v3 pc_v3 in
+                                return (Accessor ({ getter = v2loc; setter = v3loc},
+                                                  symbool enum, symbool config)) pc_v3))
+                    in
+                    let propvs_pcs  = 
+                      List.fold_left
+                        (fun maps_pcs (name, prop) -> 
+                          bind maps_pcs
+                            (fun (map, pc) ->
+                              bind 
+                                (eval_prop prop pc)
+                                (fun (propv, pc_v) -> 
+                                  let (_, pc') = const_string name pc_v in
+                                  return (IdMap.add name propv map) pc')))
+                        ([(IdMap.empty, pc_c)], []) propse in
+                    bind propvs_pcs
+                      (fun (propvs, pc_psv) -> 
+                        let objv = ConObj { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
+                        let (loc, pc_obj) = sto_alloc_obj objv hide pc_psv in
+                        return (ObjPtr loc) pc_obj))))
+    end
+    | _ -> eval exp2 env pc
+  in
 
-                  (* In desugared JS, hasProperty is called on the global object
-                   * for our special keyword and we need to fake it returning true. *)
-                  begin match e2_val with String fstr
-                  when fstr = new_sym_keyword -> return True pc | _ ->
+  match exp with
+    | S.Hint (_, _, e) -> eval e env pc
+    | S.Undefined _ -> return Undefined pc 
+    | S.Null _ -> return Null pc 
+    | S.String (_, s) -> return (String s) (add_const_string s pc)
+    | S.Num (_, n) -> return (Num n) pc
+    | S.True _ -> return True pc
+    | S.False _ -> return False pc
+    | S.Id (p, x) -> begin
+      (* This catches new syms in handwritten LJS, but not desugared JS.
+       * Desugared JS new syms are caught in GetField. *)
+      if x = new_sym_keyword then
+        uncurry return
+          (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
+      else
+        try return (sto_lookup_val (IdMap.find x env) pc) pc
+        with Not_found -> failwith (interp_error p
+          ("Unbound identifier: " ^ x ^ " in identifier lookup at "))
+    end
 
-                  bind (check_field e2_val pc)
-                    (fun (field, pc) ->
-                      bind (sym_get_prop p pc e1_val field)
-                        (fun ((_, prop), pc) ->
-                           return (bool (prop <> None)) pc))
-                  end
-                | "hasOwnProperty" ->
-                  bind (check_field e2_val pc)
-                    (fun (field, pc) ->
-                      bind (sym_get_own_prop p pc e1_val field)
-                        (fun ((_, prop), pc) ->
-                           return (bool (prop <> None)) pc))
-                | "isAccessor" ->
-                  bind (check_field e2_val pc)
-                    (fun (field, pc) ->
-                      bind (sym_get_prop p pc e1_val field)
-                        (fun ((_, prop), pc) -> 
-                          return (bool (match prop with
-                            Some (Accessor _) -> true | _ -> false)) pc))
-                | _ -> begin
-                  match e1_val, e2_val with
-                  | SymScalar _, SymScalar _
-                  | SymScalar _, _
-                  | _, SymScalar _ -> begin 
-                    let t1, t2, ret_ty = typeofOp2 op in
-                    try 
-                      let sym_e1, pc = match e1_val with
-                        | SymScalar id -> (SId id, check_type id t1 pc)
-                        | _ -> (Concrete e1_val, pc) in
-                      let sym_e2, pc = match e2_val with
-                        | SymScalar id -> (SId id, check_type id t2 pc)
-                        | _ -> (Concrete e2_val, pc) in
-                      (* Special case for stx=, result depends both on
-                       * vals being equal and types of vals being equal *)
-                      let res_exp = if op = "stx="
-                        then SUncastJS (TBool, SAnd [
-                          is_equal sym_e1 sym_e2;
-                          is_equal (SOp1("typeof", sym_e1)) (SOp1("typeof", sym_e2))
-                        ])
-                        else SOp2(op, sym_e1, sym_e2)
-                      in
-                      let (res_var, pc) = fresh_var ("P2_" ^ op ^ "_") ret_ty
-                        ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
-                      return (SymScalar res_var) (add_let res_var res_exp pc)
-                    with TypeError id -> none 
-                  end
-                  | _ -> 
-                    try
-                      let (ret, pc) = op2 pc op e1_val e2_val in
-                      return ret pc
-                    with PrimError msg -> throw_str msg pc
-                end))
-          
-      | S.If (p, c, t, f) ->
-        bind 
-          (eval_sym c env pc)
-          (fun (c_val, pc') -> 
-            match c_val with
-            | True -> eval t env pc'
+    | S.Lambda (p, xs, e) -> 
+      let bind_arg arg x (m, pc) = 
+        let (loc, pc') = sto_alloc_val arg pc in 
+        (IdMap.add x loc m, pc')
+      in
+      return 
+        (Closure (fun args pc depth -> 
+          if (List.length args) != (List.length xs) then
+            arity_mismatch_err p xs args pc
+          else
+            let (env_xs, pc_xs) = (List.fold_right2 bind_arg args xs (env, pc)) in
+            nestedEval (depth+1) e env_xs pc_xs))
+        pc
+
+    | S.Op1 (p, op, e) ->
+      bind 
+        (eval_sym e env pc)
+        (fun (ev, pc) -> 
+          try
+            match ev with
             | SymScalar id -> 
-              let true_pc = add_constraint (SAssert (SCastJS (TBool, SId id))) pc' in
-              let false_pc  = add_constraint (SAssert (SNot (SCastJS (TBool, SId id)))) pc' in
-              combine
-                (if is_sat true_pc then (eval t env true_pc)
-                 else none)
-                (if is_sat false_pc then (eval f env false_pc)
-                 else none)
-            (* TODO should ObjPtr's be truthy? *)
-            | _ -> eval f env pc')
-          
-      | S.App (p, f, args) -> 
-        bind 
-          (eval_sym f env pc)
-          (fun (f_val, pc_f) ->
-            let args_pcs : (value list * ctx) list * (exval * ctx) list =
-              List.fold_left 
-                (fun avpcs arg ->
-                  bind avpcs
-                    (fun ((argvs : value list), (pcs : ctx)) -> 
-                      bind 
-                        (* We don't need to eval_sym the args because
-                         * they will be rebound in the closure created
-                         * for the function body in the S.Lambda case *)
-                        (eval arg env pcs)
-                        (fun (argv, pcs') ->
-                          return (argvs @ [argv]) pcs')))
-                ([([], pc_f)], []) args in
-            bind args_pcs
-              (fun (argvs, pcs) ->
-                match f_val with
-                | SymScalar f -> 
-                  let ((fid : string), (fpc : ctx)) = fresh_var "F" (TFun (List.length argvs)) "function to be applied" pcs in
-                  let (argvs : sym_exp list) = List.map val_sym argvs in
-                  let ((vs : sym_exp list), (pcs' : ctx)) = List.fold_left
-                    (fun (vals, p) exp -> (vals@[exp], p))
-                    ([], fpc) argvs in
-                  let (res_id, res_pc) = fresh_var "AP" TAny "result of function call" pcs' in 
-                  return (SymScalar res_id)
-                    (add_constraint (SLet (res_id, (SApp (SId fid, vs))))
-                       (add_constraint (SLet (fid, (SId f))) res_pc))
-                | _ -> apply p f_val argvs pcs depth))
-          
-      | S.Seq (p, e1, e2) -> 
-        bind 
-          (eval e1 env pc) 
-          (fun (_, pc') -> eval e2 env pc')
-
-      | S.Let (p, x, e, body) ->
-        bind
-          (eval_hide e env pc)
-          (fun (e_val, pc) -> 
-            let loc, pc = sto_alloc_val e_val pc in 
-            eval body (IdMap.add x loc env) pc)
-          
-      | S.Rec (p, x, e, body) ->
-        let (loc, pc') = sto_alloc_val Undefined pc in
-        let env' = IdMap.add x loc env in
-        bind
-          (eval_hide e env' pc')
-          (fun (ev_val, pc') -> 
-            let pc'' = sto_update_val loc ev_val pc' in 
-            eval body env' pc'')
-
-      | S.SetBang (p, x, e) -> begin
-        try
-          let loc = IdMap.find x env in
-          bind 
-            (eval e env pc)
-            (fun (e_val, pc') ->
-              let pc'' = sto_update_val loc e_val pc' in
-              return e_val pc'')
-        with Not_found ->
-          failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-                       (Pos.string_of_pos p))
-      end
-
-      | S.Object (p, attrs, props) -> eval_hide exp env pc
-        
-      (* GetAttr gets the specified attr of one property of an object, as opposed to
-       * getting an attr of the object itself. *)
-      | S.GetAttr (p, attr, obj_ptr, field) ->
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc_o) -> 
-            bind (eval_sym field env pc_o) 
-              (fun (fv, pc_f) -> 
-                bind (check_field fv pc_f)
-                   (fun (fv, pc') -> 
-                     (* get own prop since we shouldn't check proto *)
-                     bind (sym_get_own_prop p pc' obj_ptrv fv)
-                       (fun ((_, prop_opt), pc') -> match prop_opt with
-                       | Some prop -> get_attr attr prop pc'
-                       | None -> return Undefined pc'))))
-
-      | S.SetAttr (p, attr, obj_ptr, field, newval) ->
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc_o) -> 
-            bind (eval_sym field env pc_o) 
-              (fun (fv, pc_f) -> 
-                bind (eval newval env pc_f)
-                  (fun (newvalv, pc_v) ->
-                    bind (check_field fv pc_v)
-                      (fun (fv, pc') -> 
-                        (* get own prop since we shouldn't check proto *)
-                        bind (sym_get_own_prop p pc' obj_ptrv fv)
-                          (fun ((field, prop), pc') -> 
-                            match obj_ptrv with
-                            | ObjPtr obj_loc -> set_attr p attr obj_loc field prop newvalv pc'
-                            | SymScalar id -> throw_str "SetAttr given SymScalar" pc
-                            | Null -> throw_str "SetAttr given Null" pc
-                            | _ -> failwith "SetAttr given non-object")))))
-                  
-
-      | S.GetObjAttr (p, oattr, obj_ptr) -> 
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc) -> 
-            match obj_ptrv with
-            | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
-              | ConObj { attrs = attrs }
-              | SymObj { attrs = attrs } -> get_obj_attr oattr attrs pc
-              | NewSymObj _ -> failwith "Impossible!" 
-            end
-            | SymScalar id -> throw_str "GetObjAttr given SymScalar" pc
-            | Null -> throw_str "GetObjAttr given Null" pc
-            | _ -> throw_str "GetObjAttr given non-object" pc)
-
-      | S.SetObjAttr (p, oattr, obj_ptr, newattr) ->
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc) -> 
-            bind (eval_sym newattr env pc) (* eval_sym b/c it could be a proto *)
-              (fun (newattrv, pc) ->
-                match obj_ptrv with
-                | ObjPtr obj_loc -> set_obj_attr oattr obj_loc newattrv pc
-                | SymScalar id -> throw_str "SetObjAttr given SymScalar" pc
-                | Null -> throw_str "SetObjAttr given Null" pc
-                | _ -> throw_str "SetObjAttr given non-object" pc))
- 
-      (* Invariant on the concrete and symbolic field maps in an object:
-       *    Every field name in either map is distinct (in the Z3 sense)
-       *    from all other field names in both maps.
-       *
-       * This is the only constraint imposed by our representation. All other
-       * constraints must be checked by Z3.
-       *)
-      | S.GetField (p, obj_ptr, f, args) -> 
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc) -> 
-            bind (eval_sym f env pc) 
-              (fun (fv, pc) -> 
-
-                (* In desugared JS, GetField is called on the global object
-                 * with our new sym keyword, so we catch it here to make a new sym *)
-                match fv with String fstr when fstr = new_sym_keyword ->
-                  uncurry return
-                    (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
-                | _ ->
-
-                bind (eval args env pc)
-                  (fun (argsv, pc) ->
-                    bind (check_field fv pc)
-                      (fun (fv, pc) -> 
-                        bind (sym_get_prop p pc obj_ptrv fv)
-                          (fun ((_, prop), pc) -> match prop with
-                          | Some (Data ({ value = vloc; }, _, _)) ->
-                            return (sto_lookup_val vloc pc) pc
-                          | Some (Accessor ({ getter = gloc; }, _, _)) ->
-                            let g = sto_lookup_val gloc pc in
-                            apply p g [obj_ptrv; argsv] pc depth
-                          | None -> return Undefined pc)))))
-
-      | S.SetField (p, obj_ptr, f, v, args) ->
-        let update_prop obj_loc f prop newval setter_params pc = 
-          let objv = sto_lookup_obj obj_loc pc in
-          match prop with
-          | Some (Data ({ writable = sym_writ; }, enum, config)) ->
-            bind (branch_bool sym_writ pc)
-              (fun (writ, pc) -> 
-                if writ then
-                  let (enum, config) =
-                    (* Copied from concrete evaluator.
-                     * If we found the prop on the proto,
-                     * enum and config should be true *)
-                    match objv with ConObj o | SymObj o -> begin
-                    try let _ = get_prop o f in (enum, config)
-                    with Not_found -> (BTrue, BTrue)
-                    end | _ -> failwith "Impossible! update_prop shouldn't get NewSymObj"
-                  in
-                  let vloc, pc = sto_alloc_val newval pc in
-                  bind
-                    (set_prop obj_loc objv f
-                          (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
-                    (fun (new_obj, pc) ->
-                      return newval (sto_update_obj obj_loc new_obj pc))
-                else throw_str "SetField NYI for non-writable fields" pc)
-          | Some (Accessor ({ setter = sloc; }, _, _)) ->
-            apply p (sto_lookup_val sloc pc) setter_params pc depth
-          | None -> add_field obj_loc f newval pc
-        in
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc_o) -> 
-            bind (eval_sym f env pc_o) 
-              (fun (fv, pc_f) -> 
-                bind (eval v env pc_f)
-                  (fun (vv, pc_v) -> 
-                    bind (eval args env pc_v)
-                      (fun (argvs, pc_a) ->
-                        bind (check_field fv pc_a)
-                          (fun (fv, pc') -> 
-                            bind (sym_get_prop p pc' obj_ptrv fv)
-                              (fun ((field, prop), pc') -> 
-                                match obj_ptrv with
-                                | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
-                                | Null -> return Undefined pc'
-                                | ObjPtr obj_loc -> update_prop obj_loc field prop vv [obj_ptrv; argvs] pc'
-                                | _ -> failwith "Impossible -- should be an ObjPtr"))))))
-
-      | S.DeleteField (p, obj_ptr, f) ->
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc) -> 
-            bind (eval_sym f env pc) 
-              (fun (fv, pc) -> 
-                bind (check_field fv pc)
-                  (fun (fv, pc) -> 
-                    (* get own prop since we don't want to check proto *)
-                    bind (sym_get_own_prop p pc obj_ptrv fv)
-                      (fun ((field, prop), pc) -> 
-                        match obj_ptrv with
-                        | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
-                        | Null -> throw_str "DeleteField got a non-object" pc (* TODO is this right? *)
-                        | ObjPtr obj_loc -> begin
-                          let objv = sto_lookup_obj obj_loc pc in
-                          match prop with
-                          | Some (Data (_, _, BTrue))
-                          | Some (Accessor (_, _, BTrue)) ->
-                            let new_obj = delete_prop objv field in
-                            return True (sto_update_obj obj_loc new_obj pc)
-                          | _ -> return False pc
-                        end
-                        | _ -> failwith "Impossible -- should be an ObjPtr"))))
-
-
-      | S.OwnFieldNames (p, obj_ptr) ->
-        bind (eval_sym obj_ptr env pc)
-          (fun (obj_ptrv, pc) ->
-            match obj_ptrv with
+              let (t,ret_ty) = typeofOp1 op in 
+              let pc = check_type id t pc in
+              let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
+                ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
+              return (SymScalar ret_op1)
+                (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc)
             | ObjPtr obj_loc ->
               begin match sto_lookup_obj obj_loc pc with
-              | ConObj { conps = conps; symps = symps }
-              | SymObj { conps = conps; symps = symps } ->
-                let add_name n x (m, pc) =
-                  let nloc, pc = sto_alloc_val n pc in
-                  (IdMap.add (string_of_int x)
-                    (Data ({ value = nloc; writable = BFalse; }, BFalse, BFalse)) m, pc)
-                in
-                let con_names = IdMap.fold (fun k v l -> (String k :: l)) conps [] in
-                let sym_names = IdMap.fold (fun k v l -> (SymScalar k :: l)) symps [] in
-                let namelist = con_names @ sym_names in
-                let props, pc =
-                  List.fold_right2 add_name namelist
-                    (iota (List.length namelist)) (IdMap.empty, pc)
-                in
-                let d = float_of_int (List.length namelist) in
-                let dloc, pc = sto_alloc_val (Num d) pc in
-                let final_props =
-                  IdMap.add "length"
-                    (Data ({ value = dloc; writable = BFalse; }, BFalse, BFalse))
-                    props
-                in
-                let ploc, pc = sto_alloc_val Null pc in
-                let new_loc, pc = sto_alloc_obj (ConObj {
-                  conps = final_props; symps = IdMap.empty;
-                  attrs = {
-                    code = None; proto = ploc; extensible = BFalse;
-                    klass = SString "LambdaJS internal"; primval = None;
-                  }
-                (* TODO is the line below right? *)
-                }) false pc in (* false because these objs shouldn't be hidden by default *)
-                return (ObjPtr new_loc) pc
-              | NewSymObj _ -> failwith "OwnFieldNames got a NewSymObj"
+              | NewSymObj locs ->
+                bind (init_sym_obj locs obj_loc "op1 init_sym_obj" pc)
+                  (fun (_, pc) -> op1 pc op ev)
+              | _ -> op1 pc op ev
               end
-            | _ -> throw_str "OwnFieldNames got a non-object" pc)
+            | _ -> op1 pc op ev
+          with
+          | PrimError msg -> throw_str msg pc
+          | TypeError _ -> none)
+        
+    | S.Op2 (p, op, e1, e2) -> 
+      bind
+        (eval_sym e1 env pc)
+        (fun (e1_val, pc) ->
+          bind 
+            (eval_sym e2 env pc)
+            (fun (e2_val, pc) -> 
+              (* Special case for op2s on objects *)
+              match op with
+              | "hasProperty" -> 
 
+                (* In desugared JS, hasProperty is called on the global object
+                 * for our special keyword and we need to fake it returning true. *)
+                begin match e2_val with String fstr
+                when fstr = new_sym_keyword -> return True pc | _ ->
 
-      | S.Label (p, l, e) -> begin
-        bind_exn
-          (eval e env pc)
-          (fun (e, pc') ->
-            match e with
-            | Break (l', v) -> if (l = l') then return v pc' else throw e pc'
-            | _ -> throw e pc')
-      end
-      | S.Break (p, l, e) ->
+                bind (check_field e2_val pc)
+                  (fun (field, pc) ->
+                    bind (sym_get_prop p pc e1_val field)
+                      (fun ((_, prop), pc) ->
+                         return (bool (prop <> None)) pc))
+                end
+              | "hasOwnProperty" ->
+                bind (check_field e2_val pc)
+                  (fun (field, pc) ->
+                    bind (sym_get_own_prop p pc e1_val field)
+                      (fun ((_, prop), pc) ->
+                         return (bool (prop <> None)) pc))
+              | "isAccessor" ->
+                bind (check_field e2_val pc)
+                  (fun (field, pc) ->
+                    bind (sym_get_prop p pc e1_val field)
+                      (fun ((_, prop), pc) -> 
+                        return (bool (match prop with
+                          Some (Accessor _) -> true | _ -> false)) pc))
+              | _ -> begin
+                match e1_val, e2_val with
+                | SymScalar _, SymScalar _
+                | SymScalar _, _
+                | _, SymScalar _ -> begin 
+                  let t1, t2, ret_ty = typeofOp2 op in
+                  try 
+                    let sym_e1, pc = match e1_val with
+                      | SymScalar id -> (SId id, check_type id t1 pc)
+                      | _ -> (Concrete e1_val, pc) in
+                    let sym_e2, pc = match e2_val with
+                      | SymScalar id -> (SId id, check_type id t2 pc)
+                      | _ -> (Concrete e2_val, pc) in
+                    (* Special case for stx=, result depends both on
+                     * vals being equal and types of vals being equal *)
+                    let res_exp = if op = "stx="
+                      then SUncastJS (TBool, SAnd [
+                        is_equal sym_e1 sym_e2;
+                        is_equal (SOp1("typeof", sym_e1)) (SOp1("typeof", sym_e2))
+                      ])
+                      else SOp2(op, sym_e1, sym_e2)
+                    in
+                    let (res_var, pc) = fresh_var ("P2_" ^ op ^ "_") ret_ty
+                      ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
+                    return (SymScalar res_var) (add_let res_var res_exp pc)
+                  with TypeError id -> none 
+                end
+                | _ -> 
+                  try
+                    let (ret, pc) = op2 pc op e1_val e2_val in
+                    return ret pc
+                  with PrimError msg -> throw_str msg pc
+              end))
+        
+    | S.If (p, c, t, f) ->
+      bind 
+        (eval_sym c env pc)
+        (fun (c_val, pc') -> 
+          match c_val with
+          | True -> eval t env pc'
+          | SymScalar id -> 
+            let true_pc = add_constraint (SAssert (SCastJS (TBool, SId id))) pc' in
+            let false_pc  = add_constraint (SAssert (SNot (SCastJS (TBool, SId id)))) pc' in
+            combine
+              (if is_sat true_pc then (eval t env true_pc)
+               else none)
+              (if is_sat false_pc then (eval f env false_pc)
+               else none)
+          (* TODO should ObjPtr's be truthy? *)
+          | _ -> eval f env pc')
+        
+    | S.App (p, f, args) -> 
+      bind 
+        (eval_sym f env pc)
+        (fun (f_val, pc_f) ->
+          let args_pcs : (value list * ctx) list * (exval * ctx) list =
+            List.fold_left 
+              (fun avpcs arg ->
+                bind avpcs
+                  (fun ((argvs : value list), (pcs : ctx)) -> 
+                    bind 
+                      (* We don't need to eval_sym the args because
+                       * they will be rebound in the closure created
+                       * for the function body in the S.Lambda case *)
+                      (eval arg env pcs)
+                      (fun (argv, pcs') ->
+                        return (argvs @ [argv]) pcs')))
+              ([([], pc_f)], []) args in
+          bind args_pcs
+            (fun (argvs, pcs) ->
+              match f_val with
+              | SymScalar f -> 
+                let ((fid : string), (fpc : ctx)) = fresh_var "F" (TFun (List.length argvs)) "function to be applied" pcs in
+                let (argvs : sym_exp list) = List.map val_sym argvs in
+                let ((vs : sym_exp list), (pcs' : ctx)) = List.fold_left
+                  (fun (vals, p) exp -> (vals@[exp], p))
+                  ([], fpc) argvs in
+                let (res_id, res_pc) = fresh_var "AP" TAny "result of function call" pcs' in 
+                return (SymScalar res_id)
+                  (add_constraint (SLet (res_id, (SApp (SId fid, vs))))
+                     (add_constraint (SLet (fid, (SId f))) res_pc))
+              | _ -> apply p f_val argvs pcs depth))
+        
+    | S.Seq (p, e1, e2) -> 
+      bind 
+        (eval e1 env pc) 
+        (fun (_, pc') -> eval e2 env pc')
+
+    | S.Let (p, x, e, body) ->
+      bind
+        (eval_hide e env pc)
+        (fun (e_val, pc) -> 
+          let loc, pc = sto_alloc_val e_val pc in 
+          eval body (IdMap.add x loc env) pc)
+        
+    | S.Rec (p, x, e, body) ->
+      let (loc, pc') = sto_alloc_val Undefined pc in
+      let env' = IdMap.add x loc env in
+      bind
+        (eval_hide e env' pc')
+        (fun (ev_val, pc') -> 
+          let pc'' = sto_update_val loc ev_val pc' in 
+          eval body env' pc'')
+
+    | S.SetBang (p, x, e) -> begin
+      try
+        let loc = IdMap.find x env in
         bind 
           (eval e env pc)
-          (fun (v, pc') -> throw (Break (l, v)) pc')
-      | S.TryCatch (p, body, catch) -> begin
-        bind_exn
-          (eval body env pc)
-          (fun (e, pc') -> match e with
-          | Throw v -> 
-            bind
-              (eval catch env pc')
-              (fun (c, pc'') -> apply p c [v] pc'' depth)
+          (fun (e_val, pc') ->
+            let pc'' = sto_update_val loc e_val pc' in
+            return e_val pc'')
+      with Not_found ->
+        failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
+                     (Pos.string_of_pos p))
+    end
+
+    | S.Object (p, attrs, props) -> eval_hide exp env pc
+      
+    (* GetAttr gets the specified attr of one property of an object, as opposed to
+     * getting an attr of the object itself. *)
+    | S.GetAttr (p, attr, obj_ptr, field) ->
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc_o) -> 
+          bind (eval_sym field env pc_o) 
+            (fun (fv, pc_f) -> 
+              bind (check_field fv pc_f)
+                 (fun (fv, pc') -> 
+                   (* get own prop since we shouldn't check proto *)
+                   bind (sym_get_own_prop p pc' obj_ptrv fv)
+                     (fun ((_, prop_opt), pc') -> match prop_opt with
+                     | Some prop -> get_attr attr prop pc'
+                     | None -> return Undefined pc'))))
+
+    | S.SetAttr (p, attr, obj_ptr, field, newval) ->
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc_o) -> 
+          bind (eval_sym field env pc_o) 
+            (fun (fv, pc_f) -> 
+              bind (eval newval env pc_f)
+                (fun (newvalv, pc_v) ->
+                  bind (check_field fv pc_v)
+                    (fun (fv, pc') -> 
+                      (* get own prop since we shouldn't check proto *)
+                      bind (sym_get_own_prop p pc' obj_ptrv fv)
+                        (fun ((field, prop), pc') -> 
+                          match obj_ptrv with
+                          | ObjPtr obj_loc -> set_attr p attr obj_loc field prop newvalv pc'
+                          | SymScalar id -> throw_str "SetAttr given SymScalar" pc
+                          | Null -> throw_str "SetAttr given Null" pc
+                          | _ -> failwith "SetAttr given non-object")))))
+                
+
+    | S.GetObjAttr (p, oattr, obj_ptr) -> 
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc) -> 
+          match obj_ptrv with
+          | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
+            | ConObj { attrs = attrs }
+            | SymObj { attrs = attrs } -> get_obj_attr oattr attrs pc
+            | NewSymObj _ -> failwith "Impossible!" 
+          end
+          | SymScalar id -> throw_str "GetObjAttr given SymScalar" pc
+          | Null -> throw_str "GetObjAttr given Null" pc
+          | _ -> throw_str "GetObjAttr given non-object" pc)
+
+    | S.SetObjAttr (p, oattr, obj_ptr, newattr) ->
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc) -> 
+          bind (eval_sym newattr env pc) (* eval_sym b/c it could be a proto *)
+            (fun (newattrv, pc) ->
+              match obj_ptrv with
+              | ObjPtr obj_loc -> set_obj_attr oattr obj_loc newattrv pc
+              | SymScalar id -> throw_str "SetObjAttr given SymScalar" pc
+              | Null -> throw_str "SetObjAttr given Null" pc
+              | _ -> throw_str "SetObjAttr given non-object" pc))
+
+    (* Invariant on the concrete and symbolic field maps in an object:
+     *    Every field name in either map is distinct (in the Z3 sense)
+     *    from all other field names in both maps.
+     *
+     * This is the only constraint imposed by our representation. All other
+     * constraints must be checked by Z3.
+     *)
+    | S.GetField (p, obj_ptr, f, args) -> 
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc) -> 
+          bind (eval_sym f env pc) 
+            (fun (fv, pc) -> 
+
+              (* In desugared JS, GetField is called on the global object
+               * with our new sym keyword, so we catch it here to make a new sym *)
+              match fv with String fstr when fstr = new_sym_keyword ->
+                uncurry return
+                  (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
+              | _ ->
+
+              bind (eval args env pc)
+                (fun (argsv, pc) ->
+                  bind (check_field fv pc)
+                    (fun (fv, pc) -> 
+                      bind (sym_get_prop p pc obj_ptrv fv)
+                        (fun ((_, prop), pc) -> match prop with
+                        | Some (Data ({ value = vloc; }, _, _)) ->
+                          return (sto_lookup_val vloc pc) pc
+                        | Some (Accessor ({ getter = gloc; }, _, _)) ->
+                          let g = sto_lookup_val gloc pc in
+                          apply p g [obj_ptrv; argsv] pc depth
+                        | None -> return Undefined pc)))))
+
+    | S.SetField (p, obj_ptr, f, v, args) ->
+      let update_prop obj_loc f prop newval setter_params pc = 
+        let objv = sto_lookup_obj obj_loc pc in
+        match prop with
+        | Some (Data ({ writable = sym_writ; }, enum, config)) ->
+          bind (branch_bool sym_writ pc)
+            (fun (writ, pc) -> 
+              if writ then
+                let (enum, config) =
+                  (* Copied from concrete evaluator.
+                   * If we found the prop on the proto,
+                   * enum and config should be true *)
+                  match objv with ConObj o | SymObj o -> begin
+                  try let _ = get_prop o f in (enum, config)
+                  with Not_found -> (BTrue, BTrue)
+                  end | _ -> failwith "Impossible! update_prop shouldn't get NewSymObj"
+                in
+                let vloc, pc = sto_alloc_val newval pc in
+                bind
+                  (set_prop obj_loc objv f
+                        (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
+                  (fun (new_obj, pc) ->
+                    return newval (sto_update_obj obj_loc new_obj pc))
+              else throw_str "SetField NYI for non-writable fields" pc)
+        | Some (Accessor ({ setter = sloc; }, _, _)) ->
+          apply p (sto_lookup_val sloc pc) setter_params pc depth
+        | None -> add_field obj_loc f newval pc
+      in
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc_o) -> 
+          bind (eval_sym f env pc_o) 
+            (fun (fv, pc_f) -> 
+              bind (eval v env pc_f)
+                (fun (vv, pc_v) -> 
+                  bind (eval args env pc_v)
+                    (fun (argvs, pc_a) ->
+                      bind (check_field fv pc_a)
+                        (fun (fv, pc') -> 
+                          bind (sym_get_prop p pc' obj_ptrv fv)
+                            (fun ((field, prop), pc') -> 
+                              match obj_ptrv with
+                              | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
+                              | Null -> return Undefined pc'
+                              | ObjPtr obj_loc -> update_prop obj_loc field prop vv [obj_ptrv; argvs] pc'
+                              | _ -> failwith "Impossible -- should be an ObjPtr"))))))
+
+    | S.DeleteField (p, obj_ptr, f) ->
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc) -> 
+          bind (eval_sym f env pc) 
+            (fun (fv, pc) -> 
+              bind (check_field fv pc)
+                (fun (fv, pc) -> 
+                  (* get own prop since we don't want to check proto *)
+                  bind (sym_get_own_prop p pc obj_ptrv fv)
+                    (fun ((field, prop), pc) -> 
+                      match obj_ptrv with
+                      | SymScalar _ (* the SymScalar will have been asserted to be null in sym_get_prop *)
+                      | Null -> throw_str "DeleteField got a non-object" pc (* TODO is this right? *)
+                      | ObjPtr obj_loc -> begin
+                        let objv = sto_lookup_obj obj_loc pc in
+                        match prop with
+                        | Some (Data (_, _, BTrue))
+                        | Some (Accessor (_, _, BTrue)) ->
+                          let new_obj = delete_prop objv field in
+                          return True (sto_update_obj obj_loc new_obj pc)
+                        | _ -> return False pc
+                      end
+                      | _ -> failwith "Impossible -- should be an ObjPtr"))))
+
+
+    | S.OwnFieldNames (p, obj_ptr) ->
+      bind (eval_sym obj_ptr env pc)
+        (fun (obj_ptrv, pc) ->
+          match obj_ptrv with
+          | ObjPtr obj_loc ->
+            begin match sto_lookup_obj obj_loc pc with
+            | ConObj { conps = conps; symps = symps }
+            | SymObj { conps = conps; symps = symps } ->
+              let add_name n x (m, pc) =
+                let nloc, pc = sto_alloc_val n pc in
+                (IdMap.add (string_of_int x)
+                  (Data ({ value = nloc; writable = BFalse; }, BFalse, BFalse)) m, pc)
+              in
+              let con_names = IdMap.fold (fun k v l -> (String k :: l)) conps [] in
+              let sym_names = IdMap.fold (fun k v l -> (SymScalar k :: l)) symps [] in
+              let namelist = con_names @ sym_names in
+              let props, pc =
+                List.fold_right2 add_name namelist
+                  (iota (List.length namelist)) (IdMap.empty, pc)
+              in
+              let d = float_of_int (List.length namelist) in
+              let dloc, pc = sto_alloc_val (Num d) pc in
+              let final_props =
+                IdMap.add "length"
+                  (Data ({ value = dloc; writable = BFalse; }, BFalse, BFalse))
+                  props
+              in
+              let ploc, pc = sto_alloc_val Null pc in
+              let new_loc, pc = sto_alloc_obj (ConObj {
+                conps = final_props; symps = IdMap.empty;
+                attrs = {
+                  code = None; proto = ploc; extensible = BFalse;
+                  klass = SString "LambdaJS internal"; primval = None;
+                }
+              (* TODO is the line below right? *)
+              }) false pc in (* false because these objs shouldn't be hidden by default *)
+              return (ObjPtr new_loc) pc
+            | NewSymObj _ -> failwith "OwnFieldNames got a NewSymObj"
+            end
+          | _ -> throw_str "OwnFieldNames got a non-object" pc)
+
+
+    | S.Label (p, l, e) -> begin
+      bind_exn
+        (eval e env pc)
+        (fun (e, pc') ->
+          match e with
+          | Break (l', v) -> if (l = l') then return v pc' else throw e pc'
           | _ -> throw e pc')
-      end
-      | S.TryFinally (p, body, fin) -> 
-        bind_both
-          (eval body env pc)
-          (fun (_, pc') -> eval fin env pc')
-          (fun (e, pc') -> 
-            bind 
-              (eval fin env pc')
-              (fun (_, pc'') -> throw e pc''))
-      | S.Throw (p, e) -> 
-        bind
-          (eval e env pc)
-          (fun (v, pc') -> throw (Throw v) pc')
-      (*
-        | S.Eval (p, e) ->
-        match eval e env with
-        | String s -> eval_op s env jsonPath
-        | v -> v
-      *)
-      | S.Eval _ -> failwith "[interp] not yet implemented (Eval)"
+    end
+    | S.Break (p, l, e) ->
+      bind 
+        (eval e env pc)
+        (fun (v, pc') -> throw (Break (l, v)) pc')
+    | S.TryCatch (p, body, catch) -> begin
+      bind_exn
+        (eval body env pc)
+        (fun (e, pc') -> match e with
+        | Throw v -> 
+          bind
+            (eval catch env pc')
+            (fun (c, pc'') -> apply p c [v] pc'' depth)
+        | _ -> throw e pc')
+    end
+    | S.TryFinally (p, body, fin) -> 
+      bind_both
+        (eval body env pc)
+        (fun (_, pc') -> eval fin env pc')
+        (fun (e, pc') -> 
+          bind 
+            (eval fin env pc')
+            (fun (_, pc'') -> throw e pc''))
+    | S.Throw (p, e) -> 
+      bind
+        (eval e env pc)
+        (fun (v, pc') -> throw (Throw v) pc')
+    (*
+      | S.Eval (p, e) ->
+      match eval e env with
+      | String s -> eval_op s env jsonPath
+      | v -> v
+    *)
+    | S.Eval _ -> failwith "[interp] not yet implemented (Eval)"
 
 
 
