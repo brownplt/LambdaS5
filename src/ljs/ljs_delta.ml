@@ -176,6 +176,7 @@ let sine store = function
   | _ -> raise (PrimErr ([], str "sin"))
 
 let numstr store = function
+  | String "" -> Num 0.
   | String s -> Num (try float_of_string s with Failure _ -> nan)
   | _ -> raise (PrimErr ([], str "numstr"))
 
