@@ -78,12 +78,16 @@ let branch_sym v pc =
     let branch newval pc = return newval
       (* Update every location in the store that has a NewSym
        * with the same id, since that sym value has now been init'd *)
-      { pc with store = { pc.store with vals =
-          Store.mapi
-            (fun loc v -> match v with
-            | NewSym (id', _) -> if id' = id then newval else v
-            | _ -> v)
-            pc.store.vals }}
+      (hint
+        ("Branched replacing NewSym " ^ id
+        ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
+        { pc with store =
+          { pc.store with vals =
+            Store.mapi
+              (fun loc v -> match v with
+              | NewSym (id', _) -> if id' = id then newval else v
+              | _ -> v)
+              pc.store.vals }})
     in
     combine
       (* One branch for if its a scalar *)
