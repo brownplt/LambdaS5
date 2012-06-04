@@ -25,46 +25,46 @@ end
 module LabelMap = Map.Make(Label)
 
 type cps_value =
-  | Null of pos * Label.t
-  | Undefined of pos * Label.t
-  | String of pos * Label.t * string
-  | Num of pos * Label.t * float
-  | True of pos * Label.t
-  | False of pos * Label.t
-  | Id of pos * Label.t * id
-  | Object of pos * Label.t * cps_attrs * (string * cps_prop) list
-  | Lambda of pos * Label.t * id * id * id list * cps_exp
+  | Null of Pos.t * Label.t
+  | Undefined of Pos.t * Label.t
+  | String of Pos.t * Label.t * string
+  | Num of Pos.t * Label.t * float
+  | True of Pos.t * Label.t
+  | False of Pos.t * Label.t
+  | Id of Pos.t * Label.t * id
+  | Object of Pos.t * Label.t * cps_attrs * (string * cps_prop) list
+  | Lambda of Pos.t * Label.t * id * id * id list * cps_exp
 
 and cps_prim =
-  | GetAttr of pos * Label.t * E.pattr * cps_value * cps_value
-  | SetAttr of pos * Label.t * E.pattr * cps_value * cps_value * cps_value
-  | GetObjAttr of pos * Label.t * E.oattr * cps_value
-  | SetObjAttr of pos * Label.t * E.oattr * cps_value * cps_value
-  | Op1 of pos * Label.t * string * cps_value
-  | Op2 of pos * Label.t * string * cps_value * cps_value
-  | DeleteField of pos * Label.t * cps_value * cps_value (* pos, obj, field *)
-  | SetBang of pos * Label.t * id * cps_value
-  | OwnFieldNames of pos * Label.t * cps_value
+  | GetAttr of Pos.t * Label.t * E.pattr * cps_value * cps_value
+  | SetAttr of Pos.t * Label.t * E.pattr * cps_value * cps_value * cps_value
+  | GetObjAttr of Pos.t * Label.t * E.oattr * cps_value
+  | SetObjAttr of Pos.t * Label.t * E.oattr * cps_value * cps_value
+  | Op1 of Pos.t * Label.t * string * cps_value
+  | Op2 of Pos.t * Label.t * string * cps_value * cps_value
+  | DeleteField of Pos.t * Label.t * cps_value * cps_value (* Pos.t, obj, field *)
+  | SetBang of Pos.t * Label.t * id * cps_value
+  | OwnFieldNames of Pos.t * Label.t * cps_value
 
 and cps_exp =
-  | LetValue of pos * Label.t * id * cps_value * cps_exp (* let binding of values to variables *)
-  | RecValue of pos * Label.t * id * cps_value * cps_exp (* letrec binding of values to lambdas *)
-  | LetPrim of pos * Label.t * id * cps_prim * cps_exp (* let binding with only primitive steps in binding *)
-  | LetRetCont of Label.t * id * cps_ret * cps_exp
-  | LetExnCont of Label.t * id * cps_exn * cps_exp
-  | If of pos * Label.t * cps_value * cps_exp * cps_exp
-  | AppFun of pos * Label.t * cps_value * cps_ret * cps_exn * cps_value list
-  | AppRetCont of Label.t * cps_ret * cps_value (* contName * argName *)
-  | AppExnCont of Label.t * cps_exn * cps_value * cps_value (* contName * argName * labelName *)
-  | Eval of pos * Label.t * cps_exp
+  | LetValue of Pos.t * Label.t * id * cps_value * cps_exp (* let binding of values to variables *)
+  | RecValue of Pos.t * Label.t * id * cps_value * cps_exp (* letrec binding of values to lambdas *)
+  | LetPrim of Pos.t * Label.t * id * cps_prim * cps_exp (* let binding with only primitive steps in binding *)
+  | LetRetCont of Pos.t * Label.t * id * cps_ret * cps_exp
+  | LetExnCont of Pos.t * Label.t * id * cps_exn * cps_exp
+  | If of Pos.t * Label.t * cps_value * cps_exp * cps_exp
+  | AppFun of Pos.t * Label.t * cps_value * cps_ret * cps_exn * cps_value list
+  | AppRetCont of Pos.t * Label.t * cps_ret * cps_value (* contName * argName *)
+  | AppExnCont of Pos.t * Label.t * cps_exn * cps_value * cps_value (* contName * argName * labelName *)
+  | Eval of Pos.t * Label.t * cps_exp
 
 and cps_ret =
-  | RetLam of Label.t * id * cps_exp  (* contName * argName * contBody * exp *)
-  | RetId of Label.t * id
+  | RetLam of Pos.t * Label.t * id * cps_exp  (* contName * argName * contBody * exp *)
+  | RetId of Pos.t * Label.t * id
 
 and cps_exn =
-  | ExnLam of Label.t * id * id * cps_exp  (* contName * argName * labelName * contBody * exp *)
-  | ExnId of Label.t * id
+  | ExnLam of Pos.t * Label.t * id * id * cps_exp  (* contName * argName * labelName * contBody * exp *)
+  | ExnId of Pos.t * Label.t * id
 
 and data_cps_value =       
     {value : id;
@@ -101,12 +101,12 @@ let pos_of_exp (exp : cps_exp) = match exp with
 | LetValue (pos, _, _, _, _) -> pos
 | RecValue (pos, _, _, _, _) -> pos
 | LetPrim (pos, _, _, _, _) -> pos
-| LetRetCont _ -> dummy_pos
-| LetExnCont _ -> dummy_pos
+| LetRetCont (pos, _, _, _, _) -> pos
+| LetExnCont (pos, _, _, _, _) -> pos
 | If (pos, _, _, _, _) -> pos
 | AppFun (pos, _, _, _, _, _) -> pos
-| AppRetCont _ -> dummy_pos
-| AppExnCont _ -> dummy_pos
+| AppRetCont (pos, _, _, _) -> pos
+| AppExnCont (pos, _, _, _, _) -> pos
 | Eval (pos, _, _) -> pos
 let pos_of_prim (prim : cps_prim) = match prim with
 | GetAttr (pos, _, _, _, _) -> pos
@@ -133,12 +133,12 @@ let label_of_exp (exp : cps_exp) = match exp with
 | LetValue (_, label, _, _, _) -> label
 | RecValue (_, label, _, _, _) -> label
 | LetPrim (_, label, _, _, _) -> label
-| LetRetCont (label, _, _, _) -> label
-| LetExnCont (label, _, _, _) -> label
+| LetRetCont (_, label, _, _, _) -> label
+| LetExnCont (_, label, _, _, _) -> label
 | If (_, label, _, _, _) -> label
 | AppFun (_, label, _, _, _, _) -> label
-| AppRetCont (label, _, _) -> label
-| AppExnCont (label, _, _, _) -> label
+| AppRetCont (_, label, _, _) -> label
+| AppExnCont (_, label, _, _, _) -> label
 | Eval (_, label, _) -> label
 let label_of_prim (prim : cps_prim) = match prim with
 | GetAttr (_, label, _, _, _) -> label
@@ -361,13 +361,14 @@ let rec cps (exp : E.exp)
           | [] -> 
             let retArg = newVar "x" in
             AppFun (pos,Label.newLabel(), funName, 
-                    RetLam(Label.newLabel(), retArg, ret (Id(pos,Label.newLabel(),retArg))), 
-                    ExnId(Label.newLabel(),exnName), (List.rev argNames)) in
+                    RetLam(Pos.synth pos, Label.newLabel(), retArg, ret (Id(pos,Label.newLabel(),retArg))), 
+                    ExnId(Pos.synth pos, Label.newLabel(),exnName), (List.rev argNames)) in
         process_args args [])
     | E.Lambda (pos, args, body) -> 
         let retName = newVar "ret" in
         let exnName = newVar "exn" in
-        ret (Lambda (pos,Label.newLabel(), retName, exnName, args, (cps_tail body exnName (RetId(Label.newLabel(),retName)))))
+        ret (Lambda (pos,Label.newLabel(), retName, exnName, args, 
+                     (cps_tail body exnName (RetId(Pos.synth pos, Label.newLabel(),retName)))))
 
 
 
@@ -435,11 +436,12 @@ let rec cps (exp : E.exp)
         cps cond exnName (fun var -> 
           let retName = newVar "ret" in
           let retArg = newVar "x" in
-          LetRetCont (Label.newLabel(), retName, RetLam(Label.newLabel(),
+          LetRetCont (Pos.synth pos, 
+                      Label.newLabel(), retName, RetLam(Pos.synth pos, Label.newLabel(),
                                                         retArg, ret (Id(pos,Label.newLabel(),retArg))),
                       If (pos,Label.newLabel(), var, 
-                          cps_tail trueBranch exnName (RetId(Label.newLabel(),retName)), 
-                          cps_tail falseBranch exnName (RetId(Label.newLabel(),retName)))))
+                          cps_tail trueBranch exnName (RetId(Pos.synth pos, Label.newLabel(),retName)), 
+                          cps_tail falseBranch exnName (RetId(Pos.synth pos, Label.newLabel(),retName)))))
           
 
     | E.Object (pos, meta, props) ->
@@ -495,8 +497,8 @@ let rec cps (exp : E.exp)
           cps args exnName (fun args' ->
             let argName = newVar "arg" in
             AppFun(pos,Label.newLabel(), id getField, 
-                   RetLam(Label.newLabel(), argName, ret (id argName)), 
-                   ExnId(Label.newLabel(),exnName), [obj'; field'; args']))))
+                   RetLam(Pos.synth pos, Label.newLabel(), argName, ret (id argName)), 
+                   ExnId(Pos.synth pos, Label.newLabel(),exnName), [obj'; field'; args']))))
     | E.SetField (pos, obj, field, value, args) ->
       let updateField = "%updateField" in
       let id id = Id(pos,Label.newLabel(), id) in
@@ -506,8 +508,8 @@ let rec cps (exp : E.exp)
             cps args exnName (fun args' ->
               let retArg = newVar "x" in
               AppFun(pos,Label.newLabel(), id updateField, 
-                     RetLam (Label.newLabel(), retArg, ret (id retArg)), 
-                     ExnId(Label.newLabel(),exnName), 
+                     RetLam (Pos.synth pos, Label.newLabel(), retArg, ret (id retArg)), 
+                     ExnId(Pos.synth pos, Label.newLabel(),exnName), 
                      [obj'; obj'; field'; value'; args'])))))
     | E.OwnFieldNames (pos, obj) ->
       cps obj exnName (fun var ->
@@ -520,17 +522,18 @@ let rec cps (exp : E.exp)
         let argName = newVar "argX" in
         let labelArgName = newVar "labelArg" in
         let temp = newVar "labelEqTemp" in
-        LetExnCont (Label.newLabel(), newExnName, ExnLam(Label.newLabel(), argName, labelArgName,
+        LetExnCont (Pos.synth pos, 
+                    Label.newLabel(), newExnName, ExnLam(Pos.synth pos, Label.newLabel(), argName, labelArgName,
                     LetPrim (pos,Label.newLabel(), temp, 
                              Op2(pos,Label.newLabel(), "stx=", 
                                  String(pos,Label.newLabel(), label), Id(pos,Label.newLabel(),labelArgName)),
                              If (pos,Label.newLabel(), Id(pos,Label.newLabel(),temp),
                                  ret (Id(pos,Label.newLabel(),argName)),
-                                 AppExnCont(Label.newLabel(),ExnId(Label.newLabel(),exnName), 
+                                 AppExnCont(Pos.synth pos, Label.newLabel(),ExnId(Pos.synth pos, Label.newLabel(),exnName), 
                                             Id(pos,Label.newLabel(),argName), Id(pos,Label.newLabel(),labelArgName))))),
                     cps body newExnName ret)
     | E.Break (pos, label, value) -> 
-      cps value exnName (fun var -> AppExnCont(Label.newLabel(), ExnId(Label.newLabel(),exnName), var, String(pos,Label.newLabel(),label)))
+      cps value exnName (fun var -> AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), var, String(pos,Label.newLabel(),label)))
           
 
     | E.TryCatch (pos, body, handler_lam) -> 
@@ -540,36 +543,37 @@ let rec cps (exp : E.exp)
       let handler_app (var : id) : E.exp =
         E.App (E.pos_of handler_lam, handler_lam, [E.Id (pos, var)]) in
       let temp = newVar "catchEqTemp" in
-      LetExnCont (Label.newLabel(), newExnName, ExnLam(Label.newLabel(),argName, labelArgName,
+      LetExnCont (Pos.synth pos,
+                  Label.newLabel(), newExnName, ExnLam(Pos.synth pos, Label.newLabel(),argName, labelArgName,
                   LetPrim (pos, Label.newLabel(), temp, Op2(pos,Label.newLabel(), "stx=", 
                                                             String(pos,Label.newLabel(), "##catchMe##"), 
                                                             Id(pos,Label.newLabel(),labelArgName)),
                            If (pos,Label.newLabel(), Id(pos,Label.newLabel(),temp),
                                cps (handler_app argName) exnName ret,
-                               AppExnCont(Label.newLabel(), ExnId(Label.newLabel(),exnName), 
+                               AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), 
                                           Id(pos,Label.newLabel(),argName), Id(pos,Label.newLabel(),labelArgName))
                            ))),
                   cps_tail body newExnName 
-                    (RetLam (Label.newLabel(), argName, ret (Id(pos,Label.newLabel(),argName)))))
+                    (RetLam (Pos.synth pos, Label.newLabel(), argName, ret (Id(pos,Label.newLabel(),argName)))))
     | E.TryFinally (pos, body, exp) -> 
       let argX = newVar "argX" in
       let finallyExn = newVar "finallyExn" in
       let labelArg = newVar "label" in
-      LetExnCont(Label.newLabel(), finallyExn, ExnLam(Label.newLabel(),argX, labelArg, 
+      LetExnCont(Pos.synth pos, Label.newLabel(), finallyExn, ExnLam(Pos.synth pos, Label.newLabel(),argX, labelArg, 
                  cps exp exnName (fun ignored -> 
-                   AppExnCont(Label.newLabel(), ExnId(Label.newLabel(),exnName), 
+                   AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), 
                               Id(pos,Label.newLabel(),argX), Id(pos,Label.newLabel(),labelArg)))),
                  cps_tail body finallyExn 
-                   (RetLam (Label.newLabel(), argX, 
+                   (RetLam (Pos.synth pos, Label.newLabel(), argX, 
                             cps exp exnName (fun ignored -> ret (Id(pos,Label.newLabel(),argX))))))
     | E.Throw (pos, value) -> cps value exnName (fun var -> 
-      AppExnCont(Label.newLabel(), ExnId(Label.newLabel(),exnName), 
+      AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), 
                  var, String(pos,Label.newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
     | E.Eval (pos, broken) -> 
       let var = newVar "dummy" in 
-      LetValue (dummy_pos, Label.newLabel(), var, Null (dummy_pos, Label.newLabel()), ret (Id(pos,Label.newLabel(),var))) 
+      LetValue (Pos.synth pos, Label.newLabel(), var, Null (Pos.synth pos, Label.newLabel()), ret (Id(pos,Label.newLabel(),var))) 
 
 
 
@@ -577,13 +581,13 @@ let rec cps (exp : E.exp)
 and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
   match exp with
     (* most of the CPS Value forms *)
-    | E.Null pos -> AppRetCont(Label.newLabel(), retName, Null (pos, Label.newLabel()))
-    | E.Undefined pos -> AppRetCont(Label.newLabel(), retName, Undefined (pos, Label.newLabel()))
-    | E.String (pos, str) -> AppRetCont(Label.newLabel(), retName, String(pos,Label.newLabel(), str))
-    | E.Num (pos, value) -> AppRetCont(Label.newLabel(), retName, Num(pos,Label.newLabel(),value))
-    | E.True pos -> AppRetCont(Label.newLabel(), retName, True (pos,Label.newLabel()))
-    | E.False pos -> AppRetCont(Label.newLabel(), retName, False (pos,Label.newLabel()))
-    | E.Id (pos, id) -> AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),id))
+    | E.Null pos -> AppRetCont(Pos.synth pos, Label.newLabel(), retName, Null (pos, Label.newLabel()))
+    | E.Undefined pos -> AppRetCont(Pos.synth pos, Label.newLabel(), retName, Undefined (pos, Label.newLabel()))
+    | E.String (pos, str) -> AppRetCont(Pos.synth pos, Label.newLabel(), retName, String(pos,Label.newLabel(), str))
+    | E.Num (pos, value) -> AppRetCont(Pos.synth pos, Label.newLabel(), retName, Num(pos,Label.newLabel(),value))
+    | E.True pos -> AppRetCont(Pos.synth pos, Label.newLabel(), retName, True (pos,Label.newLabel()))
+    | E.False pos -> AppRetCont(Pos.synth pos, Label.newLabel(), retName, False (pos,Label.newLabel()))
+    | E.Id (pos, id) -> AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),id))
 
     | E.App (pos, func, args) -> 
         (* because we're using n-ary functions, building the innermostRet
@@ -594,7 +598,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
         let rec process_args args argNames =
           match args with
           | arg::args' -> cps arg exnName (fun arg' -> process_args args' (arg'::argNames))
-          | [] -> AppFun (pos,Label.newLabel(), funName, retName, ExnId(Label.newLabel(),exnName), (List.rev argNames)) in
+          | [] -> AppFun (pos,Label.newLabel(), funName, retName, ExnId(Pos.synth pos, Label.newLabel(),exnName), (List.rev argNames)) in
       process_args args [])
     | E.Lambda (pos, args, body) -> 
         let lamName = newVar "lam" in
@@ -602,8 +606,8 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
         let exnName = newVar "exn" in
         LetValue (pos,Label.newLabel(), lamName, 
                   Lambda (pos,Label.newLabel(), retName, exnName, args, 
-                          (cps_tail body exnName (RetId(Label.newLabel(),retName)))),
-                  AppRetCont(Label.newLabel(), RetId(Label.newLabel(),retName), Id(pos,Label.newLabel(),lamName)))
+                          (cps_tail body exnName (RetId(Pos.synth pos, Label.newLabel(),retName)))),
+                  AppRetCont(Pos.synth pos, Label.newLabel(), RetId(Pos.synth pos, Label.newLabel(),retName), Id(pos,Label.newLabel(),lamName)))
 
 
 
@@ -611,41 +615,45 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
     | E.SetBang (pos, id, value) ->
         cps exp exnName (fun var ->
           let temp = newVar "set!Temp" in
-          LetPrim (pos,Label.newLabel(), temp, SetBang (pos,Label.newLabel(), id, var), AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
+          LetPrim (pos,Label.newLabel(), temp, SetBang (pos,Label.newLabel(), id, var), 
+                   AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
     | E.Op1 (pos, op, exp) -> 
         cps exp exnName (fun var ->
           let temp = newVar "op1Temp" in
           LetPrim (pos,Label.newLabel(), temp, Op1 (pos,Label.newLabel(), op, var), 
-                   AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
+                   AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
     | E.Op2 (pos, op, left, right) -> 
         cps left exnName (fun leftVar -> 
           cps right exnName (fun rightVar ->
             let temp = newVar "op2Temp" in
-            LetPrim (pos,Label.newLabel(), temp, Op2 (pos,Label.newLabel(), op, leftVar, rightVar), AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp)))))
+            LetPrim (pos,Label.newLabel(), temp, Op2 (pos,Label.newLabel(), op, leftVar, rightVar), 
+                     AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp)))))
     | E.DeleteField (pos, obj, field) -> 
         cps obj exnName (fun objVar -> 
           cps field exnName (fun fieldVar ->
             let temp = newVar "delTemp" in
-            LetPrim (pos,Label.newLabel(), temp, DeleteField (pos,Label.newLabel(), objVar, fieldVar), AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp)))))
+            LetPrim (pos,Label.newLabel(), temp, DeleteField (pos,Label.newLabel(), objVar, fieldVar), 
+                     AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp)))))
     | E.GetAttr (pos, prop_meta, obj, pname) -> 
         cps obj exnName (fun objVar -> 
           cps pname exnName (fun pnameVar ->
             let temp = newVar "getTemp" in
-            LetPrim (pos,Label.newLabel(), temp, GetAttr (pos,Label.newLabel(), prop_meta, objVar, pnameVar), AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp)))))
+            LetPrim (pos,Label.newLabel(), temp, GetAttr (pos,Label.newLabel(), prop_meta, objVar, pnameVar), 
+                     AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp)))))
     | E.SetAttr (pos, prop_meta, obj, pname, value) -> 
         cps obj exnName (fun objVar -> 
           cps pname exnName (fun pnameVar ->
             cps value exnName (fun valueVar ->
               let temp = newVar "setTemp" in
               LetPrim (pos,Label.newLabel(), temp, SetAttr (pos,Label.newLabel(), prop_meta, objVar, pnameVar, valueVar), 
-                       AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))))
+                       AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))))
 
     | E.GetObjAttr (pos, attr, obj) -> 
         cps obj exnName (fun objVar -> 
           let temp = newVar "getTemp" in
           LetPrim (pos,Label.newLabel(), temp,
                    GetObjAttr (pos,Label.newLabel(), attr, objVar),
-                   AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
+                   AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
 
     | E.SetObjAttr (pos, attr, obj, attrval) -> 
         cps obj exnName (fun objVar -> 
@@ -654,7 +662,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
             LetPrim (pos,Label.newLabel(), temp,
                      SetObjAttr (pos,Label.newLabel(), attr,
                                  objVar, attrVar),
-                     AppRetCont (Label.newLabel(), retName,
+                     AppRetCont (Pos.synth pos, Label.newLabel(), retName,
                                  Id (pos,Label.newLabel(),temp)))))
 
     (* CPS Expression forms *)
@@ -707,7 +715,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
           | [] ->
             let temp = newVar "objVar" in
               LetValue (pos,Label.newLabel(), temp, Object(pos,Label.newLabel(), meta, List.rev compProps), 
-                        AppRetCont(Label.newLabel(), retName, Id (pos,Label.newLabel(),temp))) in
+                        AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id (pos,Label.newLabel(),temp))) in
       primval_wrapper (fun primval' ->
         code_wrapper (fun code' ->
           proto_wrapper (fun proto' ->
@@ -724,7 +732,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
       cps obj exnName (fun obj' ->
         cps field exnName (fun field' ->
           cps args exnName (fun args' ->
-            AppFun(pos,Label.newLabel(), id getField, retName, ExnId(Label.newLabel(),exnName), [obj'; field'; args']))))
+            AppFun(pos,Label.newLabel(), id getField, retName, ExnId(Pos.synth pos, Label.newLabel(),exnName), [obj'; field'; args']))))
     | E.SetField (pos, obj, field, value, args) ->
       let updateField = "%updateField" in
       let id id = Id(pos,Label.newLabel(), id) in
@@ -732,7 +740,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
         cps field exnName (fun field' ->
           cps value exnName (fun value' ->
             cps args exnName (fun args' ->
-              AppFun(pos,Label.newLabel(), id updateField, retName, ExnId(Label.newLabel(),exnName), 
+              AppFun(pos,Label.newLabel(), id updateField, retName, ExnId(Pos.synth pos, Label.newLabel(),exnName), 
                      [obj'; obj'; field'; value'; args'])))))
 
     | E.OwnFieldNames (pos, obj) ->
@@ -740,7 +748,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
       let temp = newVar "ownNamesTemp" in
       LetPrim (pos, Label.newLabel(), temp,
                OwnFieldNames (pos,Label.newLabel(), obj), 
-               AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
+               AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),temp))))
 
 
     | E.Label (pos, label, body) -> 
@@ -748,17 +756,17 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
       let argName = newVar "argX" in
       let labelArgName = newVar "labelArg" in
       let temp = newVar "labelEqTemp" in
-      LetExnCont (Label.newLabel(), newExnName, 
-                  ExnLam(Label.newLabel(), argName, labelArgName,
+      LetExnCont (Pos.synth pos, Label.newLabel(), newExnName, 
+                  ExnLam(Pos.synth pos, Label.newLabel(), argName, labelArgName,
                          LetPrim (pos,Label.newLabel(), temp, Op2(pos,Label.newLabel(), "stx=", String(pos,Label.newLabel(), label), Id(pos,Label.newLabel(),labelArgName)),
                                   If (pos,Label.newLabel(), Id(pos,Label.newLabel(),temp),
-                                      AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),argName)),
-                                      AppExnCont(Label.newLabel(), ExnId(Label.newLabel(),exnName), Id(pos,Label.newLabel(),argName), Id(pos,Label.newLabel(),labelArgName))))),
+                                      AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),argName)),
+                                      AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), Id(pos,Label.newLabel(),argName), Id(pos,Label.newLabel(),labelArgName))))),
                   cps_tail body newExnName retName)
     | E.Break (pos, label, value) -> 
       let labelName = newVar "label" in
       LetValue(pos,Label.newLabel(), labelName, String(pos,Label.newLabel(), label),
-               cps value exnName (fun var -> AppExnCont(Label.newLabel(), ExnId(Label.newLabel(),exnName), var, Id(pos,Label.newLabel(),labelName))))
+               cps value exnName (fun var -> AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), var, Id(pos,Label.newLabel(),labelName))))
           
 
     | E.TryCatch (pos, body, handler_lam) -> 
@@ -768,33 +776,34 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
       let handler_app (var : id) : E.exp =
         E.App (E.pos_of handler_lam, handler_lam, [E.Id (pos, var)]) in
       let temp = newVar "catchEqTemp" in
-      LetExnCont (Label.newLabel(), newExnName, 
-                  ExnLam(Label.newLabel(), argName, labelArgName,
+      LetExnCont (Pos.synth pos, Label.newLabel(), newExnName, 
+                  ExnLam(Pos.synth pos, Label.newLabel(), argName, labelArgName,
                          LetPrim (pos,Label.newLabel(), temp, Op2(pos,Label.newLabel(), "stx=", String(pos,Label.newLabel(), "##catchMe##"), Id(pos,Label.newLabel(),labelArgName)),
                                   If (pos,Label.newLabel(), Id(pos,Label.newLabel(),temp),
                                       cps_tail (handler_app argName) exnName retName,
-                                      AppExnCont(Label.newLabel(), ExnId(Label.newLabel(), exnName), Id(pos,Label.newLabel(),argName), Id(pos,Label.newLabel(),labelArgName))
+                                      AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(), exnName), Id(pos,Label.newLabel(),argName), Id(pos,Label.newLabel(),labelArgName))
                                   ))),
                   cps_tail body newExnName retName)
     | E.TryFinally (pos, body, exp) -> 
       let argX = newVar "argX" in
       let finallyExn = newVar "finallyExn" in
       let labelArg = newVar "label" in
-      LetExnCont(Label.newLabel(), finallyExn, 
-                 ExnLam(Label.newLabel(),argX, labelArg, 
+      LetExnCont(Pos.synth pos, Label.newLabel(), finallyExn, 
+                 ExnLam(Pos.synth pos, Label.newLabel(),argX, labelArg, 
                         cps exp exnName (fun ignored -> 
-                          AppExnCont(Label.newLabel(), 
-                                     ExnId(Label.newLabel(),exnName), 
+                          AppExnCont(Pos.synth pos, Label.newLabel(), 
+                                     ExnId(Pos.synth pos, Label.newLabel(),exnName), 
                                      Id(pos,Label.newLabel(),argX), Id(pos,Label.newLabel(),labelArg)))),
-                 cps_tail body finallyExn (RetLam (Label.newLabel(), argX, 
+                 cps_tail body finallyExn (RetLam (Pos.synth pos, Label.newLabel(), argX, 
                                                    cps exp exnName (fun ignored -> 
-                                                     AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),argX))))))
-| E.Throw (pos, value) -> cps value exnName (fun var -> AppExnCont(Label.newLabel(), ExnId(Label.newLabel(),exnName), var, String(pos,Label.newLabel(),"##catchMe##")))
+                                                     AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),argX))))))
+| E.Throw (pos, value) -> cps value exnName (fun var -> AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), var, String(pos,Label.newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
     | E.Eval (pos, broken) -> 
       let var = newVar "dummy" in 
-      LetValue (dummy_pos, Label.newLabel(), var, Null (dummy_pos, Label.newLabel()), AppRetCont(Label.newLabel(), retName, Id(pos,Label.newLabel(),var))) 
+      LetValue (Pos.synth pos, Label.newLabel(), var, Null (Pos.synth pos, Label.newLabel()), 
+                AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),var))) 
 
 
 
@@ -807,27 +816,27 @@ let rec de_cps (exp : cps_exp) : E.exp =
   | LetValue (pos, _, id, value, body) -> E.Let (pos, id, de_cps_val value, de_cps body)
   | RecValue (pos, _, id, value, body) -> E.Rec (pos, id, de_cps_val value, de_cps body)
   | LetPrim (pos, _, id, prim, body) -> E.Let(pos, id, de_cps_prim prim, de_cps body)
-  | LetRetCont (_, contId, ret, body) -> 
-    E.Let (dummy_pos, contId, de_ret ret, de_cps body)
-  | LetExnCont (_, contId, exn, body) ->
-    E.Let (dummy_pos, contId, de_exn exn, de_cps body)
+  | LetRetCont (pos, _, contId, ret, body) -> 
+    E.Let (pos, contId, de_ret ret, de_cps body)
+  | LetExnCont (pos, _, contId, exn, body) ->
+    E.Let (pos, contId, de_exn exn, de_cps body)
   | If (pos, _, condId, trueBranch, falseBranch) -> 
     E.If(pos, de_cps_val condId, de_cps trueBranch, de_cps falseBranch)
   | AppFun (pos, _, funId, ret, exn, argsIds) -> E.App(pos, de_cps_val funId,
                                                        (de_ret ret) :: (de_exn exn) ::
                                                          (List.map de_cps_val argsIds))
-  | AppRetCont (_, ret, argName) -> E.App(dummy_pos, de_ret ret, [de_cps_val argName])
-  | AppExnCont (_, exn, argName, labelName) -> E.App(dummy_pos, de_exn exn,
+  | AppRetCont (pos, _, ret, argName) -> E.App(pos, de_ret ret, [de_cps_val argName])
+  | AppExnCont (pos, _, exn, argName, labelName) -> E.App(pos, de_exn exn,
                                                      [de_cps_val argName; de_cps_val labelName])
   | Eval (pos, _, body) -> E.Eval(pos, de_cps body)
 and de_ret (ret : cps_ret) : E.exp =
   match ret with
-  | RetId(_, id) -> E.Id(dummy_pos, id)
-  | RetLam(_, arg, body) -> E.Lambda(dummy_pos, [arg], de_cps body)
+  | RetId(pos, _, id) -> E.Id(pos, id)
+  | RetLam(pos, _, arg, body) -> E.Lambda(pos, [arg], de_cps body)
 and de_exn (exn : cps_exn) : E.exp =
   match exn with
-  | ExnId(_, id) -> E.Id(dummy_pos, id)
-  | ExnLam(_, arg, label, body) -> E.Lambda(dummy_pos, [arg; label], de_cps body)
+  | ExnId(pos, _, id) -> E.Id(pos, id)
+  | ExnLam(pos, _, arg, label, body) -> E.Lambda(pos, [arg; label], de_cps body)
 and de_cps_val (value : cps_value) : E.exp =
   match value with
   | Null (pos, _) -> E.Null pos

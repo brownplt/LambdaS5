@@ -21,7 +21,7 @@ let print_store = false
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
 let interp_error pos message =
-  "[interp] (" ^ string_of_position pos ^ ") " ^ message
+  "[interp] (" ^ Pos.string_of_pos pos ^ ") " ^ message
 
 let throw_str s = throw (Throw (String s))
   
@@ -434,7 +434,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
             (return (field, None) pc)
             (if is_sym then 
               let symv, pc = new_sym ("get_field at " ^
-                                           (string_of_position p)) pc in
+                                           (Pos.string_of_pos p)) pc in
               add_field_force obj_loc field symv pc
             else none)
         | Some p -> return (field, prop) pc)
@@ -481,7 +481,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
          * Desugared JS new syms are caught in GetField. *)
         if x = new_sym_keyword then
           uncurry return
-            (new_sym (new_sym_keyword ^ " at " ^ (string_of_position p)) pc)
+            (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
         else
           try return (sto_lookup_val (IdMap.find x env) pc) pc
           with Not_found -> failwith (interp_error p
@@ -512,7 +512,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 let (t,ret_ty) = typeofOp1 op in 
                 let pc = check_type id t pc in
                 let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
-                  ("return from " ^ op ^ " " ^ string_of_position p) pc in
+                  ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
                 return (SymScalar ret_op1)
                   (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc)
               | ObjPtr obj_loc ->
@@ -585,7 +585,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                         else SOp2(op, sym_e1, sym_e2)
                       in
                       let (res_var, pc) = fresh_var ("P2_" ^ op ^ "_") ret_ty
-                        ("return from " ^ op ^ " " ^ string_of_position p) pc in
+                        ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
                       return (SymScalar res_var) (add_let res_var res_exp pc)
                     with TypeError id -> none 
                   end
@@ -676,7 +676,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               return e_val pc'')
         with Not_found ->
           failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-                       (string_of_position p))
+                       (Pos.string_of_pos p))
       end
 
       | S.Object (p, attrs, props) -> begin 
@@ -825,7 +825,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                  * with our new sym keyword, so we catch it here to make a new sym *)
                 match fv with String fstr when fstr = new_sym_keyword ->
                   uncurry return
-                    (new_sym (new_sym_keyword ^ " at " ^ (string_of_position p)) pc)
+                    (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
                 | _ ->
 
                 bind (eval args env pc)
@@ -1000,7 +1000,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 and arity_mismatch_err p xs args pc =
   failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ 
                " arguments and expected " ^ string_of_int (List.length xs) ^ 
-               " at " ^ string_of_position p ^ ". Arg names were: " ^ 
+               " at " ^ Pos.string_of_pos p ^ ". Arg names were: " ^ 
                (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ 
                ". Values were: " ^ 
                (List.fold_right (^) (map (fun v -> " " ^ 
@@ -1032,8 +1032,8 @@ and eval_op str env jsonPath maxDepth pc =
       parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
     try
       let (used_ids, exprjsd) = 
-        js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global")) in
-      let desugard = exprjs_to_ljs used_ids exprjsd in
+        js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global")) in
+      let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
       if (IdMap.mem "%global" env) then
         (Ljs_pretty.exp desugard std_formatter; print_newline ();
          eval jsonPath maxDepth 0 desugard env pc (* TODO: which env? *))

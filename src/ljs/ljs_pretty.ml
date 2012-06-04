@@ -124,19 +124,17 @@ let remove_prefix_dups exprs =
       (List.fold_left (fun (first, trace) expr ->
         match first with
         | Some expr' ->
-            let nm e = (fst (pos_of e)).Lexing.pos_fname in
+            let nm e = Pos.fname (pos_of e) in
             if nm expr = nm expr' then (first, trace) else (None, trace@[expr])
         | None -> (None, trace@[expr])
       ) (Some v, []) rest))
 
 let filter_dummies exprs =
-  List.filter (fun expr ->
-    (fst (pos_of expr)) != Lexing.dummy_pos &&
-    (snd (pos_of expr)) != Lexing.dummy_pos) exprs
+  List.filter (fun expr -> not (Pos.isSynthetic (pos_of expr))) exprs
 
 let stack_trace exprs =
   let filtered = remove_prefix_dups (filter_dummies exprs) in
-    vert (map (fun expr -> text (string_of_position (pos_of expr))) filtered)
+    vert (map (fun expr -> text (Pos.string_of_pos (pos_of expr))) filtered)
 
 let string_stack_trace =
   FormatExt.to_string stack_trace

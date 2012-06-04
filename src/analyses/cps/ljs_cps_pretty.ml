@@ -65,12 +65,12 @@ and prim verbose p =
 and label verbose lbl ret = if verbose then squish [Label.pretty lbl; text ":"; ret] else ret
 
 and print_ret verbose r = match r with
-  | RetId(lbl, id) -> label verbose lbl (text id)
-  | RetLam(lbl, arg, body) -> 
+  | RetId(p,lbl, id) -> label verbose lbl (text id)
+  | RetLam(p,lbl, arg, body) -> 
     label verbose lbl (squish [text "\\"; text arg; text "->"; exp verbose body])
 and print_exn verbose e = match e with
-  | ExnId(lbl, id) -> label verbose lbl (text id)
-  | ExnLam(lbl, arg, lab, body) -> 
+  | ExnId(p,lbl, id) -> label verbose lbl (text id)
+  | ExnLam(p,lbl, arg, lab, body) -> 
     label verbose lbl (squish [text "\\"; text arg; text ","; text lab; text "->"; exp verbose body])
 
 and exp verbose e = 
@@ -86,10 +86,10 @@ and exp verbose e =
   | LetPrim (p,lbl, x, pr, body) ->
     label verbose lbl (vert [horz [text "letPrim"; parens (horz [text x; text "="; prim pr])];
                              horz [text "in"; vert [exp body]]])
-  | LetRetCont (lbl,ret, r, body) ->
+  | LetRetCont (p,lbl,ret, r, body) ->
     label verbose lbl (vert [horz [text "letRet"; horz [text ret; text "="]; vert [print_ret verbose r]];
           horz [text "in"; vert [exp body]]])
-  | LetExnCont (lbl,exn, e, body) ->
+  | LetExnCont (p,lbl,exn, e, body) ->
     label verbose lbl (vert [horz [text "letExn"; horz [text exn; text "="; vert [print_exn verbose e]]];
           horz [text "in"; vert [exp body]]])
   | If (p,lbl, c, t, e) -> 
@@ -108,9 +108,9 @@ and exp verbose e =
                                          [wrapBox [squish [text "Ret "; print_ret verbose ret; text ","];
                                                        squish [text "Exn "; print_exn verbose exn; text ";"]];
                                           wrapBox (pairOff (intersperse (text ",") (map value args)))])])
-  | AppRetCont (lbl,r, x) ->
+  | AppRetCont (p,lbl,r, x) ->
     label verbose lbl (horz [squish [print_ret verbose r; parens (horz [value x])]])
-  | AppExnCont (lbl,e, x, l) ->
+  | AppExnCont (p,lbl,e, x, l) ->
     label verbose lbl (horz [squish [print_exn verbose e; parens (horz [value x ; text ","; value l])]])
   | Eval (p,lbl, s) -> 
     label verbose lbl (squish [text "@eval"; parens (exp s)])

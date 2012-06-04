@@ -29,52 +29,52 @@ type mem =
   | Set of propName * id * srcElt list
 
 and expr =
-  | This of pos
-  | Id of pos * id
-  | Lit of pos * lit
-  | Array of pos * expr list
-  | Object of pos * mem list
-  | Paren of pos * expr list
-  | Func of pos * id option * id list * srcElt list
-  | Bracket of pos * expr * expr
-  | Dot of pos * expr * id
-  | New of pos * expr * expr list
-  | Prefix of pos * prefixOp  * expr
-  | UnaryAssign of pos * unaryAssignOp * expr
-  | Infix of pos * infixOp * expr * expr
-  | Cond of pos * expr * expr * expr
-  | Assign of pos * assignOp * expr * expr
-  | List of pos * expr list
-  | Call of pos * expr * expr list
+  | This of Pos.t
+  | Id of Pos.t * id
+  | Lit of Pos.t * lit
+  | Array of Pos.t * expr list
+  | Object of Pos.t * mem list
+  | Paren of Pos.t * expr list
+  | Func of Pos.t * id option * id list * srcElt list
+  | Bracket of Pos.t * expr * expr
+  | Dot of Pos.t * expr * id
+  | New of Pos.t * expr * expr list
+  | Prefix of Pos.t * prefixOp  * expr
+  | UnaryAssign of Pos.t * unaryAssignOp * expr
+  | Infix of Pos.t * infixOp * expr * expr
+  | Cond of Pos.t * expr * expr * expr
+  | Assign of Pos.t * assignOp * expr * expr
+  | List of Pos.t * expr list
+  | Call of Pos.t * expr * expr list
 
 and case =
-  | Case of pos * expr * stmt
-  | Default of pos * stmt
+  | Case of Pos.t * expr * stmt
+  | Default of Pos.t * stmt
           
 and varDecl =
   | VarDecl of id * expr option
           
 and stmt =
-  | Block of pos * block
-  | Var of pos * varDecl list
-  | Empty of pos
-  | Expr of pos * expr
-  | If of pos * expr * stmt * stmt option
-  | DoWhile of pos * stmt * expr
-  | While of pos * expr * stmt
-  | For of pos * expr option * expr option * expr option * stmt
-  | ForVar of pos * varDecl list * expr option * expr option * stmt
-  | ForIn of pos * expr * expr * stmt
-  | ForInVar of pos * varDecl * expr * stmt
-  | Labeled of pos * id * stmt
-  | Continue of pos * id option
-  | Break of pos * id option
-  | Return of pos * expr option
-  | With of pos * expr * stmt
-  | Switch of pos * expr * case list
-  | Throw of pos * expr
-  | Try of pos * block * catch * finally
-  | Debugger of pos
+  | Block of Pos.t * block
+  | Var of Pos.t * varDecl list
+  | Empty of Pos.t
+  | Expr of Pos.t * expr
+  | If of Pos.t * expr * stmt * stmt option
+  | DoWhile of Pos.t * stmt * expr
+  | While of Pos.t * expr * stmt
+  | For of Pos.t * expr option * expr option * expr option * stmt
+  | ForVar of Pos.t * varDecl list * expr option * expr option * stmt
+  | ForIn of Pos.t * expr * expr * stmt
+  | ForInVar of Pos.t * varDecl * expr * stmt
+  | Labeled of Pos.t * id * stmt
+  | Continue of Pos.t * id option
+  | Break of Pos.t * id option
+  | Return of Pos.t * expr option
+  | With of Pos.t * expr * stmt
+  | Switch of Pos.t * expr * case list
+  | Throw of Pos.t * expr
+  | Try of Pos.t * block * catch * finally
+  | Debugger of Pos.t
 
 and block = stmt list
 

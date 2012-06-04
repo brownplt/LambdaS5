@@ -17,16 +17,17 @@ module S5 = struct
   open Format
   open FormatExt
 
-  let srcJS = ref [Js_syntax.Stmt (Js_syntax.Expr (dummy_pos, Js_syntax.Lit
-(dummy_pos, Js_syntax.Null)))]
-  let srcES5 = ref (Ljs_syntax.Undefined dummy_pos)
-  let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Ljs_cps.AppRetCont(Ljs_cps.Label.dummy, Ljs_cps.RetId(Ljs_cps.Label.dummy,"fake"), Ljs_cps.Id(dummy_pos,Ljs_cps.Label.dummy,"fake")))
+  let srcJS = ref [Js_syntax.Stmt (Js_syntax.Expr (Pos.dummy, Js_syntax.Lit(Pos.dummy, Js_syntax.Null)))]
+  let srcES5 = ref (Ljs_syntax.Undefined Pos.dummy)
+  let srcEJS = ref (Exprjs_syntax.Undefined (Pos.dummy))
+  let cpsES5 = ref (Ljs_cps.AppRetCont(Pos.dummy, Ljs_cps.Label.dummy, 
+                                       Ljs_cps.RetId(Pos.dummy, Ljs_cps.Label.dummy,"fake"), 
+                                       Ljs_cps.Id(Pos.dummy,Ljs_cps.Label.dummy,"fake")))
 
   let jsonPath = ref ""
 
   let load_s5 (path : string) : unit =
-    srcES5 := Ljs_syntax.Seq (dummy_pos, !srcES5,
+    srcES5 := Ljs_syntax.Seq (Pos.dummy, !srcES5,
 		              Ljs.parse_es5 (open_in path) path)
 
   let set_json (path : string) : unit =
@@ -84,14 +85,14 @@ module S5 = struct
     
   let desugar_spidermonkey_js (path : string) : unit = 
     let ast = SpiderMonkey.parse_spidermonkey (open_in path) path in
-    let (used_ids, exprjsd) = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
-    let desugard = exprjs_to_ljs used_ids exprjsd in
+    let (used_ids, exprjsd) = js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "global")) in
+    let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
 
   let desugar_c3_js (path : string) : unit = 
     let ast = C3.parse_c3 (open_in path) path in
-    let (used_ids, exprjsd) = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
-    let desugard = exprjs_to_ljs used_ids exprjsd in
+    let (used_ids, exprjsd) = js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "global")) in
+    let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
 
   (* let cfg () : unit = *)
@@ -103,7 +104,7 @@ module S5 = struct
   let cps () =
     cpsES5 := Ljs_cps.cps_tail !srcES5 
       "%error"
-      (Ljs_cps.RetId(Ljs_cps.Label.dummy,"%answer"))
+      (Ljs_cps.RetId(Pos.dummy, Ljs_cps.Label.dummy,"%answer"))
   let alphatize () = 
     cpsES5 := fst (Ljs_cps_util.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) 
   let uncps () =

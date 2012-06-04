@@ -31,41 +31,41 @@ let string_of_attr attr = match attr with
   | Enum -> "#enumerable"
 
 type exp =
-  | Null of pos
-  | Undefined of pos
-  | String of pos * string
-  | Num of pos * float
-  | True of pos
-  | False of pos
-  | Id of pos * id
-  | Object of pos * attrs * (string * prop) list
-      (* GetAttr (pos, property, object, field name) *)
-  | GetAttr of pos * pattr * exp * exp
-      (* SetAttr (pos, property, object, field name, new value) *)
-  | SetAttr of pos * pattr * exp * exp * exp
-  | GetObjAttr of pos * oattr * exp
-  | SetObjAttr of pos * oattr * exp * exp
-  | GetField of pos * exp * exp * exp (*pos, left, right, args object *)
-  | SetField of pos * exp * exp * exp * exp (* pos, obj, field, new val, args *)
-  | DeleteField of pos * exp * exp (* pos, obj, field *)
-  | OwnFieldNames of pos * exp
-  | SetBang of pos * id * exp
-  | Op1 of pos * string * exp
-  | Op2 of pos * string * exp * exp
-  | If of pos * exp * exp * exp
-  | App of pos * exp * exp list
-  | Seq of pos * exp * exp
-  | Let of pos * id * exp * exp
-  | Rec of pos * id * exp * exp (** value bound must be an [ELambda] *)
-  | Label of pos * id * exp
-  | Break of pos * id * exp
-  | TryCatch of pos * exp * exp
+  | Null of Pos.t
+  | Undefined of Pos.t
+  | String of Pos.t * string
+  | Num of Pos.t * float
+  | True of Pos.t
+  | False of Pos.t
+  | Id of Pos.t * id
+  | Object of Pos.t * attrs * (string * prop) list
+      (* GetAttr (Pos.t, property, object, field name) *)
+  | GetAttr of Pos.t * pattr * exp * exp
+      (* SetAttr (Pos.t, property, object, field name, new value) *)
+  | SetAttr of Pos.t * pattr * exp * exp * exp
+  | GetObjAttr of Pos.t * oattr * exp
+  | SetObjAttr of Pos.t * oattr * exp * exp
+  | GetField of Pos.t * exp * exp * exp (*Pos.t, left, right, args object *)
+  | SetField of Pos.t * exp * exp * exp * exp (* Pos.t, obj, field, new val, args *)
+  | DeleteField of Pos.t * exp * exp (* Pos.t, obj, field *)
+  | OwnFieldNames of Pos.t * exp
+  | SetBang of Pos.t * id * exp
+  | Op1 of Pos.t * string * exp
+  | Op2 of Pos.t * string * exp * exp
+  | If of Pos.t * exp * exp * exp
+  | App of Pos.t * exp * exp list
+  | Seq of Pos.t * exp * exp
+  | Let of Pos.t * id * exp * exp
+  | Rec of Pos.t * id * exp * exp (** value bound must be an [ELambda] *)
+  | Label of Pos.t * id * exp
+  | Break of Pos.t * id * exp
+  | TryCatch of Pos.t * exp * exp
       (** Catch block must be an [ELambda] *)
-  | TryFinally of pos * exp * exp
-  | Throw of pos * exp
-  | Lambda of pos * id list * exp
-  | Eval of pos * exp
-  | Hint of pos * string * exp
+  | TryFinally of Pos.t * exp * exp
+  | Throw of Pos.t * exp
+  | Lambda of Pos.t * id list * exp
+  | Eval of Pos.t * exp
+  | Hint of Pos.t * string * exp
 and data =       
     {value : exp;
      writable : bool; }
@@ -86,17 +86,17 @@ and attrs =
 let d_attrs = 
   { primval = None;
     code = None;
-    proto = Some (Null dummy_pos);
+    proto = Some (Null Pos.dummy);
     klass = "Object";
     extensible = true; }
 
 let d_data =
-  { value = Undefined dummy_pos;
+  { value = Undefined Pos.dummy;
     writable = true; }
 
 let d_accessor = 
-  { getter = Undefined dummy_pos;
-    setter = Undefined dummy_pos; }
+  { getter = Undefined Pos.dummy;
+    setter = Undefined Pos.dummy; }
 
 let pos_of exp = match exp with
   | Null pos -> pos

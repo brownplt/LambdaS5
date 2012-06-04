@@ -37,7 +37,7 @@
   let custom_error descr lexbuf =
     raise (Json_error 
 	     (sprintf "%s:\n%s"
-		(string_of_position (loc lexbuf))
+		(Pos.string_of_pos (Pos.real (loc lexbuf)))
 		descr))
 
   let lexer_error descr lexbuf =
