@@ -37,10 +37,13 @@ let rec value v =
                                brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
                                  
 
-and obj o = match o with
-  | NewSymObj locs -> horz [text "NewSymObj"; brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
-  | SymObj f -> helper f "@sym"
-  | ConObj f -> helper f "@"
+and obj (o, hide) =
+  let hide_str = if hide then "hidden" else "" in
+  match o with
+  | NewSymObj locs -> horz [text hide_str; text "NewSymObj";
+                            brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
+  | SymObj f -> helper f (hide_str ^ "@sym")
+  | ConObj f -> helper f (hide_str ^ "@")
 and helper { attrs = attrsv; conps = conpsv; symps = sympsv; } prefix = 
   if IdMap.is_empty conpsv && IdMap.is_empty sympsv 
   then squish [text prefix; braces (attrs attrsv)]

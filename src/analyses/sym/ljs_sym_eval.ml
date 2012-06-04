@@ -14,6 +14,7 @@ open Str
 
 let max_sym_proto_depth = 1
 let new_sym_keyword = "NEWSYM"
+let hide_hint_keyword = "ignoreSym"
 
 (* flag for debugging *)
 let print_store = false
@@ -46,7 +47,7 @@ let rec apply p func args pc depth = match func with
     | NewSymObj _ -> failwith (interp_error p ("Apply got NewSymObj"))
     | o -> throw_str (interp_error p
                         ("Applied an object without a code attribute: "
-                        ^ Ljs_sym_pretty.obj_to_string o)) pc
+                        ^ Ljs_sym_pretty.obj_to_string (o, false))) pc
     end
   | SymScalar id -> throw_str (interp_error p
                                  ("Tried to apply a symbolic value: " ^ id)) pc
@@ -471,6 +472,87 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
      * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
      * In either case, eval_sym should be used to evaluate e. *)
     let eval_sym exp env pc = bind (eval exp env pc) (uncurry branch_sym) in
+    (* eval_hide evaluates expressions and looks for hints to specify if the resulting
+     * object should be marked as hidden when inserted into the obj store.
+     * Hidden objects won't be included in the loc lists of new syms. *)
+    let eval_hide exp env pc =
+      let hide, exp2 = match exp with
+      | S.Hint (_, hint, exp2) -> hint = hide_hint_keyword, exp2
+      | _ -> false, exp
+      in
+      match exp2 with
+      | S.Object (p, attrse, propse) ->
+        (* TODO which of these do we need to eval_sym? 
+         * probably none, because they aren't user facing *)
+        begin match attrse with
+        | { S.primval = valexp;
+            S.proto = protoexp; (* TODO look in spec to see if prototype can be declared *)
+            S.code = codexp;
+            S.extensible = ext;
+            S.klass = kls; } ->
+
+          let opt_lift ctxs = 
+            bind ctxs
+              (fun (v, pc) -> 
+                let (vloc, pc) = sto_alloc_val v pc in
+                return (Some vloc) pc) in
+          bind
+            (match valexp with
+            | None -> return None pc
+            | Some vexp -> opt_lift (eval vexp env pc))
+            (fun (vloc, pc_v) ->
+              bind
+                (match protoexp with
+                | None -> return Undefined pc_v
+                | Some pexp -> eval_sym pexp env pc_v)
+                (fun (p, pc_p) ->
+                  let (ploc, pc_p) = sto_alloc_val p pc_p in
+                  bind
+                    (match codexp with
+                    | None -> return None pc_p
+                    | Some cexp -> opt_lift (eval cexp env pc_p))
+                    (fun (cloc, pc_c) ->
+                      let attrsv =
+                        { primval = vloc; proto = ploc; code = cloc;
+                          extensible = symbool ext; klass = SString kls }
+                      in
+                      let eval_prop prop pc = match prop with
+                        | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
+                          bind (eval vexp env pc)
+                            (fun (v2, pc_v2) ->
+                              let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
+                              return (Data ({ value = v2loc; writable = symbool w; },
+                                            symbool enum, symbool config)) pc_v2)
+                        (* TODO do we need eval_sym? *)
+                        | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
+                          bind (eval ge env pc)
+                            (fun (v2, pc_v2) ->
+                              let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
+                              bind (eval se env pc_v2)
+                                (fun (v3, pc_v3) ->
+                                  let v3loc, pc_v3 = sto_alloc_val v3 pc_v3 in
+                                  return (Accessor ({ getter = v2loc; setter = v3loc},
+                                                    symbool enum, symbool config)) pc_v3))
+                      in
+                      let propvs_pcs  = 
+                        List.fold_left
+                          (fun maps_pcs (name, prop) -> 
+                            bind maps_pcs
+                              (fun (map, pc) ->
+                                bind 
+                                  (eval_prop prop pc)
+                                  (fun (propv, pc_v) -> 
+                                    let (_, pc') = const_string name pc_v in
+                                    return (IdMap.add name propv map) pc')))
+                          ([(IdMap.empty, pc_c)], []) propse in
+                      bind propvs_pcs
+                        (fun (propvs, pc_psv) -> 
+                          let objv = ConObj { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
+                          let (loc, pc_obj) = sto_alloc_obj objv hide pc_psv in
+                          return (ObjPtr loc) pc_obj))))
+      end
+      | _ -> eval exp2 env pc
+    in
 
     match exp with
       | S.Hint (_, _, e) -> eval e env pc
@@ -656,7 +738,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
       | S.Let (p, x, e, body) ->
         bind
-          (eval e env pc)
+          (eval_hide e env pc)
           (fun (e_val, pc) -> 
             let loc, pc = sto_alloc_val e_val pc in 
             eval body (IdMap.add x loc env) pc)
@@ -665,7 +747,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         let (loc, pc') = sto_alloc_val Undefined pc in
         let env' = IdMap.add x loc env in
         bind
-          (eval e env' pc')
+          (eval_hide e env' pc')
           (fun (ev_val, pc') -> 
             let pc'' = sto_update_val loc ev_val pc' in 
             eval body env' pc'')
@@ -683,76 +765,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                        (Pos.string_of_pos p))
       end
 
-      | S.Object (p, attrs, props) -> begin 
-        (* TODO which of these do we need to eval_sym? 
-         * probably none, because they aren't user facing *)
-        match attrs with
-        | { S.primval = valexp;
-            S.proto = protoexp; (* TODO look in spec to see if prototype can be declared *)
-            S.code = codexp;
-            S.extensible = ext;
-            S.klass = kls; } ->
-
-          let opt_lift ctxs = 
-            bind ctxs
-              (fun (v, pc) -> 
-                let (vloc, pc) = sto_alloc_val v pc in
-                return (Some vloc) pc) in
-          bind
-            (match valexp with
-            | None -> return None pc
-            | Some vexp -> opt_lift (eval vexp env pc))
-            (fun (vloc, pc_v) ->
-              bind
-                (match protoexp with
-                | None -> return Undefined pc_v
-                | Some pexp -> eval_sym pexp env pc_v)
-                (fun (p, pc_p) ->
-                  let (ploc, pc_p) = sto_alloc_val p pc_p in
-                  bind
-                    (match codexp with
-                    | None -> return None pc_p
-                    | Some cexp -> opt_lift (eval cexp env pc_p))
-                    (fun (cloc, pc_c) ->
-                      let attrsv =
-                        { primval = vloc; proto = ploc; code = cloc;
-                          extensible = symbool ext; klass = SString kls }
-                      in
-                      let eval_prop prop pc = match prop with
-                        | S.Data ({ S.value = vexp; S.writable = w; }, enum, config) ->
-                          bind (eval vexp env pc)
-                            (fun (v2, pc_v2) ->
-                              let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
-                              return (Data ({ value = v2loc; writable = symbool w; },
-                                            symbool enum, symbool config)) pc_v2)
-                        (* TODO do we need eval_sym? *)
-                        | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
-                          bind (eval ge env pc)
-                            (fun (v2, pc_v2) ->
-                              let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
-                              bind (eval se env pc_v2)
-                                (fun (v3, pc_v3) ->
-                                  let v3loc, pc_v3 = sto_alloc_val v3 pc_v3 in
-                                  return (Accessor ({ getter = v2loc; setter = v3loc},
-                                                    symbool enum, symbool config)) pc_v3))
-                      in
-                      let propvs_pcs  = 
-                        List.fold_left
-                          (fun maps_pcs (name, prop) -> 
-                            bind maps_pcs
-                              (fun (map, pc) ->
-                                bind 
-                                  (eval_prop prop pc)
-                                  (fun (propv, pc_v) -> 
-                                    let (_, pc') = const_string name pc_v in
-                                    return (IdMap.add name propv map) pc')))
-                          ([(IdMap.empty, pc_c)], []) props in
-                      bind propvs_pcs
-                        (fun (propvs, pc_psv) -> 
-                          let objv = ConObj { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
-                          let (loc, pc_obj) = sto_alloc_obj objv pc_psv in
-                          return (ObjPtr loc) pc_obj))))
-      end
+      | S.Object (p, attrs, props) -> eval_hide exp env pc
         
       (* GetAttr gets the specified attr of one property of an object, as opposed to
        * getting an attr of the object itself. *)
@@ -950,7 +963,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     code = None; proto = ploc; extensible = BFalse;
                     klass = SString "LambdaJS internal"; primval = None;
                   }
-                }) pc in
+                (* TODO is the line below right? *)
+                }) false pc in (* false because these objs shouldn't be hidden by default *)
                 return (ObjPtr new_loc) pc
               | NewSymObj _ -> failwith "OwnFieldNames got a NewSymObj"
               end

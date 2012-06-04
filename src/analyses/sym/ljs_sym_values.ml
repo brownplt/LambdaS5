@@ -75,7 +75,11 @@ and label = string
 and result = value * ctx
 and exresult = exval * ctx
 
-and sto_type = { objs : objlit Store.t; vals : value Store.t }
+(* Obj store holds (obj, hide), where hide = true indicates
+ * that the object is an LJS internal and therefore not a
+ * possible assignment for a new sym value. *)
+and sto_type = { objs : (objlit * bool) Store.t;
+                 vals : value Store.t }
 and ctx = { constraints : sym_exp list;
             vars : typeEnv ;
             time : int ;
@@ -219,22 +223,23 @@ let sto_alloc_val v ctx =
    (*Printf.eprintf "allocing loc %s in vals\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with vals = sto } })
 
-let sto_alloc_obj o ctx = 
-  let (loc, sto) = Store.alloc o ctx.store.objs in
+let sto_alloc_obj o hide ctx = 
+  let (loc, sto) = Store.alloc (o, hide) ctx.store.objs in
    (*Printf.eprintf "allocing loc %s in objs\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with objs = sto } })
 
 let sto_update_val loc v ctx = 
   { ctx with store = { ctx.store with
-    vals = Store.update loc v ctx.store.vals } }
+    vals = Store.update loc v ctx.store.vals }}
 
 let sto_update_obj loc ov ctx = 
+  let (_, hide) = Store.lookup loc ctx.store.objs in
   { ctx with store = { ctx.store with
-    objs = Store.update loc ov ctx.store.objs } }
+    objs = Store.update loc (ov, hide) ctx.store.objs }}
 
 let sto_lookup_obj loc ctx = 
 (*   Printf.eprintf "looking for %s in objs\n" (Store.print_loc loc); *)
-  Store.lookup loc ctx.store.objs
+  fst (Store.lookup loc ctx.store.objs)
 
 let sto_lookup_val loc ctx = 
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
@@ -273,15 +278,20 @@ let new_sym_from_locs locs name hint pc =
    * This will account for the possibility that the new sym is a
    * pointer to an unknown symbolic object. This obj will be init'd later 
    * using init_sym_obj below. *)
-  let new_loc, pc = sto_alloc_obj (NewSymObj locs) pc in
+  let new_loc, pc = sto_alloc_obj (NewSymObj locs) false pc in
   (* include the just-allocated location *)
   (NewSym (sym_id, new_loc::locs), pc)
 
 (* Creates a new symbolic value. Does not allocate it in the store. *)
 let new_sym hint pc = 
-  (* Get locs of all objects in the store so we can branch
+  (* Get locs of all non-hidden objects in the store so we can branch
    * once we know the type of this sym value *)
-  new_sym_from_locs (map fst (Store.bindings pc.store.objs)) "" hint pc
+  let locs =
+    Store.fold
+      (fun loc (_, hide) locs ->
+        if hide then loc :: locs else locs)
+      pc.store.objs [] in
+  new_sym_from_locs locs "" hint pc
 
 (* Creates a new sym obj whose attributes are all symbolic. Most are scalars, or scalar
  * opts, except for the prototype, which could be a scalar (hopefully Null) or an obj, so
