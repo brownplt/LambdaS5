@@ -31,7 +31,7 @@ let rec value v store =
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
-  | ObjPtr loc -> text ("(OBJCELL " ^ (Store.print_loc loc) ^ ")") (* obj (sto_lookup_obj loc store) *)
+  | ObjPtr loc -> text ("(OBJPTR " ^ (Store.print_loc loc) ^ ")") (* obj (sto_lookup_obj loc store) *)
   | Closure func -> text "(FUN closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
@@ -88,7 +88,7 @@ and exp e store =
     | TSymString
     | TString -> parens (horz [text "s"; e])
     | TFun _ -> parens (horz [text "f"; e])
-    | TObj -> parens (horz [text "fields"; e])
+    | TObjPtr -> parens (horz [text "loc"; e])
     | _ -> e in
   let uncastFn t e = match t with
     | TNum -> parens (horz [text "NUM"; e])
@@ -96,7 +96,7 @@ and exp e store =
     | TSymString
     | TString -> parens (horz [text "STR"; e])
     | TFun _ -> parens (horz [text "FUN"; e])
-    | TObj -> parens (horz [text "OBJ"; e])
+    | TObjPtr -> parens (horz [text "OBJPTR"; e])
     | _ -> e in
   match e with
   | Hint s -> horz [text ";;"; text s] 
@@ -124,7 +124,7 @@ and exp e store =
   | SIsMissing e ->
     parens (horz [text "="; exp e store; text "ABSENT"])
   | SGetField (id, f) ->
-    uncastFn TAny (parens(horz [text "select"; (parens(horz [text "Fields2Array"; castFn TObj (text id);])); castFn TString (text f)]))
+    uncastFn TAny (parens(horz [text "select"; (parens(horz [text "Fields2Array"; castFn TObjPtr (text id);])); castFn TString (text f)]))
 
 (* and attrsv store { proto = p; code = c; extensible = b; klass = k } = *)
 (*   let proto = [horz [text "#proto:"; value p store]] in *)
@@ -190,7 +190,7 @@ let def_op1 name out_ty else_val func =
       | Some tystr -> "   (if (is-" ^ tystr ^ " x) "
         ^ func ty ^ "\n" ^ def ^ ")")
     ("     " ^ else_val)
-    [TNull; TUndef; TString; TBool; TNum; TFun 0]) ^ ")\n"
+    [TNull; TUndef; TString; TBool; TNum; TFun 0; TObjPtr]) ^ ")\n"
 
 let op1_defs =
   def_op1 "prim->bool" "Bool" "true"
@@ -201,6 +201,7 @@ let op1_defs =
     | TBool -> "(b x)"
     | TNum -> "(not (or (= (n x) NaN) (= (n x) 0.)))"
     | TFun _ -> "true"
+    | TObjPtr -> "true"
     | _ -> failwith "Shouldn't hit")
   ^
   def_op1 "typeof" "Str" "(s S_undefined)"
@@ -212,6 +213,7 @@ let op1_defs =
       | TBool -> "boolean"
       | TNum -> "number"
       | TFun _ -> "function"
+      | TObjPtr -> "object"
       | _ -> failwith "Shouldn't hit")
       ^ ")")
 
@@ -227,6 +229,7 @@ let z3prelude = "\
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
 (define-fun NaN () Real 876545689.24565432)
+(declare-const closure Fun)
 
 (declare-datatypes ()
                    ((Attr Config Enum Writable Value Getter Setter)))
@@ -237,6 +240,7 @@ let z3prelude = "\
                      (NULL)
                      (BOOL (b Bool))
                      (STR (s Str))
+                     (OBJPTR (loc Int))
                      (FUN (f Fun)))))
 (declare-fun prim->str (JS) Str)\n"
 
@@ -268,9 +272,12 @@ let is_sat (p : ctx) : bool =
         | TSymString -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-STR %s))\n" id hint id
         | TBool -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-BOOL %s))\n" id hint id
         | TNum -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NUM %s))\n" id hint id
-        | TObj -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (exists ((f Fields)) (= %s (OBJ f))))\n" id hint id
+        | TObjPtr -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-OBJPTR %s))\n" id hint id
         | TFun arity -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-FUN %s))\n" id hint id
-        | TAny -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n" id hint
+        (* All we know about syms of unknown type is that they can't be obj ptrs, because
+         * that case is subsumed by our obj branching, and they can't be funs, because we
+         * don't know how to handle sym funs. TODO do better than this*)
+        | TAny -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (and (not (is-OBJPTR %s)) (not (is-FUN %s))))\n" id hint id id
         | TData -> Printf.sprintf 
           "(declare-const %s Prop) ;; \"%s\"\n(assert (is-Data %s))\n" id hint id
         | TAccessor -> Printf.sprintf

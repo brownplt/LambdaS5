@@ -4,6 +4,8 @@ open Ljs_syntax
 
 
 
+(* If you change these, make sure to change the 
+ * definitions of operators that is given to z3 *)
 type jsType = 
   | TNull
   | TUndef
@@ -11,7 +13,7 @@ type jsType =
   | TSymString (* used only for symbolic values *)
   | TBool
   | TNum
-  | TObj
+  | TObjPtr
   | TFun of int (* arity *)
   | TAny
   | TData
@@ -165,7 +167,7 @@ let ty_to_string t = match t with
   | TSymString -> "TSymString"
   | TBool -> "TBool"
   | TNum -> "TNum"
-  | TObj -> "TObj"
+  | TObjPtr -> "TObjPtr"
   | TFun arity -> "TFun(" ^ (string_of_int arity) ^ ")"
   | TAny -> "TAny"
   | TData -> "TData"

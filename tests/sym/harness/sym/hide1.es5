@@ -1,0 +1,5 @@
+// "pass", "pass"
+let (x = (/*ignoreSym*/ func () { 0 }))
+let (y = NEWSYM)  
+if (y === x) { "fail" }
+else { "pass" }
