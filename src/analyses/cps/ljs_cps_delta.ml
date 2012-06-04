@@ -2,14 +2,14 @@ open Prelude
 open Ljs_cps_values
 
 let newLabel = Ljs_cps.Label.newLabel
-let str s = String (dummy_pos, newLabel(), s)
-let num f = Num (dummy_pos, newLabel(), f)
+let str s = String (Pos.dummy, newLabel(), s)
+let num f = Num (Pos.dummy, newLabel(), f)
 
 exception CpsThrow of string
 
 let bool b = match b with
-  | true -> True (dummy_pos, newLabel())
-  | false -> False (dummy_pos, newLabel())
+  | true -> True (Pos.dummy, newLabel())
+  | false -> False (Pos.dummy, newLabel())
 let unbool b = match b with
   | True _ -> true
   | False _ -> false
@@ -37,8 +37,8 @@ let is_primitive v _ = match v with
   | Null _
   | String _
   | Num _
-  | True _ | False _ -> True (dummy_pos, newLabel())
-  | _ -> False (dummy_pos, newLabel())
+  | True _ | False _ -> True (Pos.dummy, newLabel())
+  | _ -> False (Pos.dummy, newLabel())
 
 let float_str n _ = 
   if n == nan then "NaN"
@@ -74,7 +74,7 @@ let prim_to_str v store = str begin match v with
 end
 
 let strlen s _ = match s with
-  | String (_, _, s) -> Num (dummy_pos, newLabel(), (float_of_int (String.length s)))
+  | String (_, _, s) -> Num (Pos.dummy, newLabel(), (float_of_int (String.length s)))
   | _ -> raise (CpsThrow ( "strlen"))
 
 (* Section 9.3, excluding objects *)
@@ -102,8 +102,8 @@ end
 
 let print v _ = match v with
   | String (_, _, s) -> 
-      printf "%S\n%!" s; Undefined (dummy_pos, newLabel())
-  | Num (_, _, n) -> let s = string_of_float n in printf "%S\n" s; Undefined (dummy_pos, newLabel())
+      printf "%S\n%!" s; Undefined (Pos.dummy, newLabel())
+  | Num (_, _, n) -> let s = string_of_float n in printf "%S\n" s; Undefined (Pos.dummy, newLabel())
   | _ -> failwith ("[cps-interp] Print received non-string: " ^ (pretty_bind v))
 
 (* Implement this here because there's no need to expose the class
@@ -123,7 +123,7 @@ let is_array obj store = match obj with
 
 
 let to_int32 v _ = match v with
-  | Num (_,_,d) -> Num(dummy_pos, newLabel(), (float_of_int (int_of_float d)))
+  | Num (_,_,d) -> Num(Pos.dummy, newLabel(), (float_of_int (int_of_float d)))
   | _ -> raise (CpsThrow ( "to-int: " ^ (pretty_bind v)))
 
 let nnot e _ = match e with
@@ -137,7 +137,7 @@ let nnot e _ = match e with
   | Closure _ -> bool false
   | VarCell _ -> failwith "[cps-interp] Can't get nnot VarCell!"
 
-let void v _ = Undefined (dummy_pos, newLabel())
+let void v _ = Undefined (Pos.dummy, newLabel())
 
 let floor' n _ = match n with Num (_, _, d) -> num (floor d) | _ -> raise (CpsThrow ( "floor"))
 

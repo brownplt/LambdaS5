@@ -10,7 +10,7 @@ let (obj2 = {[#proto: null,]
 let (obj3 = {[#proto: null,]
     "y": {#value 3, #writable true}
 })
-let (o = %%newsym) {
+let (o = NEWSYM) {
 o["x" = 4];
 o["x"]
 }

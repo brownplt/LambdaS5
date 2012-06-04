@@ -1,4 +1,4 @@
 // "ok"
-let (x = %%newsym)
+let (x = NEWSYM)
 let (y = prim("+", x, 5))
 if (prim("<", x, y)) { "ok" } else { "fail" }

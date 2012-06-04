@@ -7,8 +7,8 @@ open Ljs_syntax
 type jsType = 
   | TNull
   | TUndef
-  | TString
-  | TSymString
+  | TString (* used only for concrete strings *)
+  | TSymString (* used only for symbolic values *)
   | TBool
   | TNum
   | TObj
@@ -216,12 +216,12 @@ let add_let a b = add_constraint (SLet (a, b))
 
 let sto_alloc_val v ctx = 
   let (loc, sto) = Store.alloc v ctx.store.vals in
-(*   Printf.eprintf "allocing loc %s in vals\n" (Store.print_loc loc); *)
+   (*Printf.eprintf "allocing loc %s in vals\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with vals = sto } })
 
-let sto_alloc_obj v ctx = 
-  let (loc, sto) = Store.alloc v ctx.store.objs in
-(*   Printf.eprintf "allocing loc %s in objs\n" (Store.print_loc loc); *)
+let sto_alloc_obj o ctx = 
+  let (loc, sto) = Store.alloc o ctx.store.objs in
+   (*Printf.eprintf "allocing loc %s in objs\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with objs = sto } })
 
 let sto_update_val loc v ctx = 
@@ -265,15 +265,15 @@ let new_sym_string name hint_s pc =
   (SSym sym_id, pc)
 
 (* Creates a NewSym given a list of locs. Should only be used alone when creating the
- * prototypes for symbolic objects (since a sym obj's proto uses the same list of locs.
+ * prototypes for symbolic objects (since a sym obj's proto uses the same list of locs).
  * All other new sym allocation should use new_sym *)
 let new_sym_from_locs locs name hint pc = 
-  let (sym_id, pc) = fresh_var name TAny hint pc in
+  let sym_id, pc = fresh_var name TAny hint pc in
   (* Create a new symbolic object placeholder, and add it to the store.
    * This will account for the possibility that the new sym is a
    * pointer to an unknown symbolic object. This obj will be init'd later 
    * using init_sym_obj below. *)
-  let (new_loc, pc) = sto_alloc_obj (NewSymObj locs) pc in
+  let new_loc, pc = sto_alloc_obj (NewSymObj locs) pc in
   (* include the just-allocated location *)
   (NewSym (sym_id, new_loc::locs), pc)
 
@@ -289,20 +289,19 @@ let new_sym hint pc =
  * equal to) should be the same as the locs for the sym obj we are init'ing, since the
  * proto would had to have exist before this obj. *)
 let init_sym_obj locs loc hint_s pc =
-  let (sym_ext, pc) = new_sym_bool "extensible" "extensible attr" pc in
-  let (sym_klass, pc) = new_sym_string "klass" "klass attr" pc in
-  bind (uncurry return (new_sym_from_locs locs "proto"
-                          ("new %proto for " ^ (Store.print_loc loc)) pc))
-    (fun (proto, pc) ->
-      let (proto_loc, pc) = sto_alloc_val proto pc in
-      bind (alloc_sym_scalar_opt "code" "code attr" pc)
-        (fun (code_loc_opt, pc) ->
-          bind (alloc_sym_scalar_opt "primval" "primval attr" pc)
-            (fun (pv_loc_opt, pc) ->
-              let ret = (SymObj {
-                attrs = { code = code_loc_opt; proto = proto_loc; extensible = sym_ext;
-                          klass = sym_klass; primval = pv_loc_opt };
-                conps = IdMap.empty;
-                symps = IdMap.empty
-              }) in
-              return ret (sto_update_obj loc ret pc))))
+  let sym_ext, pc = new_sym_bool "extensible" "extensible attr" pc in
+  let sym_klass, pc = new_sym_string "klass" "klass attr" pc in
+  let proto, pc = new_sym_from_locs locs "proto"
+                          ("new %proto for " ^ (Store.print_loc loc)) pc in
+  let proto_loc, pc = sto_alloc_val proto pc in
+  bind (alloc_sym_scalar_opt "code" "code attr" pc)
+    (fun (code_loc_opt, pc) ->
+      bind (alloc_sym_scalar_opt "primval" "primval attr" pc)
+        (fun (pv_loc_opt, pc) ->
+          let ret = (SymObj {
+            attrs = { code = code_loc_opt; proto = proto_loc; extensible = sym_ext;
+                      klass = sym_klass; primval = pv_loc_opt };
+            conps = IdMap.empty;
+            symps = IdMap.empty
+          }) in
+          return ret (sto_update_obj loc ret pc)))

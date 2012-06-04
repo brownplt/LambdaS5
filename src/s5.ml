@@ -17,16 +17,17 @@ module S5 = struct
   open Format
   open FormatExt
 
-  let srcJS = ref [Js_syntax.Stmt (Js_syntax.Expr (dummy_pos, Js_syntax.Lit
-(dummy_pos, Js_syntax.Null)))]
-  let srcES5 = ref (Ljs_syntax.Undefined dummy_pos)
-  let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Ljs_cps.AppRetCont(Ljs_cps.Label.dummy, Ljs_cps.RetId(Ljs_cps.Label.dummy,"fake"), Ljs_cps.Id(dummy_pos,Ljs_cps.Label.dummy,"fake")))
+  let srcJS = ref [Js_syntax.Stmt (Js_syntax.Expr (Pos.dummy, Js_syntax.Lit(Pos.dummy, Js_syntax.Null)))]
+  let srcES5 = ref (Ljs_syntax.Undefined Pos.dummy)
+  let srcEJS = ref (Exprjs_syntax.Undefined (Pos.dummy))
+  let cpsES5 = ref (Ljs_cps.AppRetCont(Pos.dummy, Ljs_cps.Label.dummy, 
+                                       Ljs_cps.RetId(Pos.dummy, Ljs_cps.Label.dummy,"fake"), 
+                                       Ljs_cps.Id(Pos.dummy,Ljs_cps.Label.dummy,"fake")))
 
   let jsonPath = ref ""
 
   let load_s5 (path : string) : unit =
-    srcES5 := Ljs_syntax.Seq (dummy_pos, !srcES5,
+    srcES5 := Ljs_syntax.Seq (Pos.dummy, !srcES5,
 		              Ljs.parse_es5 (open_in path) path)
 
   let set_json (path : string) : unit =
@@ -50,14 +51,23 @@ module S5 = struct
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
     (* let (inch, outch) = z3 in begin *)
     let (results, exns) = 
-      Ljs_sym_eval.eval_expr !srcES5 !jsonPath 25 Ljs_sym_values.mtPath in
-    List.iter (fun (v, p) -> printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
-      List.iter (fun c -> printf "%s\n" 
-        (Ljs_sym_z3.to_string c p)) p.Ljs_sym_values.constraints;
-      printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);
-      print_newline())
-      results
-    (*List.iter (fun (Ljs_sym_values.Throw v, p) -> printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v); print_newline()) exns*)
+      Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath in
+    List.iter
+      (fun (v, p) ->
+        printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
+        List.iter
+          (fun c ->
+            printf "%s\n" (Ljs_sym_z3.to_string c p))
+          p.Ljs_sym_values.constraints;
+        (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
+        print_newline())
+      results;
+    List.iter
+      (fun (v, p) -> match v with
+        | Ljs_sym_values.Throw v ->
+          printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
+        | _ -> printf "Exn: something other than a Throw\n")
+      exns
   (* close_in inch; close_out outch *)
 
   let env (path : string) : unit =
@@ -75,14 +85,14 @@ module S5 = struct
     
   let desugar_spidermonkey_js (path : string) : unit = 
     let ast = SpiderMonkey.parse_spidermonkey (open_in path) path in
-    let (used_ids, exprjsd) = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
-    let desugard = exprjs_to_ljs used_ids exprjsd in
+    let (used_ids, exprjsd) = js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "global")) in
+    let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
 
   let desugar_c3_js (path : string) : unit = 
     let ast = C3.parse_c3 (open_in path) path in
-    let (used_ids, exprjsd) = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
-    let desugard = exprjs_to_ljs used_ids exprjsd in
+    let (used_ids, exprjsd) = js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "global")) in
+    let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
 
   (* let cfg () : unit = *)
@@ -94,7 +104,7 @@ module S5 = struct
   let cps () =
     cpsES5 := Ljs_cps.cps_tail !srcES5 
       "%error"
-      (Ljs_cps.RetId(Ljs_cps.Label.dummy,"%answer"))
+      (Ljs_cps.RetId(Pos.dummy, Ljs_cps.Label.dummy,"%answer"))
   let alphatize () = 
     cpsES5 := fst (Ljs_cps_util.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) 
   let uncps () =

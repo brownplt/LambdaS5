@@ -25,6 +25,7 @@ let symbool b = match b with
 let symboolv b = match b with
   | True -> BTrue
   | False -> BFalse
+  | SymScalar id -> BSym id
   | _ -> failwith ("tried to symboolv a non-bool: " ^ Ljs_sym_pretty.val_to_string b)
 
 let to_int ctx v = match v with
@@ -42,7 +43,7 @@ let typeof ctx v =
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
     | ConObj { attrs = { code = Some _ }} 
     | SymObj { attrs = { code = Some _ }} -> "function"
-    | NewSymObj _ -> failwith "prim got a NewSymObj"
+    | NewSymObj _ -> failwith "typeof got NewSymObj"
     | _ -> "object"
   end
   | Closure _ -> raise (PrimError "typeof got lambda")
@@ -284,16 +285,18 @@ let op1 ctx op v : (result list * exresult list) =
   | _ -> failwith ("no implementation of unary operator: " ^ op)
   in op1_fun ctx v
 
+(* Since this is used to create new sym vars,
+ * we use the TSymString, not TString. *)
 let typeofOp1 op = match op with
   | "NOT" -> (TBool, TBool)
-  | "typeof" -> (TAny, TString)
+  | "typeof" -> (TAny, TSymString)
   | "primitive?" -> (TAny, TBool)
-  | "prim->str" -> (TAny, TString)
+  | "prim->str" -> (TAny, TSymString)
   | "prim->num" -> (TAny, TNum)
   | "prim->bool" -> (TAny, TBool)
   | "print" -> (TAny, TUndef)
-  | "object-to-string" -> (TObj, TString)
-  | "strlen" -> (TString, TNum)
+  | "object-to-string" -> (TObj, TSymString)
+  | "strlen" -> (TSymString, TNum)
   | "is-array" -> (TAny, TBool)
   | "to-int32" -> (TAny, TNum)
   | "!" -> (TAny, TBool)
@@ -302,13 +305,13 @@ let typeofOp1 op = match op with
   | "ceil" -> (TNum, TNum)
   | "abs" -> (TNum, TNum)
   | "log" -> (TNum, TNum)
-  | "ascii_ntoc" -> (TNum, TString)
-  | "ascii_cton" -> (TString, TNum)
-  | "to-lower" -> (TString, TString)
-  | "to-upper" -> (TString, TString)
+  | "ascii_ntoc" -> (TNum, TSymString)
+  | "ascii_cton" -> (TSymString, TNum)
+  | "to-lower" -> (TSymString, TSymString)
+  | "to-upper" -> (TSymString, TSymString)
   | "~" -> (TNum, TNum)
   | "sin" -> (TNum, TNum)
-  | "numstr->num" -> (TString, TNum)
+  | "numstr->num" -> (TSymString, TNum)
   | _ -> failwith ("no implementation of unary operator: " ^ op)
 
 
@@ -511,7 +514,7 @@ let op2 ctx op a b =
   | _ -> failwith ("no implementation of binary operator: " ^ op)
   in op2_fun ctx a b
 let typeofOp2 op = match op with
-  | "get_field" -> (TObj, TString, TAny)
+  | "get_field" -> (TObj, TSymString, TAny)
   | "+" -> (TNum, TNum, TNum)
   | "-" -> (TNum, TNum, TNum)
   | "/" -> (TNum, TNum, TNum)
@@ -529,14 +532,14 @@ let typeofOp2 op = match op with
   | ">=" -> (TNum, TNum, TBool)
   | "stx=" -> (TAny, TAny, TBool)
   | "abs=" -> (TAny, TAny, TBool)
-  | "hasProperty" -> (TObj, TString, TBool)
-  | "hasOwnProperty" -> (TObj, TString, TBool)
-  | "string+" -> (TString, TString, TString)
-  | "string<" -> (TString, TString, TBool)
-  | "base" -> (TNum, TNum, TString)
-  | "char-at" -> (TString, TNum, TString)
-  | "locale-compare" -> (TString, TString, TNum)
+  | "hasProperty" -> (TObj, TSymString, TBool)
+  | "hasOwnProperty" -> (TObj, TSymString, TBool)
+  | "string+" -> (TSymString, TSymString, TSymString)
+  | "string<" -> (TSymString, TSymString, TBool)
+  | "base" -> (TNum, TNum, TSymString)
+  | "char-at" -> (TSymString, TNum, TSymString)
+  | "locale-compare" -> (TSymString, TSymString, TNum)
   | "pow" -> (TNum, TNum, TNum)
-  | "to-fixed" -> (TNum, TNum, TString)
-  | "isAccessor" -> (TObj, TString, TBool)
+  | "to-fixed" -> (TNum, TNum, TSymString)
+  | "isAccessor" -> (TObj, TSymString, TBool)
   | _ -> failwith ("no implementation of binary operator: " ^ op)

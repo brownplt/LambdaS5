@@ -89,12 +89,14 @@ let with_pos exp pos = match exp with
 %%
 
 const :
- | NUM { Num ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
- | INT {  Num ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), (float_of_int $1)) }
- | STRING {  String ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
- | UNDEFINED { Undefined ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) }
- | NULL { Null (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1) }
- | BOOL { if $1 then True (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1) else False (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1) }
+ | NUM { Num (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
+ | INT {  Num (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), (float_of_int $1)) }
+ | STRING {  String (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
+ | UNDEFINED { Undefined (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) }
+ | NULL { Null (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) }
+ | BOOL { if $1 
+          then True (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) 
+          else False (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) }
 
 oattrsv :
  | { d_attrs }
@@ -150,42 +152,42 @@ ids :
 
 func :
  | FUNC LPAREN ids RPAREN braced_seq_exp
-   { Lambda ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5) }
+   { Lambda (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5) }
 
 atom :
  | const { $1 }
- | ID { Id ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
+ | ID { Id (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
  | LBRACE LBRACK oattrsv RBRACK props RBRACE 
-   { Object ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5 )}
+   { Object (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5 )}
  | braced_seq_exp
    { $1 }
  | LPAREN unbraced_seq_exp RPAREN { $2 }
  | func { $1 }
  | TYPEOF atom
-     { Op1 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), "typeof", $2) }
+     { Op1 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), "typeof", $2) }
      
 exp :
  | atom { $1 }
  | exp LPAREN exps RPAREN 
-   { App ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $1, $3) }
+   { App (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $1, $3) }
  | GETFIELDS LPAREN exp RPAREN
-   { OwnFieldNames ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
+   { OwnFieldNames (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
  | EVAL LPAREN exp RPAREN
-     { Eval ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
+     { Eval (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
  | PRIM LPAREN STRING COMMA unbraced_seq_exp COMMA unbraced_seq_exp RPAREN
-   { Op2 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $5, $7) }
+   { Op2 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $5, $7) }
  | PRIM LPAREN STRING COMMA unbraced_seq_exp RPAREN
-   { Op1 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5) }
+   { Op1 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5) }
  | ID COLONEQ exp
-   { SetBang ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
+   { SetBang (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
  | exp EQEQEQUALS exp
-     { Op2 ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), "stx=", $1, $3) }
+     { Op2 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), "stx=", $1, $3) }
  | exp BANGEQEQUALS exp
-     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) in
+     { let p = Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) in
          If (p, Op2 (p, "stx=", $1, $3),
              False p, True p) }
  | exp LBRACK unbraced_seq_exp EQUALS unbraced_seq_exp RBRACK
-   { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6) in
+   { let p = Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6) in
        Let (p, "$newVal", $5,
 	     SetField (p, $1, $3, 
 		       Id (p, "$newVal"), 
@@ -195,31 +197,31 @@ exp :
               true, true))])))
     }
  | exp LBRACK unbraced_seq_exp EQUALS unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
-   { SetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $1, $3, $5, $7) }
+   { SetField (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $1, $3, $5, $7) }
  | exp LBRACK unbraced_seq_exp RBRACK
-   { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4) in
+   { let p = Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4) in
      GetField (p, $1,  $3,
 		       Object (p, d_attrs,
             [])) }
  | exp LBRACK unbraced_seq_exp COMMA unbraced_seq_exp RBRACK
-   { GetField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $1, $3, $5) }
+   { GetField (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $1, $3, $5) }
  | exp LBRACK DELETE unbraced_seq_exp RBRACK
-     { DeleteField ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $1, $4) }
+     { DeleteField (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $1, $4) }
  | exp LBRACK unbraced_seq_exp LT attr_name GT RBRACK
-     { GetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $5, $1, $3) }
+     { GetAttr (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $5, $1, $3) }
  | exp LBRACK unbraced_seq_exp LT attr_name GT EQUALS unbraced_seq_exp RBRACK
-     { SetAttr ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 9), $5, $1, $3, $8) }
+     { SetAttr (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 9), $5, $1, $3, $8) }
  | exp LBRACK LT oattr_name GT RBRACK
-     { GetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6),
+     { GetObjAttr(Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6),
                   $4, $1) }
  | exp LBRACK LT oattr_name GT EQUALS unbraced_seq_exp RBRACK
-     { SetObjAttr((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8),
+     { SetObjAttr(Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8),
                   $4, $1, $7) }
  | exp AMPAMP exp
-     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, 
-            $3, False (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3)) }
+     { If (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, 
+            $3, False (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3))) }
  | exp PIPEPIPE exp
-     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) in
+     { let p = Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) in
          Let (p, "%or", $1,
                If (p, Id (p, "%or"), Id (p, "%or"), $3)) }
 
@@ -228,54 +230,54 @@ cexp :
  | exp { $1 }
  | ifexp { $1 }
  | LPAREN HINT cexp RPAREN
-     { Hint ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $3) }
+     { Hint (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $3) }
  | LABEL ID COLON braced_seq_exp
-     { Label ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) } 
+     { Label (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) } 
  | BREAK ID cexp
-   { Break ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $2, $3) }
+   { Break (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $2, $3) }
  | THROW cexp
-   { Throw ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), $2) }
+   { Throw (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2), $2) }
  | TRY braced_seq_exp CATCH braced_seq_exp
-   { TryCatch ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) }
+   { TryCatch (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) }
  | TRY braced_seq_exp FINALLY braced_seq_exp
-   { TryFinally ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) }
+   { TryFinally (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $2, $4) }
 
 ifexp :
  | IF LPAREN unbraced_seq_exp RPAREN braced_seq_exp ELSE ifexp
-     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
+     { If (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
  | IF LPAREN unbraced_seq_exp RPAREN braced_seq_exp ELSE braced_seq_exp
-     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
+     { If (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
  | IF LPAREN unbraced_seq_exp RPAREN braced_seq_exp
-     { If ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5, 
-	    Undefined (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5)) }
+     { If (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5), $3, $5, 
+	    Undefined (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 5))) }
 
 braced_seq_exp :
- | LBRACE unbraced_seq_exp RBRACE { with_pos $2 (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3) }
+ | LBRACE unbraced_seq_exp RBRACE { with_pos $2 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3)) }
 
 unbraced_seq_exp :
- | unbraced_seq_item SEMI unbraced_seq_exp { Seq ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
+ | unbraced_seq_item SEMI unbraced_seq_exp { Seq (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
  | unbraced_seq_item { $1 }
 
 unbraced_seq_item :
  | cexp { $1 }
  | LET LPAREN ID EQUALS unbraced_seq_exp RPAREN unbraced_seq_item
-   { Let ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
+   { Let (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
  | REC LPAREN ID EQUALS func RPAREN unbraced_seq_item
-   { Rec ((Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
+   { Rec (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7), $3, $5, $7) }
 
 env :
  | EOF
      { fun x -> x }
  | LET LBRACK ID RBRACK EQUALS unbraced_seq_exp env
-     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
+     { let p = Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
          fun x -> 
            Let (p, $3, $6, $7 x) }
  | REC LBRACK ID RBRACK EQUALS unbraced_seq_exp env
-     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
+     { let p = Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 7) in
          fun x -> 
            Rec (p, $3, $6, $7 x) }
  | braced_seq_exp env
-     { let p = (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2) in
+     { let p = Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 2) in
          fun x -> Seq (p, $1, $2 x) }
 
 prog :

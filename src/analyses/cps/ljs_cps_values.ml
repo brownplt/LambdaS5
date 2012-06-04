@@ -51,15 +51,15 @@ type bindingEnv = ADDRESS.t IdMap.t
 
 
 type bind_value =
-  | Null of pos * Label.t
-  | Undefined of pos * Label.t
-  | String of pos * Label.t * string
-  | Num of pos * Label.t * float
-  | True of pos * Label.t
-  | False of pos * Label.t
-  | VarCell of pos * Label.t * ADDRESS.t
-  | Object of pos * Label.t * bind_attrs * (string * bind_prop) list
-  | Closure of pos * Label.t * id * id * id list * cps_exp * bindingEnv * retContEnv * exnContEnv
+  | Null of Pos.t * Label.t
+  | Undefined of Pos.t * Label.t
+  | String of Pos.t * Label.t * string
+  | Num of Pos.t * Label.t * float
+  | True of Pos.t * Label.t
+  | False of Pos.t * Label.t
+  | VarCell of Pos.t * Label.t * ADDRESS.t
+  | Object of Pos.t * Label.t * bind_attrs * (string * bind_prop) list
+  | Closure of Pos.t * Label.t * id * id * id list * cps_exp * bindingEnv * retContEnv * exnContEnv
 and bind_attrs =
     { primval : bind_value option;
       code : bind_value option;
@@ -104,19 +104,19 @@ module Store = Map.Make (ADDRESS)
 
 type retCont = 
   | Answer
-  | RetCont of Label.t * id * cps_exp * bindingEnv * retContEnv * exnContEnv
+  | RetCont of Pos.t * Label.t * id * cps_exp * bindingEnv * retContEnv * exnContEnv
 type exnCont = 
   | Error
-  | ExnCont of Label.t * id * id * cps_exp * bindingEnv * retContEnv * exnContEnv
+  | ExnCont of Pos.t * Label.t * id * id * cps_exp * bindingEnv * retContEnv * exnContEnv
 
 let pretty_retcont ret = match ret with
   | Answer -> "Answer"
-  | RetCont (label, arg, _, _, _, _) -> 
+  | RetCont (_, label, arg, _, _, _, _) -> 
     (FX.squish [Label.pretty label; FX.text ":RetCont("; FX.text arg; FX.text ") {...}"] Format.str_formatter;
      Format.flush_str_formatter())
 let pretty_exncont exn = match exn with
   | Error -> "Error"
-  | ExnCont (label, arg, lbl, _, _, _, _) -> 
+  | ExnCont (_, label, arg, lbl, _, _, _, _) -> 
     (FX.squish [Label.pretty label; FX.text ":ExnCont("; FX.text arg;
                 FX.text ", "; FX.text lbl; FX.text ") {...}"] Format.str_formatter;
      Format.flush_str_formatter())

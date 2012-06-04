@@ -11,14 +11,14 @@ let parse_es5 cin name =
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"
-                       (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                       (Pos.string_of_pos (Pos.real
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))))
       | Failure "utf8_of_point not implemented" ->
         failwith "Parser doesn't do some UTF8 encoding crap"
       | _ ->
            failwith (sprintf "parse error at %s; unexpected token %s"
-                       (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
+                       (Pos.string_of_pos (Pos.real
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
                        (lexeme lexbuf))
 
 let parse_es5_env cin name =
@@ -30,10 +30,10 @@ let parse_es5_env cin name =
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"
-                       (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                       (Pos.string_of_pos (Pos.real
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))))
       | Parsing.Parse_error ->
            failwith (sprintf "parse error at %s; unexpected token %s"
-                       (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
+                       (Pos.string_of_pos (Pos.real
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
                        (lexeme lexbuf))
