@@ -1,37 +1,37 @@
 open Prelude
 
 type expr = 
-  | True of pos
-  | False of pos
-  | Num of pos * float
-  | Undefined of pos
-  | Null of pos
-  | String of pos * string
-  | ArrayExpr of pos * expr list
-  | RegExpr of pos * string
-  | ObjectExpr of pos * (pos * string * prop) list
-  | ThisExpr of pos
-  | IdExpr of pos * id
-  | BracketExpr of pos * expr * expr
-  | NewExpr of pos * expr * expr list
-  | PrefixExpr of pos * id * expr
-  | InfixExpr of pos * id * expr * expr
-  | IfExpr of pos * expr * expr * expr
-  | AssignExpr of pos * expr * expr * expr
-  | AppExpr of pos * expr * expr list
-  | FuncExpr of pos * id list * expr
-  | LetExpr of pos * id * expr * expr
-  | SeqExpr of pos * expr * expr
-  | WhileExpr of pos * expr * expr
-  | LabelledExpr of pos * id * expr
-  | BreakExpr of pos * id * expr
-  | ForInExpr of pos * id * expr * expr
-  | TryCatchExpr of pos * expr * id * expr
-  | TryFinallyExpr of pos * expr * expr
-  | ThrowExpr of pos * expr
-  | SwitchExpr of pos * expr * case list
-  | FuncStmtExpr of pos * id * id list * expr
-  | HintExpr of pos * string * expr
+  | True of Pos.t
+  | False of Pos.t
+  | Num of Pos.t * float
+  | Undefined of Pos.t
+  | Null of Pos.t
+  | String of Pos.t * string
+  | ArrayExpr of Pos.t * expr list
+  | RegExpr of Pos.t * string
+  | ObjectExpr of Pos.t * (Pos.t * string * prop) list
+  | ThisExpr of Pos.t
+  | IdExpr of Pos.t * id
+  | BracketExpr of Pos.t * expr * expr
+  | NewExpr of Pos.t * expr * expr list
+  | PrefixExpr of Pos.t * id * expr
+  | InfixExpr of Pos.t * id * expr * expr
+  | IfExpr of Pos.t * expr * expr * expr
+  | AssignExpr of Pos.t * expr * expr * expr
+  | AppExpr of Pos.t * expr * expr list
+  | FuncExpr of Pos.t * id list * expr
+  | LetExpr of Pos.t * id * expr * expr
+  | SeqExpr of Pos.t * expr * expr
+  | WhileExpr of Pos.t * expr * expr
+  | LabelledExpr of Pos.t * id * expr
+  | BreakExpr of Pos.t * id * expr
+  | ForInExpr of Pos.t * id * expr * expr
+  | TryCatchExpr of Pos.t * expr * id * expr
+  | TryFinallyExpr of Pos.t * expr * expr
+  | ThrowExpr of Pos.t * expr
+  | SwitchExpr of Pos.t * expr * case list
+  | FuncStmtExpr of Pos.t * id * id list * expr
+  | HintExpr of Pos.t * string * expr
 
 and prop =
   | Data of expr
@@ -39,8 +39,8 @@ and prop =
   | Setter of id * expr
 
 and case =
-  | Case of pos * expr * expr
-  | Default of pos * expr
+  | Case of Pos.t * expr * expr
+  | Default of Pos.t * expr
 
 let pos_of_expr expr = match expr with
   | True (pos) -> pos

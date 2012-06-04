@@ -3,7 +3,7 @@ open Prelude
 open Json_type
 open Js_syntax
 
-let mk_pos (v : json_type) : Prelude.pos = 
+let mk_pos (v : json_type) : Pos.t = 
   let jstart = get "start" v in
   let jend = get "end" v in
   let fname = match (get "source" v) with
@@ -16,7 +16,7 @@ let mk_pos (v : json_type) : Prelude.pos =
     Lexing.pos_bol = int_of_float (float (get "column" pos));
     Lexing.pos_cnum = -1
   } in
-  (json_pos_to_prelude_pos jstart, json_pos_to_prelude_pos jend)
+  Pos.real (json_pos_to_prelude_pos jstart, json_pos_to_prelude_pos jend)
 
 let maybe (f : json_type -> 'a) (v : json_type) : 'a option =
   match Json_type.is_null v with
@@ -311,13 +311,13 @@ let parse_c3 (cin : in_channel) (name : string) : Js_syntax.program =
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"
-                       (string_of_position 
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+                       (Pos.string_of_pos (Pos.real
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p))))
       | Failure "utf8_of_point not implemented" ->
         failwith "Parser doesn't do some UTF8 encoding crap"
       | Parsing.Parse_error ->
            failwith (sprintf "parse error at %s; unexpected token %s"
-                       (string_of_position 
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p))
+                       (Pos.string_of_pos (Pos.real
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
                        (Lexing.lexeme lexbuf))
 

@@ -21,7 +21,7 @@ let unbool b = match b with
   | _ -> failwith ("tried to unbool a non-bool" ^ (pretty_value b))
 
 let interp_error pos message =
-  "[interp] (" ^ string_of_position pos ^ ") " ^ message
+  "[interp] (" ^ Pos.string_of_pos pos ^ ") " ^ message
 
 let apply p store func args = match func with
   | Closure c -> c args store
@@ -194,7 +194,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         (get_var store (IdMap.find x env), store)
       with Not_found ->
         failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
-                    (string_of_position p))
+                    (Pos.string_of_pos p))
     end
   | S.SetBang (p, x, e) -> begin
       try
@@ -204,7 +204,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         new_val, store
       with Not_found ->
         failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-                    (string_of_position p))
+                    (Pos.string_of_pos p))
     end
   | S.Object (p, attrs, props) -> 
     let { S.primval = vexp;
@@ -288,7 +288,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                   Undefined, store (* TODO: Check error in case of non-extensible *)
             end
           | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-                           ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
+                           ^ Pos.string_of_pos p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
       end
   | S.GetField (p, obj, f, args) ->
@@ -305,7 +305,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
               | None -> Undefined, store
             end
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
-                 ^ string_of_position p 
+                 ^ Pos.string_of_pos p 
                  ^ ". Instead, it got " 
                  ^ pretty_value obj_value 
                  ^ " and " 
@@ -329,7 +329,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
               end
             end
           | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
-                           ^ string_of_position p 
+                           ^ Pos.string_of_pos p 
                            ^ ". Instead, it got " 
                            ^ pretty_value obj_val
                            ^ " and " 
@@ -485,7 +485,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       | v, store -> v, store
     end
 
-and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
+and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ Pos.string_of_pos p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 
 (* This function is exactly as ridiculous as you think it is.  We read,
    parse, desugar, and evaluate the string, storing it to temp files along
@@ -514,10 +514,10 @@ and eval_op str env store jsonPath =
     parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
   let (used_ids, exprjsd) = 
     try
-      js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
+      js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
     with ParseError _ -> raise (Throw ([], String "EvalError", store))
     in
-  let desugard = exprjs_to_ljs used_ids exprjsd in
+  let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
   if (IdMap.mem "%global" env) then
     (Ljs_pretty.exp desugard std_formatter; print_newline ();
      eval jsonPath desugard env store (* TODO: which env? *))
