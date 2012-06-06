@@ -1,0 +1,5 @@
+// "pass", "pass"
+let (x = ({/*ignoreSym*/[]}))
+let (y = NEWSYM)  
+if (y === x) { "fail" }
+else { "pass" }

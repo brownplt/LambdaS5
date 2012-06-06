@@ -37,10 +37,13 @@ let rec value v =
                                brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
                                  
 
-and obj o = match o with
-  | NewSymObj locs -> horz [text "NewSymObj"; brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
-  | SymObj f -> helper f "@sym"
-  | ConObj f -> helper f "@"
+and obj (o, hide) =
+  let hide_str = if hide then "hidden" else "" in
+  match o with
+  | NewSymObj locs -> horz [text hide_str; text "NewSymObj";
+                            brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
+  | SymObj f -> helper f (hide_str ^ "@sym")
+  | ConObj f -> helper f (hide_str ^ "@")
 and helper { attrs = attrsv; conps = conpsv; symps = sympsv; } prefix = 
   if IdMap.is_empty conpsv && IdMap.is_empty sympsv 
   then squish [text prefix; braces (attrs attrsv)]
@@ -104,14 +107,14 @@ and castFn t e = match t with
     | TBool -> parens (horz [text "bool"; exp e])
     | TString -> parens (horz [text "string"; exp e])
     | TFun _ -> parens (horz [text "fun"; exp e])
-    | TObj -> parens (horz [text "fields"; exp e])
+    | TObjPtr -> parens (horz [text "objptr"; exp e])
     | _ -> exp e
 and uncastFn t e = match t with
     | TNum -> parens (horz [text "NUM"; exp e])
     | TBool -> parens (horz [text "BOOL"; exp e])
     | TString -> parens (horz [text "STR"; exp e])
     | TFun _ -> parens (horz [text "FUN"; exp e])
-    | TObj -> parens (horz [text "OBJ"; exp e])
+    | TObjPtr -> parens (horz [text "OBJPTR"; exp e])
     | _ -> exp e
 
 and exp e = 
