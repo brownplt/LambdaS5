@@ -73,18 +73,24 @@ def parse(useC3, js):
 
   os.remove(jsfilename)
 
-  err = err.decode('utf-8')
+  def decode(someStr):
+    try:
+      return someStr.decode('utf-8')
+    except UnicodeDecodeError:
+      return "SyntaxError"
+
+  err = decode(err)
   if err.find("SyntaxError") != -1 or err.find("ReferenceError") != -1:
     return (parseerror, err)
 
-  out = out.decode('utf-8')
+  out = decode(out)
   if useC3 and (out.find("Syntax error") != -1):
     return (parseerror, out)
 
   if out != "":
     return ("success", out)
   else:
-    raise Exception("Nothing on standard out from parse, stderr: %s" % err)
+    return (parseerror, "Nothing on stdout, error was: %s" % err)
 
 def run(useC3, json):
   (outcome, json) = json
