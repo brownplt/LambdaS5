@@ -243,6 +243,9 @@ let sto_lookup_obj loc ctx =
 (*   Printf.eprintf "looking for %s in objs\n" (Store.print_loc loc); *)
   fst (Store.lookup loc ctx.store.objs)
 
+let sto_lookup_obj_pair loc ctx = 
+  Store.lookup loc ctx.store.objs
+
 let sto_lookup_val loc ctx = 
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
   Store.lookup loc ctx.store.vals

@@ -12,12 +12,13 @@ open Exprjs_to_ljs
 open Js_to_exprjs
 open Str
 
+(* Constants *)
 let max_sym_proto_depth = 0
 let new_sym_keyword = "NEWSYM"
 let start_sym_keyword = "START SYM EVAL"
 let stop_sym_keyword = "STOP SYM EVAL"
 
-(* flag for debugging *)
+(* flags for debugging *)
 let print_store = false
 
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
@@ -337,8 +338,8 @@ let set_attr p attr obj_loc field prop newval pc =
             ^ Ljs_syntax.string_of_attr attr
             ^ " to "
             ^ Ljs_sym_pretty.val_to_string newval
-            ^ " for field: "
-            ^ (FormatExt.to_string Ljs_sym_pretty.prop) (fstr, prop))) pc
+            ^ " for field: " ^ fstr)) pc
+            (*^ (FormatExt.to_string (curry Ljs_sym_pretty.prop)) (fstr, prop))) pc*)
       end
     in
     bind ext_branches
@@ -552,7 +553,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               (* Special case for op2s on objects *)
               match op with
               | "hasProperty" -> 
-
                 (* In desugared JS, hasProperty is called on the global object
                  * for our special keyword and we need to fake it returning true. *)
                 begin match e2_val with String fstr
@@ -1057,27 +1057,68 @@ and eval_op str env jsonPath maxDepth pc =
     with ParseError _ -> throw_str "EvalError" pc
   end
 
+let collect res_list = 
+  map (fun grp -> (fst (List.hd grp), map snd grp))
+    (group (fun (v1,_) (v2,_) -> compare v1 v2) res_list)
+
 let rec eval_expr expr jsonPath maxDepth pc = 
-  bind_exn
-    (eval jsonPath maxDepth 0 expr IdMap.empty pc)
-    (fun (e, pc) -> match e with
-    | Throw v ->
-      let err_msg = 
-        match v with
-        | ObjPtr loc -> begin
-          match sto_lookup_obj loc pc with
-          | ConObj { conps = props } 
-          | SymObj { conps = props } -> begin
-            try
-              match IdMap.find "message" props with
-              | Data ({ value = msg_val_loc; }, _, _) ->
-                let msg_val = sto_lookup_val msg_val_loc pc in
-                (Ljs_sym_pretty.val_to_string msg_val)
-              | _ -> (Ljs_sym_pretty.val_to_string v)
-            with Not_found -> (Ljs_sym_pretty.val_to_string v)
+  let (rets, exns) =
+    bind_exn
+      (eval jsonPath maxDepth 0 expr IdMap.empty pc)
+      (fun (e, pc) -> match e with
+      | Throw v ->
+        let err_msg = 
+          match v with
+          | ObjPtr loc -> begin
+            match sto_lookup_obj loc pc with
+            | ConObj { conps = props } 
+            | SymObj { conps = props } -> begin
+              try
+                match IdMap.find "message" props with
+                | Data ({ value = msg_val_loc; }, _, _) ->
+                  let msg_val = sto_lookup_val msg_val_loc pc in
+                  (Ljs_sym_pretty.val_to_string msg_val)
+                | _ -> (Ljs_sym_pretty.val_to_string v)
+              with Not_found -> (Ljs_sym_pretty.val_to_string v)
+            end
+            | NewSymObj locs -> "Threw a NewSymObj -- what were you thinking??"
           end
-          | NewSymObj locs -> "Threw a NewSymObj -- what were you thinking??"
-        end
-        | v -> (Ljs_sym_pretty.val_to_string v) in
-      throw_str ("Uncaught exception: " ^ err_msg) pc
-    | Break (l, v) -> throw_str ("Broke to top of execution, missed label: " ^ l) pc)
+          | v -> (Ljs_sym_pretty.val_to_string v) in
+        throw_str ("Uncaught exception: " ^ err_msg) pc
+      | Break (l, v) -> throw_str ("Broke to top of execution, missed label: " ^ l) pc)
+    in
+    (collect rets, exns)
+
+let print_results (ret_grps, exn_grps) = 
+  List.iter
+    (fun (v, pcs) ->
+      print_string "##########\n";
+      printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
+      List.iter
+        (fun pc ->
+          print_string "----------\n";
+          (match v with
+          | ObjPtr loc ->
+            (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
+            printf "%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
+          | _ -> ());
+          (*print_string "##########\n";*)
+          (*List.iter *)
+          (*  (fun c -> printf "%s\n" (Ljs_sym_z3.to_string c pc))*)
+          (*  pc.Ljs_sym_values.constraints;*)
+          printf "%s\n" (simple_to_string v pc)
+          (*List.iter *)
+          (*  (fun c -> printf "%s\n" (Ljs_sym_z3.to_string c pc))*)
+          (*  (Ljs_sym_z3.simplify pc.Ljs_sym_values.constraints)*)
+        ) pcs;
+      (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
+      print_newline())
+    ret_grps;
+
+  List.iter
+    (fun (v, pcs) -> match v with
+      | Ljs_sym_values.Throw v ->
+        printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
+      | _ -> printf "Exn: something other than a Throw\n")
+    exn_grps
+
