@@ -157,7 +157,7 @@ def dirTests(useC3, d):
     f.write(template % result[0])
     f2.write("%s %s %s %s %s" % result[1:])
 
-def makeFrontPage(summary):
+def makeFrontPage():
   html = """
 <html><head></head>
 Tests run at %s
@@ -173,7 +173,7 @@ Tests run at %s
     if chapter[-6:] == 'result':
       print("Result dir: %s\nChapter:%s\n" % (result_dir, chapter))
       line = open(os.path.join(result_dir, chapter)).readline()
-      if line: [success, fail, skip, ssuccess, sfail] = line.split(" ")
+      if line and len(line) == 4: [success, fail, skip, ssuccess, sfail] = line.split(" ")
       else: continue
       l += "<li><a href='%s.html'>%s</a> (%s/%s), (%s/%s)</li>" % \
               (chapter[0:-7], chapter[0:-7], success, int(success)+int(fail), \
@@ -189,8 +189,8 @@ Tests run at %s
   summary.close()
 
 def main(args):
-  spiderMonkeyDir = 'test262/test/suite/'
-  ieDir = 'test262/test/suite/'
+  spiderMonkeyDir = 'test262/test/suite/sputnik_converted'
+  ieDir = 'test262/test/suite/ietestcenter'
   try:
     os.mkdir(result_dir)
   except:
@@ -199,13 +199,13 @@ def main(args):
     pass
 
   argparser = argparse.ArgumentParser(description='Launch all test262 tests')
-  argparser.add_argument("action", choices = ["sp", "ie", "regen"])
+  argparser.add_argument("action", choices = ["all", "sp", "ie", "regen"])
   argparser.add_argument("-c3", action='store_true')
   argparser.add_argument("chapters", nargs="*")
 
   args = argparser.parse_args()
 
-  if len(args.chapters) == 1 and args.action == None or len(args.chapters) == 0:
+  if args.action == "all":
     dirTests(args.c3, spiderMonkeyDir)
     dirTests(args.c3, ieDir)
   else:
@@ -214,6 +214,7 @@ def main(args):
     else: d = ieDir
 
     for chapter in args.chapters:
+      print("doing a chapter: %s" % chapter)
       f = open(os.path.join(result_dir, chapter + ".html"), "w")
       f2 = open(os.path.join(result_dir, chapter + ".result"), "w")
       result = testDir(args.c3, os.path.join(d, chapter))
@@ -222,8 +223,7 @@ def main(args):
       f.close()
       f2.close()
 
-  summary = open(os.path.join(result_dir, 'summary.html'), 'w')
-  makeFrontPage(summary)
+  makeFrontPage()
 
 main(sys.argv)
 
