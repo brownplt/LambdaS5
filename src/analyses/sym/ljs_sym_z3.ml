@@ -348,7 +348,9 @@ let z3prelude = "\
 (declare-fun prim->str (JS) Str)\n"
 
 let is_sat (p : ctx) : bool =
-  match p.constraints with [] -> true | _ ->
+  (* Only ask z3 if we have constraints to ask about *)
+  match List.filter (fun c -> match c with Hint _ -> false | _ -> true) p.constraints with
+  | [] -> true | _ ->
 
   (* Add all typeof strs to vars so that we can use them
    * to define typeof to z3 later *)
