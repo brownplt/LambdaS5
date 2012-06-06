@@ -419,7 +419,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
           in
           let none_branch = 
             if not (is_sat none_pc) then none else
-              if check_proto && sym_proto_depth > 0 then
+              if check_proto && (not is_sym || sym_proto_depth > 0) then
                 bind (branch_sym (sto_lookup_val ploc none_pc) none_pc)
                   (fun (protov, pc) ->
                     let sym_proto_depth' =
