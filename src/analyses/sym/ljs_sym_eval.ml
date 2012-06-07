@@ -6,6 +6,7 @@ open Ljs
 open Ljs_sym_values
 open Ljs_sym_delta
 open Ljs_sym_z3
+open Ljs_sym_compare
 open Ljs_pretty
 open SpiderMonkey
 open Exprjs_to_ljs
@@ -557,9 +558,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               match op with
               | "hasProperty" -> 
                 (* In desugared JS, hasProperty is called on the global object
-                 * for our special keyword and we need to fake it returning true. *)
-                begin match e2_val with String fstr
-                when fstr = new_sym_keyword -> return True pc | _ ->
+                 * for our special keywords and we need to fake it returning true. *)
+                begin match e2_val with
+                | String fstr when fstr = new_sym_keyword -> return True pc
+                | String fstr when fstr = compare_keyword -> return True pc
+                | _ ->
 
                 bind (check_field e2_val pc)
                   (fun (field, pc) ->
@@ -844,6 +847,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
               match fv with String fstr when fstr = new_sym_keyword ->
                 uncurry return
                   (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
+
+              (* Same for the compare command *)
+              | String fstr when fstr = compare_keyword ->
+                  (compare_results p args env pc eval)
+
               | _ ->
 
               bind (eval args env pc)
@@ -1059,10 +1067,6 @@ and eval_op str env jsonPath maxDepth pc =
         (failwith "no global")
     with ParseError _ -> throw_str "EvalError" pc
   end
-
-let collect res_list = 
-  map (fun grp -> (fst (List.hd grp), map snd grp))
-    (group (fun (v1,_) (v2,_) -> compare v1 v2) res_list)
 
 let rec eval_expr expr jsonPath maxDepth pc = 
   let (rets, exns) =
