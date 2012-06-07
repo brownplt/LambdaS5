@@ -19,7 +19,8 @@ let start_sym_keyword = "START SYM EVAL"
 let stop_sym_keyword = "STOP SYM EVAL"
 
 (* flags for debugging *)
-let print_store = false
+let print_store = false (* print store at each eval call *)
+let simple_print = false (* print in human readable form *)
 
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
@@ -463,7 +464,7 @@ let sym_get_own_prop = sym_get_prop_helper false max_sym_proto_depth
 let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult list = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
-  if (not pc.hideObjs) && print_store then printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);
+  if (not pc.hide_objs) && print_store then printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);
 
   if (depth >= maxDepth)
   then throw_str ("Reached max recursion depth " ^ (string_of_int maxDepth)) pc else 
@@ -476,13 +477,15 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
    * In either case, eval_sym should be used to evaluate e. *)
   let eval_sym exp env pc = bind (eval exp env pc) (uncurry branch_sym) in
 
+  let pc = { pc with print_env = env; } in
+
   match exp with
     | S.Hint (_, hint, exp2) ->
       eval exp2 env begin
         if hint = start_sym_keyword
-        then { pc with hideObjs = false }
+        then { pc with hide_objs = false }
         else if hint = stop_sym_keyword
-        then { pc with hideObjs = true }
+        then { pc with hide_objs = true }
         else pc
     end
 
@@ -1097,19 +1100,21 @@ let print_results (ret_grps, exn_grps) =
       List.iter
         (fun pc ->
           print_string "----------\n";
-          (match v with
-          | ObjPtr loc ->
-            (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
-            printf "%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
-          | _ -> ());
+          if simple_print then begin
+            (match v with
+            | ObjPtr loc ->
+              (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
+              printf "Var names: %s\n" (Ljs_sym_pretty.rec_val_to_string v pc);
+              printf "Value:\n%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
+            | _ -> ());
           (*print_string "##########\n";*)
-          (*List.iter *)
-          (*  (fun c -> printf "%s\n" (Ljs_sym_z3.to_string c pc))*)
-          (*  pc.Ljs_sym_values.constraints;*)
-          printf "%s\n" (simple_to_string v pc)
-          (*List.iter *)
-          (*  (fun c -> printf "%s\n" (Ljs_sym_z3.to_string c pc))*)
-          (*  (Ljs_sym_z3.simplify pc.Ljs_sym_values.constraints)*)
+            printf "%s\n" (simple_to_string v pc)
+          end else begin
+            List.iter 
+              (fun c -> printf "%s\n" (Ljs_sym_z3.to_string c pc))
+              pc.Ljs_sym_values.constraints
+          end
+          (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
         ) pcs;
       (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
       print_newline())
@@ -1121,4 +1126,3 @@ let print_results (ret_grps, exn_grps) =
         printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
       | _ -> printf "Exn: something other than a Throw\n")
     exn_grps
-

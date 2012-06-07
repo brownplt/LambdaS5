@@ -5,6 +5,7 @@ open Format
 open FormatExt
 
 let print_hidden = false
+let verbose_objs = true
 
 let rec vert_intersperse a lst = match lst with
   | [] -> []
@@ -30,14 +31,20 @@ let rec value (v, rec_stuff) =
   | ObjPtr loc -> begin
     let loc_box = horz [squish [text "&<"; text (Store.print_loc loc); text ">"]] in
     match rec_stuff with
-    | Some (pc, seen_locs) -> 
+    | Some (pc, inv_env, seen_locs) -> 
       let o, hide = sto_lookup_obj_pair loc pc in
+      begin try
+        horz [squish (intersperse (text ", ")
+              (map text (Store.lookup loc inv_env)))]
+      with Not_found ->
       (*printf "o: %s\n" (Store.print_loc loc);*)
-      if List.mem loc seen_locs
-        || (hide && not print_hidden)
-      then loc_box
-      else horz [loc_box; text ":";
-                 obj ((o, hide), Some (pc, loc::seen_locs))]
+        if List.mem loc seen_locs
+          || (hide && not print_hidden)
+        then loc_box
+        else horz 
+          (if verbose_objs then [loc_box; text ":";] else []
+          @ [obj ((o, hide), Some (pc, inv_env, loc::seen_locs))])
+      end
     | None -> loc_box
   end
   | Closure func -> text "(closure)"
@@ -53,14 +60,16 @@ let rec value (v, rec_stuff) =
 and obj ((o, hide), rec_stuff) =
   let hide_str = if hide then "hidden" else "" in
   match o with
-  | NewSymObj locs -> horz [text hide_str; text "NewSymObj";
-                            brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))]
+  | NewSymObj locs ->
+    horz ([text hide_str; text "NewSymObj";]
+    @ if not verbose_objs then [] else
+    [brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))])
   | SymObj f -> helper f (hide_str ^ "@sym") rec_stuff
   | ConObj f -> helper f (hide_str ^ "@") rec_stuff
 and helper { attrs = attrsv; conps = conpsv; symps = sympsv; } prefix rec_stuff = 
   let do_val =
     match rec_stuff with
-    | Some (pc, _) ->
+    | Some (pc, inv_env, _) ->
         (fun vloc ->
           (*printf "v: %s\n" (Store.print_loc vloc);*)
            value (sto_lookup_val vloc pc, rec_stuff))
@@ -69,41 +78,46 @@ and helper { attrs = attrsv; conps = conpsv; symps = sympsv; } prefix rec_stuff 
   if IdMap.is_empty conpsv && IdMap.is_empty sympsv 
   then squish [text prefix; braces (attrs attrsv do_val)]
   else 
-    horz [squish [text prefix; (braces (vert [attrs attrsv do_val; 
-                                           text "- Con fields -";
-                                           vert (vert_intersperse (text ",")
-                                                   (map (fun p -> con_prop p do_val) (IdMap.bindings conpsv)));
-                                           text "- Sym fields -";
-                                           vert (vert_intersperse (text ",")
-                                                   (map (fun p -> sym_prop p do_val) (IdMap.bindings sympsv)));]))]]
+    horz [squish [text prefix; (braces (vert
+    ( [attrs attrsv do_val]
+      @ if IdMap.is_empty conpsv then [] else
+      [text "- Con fields -";
+       vert (vert_intersperse (text ",")
+               (map (fun p -> con_prop p do_val) (IdMap.bindings conpsv)))]
+      @ if IdMap.is_empty sympsv then [] else
+      [text "- Sym fields -";
+       vert (vert_intersperse (text ",")
+               (map (fun p -> sym_prop p do_val) (IdMap.bindings sympsv)))]
+    )))]]
 
 
 and attrs { proto = p; code = c; extensible = b; klass = k } do_val =
   let proto = [horz [text "#proto:"; do_val p]] in
   let code = match c with None -> [] 
     | Some e -> [horz [text "#code:"; do_val p]] in
-  brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
-                          (proto@
-                             code@
-                             [horz [text "#class:"; sstring k]; 
-                              horz [text "#extensible:"; sbool b]])))
+  brackets (horzOrVert
+              (map (fun x -> squish [x; (text ",")])
+                          (proto @ if not verbose_objs then [] else
+                           code @
+                           [horz [text "#class:"; sstring k]; 
+                            horz [text "#extensible:"; sbool b]])))
 
 and prop (f, prop) do_val =
   match prop with
   | Data ({value=v; writable=w}, enum, config) ->
-    horz [text f; text ":"; braces (horz [text "#value"; 
-                                          do_val v; text ",";
-                                          text "#writable";  
-                                          sbool w; text ",";
-                                          text "#enumerable";
-                                          sbool enum; text ",";
-                                          text "#configurable";
-                                          sbool config;])]
+    horz [text f; text ":";
+    if not verbose_objs then do_val v else
+    braces (horz
+    [text "#value"; do_val v; text ",";
+     text "#writable";  sbool w; text ",";
+     text "#enumerable"; sbool enum; text ",";
+     text "#configurable"; sbool config;])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (horz [text "#getter";
-                                                        do_val g; text ",";
-                                                        text "#setter";
-                                                        do_val s])]
+    horz [text ("'" ^ f ^ "'"); text ":";
+    if not verbose_objs then text "[accessors]" else
+    braces (horz
+    [text "#getter"; do_val g; text ",";
+     text "#setter"; do_val s])]
 
 and sym_prop fp = prop fp
 and con_prop (f, p) = prop ("'" ^ f ^ "'", p)
@@ -168,11 +182,24 @@ and con_prop (f, p) = prop ("'" ^ f ^ "'", p)
 ;;
 
 (*let to_string x = x Format.str_formatter; Format.flush_str_formatter();;*)
+let updateWith f k v m =
+  Store.update k
+    (try f v (Store.lookup k m)
+    with Not_found -> v) m
+
+let invert_env pc : (id list) Store.t =
+  IdMap.fold
+    (fun id vloc inv_map ->
+      match sto_lookup_val vloc pc with
+      | ObjPtr oloc -> updateWith (@) oloc [id] inv_map
+      | _ -> inv_map)
+    pc.print_env
+    Store.empty
 
 let val_to_string v = to_string value (v, None)
-let rec_val_to_string v pc = to_string value (v, Some (pc, []))
+let rec_val_to_string v pc = to_string value (v, Some (pc, invert_env pc, []))
 let obj_to_string o = to_string obj (o, None)
-let rec_obj_to_string o pc = to_string obj (o, Some (pc, []))
+let rec_obj_to_string o pc = to_string obj (o, Some (pc, invert_env pc, []))
 
 let one_store store one_v is_hidden = vert
   (map (fun (loc, v) -> 
@@ -191,3 +218,12 @@ let store { objs = objs; vals = vals } =
 ;;
 
 let store_to_string = to_string store
+
+let env env_map = vert
+  (map (fun (id, loc) ->
+         horz [text id; text ":"; 
+               text (Store.print_loc loc);])
+       (IdMap.bindings env_map))
+
+let env_to_string = to_string env
+

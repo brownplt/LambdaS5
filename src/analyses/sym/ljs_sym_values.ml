@@ -83,10 +83,13 @@ and exresult = exval * ctx
 and sto_type = { objs : (objlit * bool) Store.t;
                  vals : value Store.t }
 and ctx = { constraints : sym_exp list;
-            vars : typeEnv ;
+            vars : typeEnv;
+            store : sto_type;
             (* if true, new objs will be hidden in the store *)
-            hideObjs : bool ;
-            store : sto_type }
+            hide_objs : bool;
+            print_env : env; }
+
+and env = Store.loc IdMap.t
 
 (* language of constraints *)
 and sym_exp =
@@ -108,8 +111,6 @@ and sym_exp =
   | SImplies of sym_exp * sym_exp
   | SIsMissing of sym_exp
   | SGetField of id * id
-
-type env = Store.loc IdMap.t
 
 (* Used within GetField and SetField only *)
 type field_type = SymField of id | ConField of id
@@ -159,7 +160,13 @@ let bind_both (ret, exn) f g =
 let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
-let mtPath = { constraints = []; vars = IdMap.empty; store = { objs = Store.empty; vals = Store.empty }; hideObjs = true }
+let mtPath = {
+  constraints = [];
+  vars = IdMap.empty;
+  store = { objs = Store.empty; vals = Store.empty };
+  hide_objs = true;
+  print_env = IdMap.empty; (* the env to use when printing results *)
+}
 
 let ty_to_string t = match t with
   | TNull -> "TNull"
@@ -226,7 +233,7 @@ let sto_alloc_val v ctx =
   (loc, { ctx with store = { ctx.store with vals = sto } })
 
 let sto_alloc_obj o ctx = 
-  let (loc, sto) = Store.alloc (o, ctx.hideObjs) ctx.store.objs in
+  let (loc, sto) = Store.alloc (o, ctx.hide_objs) ctx.store.objs in
    (*Printf.eprintf "allocing loc %s in objs\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with objs = sto } })
 
