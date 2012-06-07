@@ -1,4 +1,4 @@
-// %%number, undefined, undefined
+// %%number, undefined
 let (x = NEWSYM)
 if (x === 0) {
   prim("+", x, 2)

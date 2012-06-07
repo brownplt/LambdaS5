@@ -1,4 +1,4 @@
-// %%number, %%string, undefined, undefined
+// %%number, %%string, undefined
 let (x = NEWSYM)
 if (x === 2) {
   typeof x
