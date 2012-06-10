@@ -169,7 +169,6 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
-
 let rec eval jsonPath exp env (store : store) : (value * store) =
   let eval exp env store =
     begin try eval jsonPath exp env store
@@ -180,6 +179,8 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         raise (Throw (exp::exprs, v, s))
       | PrimErr (exprs, v) ->
         raise (PrimErr (exp::exprs, v))
+      | Sys.Break ->
+        raise (PrimErr ([exp], String "eval() stopped by user interrupt"))
     end in
   match exp with
   | S.Hint (_, _, e) -> eval e env store
@@ -525,6 +526,7 @@ and eval_op str env store jsonPath =
     (failwith "no global")
 
 let rec eval_expr expr jsonPath = try
+  Sys.catch_break true;
   eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
 with
   | Throw (t, v, store) ->
