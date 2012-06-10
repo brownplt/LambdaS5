@@ -759,10 +759,10 @@ let add_preamble p used_ids final =
     | [id] -> S.Seq (p, define_id id, final)
     | id :: rest -> S.Seq (p, define_id id, dops_of_ids rest) in
   dops_of_ids (IdSet.elements used_ids)
-
+    
 let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
-  let desugared = ejs_to_ljs e in
+  let (uids, real_body, ncontext) = create_context p [] e (Some (S.Id (p, "%global"))) in
+  let desugared = ejs_to_ljs real_body in
   let final = 
-    S.Let (p, "%context", S.Id (p, "%global"),
-      S.Let (p, "%this", S.Id (p, "%context"), desugared)) in
-  add_preamble p used_ids final
+    S.Let (p, "%this", S.Id (p, "%context"), desugared) in
+  add_preamble p used_ids (S.Let (p, "%context", ncontext, final))
