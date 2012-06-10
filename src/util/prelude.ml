@@ -149,3 +149,14 @@ let iota n = iota' (n - 1) []
 
 let curry f = (fun a b -> f(a,b))
 let uncurry f = (fun (a,b) -> f a b)
+
+let group (cmp : ('a -> 'a -> int)) (lst : 'a list) : 'a list list =
+  let sorted = List.sort cmp lst in
+  List.fold_left
+    (fun groups elt -> match groups with
+      | [] -> [[elt]]
+      | grp::grps ->
+        if cmp elt (List.hd grp) = 0
+        then (elt::grp)::grps
+        else [elt]::grp::grps)
+    [] sorted

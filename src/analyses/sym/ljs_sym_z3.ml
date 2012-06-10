@@ -155,6 +155,109 @@ and exp e store =
 ;;
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
 
+let rec simple_value v = 
+  match v with
+  | Null -> text "null"
+  | Undefined -> text "undefined"
+  | Num n -> 
+    if (n = infinity) then text "inf"
+    else if (n = neg_infinity) then text "neg_inf"
+    else if (n <> n) then text "NaN"
+    else text (string_of_float n)
+  | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
+  | True -> text "true"
+  | False -> text "false"
+  | ObjPtr loc -> text ("&<" ^ (Store.print_loc loc) ^ ">") (* obj (sto_lookup_obj loc store) *)
+  | Closure func -> text "(closure)"
+  | SymScalar id -> text id
+  | NewSym (id, loc) -> parens (text ("NewSym " ^ id))
+
+let rec simple_exp e = 
+  match e with
+  | Hint s -> horz [text ";;"; text s] 
+  | Concrete v -> simple_value v
+  | SLoc l -> text (Store.print_loc l)
+  | SId id -> text id
+  | SOp1 (op, e) -> 
+    parens (horz [text (prim_to_z3 op); simple_exp e])
+  | SOp2 (op, e1, e2) ->
+    parens (horz [text (prim_to_z3 op); simple_exp e1; simple_exp e2])
+  | SApp (f, args) ->
+    parens (horz (simple_exp f :: (map (fun a -> simple_exp a) args)))
+  | SLet (id, e1) ->
+    parens (horz [parens(horz[text "let"; text id; simple_exp e1])])
+  | SCastJS (t, e) -> simple_exp e
+  | SUncastJS (t, e) -> simple_exp e
+  | SNot e -> parens (horz [text "not"; simple_exp e])
+  | SAnd es -> parens (horz (text "and" :: (map (fun e -> simple_exp e) es)))
+  | SOr es -> parens (horz (text "or" :: (map (fun e -> simple_exp e) es)))
+  | SImplies (pre, post) -> parens (horz [text "=>"; simple_exp pre; simple_exp post])
+  | SAssert e -> simple_exp e
+  | _ -> text "Missed something"
+
+let substitute exp id_defs =
+  let rec sub exp = match exp with
+  | SId id ->
+    begin try sub (IdMap.find id id_defs)
+    with Not_found -> exp end
+  | SOp1 (op, e) ->
+    if op = "prim->bool"
+    then sub e
+    else SOp1 (op, sub e)
+  | SOp2 (op, e1, e2) -> SOp2 (op, sub e1, sub e2)
+  | SApp (f, args) -> SApp (f, map sub args)
+  | SCastJS (t, e) -> sub e
+  | SUncastJS (t, e) -> sub e
+  | SNot e -> SNot (sub e)
+  | SAnd es -> SAnd (map sub es)
+  | SOr es -> SOr (map sub es)
+  | SImplies (pre, post) -> SImplies (sub pre, sub post)
+  | SAssert e -> sub e
+  | _ -> exp
+  in sub exp
+
+
+let simplify result cs =
+  let (lets, assns) = List.partition (fun c -> match c with SLet _ -> true | _ -> false) cs in
+  let id_defs =
+    fold_left
+      (fun id_defs letc ->
+        match letc with
+        | SLet (id, exp) -> IdMap.add id exp id_defs
+        | _ -> id_defs)
+      IdMap.empty lets
+  in
+  (* Substitute all ids with their defs in assns *)
+  let assns =
+    fold_left
+      (fun assns assn -> substitute assn id_defs :: assns)
+      [] assns
+  in
+  (* We'd also like to see the def of the result *)
+  let id_defs = match result with
+  | SymScalar id ->
+    IdMap.add id (substitute (SId id) id_defs) id_defs
+  | _ -> id_defs
+  in
+  (id_defs, assns)
+
+let simple_print result pc =
+  let (id_defs, assns) = simplify result pc.constraints in
+  let res = match result with
+    | SymScalar id ->
+      [horz [text id;
+            text "="; 
+            simple_exp (IdMap.find id id_defs);]]
+    | _ -> []
+  in
+  let assns = map (fun a -> simple_exp a) assns in
+  vert (res @ [
+    text "Assns:";
+    vert assns;
+  ]);;
+
+let simple_to_string result pc = simple_print result pc Format.str_formatter; Format.flush_str_formatter() 
+
 (*let ty_to_typeof tp = match tp with*)
 (*  | TNull -> Some "null"*)
 (*  | TUndef -> Some "undefined"*)
@@ -245,7 +348,9 @@ let z3prelude = "\
 (declare-fun prim->str (JS) Str)\n"
 
 let is_sat (p : ctx) : bool =
-  match p.constraints with [] -> true | _ ->
+  (* Only ask z3 if we have constraints to ask about *)
+  match List.filter (fun c -> match c with Hint _ -> false | _ -> true) p.constraints with
+  | [] -> true | _ ->
 
   (* Add all typeof strs to vars so that we can use them
    * to define typeof to z3 later *)

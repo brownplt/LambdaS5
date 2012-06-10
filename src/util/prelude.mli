@@ -96,3 +96,7 @@ val iota : int -> int list
 
 val curry : ('a * 'b -> 'c) -> ('a -> 'b -> 'c)
 val uncurry : ('a -> 'b -> 'c) -> ('a * 'b -> 'c)
+
+(** [group cmp lst] collects like elts of [lst] into lists using [cmp] to check equality.
+  * Returns a list of lists, where all like elts are in one sublist *)
+val group : ('a -> 'a -> int) -> 'a list -> 'a list list 

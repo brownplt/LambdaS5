@@ -44,6 +44,7 @@ let rec parse_results chan =
   with End_of_file -> [] 
 
 let make_test es5_path = es5_path >:: (fun () ->
+  skip_if (Str.string_match (regexp "sym/obj") es5_path 0) "sym obj test has too many branches";
   (*
   (* Convert JS to AST *)
   let ast_path = js_path ^ ".ast" in

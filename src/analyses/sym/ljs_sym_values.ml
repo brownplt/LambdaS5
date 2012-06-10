@@ -83,9 +83,13 @@ and exresult = exval * ctx
 and sto_type = { objs : (objlit * bool) Store.t;
                  vals : value Store.t }
 and ctx = { constraints : sym_exp list;
-            vars : typeEnv ;
-            time : int ;
-            store : sto_type }
+            vars : typeEnv;
+            store : sto_type;
+            (* if true, new objs will be hidden in the store *)
+            hide_objs : bool;
+            print_env : env; }
+
+and env = Store.loc IdMap.t
 
 (* language of constraints *)
 and sym_exp =
@@ -107,8 +111,6 @@ and sym_exp =
   | SImplies of sym_exp * sym_exp
   | SIsMissing of sym_exp
   | SGetField of id * id
-
-type env = Store.loc IdMap.t
 
 (* Used within GetField and SetField only *)
 type field_type = SymField of id | ConField of id
@@ -158,7 +160,17 @@ let bind_both (ret, exn) f g =
 let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
-let mtPath = { constraints = []; vars = IdMap.empty; store = { objs = Store.empty; vals = Store.empty }; time = 0 }
+let collect res_list = 
+  map (fun grp -> (fst (List.hd grp), map snd grp))
+    (group (fun (v1,_) (v2,_) -> compare v1 v2) res_list)
+
+let mtPath = {
+  constraints = [];
+  vars = IdMap.empty;
+  store = { objs = Store.empty; vals = Store.empty };
+  hide_objs = true;
+  print_env = IdMap.empty; (* the env to use when printing results *)
+}
 
 let ty_to_string t = match t with
   | TNull -> "TNull"
@@ -198,13 +210,12 @@ let field_str field ctx =
   | SymField f -> (f, add_var f TSymString f ctx)
   | ConField f -> const_string f ctx
 
-let check_type id t p =
-  let { constraints = cs ; vars = vs; store = s; time = time} = p in
+let check_type id t pc =
   try 
-    let (found, hint) = IdMap.find id vs in
-    if t = TAny or found = t then p
+    let (found, hint) = IdMap.find id pc.vars in
+    if t = TAny or found = t then pc
     else if found = TAny then
-      { constraints = cs ; vars = IdMap.add id (t, hint) vs ; store = s; time = time}
+      { pc with vars = IdMap.add id (t, hint) pc.vars }
     else begin 
       Printf.printf "Known type of %s is %s, wanted %s\n" id (ty_to_string found) (ty_to_string t);
       raise (TypeError id)
@@ -225,8 +236,8 @@ let sto_alloc_val v ctx =
    (*Printf.eprintf "allocing loc %s in vals\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with vals = sto } })
 
-let sto_alloc_obj o hide ctx = 
-  let (loc, sto) = Store.alloc (o, hide) ctx.store.objs in
+let sto_alloc_obj o ctx = 
+  let (loc, sto) = Store.alloc (o, ctx.hide_objs) ctx.store.objs in
    (*Printf.eprintf "allocing loc %s in objs\n" (Store.print_loc loc); *)
   (loc, { ctx with store = { ctx.store with objs = sto } })
 
@@ -242,6 +253,9 @@ let sto_update_obj loc ov ctx =
 let sto_lookup_obj loc ctx = 
 (*   Printf.eprintf "looking for %s in objs\n" (Store.print_loc loc); *)
   fst (Store.lookup loc ctx.store.objs)
+
+let sto_lookup_obj_pair loc ctx = 
+  Store.lookup loc ctx.store.objs
 
 let sto_lookup_val loc ctx = 
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
@@ -280,7 +294,7 @@ let new_sym_from_locs locs name hint pc =
    * This will account for the possibility that the new sym is a
    * pointer to an unknown symbolic object. This obj will be init'd later 
    * using init_sym_obj below. *)
-  let new_loc, pc = sto_alloc_obj (NewSymObj locs) false pc in
+  let new_loc, pc = sto_alloc_obj (NewSymObj locs) pc in
   (* include the just-allocated location *)
   (NewSym (sym_id, new_loc::locs), pc)
 
@@ -291,7 +305,7 @@ let new_sym hint pc =
   let locs =
     Store.fold
       (fun loc (_, hide) locs ->
-        if hide then loc :: locs else locs)
+        if hide then locs else loc :: locs)
       pc.store.objs [] in
   new_sym_from_locs locs "" hint pc
 
