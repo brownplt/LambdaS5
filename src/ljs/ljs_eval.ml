@@ -180,7 +180,9 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       | PrimErr (exprs, v) ->
         raise (PrimErr (exp::exprs, v))
       | Sys.Break ->
-        raise (PrimErr ([exp], String "eval() stopped by user interrupt"))
+        raise (PrimErr ([exp], String "s5_eval stopped by user interrupt"))
+      | Stack_overflow ->
+        raise (PrimErr ([exp], String "s5_eval overflowed the Ocaml stack"))
     end in
   match exp with
   | S.Hint (_, _, e) -> eval e env store
@@ -520,12 +522,21 @@ and eval_op str env store jsonPath =
     in
   let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
   if (IdMap.mem "%global" env) then
-    (Ljs_pretty.exp desugard std_formatter; print_newline ();
-     eval jsonPath desugard env store (* TODO: which env? *))
+     eval jsonPath desugard env store (* TODO: which env? *)
   else
     (failwith "no global")
 
-let rec eval_expr expr jsonPath = try
+let err show_stack trace message = 
+  if show_stack then begin
+      eprintf "%s\n" (string_stack_trace trace);
+      eprintf "%s\n" message;
+      failwith "Runtime error"
+    end
+  else
+    eprintf "%s\n" message;
+    failwith "Runtime error"
+
+let rec eval_expr expr jsonPath print_trace = try
   Sys.catch_break true;
   eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
 with
@@ -542,10 +553,7 @@ with
                 with Not_found -> string_of_value v store
                 end
           | v -> (pretty_value v) in
-        eprintf "%s\nUncaught exception: %s\n" (string_stack_trace t) err_msg;
-        failwith "Uncaught exception"
+        err print_trace t (sprintf "Uncaught exception: %s\n" err_msg)
   | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
   | PrimErr (t, v) ->
-      eprintf "%s\nUncaught error: %s\n" (string_stack_trace t) (pretty_value v);
-      failwith "Uncaught error"
-
+      err print_trace t (sprintf "Uncaught error: %s\n" (pretty_value v))
