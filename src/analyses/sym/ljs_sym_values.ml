@@ -47,9 +47,9 @@ type value =
 
 and objlit =
   | ConObj of objfields
-  | SymObj of objfields
-  (* Placeholder for uninitialized sym objects
-   * Holds the locs of all objects in the store when it was created *)
+  (* Holds the locs of all objects in the store when it was created *)
+  | SymObj of objfields * Store.loc list
+  (* Placeholder for uninitialized sym objects *)
   | NewSymObj of Store.loc list
 and objfields = { attrs: attrsv;
                   conps: propv IdMap.t; (* props with concrete field names *)
@@ -326,14 +326,15 @@ let init_sym_obj locs loc hint_s pc =
   let proto, pc = new_sym_from_locs locs "proto"
                           ("new %proto for " ^ (Store.print_loc loc)) pc in
   let proto_loc, pc = sto_alloc_val proto pc in
-  bind (alloc_sym_scalar_opt "code" "code attr" pc)
-    (fun (code_loc_opt, pc) ->
-      bind (alloc_sym_scalar_opt "primval" "primval attr" pc)
-        (fun (pv_loc_opt, pc) ->
-          let ret = (SymObj {
-            attrs = { code = code_loc_opt; proto = proto_loc; extensible = sym_ext;
-                      klass = sym_klass; primval = pv_loc_opt };
-            conps = IdMap.empty;
-            symps = IdMap.empty
-          }) in
-          return ret (sto_update_obj loc ret pc)))
+  (*bind (alloc_sym_scalar_opt "code" "code attr" pc) *)
+  (*  (fun (code_loc_opt, pc) ->*)
+  (*    bind (alloc_sym_scalar_opt "primval" "primval attr" pc)*)
+  (*      (fun (pv_loc_opt, pc) ->*)
+  let pv_loc, pc = alloc_sym_scalar "primval" "primval attr" pc in
+  let ret = SymObj ({
+    attrs = { code = None; proto = proto_loc; extensible = sym_ext;
+              klass = sym_klass; primval = Some pv_loc };
+    conps = IdMap.empty;
+    symps = IdMap.empty
+  }, locs) in
+  return ret (sto_update_obj loc ret pc)

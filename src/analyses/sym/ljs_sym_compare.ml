@@ -76,7 +76,7 @@ and equiv_obj d (loc1, pc1) (loc2, pc2) =
   let obj2 = sto_lookup_obj loc2 pc2 in
   match obj1, obj2 with
   | ConObj o1, ConObj o2
-  | SymObj o1, SymObj o2 ->
+  | SymObj (o1, _), SymObj (o2, _) ->
        equiv_attrs d (o1.attrs, pc1) (o2.attrs, pc2) 
     && equiv_props d (o1.conps, pc1) (o2.conps, pc2)
     && equiv_props d (o1.symps, pc1) (o2.symps, pc2)

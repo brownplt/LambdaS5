@@ -42,7 +42,7 @@ let typeof ctx v =
   | False -> "boolean"
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
     | ConObj { attrs = { code = Some _ }} 
-    | SymObj { attrs = { code = Some _ }} -> "function"
+    | SymObj ({ attrs = { code = Some _ }}, _) -> "function"
     | NewSymObj _ -> failwith "typeof got NewSymObj"
     | _ -> "object"
   end
@@ -147,7 +147,7 @@ let rec object_to_string ctx obj = begin
   match obj with
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
     | ConObj { attrs = {klass = symk} }
-    | SymObj { attrs = {klass = symk} } ->
+    | SymObj ({ attrs = {klass = symk} }, _) ->
       let objstr = match symk with
       | SString s -> "[object " ^ s ^ "]"
       (* TODO: add constraint relating id and this result *)
@@ -165,7 +165,7 @@ let rec is_array ctx obj = begin
   match obj with
   | ObjPtr loc -> begin match sto_lookup_obj loc ctx with
     | ConObj { attrs = {klass = symk} }
-    | SymObj { attrs = {klass = symk} } ->
+    | SymObj ({ attrs = {klass = symk} }, _) ->
       begin match symk with
       | SString s -> return (bool (s = "Array")) ctx
       | SSym id -> 

@@ -46,7 +46,7 @@ let rec apply p func args pc depth = match func with
   | ObjPtr obj_loc ->
     begin match sto_lookup_obj obj_loc pc with
     | ConObj { attrs = { code = Some cloc }}
-    | SymObj { attrs = { code = Some cloc }} ->
+    | SymObj ({ attrs = { code = Some cloc }}, _) ->
       apply p (sto_lookup_val cloc pc) args pc depth
     | NewSymObj _ -> failwith (interp_error p ("Apply got NewSymObj"))
     | o -> throw_str (interp_error p
@@ -110,8 +110,8 @@ let set_conps o conps = { o with conps = conps }
 let set_symps o symps = { o with symps = symps }
 
 let rec set_prop loc o f prop pc = match o, f with
-  | SymObj o, SymField f -> return (SymObj (set_symps o (IdMap.add f prop (get_symps o)))) pc
-  | SymObj o, ConField f -> return (SymObj (set_conps o (IdMap.add f prop (get_conps o)))) pc
+  | SymObj (o, locs), SymField f -> return (SymObj (set_symps o (IdMap.add f prop (get_symps o)), locs)) pc
+  | SymObj (o, locs), ConField f -> return (SymObj (set_conps o (IdMap.add f prop (get_conps o)), locs)) pc
   | ConObj o, SymField f -> return (ConObj (set_symps o (IdMap.add f prop (get_symps o)))) pc
   | ConObj o, ConField f -> return (ConObj (set_conps o (IdMap.add f prop (get_conps o)))) pc
   | NewSymObj locs, _ ->
@@ -123,15 +123,15 @@ let get_prop o f = match f with
   | ConField f -> IdMap.find f (get_conps o)
 
 let delete_prop o f = match o, f with 
-  | SymObj o, SymField f -> SymObj (set_symps o (IdMap.remove f (get_symps o)))
-  | SymObj o, ConField f -> SymObj (set_conps o (IdMap.remove f (get_conps o)))
+  | SymObj (o, locs), SymField f -> SymObj (set_symps o (IdMap.remove f (get_symps o)), locs)
+  | SymObj (o, locs), ConField f -> SymObj (set_conps o (IdMap.remove f (get_conps o)), locs)
   | ConObj o, SymField f -> ConObj (set_symps o (IdMap.remove f (get_symps o)))
   | ConObj o, ConField f -> ConObj (set_conps o (IdMap.remove f (get_conps o)))
   | NewSymObj _, _ -> failwith "Impossible! Should have init'd NewSymObj before delete_prop"
 
 let rec add_field_helper force obj_loc field newval pc = 
   match sto_lookup_obj obj_loc pc with
-  | ((SymObj { attrs = { extensible = symext; }}) as o)
+  | ((SymObj ({ attrs = { extensible = symext; }}, _)) as o)
   | ((ConObj { attrs = { extensible = symext; }}) as o) ->
     bind (branch_bool symext pc)
       (fun (ext, pc) -> 
@@ -213,7 +213,7 @@ let set_obj_attr oattr obj_loc newattr pc =
   bind
     (match sto_lookup_obj obj_loc pc with
     | ConObj o -> bind (update_attr o pc) (fun (newo, pc) -> return (ConObj newo) pc)
-    | SymObj o -> bind (update_attr o pc) (fun (newo, pc) -> return (SymObj newo) pc)
+    | SymObj (o, locs) -> bind (update_attr o pc) (fun (newo, pc) -> return (SymObj (newo, locs)) pc)
     | NewSymObj _ -> failwith "Impossible! Should have init'd NewSymObj.")
     (fun (newo, pc) ->
       return newattr (sto_update_obj obj_loc newo pc))
@@ -250,7 +250,7 @@ let set_attr p attr obj_loc field prop newval pc =
   let objv = sto_lookup_obj obj_loc pc in
   let ext_branches = match objv with
   | ConObj { attrs = { extensible = ext; } }
-  | SymObj { attrs = { extensible = ext; } } -> branch_bool ext pc
+  | SymObj ({ attrs = { extensible = ext; } }, _) -> branch_bool ext pc
   | NewSymObj _ -> failwith "Impossible! set_attr given NewSymObj"
   in
   let make_updated_prop ext pc =
@@ -388,7 +388,8 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
   | SymScalar id -> return (field, None) (add_assert (is_null_sym id) pc)
   | Null -> return (field, None) pc
   | ObjPtr obj_loc -> 
-    let helper is_sym ({ attrs = { proto = ploc; }; conps = conps; symps = symps} as objv) pc =
+    let helper objv is_sym sym_locs pc =
+      let { attrs = { proto = ploc; }; conps = conps; symps = symps} = objv in
       let potential_props = begin
         try return (field, Some (get_prop objv field)) pc
         with Not_found -> 
@@ -446,14 +447,17 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
           combine
             (return (field, None) pc)
             (if is_sym then 
-              let symv, pc = new_sym ("get_field at " ^
-                                           (Pos.string_of_pos p)) pc in
+              let locs = match sym_locs with
+              | None -> failwith "Should have sym_locs if is_sym true"
+              | Some locs -> locs in
+              let symv, pc = new_sym_from_locs locs ""
+                ("sym_get_prop at " ^ (Pos.string_of_pos p)) pc in
               add_field_force obj_loc field symv pc
             else none)
         | Some p -> return (field, prop) pc)
     in begin match sto_lookup_obj obj_loc pc with
-    | ConObj o -> helper false o pc
-    | SymObj o -> helper true o pc
+    | ConObj o -> helper o false None pc
+    | SymObj (o, locs) -> helper o true (Some locs) pc
     | NewSymObj locs ->
       bind (init_sym_obj locs obj_loc "init_sym_obj sym_get_prop" pc) 
         (fun (_, pc) ->
@@ -820,8 +824,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         (fun (obj_ptrv, pc) -> 
           match obj_ptrv with
           | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
-            | ConObj { attrs = attrs }
-            | SymObj { attrs = attrs } -> get_obj_attr oattr attrs pc
+            | ConObj { attrs = attrs } -> get_obj_attr oattr attrs pc
+            | SymObj ({ attrs = attrs }, locs) -> get_obj_attr oattr attrs pc
             | NewSymObj _ -> failwith "Impossible!" 
           end
           | SymScalar id -> throw_str "GetObjAttr given SymScalar" pc
@@ -893,7 +897,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (* Copied from concrete evaluator.
                    * If we found the prop on the proto,
                    * enum and config should be true *)
-                  match objv with ConObj o | SymObj o -> begin
+                  match objv with ConObj o | SymObj (o, _) -> begin
                   try let _ = get_prop o f in (enum, config)
                   with Not_found -> (BTrue, BTrue)
                   end | _ -> failwith "Impossible! update_prop shouldn't get NewSymObj"
@@ -959,7 +963,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           | ObjPtr obj_loc ->
             begin match sto_lookup_obj obj_loc pc with
             | ConObj { conps = conps; symps = symps }
-            | SymObj { conps = conps; symps = symps } ->
+            | SymObj ({ conps = conps; symps = symps }, _) ->
               let add_name n x (m, pc) =
                 let nloc, pc = sto_alloc_val n pc in
                 (IdMap.add (string_of_int x)
@@ -1093,7 +1097,7 @@ let rec eval_expr expr jsonPath maxDepth pc =
           | ObjPtr loc -> begin
             match sto_lookup_obj loc pc with
             | ConObj { conps = props } 
-            | SymObj { conps = props } -> begin
+            | SymObj ({ conps = props }, _) -> begin
               try
                 match IdMap.find "message" props with
                 | Data ({ value = msg_val_loc; }, _, _) ->

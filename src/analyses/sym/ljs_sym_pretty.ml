@@ -64,7 +64,7 @@ and obj ((o, hide), rec_stuff) =
     horz ([text hide_str; text "NewSymObj";]
     @ if not verbose_objs then [] else
     [brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))])
-  | SymObj f -> helper f (hide_str ^ "@sym") rec_stuff
+  | SymObj (f, locs) -> helper f (hide_str ^ "@sym") rec_stuff
   | ConObj f -> helper f (hide_str ^ "@") rec_stuff
 and helper { attrs = attrsv; conps = conpsv; symps = sympsv; } prefix rec_stuff = 
   let do_val =
