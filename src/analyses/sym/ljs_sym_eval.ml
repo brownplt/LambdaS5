@@ -16,6 +16,7 @@ open Str
 (* Constants *)
 let max_sym_proto_depth = 0
 let new_sym_keyword = "NEWSYM"
+let fresh_sym_keyword = "NEWSYM_FRESH"
 let start_sym_keyword = "START SYM EVAL"
 let stop_sym_keyword = "STOP SYM EVAL"
 
@@ -501,6 +502,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
       if x = new_sym_keyword then
         uncurry return
           (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
+      else if x = fresh_sym_keyword then
+        uncurry return
+          (new_sym_fresh (fresh_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
       else
         try return (sto_lookup_val (IdMap.find x env) pc) pc
         with Not_found -> failwith (interp_error p
@@ -559,8 +563,9 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 (* In desugared JS, hasProperty is called on the global object
                  * for our special keywords and we need to fake it returning true. *)
                 begin match e2_val with
-                | String fstr when fstr = new_sym_keyword -> return True pc
-                | String fstr when fstr = compare_keyword -> return True pc
+                | String fstr when fstr = new_sym_keyword
+                                || fstr = fresh_sym_keyword
+                                || fstr = compare_keyword -> return True pc
                 | _ ->
 
                 bind (check_field e2_val pc)
@@ -842,14 +847,18 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             (fun (fv, pc) -> 
 
               (* In desugared JS, GetField is called on the global object
-               * with our new sym keyword, so we catch it here to make a new sym *)
-              match fv with String fstr when fstr = new_sym_keyword ->
+               * with our new sym keyword, so we catch it here to make a new sym.
+               * Also need to make sure hasProperty returns true. *)
+              match fv with
+              | String fstr when fstr = new_sym_keyword ->
                 uncurry return
                   (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
-
+              | String fstr when fstr = fresh_sym_keyword ->
+                uncurry return
+                  (new_sym_fresh (fresh_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
               (* Same for the compare command *)
               | String fstr when fstr = compare_keyword ->
-                  (compare_results p args env pc eval)
+                compare_results p args env pc eval
 
               | _ ->
 

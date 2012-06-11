@@ -309,6 +309,12 @@ let new_sym hint pc =
       pc.store.objs [] in
   new_sym_from_locs locs "" hint pc
 
+(* A fresh sym is a new sym that isn't equal to any objects
+ * already in the store. *)
+(* TODO probably still want to allow its prototype to have locs *)
+let new_sym_fresh hint pc =
+  new_sym_from_locs [] "" hint pc
+
 (* Creates a new sym obj whose attributes are all symbolic. Most are scalars, or scalar
  * opts, except for the prototype, which could be a scalar (hopefully Null) or an obj, so
  * we use a NewSym. The locs for this NewSym (i.e., the locs of every object it could be
