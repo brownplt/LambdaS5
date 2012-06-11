@@ -5,7 +5,7 @@ open Format
 open FormatExt
 
 let print_hidden = false
-let verbose_objs = true
+let verbose_objs = false
 
 let rec vert_intersperse a lst = match lst with
   | [] -> []

@@ -160,10 +160,6 @@ let bind_both (ret, exn) f g =
 let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
-let collect res_list = 
-  map (fun grp -> (fst (List.hd grp), map snd grp))
-    (group (fun (v1,_) (v2,_) -> compare v1 v2) res_list)
-
 let mtPath = {
   constraints = [];
   vars = IdMap.empty;
@@ -171,6 +167,10 @@ let mtPath = {
   hide_objs = true;
   print_env = IdMap.empty; (* the env to use when printing results *)
 }
+
+let collect cmp res_list = 
+  map (fun grp -> (fst (List.hd grp), map snd grp))
+    (group (fun (v1,_) (v2,_) -> cmp v1 v2) res_list)
 
 let ty_to_string t = match t with
   | TNull -> "TNull"

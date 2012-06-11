@@ -6,7 +6,8 @@ open Prelude
 open Format
 open FormatExt
 
-let log_z3 = true
+let log_z3 = false
+let simple_print = true (* print in human readable form *)
 
 
 let rec vert_intersperse a lst = match lst with
@@ -241,7 +242,7 @@ let simplify result cs =
   in
   (id_defs, assns)
 
-let simple_print result pc =
+let simple_pc result pc =
   let (id_defs, assns) = simplify result pc.constraints in
   let res = match result with
     | SymScalar id ->
@@ -256,7 +257,42 @@ let simple_print result pc =
     vert assns;
   ]);;
 
-let simple_to_string result pc = simple_print result pc Format.str_formatter; Format.flush_str_formatter() 
+let simple_to_string result pc = simple_pc result pc Format.str_formatter; Format.flush_str_formatter() 
+
+let print_results (ret_grps, exn_grps) = 
+  List.iter
+    (fun (v, pcs) ->
+      print_string "##########\n";
+      printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
+      List.iter
+        (fun pc ->
+          print_string "----------\n";
+          if simple_print then begin
+            (match v with
+            | ObjPtr loc ->
+              (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
+              printf "Var names: %s\n" (Ljs_sym_pretty.rec_val_to_string v pc);
+              printf "Value:\n%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
+            | _ -> ());
+          (*print_string "##########\n";*)
+            printf "%s\n" (simple_to_string v pc)
+          end else begin
+            List.iter 
+              (fun c -> printf "%s\n" (to_string c pc))
+              pc.Ljs_sym_values.constraints
+          end
+          (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
+        ) pcs;
+      (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
+      print_newline())
+    ret_grps;
+
+  List.iter
+    (fun (v, pcs) -> match v with
+      | Ljs_sym_values.Throw v ->
+        printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
+      | _ -> printf "Exn: something other than a Throw\n")
+    exn_grps
 
 (*let ty_to_typeof tp = match tp with*)
 (*  | TNull -> Some "null"*)
@@ -421,6 +457,7 @@ let is_sat (p : ctx) : bool =
   flush stdout;
   let res = input_line inch in
   close_in inch; 
+  Unix.close_process (inch, outch);
   if log_z3 then Printf.printf "z3 said: %s\n\n" res;
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
   (res = "sat")

@@ -21,7 +21,6 @@ let stop_sym_keyword = "STOP SYM EVAL"
 
 (* flags for debugging *)
 let print_store = false (* print store at each eval call *)
-let simple_print = false (* print in human readable form *)
 
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
@@ -1094,39 +1093,4 @@ let rec eval_expr expr jsonPath maxDepth pc =
         throw_str ("Uncaught exception: " ^ err_msg) pc
       | Break (l, v) -> throw_str ("Broke to top of execution, missed label: " ^ l) pc)
     in
-    (collect rets, exns)
-
-let print_results (ret_grps, exn_grps) = 
-  List.iter
-    (fun (v, pcs) ->
-      print_string "##########\n";
-      printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
-      List.iter
-        (fun pc ->
-          print_string "----------\n";
-          if simple_print then begin
-            (match v with
-            | ObjPtr loc ->
-              (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
-              printf "Var names: %s\n" (Ljs_sym_pretty.rec_val_to_string v pc);
-              printf "Value:\n%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
-            | _ -> ());
-          (*print_string "##########\n";*)
-            printf "%s\n" (simple_to_string v pc)
-          end else begin
-            List.iter 
-              (fun c -> printf "%s\n" (Ljs_sym_z3.to_string c pc))
-              pc.Ljs_sym_values.constraints
-          end
-          (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
-        ) pcs;
-      (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
-      print_newline())
-    ret_grps;
-
-  List.iter
-    (fun (v, pcs) -> match v with
-      | Ljs_sym_values.Throw v ->
-        printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
-      | _ -> printf "Exn: something other than a Throw\n")
-    exn_grps
+    (collect compare rets, exns)
