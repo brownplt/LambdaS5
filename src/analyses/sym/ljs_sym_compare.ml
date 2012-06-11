@@ -7,7 +7,7 @@ open Ljs_sym_delta
 let compare_keyword = "COMPARE_RESULTS"
 let args_id = compare_keyword ^ "_ARGS"
 
-let max_equiv_depth = 1
+let max_equiv_depth = 3
 
 (* To be compatible with the way functions are desugared in LJS,
  * we need to wrap the OCaml function we want to execute in an
@@ -93,17 +93,17 @@ and equiv_obj d (loc1, pc1) (loc2, pc2) =
    * the con obj. *)
   | _, _ -> false
 
-and equiv_attrs d (as1, pc1) (as2, pc2) = true
-  (*let equiv_attr_opt a1 a2 = match a1, a2 with*)
-  (*  | None, None -> true*)
-  (*  | Some aloc1, Some aloc2 -> equiv_lookup (aloc1, pc1) (aloc2, pc2)*)
-  (*  | _, _ -> false*)
-  (*in*)
-  (*   equiv_attr_opt as1.code as2.code*)
-  (*&& equiv_lookup (as1.proto, pc1) (as2.proto, pc2)*)
-  (*&& equiv_symbool (as1.extensible, pc1) (as2.extensible, pc2)*)
-  (*&& equiv_symstring (as1.klass, pc1) (as2.klass, pc2)*)
-  (*&& equiv_attr_opt as1.primval as2.primval*)
+and equiv_attrs d (as1, pc1) (as2, pc2) =
+  let equiv_attr_opt a1 a2 = match a1, a2 with
+    | None, None -> true
+    | Some aloc1, Some aloc2 -> equiv_lookup d (aloc1, pc1) (aloc2, pc2)
+    | _, _ -> false
+  in
+     equiv_attr_opt as1.code as2.code
+  && equiv_lookup d (as1.proto, pc1) (as2.proto, pc2)
+  && equiv_symbool d (as1.extensible, pc1) (as2.extensible, pc2)
+  && equiv_symstring d (as1.klass, pc1) (as2.klass, pc2)
+  && equiv_attr_opt as1.primval as2.primval
 
 and equiv_props d (props1, pc1) (props2, pc2) =
   try 
@@ -197,8 +197,8 @@ let compare_results p args env pc eval =
     List.iter
       (fun (v,pcs) -> printf "%s, " (Ljs_sym_pretty.val_to_string v))
       targets2;
-    printf "\n%s\n" "####### End compare";
     (*Ljs_sym_z3.print_results (targets2, []);*)
+    printf "\n%s\n" "####### End compare";
 
     (* Check for result set equivalence.
      * Our metric will be, for each return value in targets1,
@@ -207,10 +207,13 @@ let compare_results p args env pc eval =
       List.for_all
         (fun res_class ->
           let res = List.exists (equivalent res_class) targets2 in
-          if not res then
-            (*Ljs_sym_z3.print_results ([res_class], []);*)
+          if not res then begin
             printf "%s\n"
-            ("No matching result for " ^ Ljs_sym_pretty.val_to_string (fst res_class)); 
+              ("No matching result for " ^ Ljs_sym_pretty.val_to_string (fst res_class));
+            Ljs_sym_z3.print_results ([res_class], []);
+            printf "%s\n" "\nwhen compared against:\n";
+            Ljs_sym_z3.print_results (targets2, [])
+          end;
           res)
         targets1
     in

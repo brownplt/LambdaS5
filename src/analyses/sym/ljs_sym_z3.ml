@@ -6,7 +6,7 @@ open Prelude
 open Format
 open FormatExt
 
-let log_z3 = false
+let log_z3 = true
 let simple_print = true (* print in human readable form *)
 
 
@@ -262,7 +262,7 @@ let simple_to_string result pc = simple_pc result pc Format.str_formatter; Forma
 let print_results (ret_grps, exn_grps) = 
   List.iter
     (fun (v, pcs) ->
-      print_string "##########\n";
+      (*print_string "##########\n";*)
       printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
       List.iter
         (fun pc ->
@@ -457,7 +457,7 @@ let is_sat (p : ctx) : bool =
   flush stdout;
   let res = input_line inch in
   close_in inch; 
-  Unix.close_process (inch, outch);
+  let  _ = Unix.close_process (inch, outch) in
   if log_z3 then Printf.printf "z3 said: %s\n\n" res;
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
   (res = "sat")
