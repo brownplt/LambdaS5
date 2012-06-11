@@ -383,7 +383,7 @@ let z3prelude = "\
                      (FUN (f Fun)))))
 (declare-fun prim->str (JS) Str)\n"
 
-let is_sat (p : ctx) : bool =
+let is_sat (p : ctx) hint : bool =
   (* Only ask z3 if we have constraints to ask about *)
   match List.filter (fun c -> match c with Hint _ -> false | _ -> true) p.constraints with
   | [] -> true | _ ->
@@ -453,6 +453,7 @@ let is_sat (p : ctx) : bool =
 
   output_string outch "(check-sat)";
   if log_z3 then Printf.printf "(check-sat)\n";
+  if log_z3 then Printf.printf "%s\n" hint;
   close_out outch;
   flush stdout;
   let res = input_line inch in

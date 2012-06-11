@@ -399,7 +399,8 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
               let f'str, pc = field_str field' pc in
               let pc = add_assert (is_equal (SId fstr) (SId f'str)) pc in
               let new_branch =
-                if is_sat pc 
+                if is_sat pc
+                     ("get_prop " ^ Ljs_sym_pretty.val_to_string obj_ptr ^ " at " ^ fstr)
                 then (return (field', Some v') pc)
                 else none
               in combine new_branch branches)
@@ -420,7 +421,10 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
           | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc
           in
           let none_branch = 
-            if not (is_sat none_pc) then none else
+            if not (is_sat none_pc 
+                     ("get_prop none " ^ Ljs_sym_pretty.val_to_string obj_ptr))
+            then none
+            else
               if check_proto && (not is_sym || sym_proto_depth > 0) then
                 bind (branch_sym (sto_lookup_val ploc none_pc) none_pc)
                   (fun (protov, pc) ->
@@ -631,9 +635,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
             let true_pc = add_constraint (SAssert (SCastJS (TBool, SId id))) pc' in
             let false_pc  = add_constraint (SAssert (SNot (SCastJS (TBool, SId id)))) pc' in
             combine
-              (if is_sat true_pc then (eval t env true_pc)
+              (if is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
+               then (eval t env true_pc)
                else none)
-              (if is_sat false_pc then (eval f env false_pc)
+              (if is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
+               then (eval f env false_pc)
                else none)
           (* TODO should ObjPtr's be truthy? *)
           | _ -> eval f env pc')
