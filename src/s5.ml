@@ -25,6 +25,7 @@ module S5 = struct
                                        Ljs_cps.Id(Pos.dummy,Ljs_cps.Label.dummy,"fake")))
 
   let jsonPath = ref ""
+  let stack_trace = ref true
 
   let load_s5 (path : string) : unit =
     srcES5 := Ljs_syntax.Seq (Pos.dummy, !srcES5,
@@ -43,7 +44,7 @@ module S5 = struct
     | _ -> failwith "bad option string"
 
   let eval () : unit =
-    let (v, _) = Ljs_eval.eval_expr !srcES5 !jsonPath in
+    let (v, _) = Ljs_eval.eval_expr !srcES5 !jsonPath !stack_trace in
     printf "%s" (pretty_value v);
     print_newline ()
 
@@ -111,6 +112,9 @@ module S5 = struct
              FX.horz [FX.text "ERROR  <="; Ljs_cps_absdelta.ValueLattice.pretty err]] Format.str_formatter;
     printf "%s\n" (Format.flush_str_formatter ())
 
+  let no_stack_trace () =
+    stack_trace := false
+
   let main () : unit =
     Arg.parse
       [
@@ -145,7 +149,9 @@ module S5 = struct
         ("-env", Arg.String env,
          "wrap the program in an environment");
         ("-json", Arg.String set_json,
-         "the path to a script that converts js to json")
+         "the path to a script that converts js to json");
+        ("-no-stack-trace", Arg.Unit no_stack_trace,
+         "don't print stack traces from the interpreter")
       ]
       load_s5
       "Usage: s5 <action> <path> ...";;

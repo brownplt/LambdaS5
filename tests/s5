@@ -10,7 +10,7 @@ fi
 ../bin/js json_print.js $TMP > $TMP.ast
 ocamlrun ../obj/s5.d.byte -desugar $TMP.ast \
         -json ../tests/desugar.sh -env ../envs/es5.env \
-        -eval
+        -no-stack-trace -eval 
 EX=$?
 rm $TMP.ast
 

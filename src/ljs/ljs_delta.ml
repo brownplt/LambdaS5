@@ -180,6 +180,9 @@ let numstr store = function
   | String s -> Num (try float_of_string s with Failure _ -> nan)
   | _ -> raise (PrimErr ([], str "numstr"))
 
+let current_utc store = function
+  | _ -> Num (Unix.gettimeofday ())
+
 let op1 store op = match op with
   | "typeof" -> typeof store
   | "primitive?" -> is_primitive store
@@ -204,7 +207,8 @@ let op1 store op = match op with
   | "~" -> bnot store
   | "sin" -> sine store
   | "numstr->num" -> numstr store
-  | _ -> failwith ("no implementation of unary operator: " ^ op)
+  | "current-utc-millis" -> current_utc store
+  | _ -> raise (PrimErr ([], String ("no implementation of unary operator: " ^ op)))
 
 let arith store s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
@@ -402,4 +406,4 @@ let op2 store op = match op with
   | "pow" -> pow store
   | "to-fixed" -> to_fixed store
   | "isAccessor" -> is_accessor store
-  | _ -> failwith ("no implementation of binary operator: " ^ op)
+  | _ -> raise (PrimErr ([], String ("no implementation of binary operator: " ^ op)))
