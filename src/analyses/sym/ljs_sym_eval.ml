@@ -52,9 +52,9 @@ let arity_mismatch_err p xs args pc =
 
 let rec apply p func args pc nested_eval = match func with
   | Closure (arg_ids, body_exp, env) ->
-    let bind_arg arg x (m, pc) = 
+    let bind_arg arg id (env, pc) = 
       let (loc, pc') = sto_alloc_val arg pc in 
-      (IdMap.add x loc m, pc')
+      (env_add id loc env, pc')
     in
     if (List.length args) != (List.length arg_ids) then
       arity_mismatch_err p arg_ids args pc
@@ -532,7 +532,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         uncurry return
           (new_sym_fresh (fresh_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
       else
-        try return (sto_lookup_val (IdMap.find x env) pc) pc
+        try return (sto_lookup_val (env_lookup x env) pc) pc
         with Not_found -> failwith (interp_error p
           ("Unbound identifier: " ^ x ^ " in identifier lookup at "))
     end
@@ -695,11 +695,11 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         (eval e env pc)
         (fun (e_val, pc) -> 
           let loc, pc = sto_alloc_val e_val pc in 
-          eval body (IdMap.add x loc env) pc)
+          eval body (env_add x loc env) pc)
         
     | S.Rec (p, x, e, body) ->
       let (loc, pc') = sto_alloc_val Undefined pc in
-      let env' = IdMap.add x loc env in
+      let env' = env_add x loc env in
       bind
         (eval e env' pc')
         (fun (ev_val, pc') -> 
@@ -708,7 +708,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
 
     | S.SetBang (p, x, e) -> begin
       try
-        let loc = IdMap.find x env in
+        let loc = env_lookup x env in
         bind 
           (eval e env pc)
           (fun (e_val, pc') ->
@@ -1075,7 +1075,7 @@ and eval_op str env jsonPath maxDepth pc =
       let (used_ids, exprjsd) = 
         js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global")) in
       let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
-      if (IdMap.mem "%global" env) then
+      if (env_mem "%global" env) then
         (Ljs_pretty.exp desugard std_formatter; print_newline ();
          eval jsonPath maxDepth 0 desugard env pc (* TODO: which env? *))
       else
@@ -1086,7 +1086,7 @@ and eval_op str env jsonPath maxDepth pc =
 let rec eval_expr expr jsonPath maxDepth pc = 
   let (rets, exns) =
     bind_exn
-      (eval jsonPath maxDepth 0 expr IdMap.empty pc)
+      (eval jsonPath maxDepth 0 expr mt_env pc)
       (fun (e, pc) -> match e with
       | Throw v ->
         let err_msg = 

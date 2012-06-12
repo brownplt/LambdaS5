@@ -182,13 +182,14 @@ and con_prop (f, p) = prop ("'" ^ f ^ "'", p)
 ;;
 
 (*let to_string x = x Format.str_formatter; Format.flush_str_formatter();;*)
+
 let updateWith f k v m =
   Store.update k
     (try f v (Store.lookup k m)
     with Not_found -> v) m
 
 let invert_env pc : (id list) Store.t =
-  IdMap.fold
+  env_fold 
     (fun id vloc inv_map ->
       match sto_lookup_val vloc pc with
       | ObjPtr oloc -> updateWith (@) oloc [id] inv_map
@@ -219,11 +220,13 @@ let store { objs = objs; vals = vals } =
 
 let store_to_string = to_string store
 
-let env env_map = vert
-  (map (fun (id, loc) ->
-         horz [text id; text ":"; 
-               text (Store.print_loc loc);])
-       (IdMap.bindings env_map))
+let env the_env = vert
+  (env_fold
+    (fun id loc printers ->
+       (horz [text id; text ":"; 
+             text (Store.print_loc loc);])
+       :: printers)
+    the_env [])
 
 let env_to_string = to_string env
 

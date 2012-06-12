@@ -27,6 +27,9 @@ exception TypeError of string
 type symbool = BTrue | BFalse | BSym of id
 type symstring = SString of string | SSym of id
 
+(* Stack of maps from var id to store locations *)
+type env = (Store.loc IdMap.t) list
+
 type value =
   (* Scalar types *)
   | Null
@@ -88,8 +91,6 @@ and ctx = { constraints : sym_exp list;
             (* if true, new objs will be hidden in the store *)
             hide_objs : bool;
             print_env : env; }
-
-and env = Store.loc IdMap.t
 
 (* language of constraints *)
 and sym_exp =
@@ -160,30 +161,40 @@ let bind_both (ret, exn) f g =
 let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
+let collect cmp res_list = 
+  map (fun grp -> (fst (List.hd grp), map snd grp))
+    (group (fun (v1,_) (v2,_) -> cmp v1 v2) res_list)
+
+(* Abstraction for environment.
+ * We use a list to represent a stack of variable binding maps. *)
+(* TODO It might be more efficient to replace this with a stack
+ * containing only the changed binding at each level. This would save time
+ * during garbage collection, but lose time during lookup. There must
+ * be a good compromise... *)
+let mt_env = [IdMap.empty]
+
+(* These functions all operate on the top of the env stack.
+ * I.e., they operate on the current scope of the program.
+ * This is what most of the evaluator thinks of as "environment" *)
+let cur_env = List.hd
+let env_lookup id env = IdMap.find id (cur_env env)
+let env_mem id env = IdMap.mem id (cur_env env)
+(* env_add creates a new env on the stack,
+ * identical except for the new addition *)
+let env_add id loc env = (IdMap.add id loc (cur_env env)) :: env
+let env_fold f env acc = IdMap.fold f (cur_env env) acc 
+
+(* We can later add functions that take advantage of the
+ * entire stack, which will be useful for the garbage collector *)
+
+
 let mtPath = {
   constraints = [];
   vars = IdMap.empty;
   store = { objs = Store.empty; vals = Store.empty };
   hide_objs = true;
-  print_env = IdMap.empty; (* the env to use when printing results *)
+  print_env = mt_env; (* the env to use when printing results *)
 }
-
-let collect cmp res_list = 
-  map (fun grp -> (fst (List.hd grp), map snd grp))
-    (group (fun (v1,_) (v2,_) -> cmp v1 v2) res_list)
-
-let ty_to_string t = match t with
-  | TNull -> "TNull"
-  | TUndef -> "TUndef"
-  | TString -> "TString"
-  | TSymString -> "TSymString"
-  | TBool -> "TBool"
-  | TNum -> "TNum"
-  | TObjPtr -> "TObjPtr"
-  | TFun arity -> "TFun(" ^ (string_of_int arity) ^ ")"
-  | TAny -> "TAny"
-  | TData -> "TData"
-  | TAccessor -> "TAccessor"
 
 let add_var id ty hint ctx = 
   { ctx with vars = IdMap.add id (ty, hint) ctx.vars }
@@ -209,6 +220,19 @@ let field_str field ctx =
   match field with
   | SymField f -> (f, add_var f TSymString f ctx)
   | ConField f -> const_string f ctx
+
+let ty_to_string t = match t with
+  | TNull -> "TNull"
+  | TUndef -> "TUndef"
+  | TString -> "TString"
+  | TSymString -> "TSymString"
+  | TBool -> "TBool"
+  | TNum -> "TNum"
+  | TObjPtr -> "TObjPtr"
+  | TFun arity -> "TFun(" ^ (string_of_int arity) ^ ")"
+  | TAny -> "TAny"
+  | TData -> "TData"
+  | TAccessor -> "TAccessor"
 
 let check_type id t pc =
   try 
