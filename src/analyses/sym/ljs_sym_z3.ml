@@ -33,7 +33,7 @@ let rec value v store =
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
   | ObjPtr loc -> text ("(OBJPTR " ^ (Store.print_loc loc) ^ ")") (* obj (sto_lookup_obj loc store) *)
-  | Closure func -> text "(FUN closure)"
+  | Closure _ -> text "(FUN closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)
@@ -169,7 +169,7 @@ let rec simple_value v =
   | True -> text "true"
   | False -> text "false"
   | ObjPtr loc -> text ("&<" ^ (Store.print_loc loc) ^ ">") (* obj (sto_lookup_obj loc store) *)
-  | Closure func -> text "(closure)"
+  | Closure _ -> text "(closure)"
   | SymScalar id -> text id
   | NewSym (id, loc) -> parens (text ("NewSym " ^ id))
 

@@ -47,7 +47,7 @@ let rec value (v, rec_stuff) =
       end
     | None -> loc_box
   end
-  | Closure func -> text "(closure)"
+  | Closure _ -> text "(closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)

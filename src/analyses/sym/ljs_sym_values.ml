@@ -35,7 +35,7 @@ type value =
   | String of string
   | True
   | False
-  | Closure of (value list -> ctx -> int -> (result list * exresult list))
+  | Closure of id list * exp * env (* (args, body, env) *)
   (* ObjPtr is a pointer to an obj in the object store *)
   | ObjPtr of Store.loc
   (* NewSym is an uninitialized symbolic value,

@@ -15,10 +15,11 @@ let max_equiv_depth = 3
  * ptr to it. *)
 let wrap_with_func_obj env pc f = 
   let proto_loc, pc = sto_alloc_val Null pc in
-  let closure_loc, pc = sto_alloc_val (Closure f) pc in
+  (*let closure_loc, pc = sto_alloc_val (Closure f) pc in*)
   let func_obj = ConObj {
     attrs = { primval = None; proto = proto_loc;
-              code = Some closure_loc; (* func (%this, %args) { do our thing } *)
+              code = None; (* temp disabled *)
+              (*code = Some closure_loc; [> func (%this, %args) { do our thing } <]*)
               klass = SString "Function"; extensible = BTrue };
     conps = IdMap.empty; symps = IdMap.empty;
   } in

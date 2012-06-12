@@ -41,13 +41,31 @@ let is_null_sym id = is_equal (SId id) (Concrete Null)
 (*       incr count; IdHashtbl.add s !count; *)
 (*       !count) *)
     
-let rec apply p func args pc depth = match func with
-  | Closure c -> c args pc depth
+let arity_mismatch_err p xs args pc =
+  failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ 
+               " arguments and expected " ^ string_of_int (List.length xs) ^ 
+               " at " ^ Pos.string_of_pos p ^ ". Arg names were: " ^ 
+               (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ 
+               ". Values were: " ^ 
+               (List.fold_right (^) (map (fun v -> " " ^ 
+                 Ljs_sym_pretty.val_to_string v ^ " ") args) ""))
+
+let rec apply p func args pc nested_eval = match func with
+  | Closure (arg_ids, body_exp, env) ->
+    let bind_arg arg x (m, pc) = 
+      let (loc, pc') = sto_alloc_val arg pc in 
+      (IdMap.add x loc m, pc')
+    in
+    if (List.length args) != (List.length arg_ids) then
+      arity_mismatch_err p arg_ids args pc
+    else
+      let (env_args, pc_args) = List.fold_right2 bind_arg args arg_ids (env, pc) in
+      nested_eval body_exp env_args pc_args
   | ObjPtr obj_loc ->
     begin match sto_lookup_obj obj_loc pc with
     | ConObj { attrs = { code = Some cloc }}
     | SymObj ({ attrs = { code = Some cloc }}, _) ->
-      apply p (sto_lookup_val cloc pc) args pc depth
+      apply p (sto_lookup_val cloc pc) args pc nested_eval
     | NewSymObj _ -> failwith (interp_error p ("Apply got NewSymObj"))
     | o -> throw_str (interp_error p
                         ("Applied an object without a code attribute: "
@@ -478,7 +496,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
   if (depth >= maxDepth)
   then throw_str ("Reached max recursion depth " ^ (string_of_int maxDepth)) pc else 
 
-  let nestedEval = eval jsonPath maxDepth in
+  let nested_eval = eval jsonPath maxDepth (depth + 1) in
   let eval = eval jsonPath maxDepth depth in 
   (* eval_sym should be called to eval an expression e that is part of an expression
    * which determines whether e is a scalar or a pointer. For instance, the expression
@@ -519,19 +537,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
           ("Unbound identifier: " ^ x ^ " in identifier lookup at "))
     end
 
-    | S.Lambda (p, xs, e) -> 
-      let bind_arg arg x (m, pc) = 
-        let (loc, pc') = sto_alloc_val arg pc in 
-        (IdMap.add x loc m, pc')
-      in
-      return 
-        (Closure (fun args pc depth -> 
-          if (List.length args) != (List.length xs) then
-            arity_mismatch_err p xs args pc
-          else
-            let (env_xs, pc_xs) = (List.fold_right2 bind_arg args xs (env, pc)) in
-            nestedEval (depth+1) e env_xs pc_xs))
-        pc
+    | S.Lambda (p, xs, e) -> return (Closure (xs, e, env)) pc
 
     | S.Op1 (p, op, e) ->
       bind 
@@ -659,8 +665,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (fun ((argvs : value list), (pcs : ctx)) -> 
                     bind 
                       (* We don't need to eval_sym the args because
-                       * they will be rebound in the closure created
-                       * for the function body in the S.Lambda case *)
+                       * they will be rebound in apply *)
                       (eval arg env pcs)
                       (fun (argv, pcs') ->
                         return (argvs @ [argv]) pcs')))
@@ -678,7 +683,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                 return (SymScalar res_id)
                   (add_constraint (SLet (res_id, (SApp (SId fid, vs))))
                      (add_constraint (SLet (fid, (SId f))) res_pc))
-              | _ -> apply p f_val argvs pcs depth))
+              | _ -> apply p f_val argvs pcs nested_eval))
         
     | S.Seq (p, e1, e2) -> 
       bind 
@@ -868,7 +873,8 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                   (new_sym_fresh (fresh_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
               (* Same for the compare command *)
               | String fstr when fstr = compare_keyword ->
-                compare_results p args env pc eval
+                return True pc (* temp disable *)
+                (*compare_results p args env pc eval*)
 
               | _ ->
 
@@ -882,7 +888,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                           return (sto_lookup_val vloc pc) pc
                         | Some (Accessor ({ getter = gloc; }, _, _)) ->
                           let g = sto_lookup_val gloc pc in
-                          apply p g [obj_ptrv; argsv] pc depth
+                          apply p g [obj_ptrv; argsv] pc nested_eval
                         | None -> return Undefined pc)))))
 
     | S.SetField (p, obj_ptr, f, v, args) ->
@@ -910,7 +916,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
                     return newval (sto_update_obj obj_loc new_obj pc))
               else throw_str "SetField NYI for non-writable fields" pc)
         | Some (Accessor ({ setter = sloc; }, _, _)) ->
-          apply p (sto_lookup_val sloc pc) setter_params pc depth
+          apply p (sto_lookup_val sloc pc) setter_params pc nested_eval
         | None -> add_field obj_loc f newval pc
       in
       bind (eval_sym obj_ptr env pc)
@@ -1016,7 +1022,7 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
         | Throw v -> 
           bind
             (eval catch env pc')
-            (fun (c, pc'') -> apply p c [v] pc'' depth)
+            (fun (c, pc'') -> apply p c [v] pc'' nested_eval)
         | _ -> throw e pc')
     end
     | S.TryFinally (p, body, fin) -> 
@@ -1040,15 +1046,6 @@ let rec eval jsonPath maxDepth depth exp env (pc : ctx) : result list * exresult
     | S.Eval _ -> failwith "[interp] not yet implemented (Eval)"
 
 
-
-and arity_mismatch_err p xs args pc =
-  failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ 
-               " arguments and expected " ^ string_of_int (List.length xs) ^ 
-               " at " ^ Pos.string_of_pos p ^ ". Arg names were: " ^ 
-               (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ 
-               ". Values were: " ^ 
-               (List.fold_right (^) (map (fun v -> " " ^ 
-                 Ljs_sym_pretty.val_to_string v ^ " ") args) ""))
 
 (* This function is exactly as ridiculous as you think it is.  We read,
    parse, desugar, and evaluate the string, storing it to temp files along
