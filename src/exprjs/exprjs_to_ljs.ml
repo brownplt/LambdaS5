@@ -559,6 +559,17 @@ and get_fobj p args body context =
                       S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
                              S.Id (p, func_id)))))
            
+and strip_lets e nms = match e with
+  | E.LetExpr (p, nm, vl, rst) ->
+    let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
+    if prefix = "%%" then
+      let l = (String.length nm) - 2 in
+      let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
+    else
+      let (final_nms, final_e) = strip_lets rst nms in
+      (final_nms, E.LetExpr (p, nm, vl, final_e))
+  | _ -> (nms, e)
+
 (* The first stage of desugaring creates exprjs let expressions corresponding
  * to JavaScript declared variables.  create_context is used to translate those
  * variables into the final representation (let-bound es5 variables with
@@ -567,17 +578,7 @@ and get_fobj p args body context =
  *)
 (* TODO(joe): overlapping vars and argument names goes here *)
 and create_context p args body parent =
-  let rec strip_lets e nms = match e with
-    | E.LetExpr (p, nm, vl, rst) ->
-      let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
-      if prefix = "%%" then
-        let l = (String.length nm) - 2 in
-        let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
-      else
-        let (final_nms, final_e) = strip_lets rst nms in
-        (final_nms, E.LetExpr (p, nm, vl, final_e))
-    | _ -> (nms, e)
-  and add_props props e =
+  let rec add_props props e =
     List.fold_right (fun prop e -> S.Let (p, prop, S.Undefined p, e)) props e
   and add_arg param index e = S.Let (p, param, S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int index), S.Null p), e)
   and add_args args' e = List.fold_right2 add_arg args' (Prelude.iota (List.length args')) e
@@ -751,18 +752,20 @@ and appexpr_check f app p =
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
     S.If (p, not_function, error, app))
 
-let add_preamble p used_ids final = 
+let add_preamble p used_ids var_ids final = 
   let define_id id =
     S.App (p, S.Id (p, "%defineGlobalAccessors"), [S.String (p, id)]) in
-  let rec dops_of_ids lst = match lst with
-    | [] -> final
-    | [id] -> S.Seq (p, define_id id, final)
-    | id :: rest -> S.Seq (p, define_id id, dops_of_ids rest) in
-  dops_of_ids (IdSet.elements used_ids)
+  let define_var id =
+    S.App (p, S.Id (p, "%defineGlobalVar"), [S.String (p, id)]) in
+  let rec dops_of_ids def_fun lst base = match lst with
+    | [] -> base
+    | id :: rest -> S.Seq (p, def_fun id, dops_of_ids def_fun rest base) in
+  dops_of_ids define_var var_ids (dops_of_ids define_id used_ids final)
     
 let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
-  let (uids, real_body, ncontext) = create_context p [] e (Some (S.Id (p, "%global"))) in
-  let desugared = ejs_to_ljs real_body in
+  let (names, inner) = strip_lets e [] in
+  let desugared = ejs_to_ljs inner in
   let final = 
     S.Let (p, "%this", S.Id (p, "%context"), desugared) in
-  add_preamble p used_ids (S.Let (p, "%context", ncontext, final))
+  add_preamble p (IdSet.elements used_ids) names
+    (S.Let (p, "%context", S.Id (p, "%global"), final))

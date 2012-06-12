@@ -21,7 +21,7 @@ let unbool b = match b with
   | _ -> failwith ("tried to unbool a non-bool" ^ (pretty_value b))
 
 let interp_error pos message =
-  "[interp] (" ^ Pos.string_of_pos pos ^ ") " ^ message
+  raise (PrimErr ([], String ("[interp] (" ^ Pos.string_of_pos pos ^ ") " ^ message)))
 
 let apply p store func args = match func with
   | Closure c -> c args store

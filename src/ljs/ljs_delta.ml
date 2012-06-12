@@ -105,6 +105,9 @@ let print store v = match v with
   | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
 
+let pretty store v =
+  printf "%s\n%!" (string_of_value v store); Undefined
+
 let is_extensible store obj = match obj with
   | ObjLoc loc -> begin match get_obj store loc with
       | ({ extensible = true; }, _) -> True
@@ -190,6 +193,7 @@ let op1 store op = match op with
   | "prim->num" -> prim_to_num store
   | "prim->bool" -> prim_to_bool store
   | "print" -> print store
+  | "pretty" -> pretty store
   | "object-to-string" -> object_to_string store
   | "strlen" -> strlen store
   | "is-array" -> is_array store
