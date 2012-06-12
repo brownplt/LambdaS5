@@ -363,7 +363,10 @@ let z3prelude = "\
 
 (declare-sort Fun)
 (declare-sort Str)
+
 (declare-fun length (Str) Real)
+(declare-fun strlen (Str) Real)
+(declare-fun char-at (Str Real) Str)
 
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
