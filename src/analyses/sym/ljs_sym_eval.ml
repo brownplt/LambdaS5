@@ -7,6 +7,7 @@ open Ljs_sym_values
 open Ljs_sym_delta
 open Ljs_sym_z3
 open Ljs_sym_compare
+open Ljs_sym_gc
 open Ljs_pretty
 open SpiderMonkey
 open Exprjs_to_ljs
