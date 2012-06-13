@@ -7,6 +7,7 @@ open Format
 open FormatExt
 
 let log_z3 = true
+let simple_print = true (* print in human readable form *)
 
 
 let rec vert_intersperse a lst = match lst with
@@ -32,7 +33,7 @@ let rec value v store =
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
   | ObjPtr loc -> text ("(OBJPTR " ^ (Store.print_loc loc) ^ ")") (* obj (sto_lookup_obj loc store) *)
-  | Closure func -> text "(FUN closure)"
+  | Closure _ -> text "(FUN closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)
@@ -168,7 +169,7 @@ let rec simple_value v =
   | True -> text "true"
   | False -> text "false"
   | ObjPtr loc -> text ("&<" ^ (Store.print_loc loc) ^ ">") (* obj (sto_lookup_obj loc store) *)
-  | Closure func -> text "(closure)"
+  | Closure _ -> text "(closure)"
   | SymScalar id -> text id
   | NewSym (id, loc) -> parens (text ("NewSym " ^ id))
 
@@ -241,7 +242,7 @@ let simplify result cs =
   in
   (id_defs, assns)
 
-let simple_print result pc =
+let simple_pc result pc =
   let (id_defs, assns) = simplify result pc.constraints in
   let res = match result with
     | SymScalar id ->
@@ -256,7 +257,42 @@ let simple_print result pc =
     vert assns;
   ]);;
 
-let simple_to_string result pc = simple_print result pc Format.str_formatter; Format.flush_str_formatter() 
+let simple_to_string result pc = simple_pc result pc Format.str_formatter; Format.flush_str_formatter() 
+
+let print_results (ret_grps, exn_grps) = 
+  List.iter
+    (fun (v, pcs) ->
+      (*print_string "##########\n";*)
+      printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
+      List.iter
+        (fun pc ->
+          print_string "----------\n";
+          if simple_print then begin
+            (match v with
+            | ObjPtr loc ->
+              (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
+              printf "Var names: %s\n" (Ljs_sym_pretty.rec_val_to_string v pc);
+              printf "Value:\n%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
+            | _ -> ());
+          (*print_string "##########\n";*)
+            printf "%s\n" (simple_to_string v pc)
+          end else begin
+            List.iter 
+              (fun c -> printf "%s\n" (to_string c pc))
+              pc.Ljs_sym_values.constraints
+          end
+          (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
+        ) pcs;
+      (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
+      print_newline())
+    ret_grps;
+
+  List.iter
+    (fun (v, pcs) -> match v with
+      | Ljs_sym_values.Throw v ->
+        printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
+      | _ -> printf "Exn: something other than a Throw\n")
+    exn_grps
 
 (*let ty_to_typeof tp = match tp with*)
 (*  | TNull -> Some "null"*)
@@ -327,7 +363,10 @@ let z3prelude = "\
 
 (declare-sort Fun)
 (declare-sort Str)
+
 (declare-fun length (Str) Real)
+(declare-fun strlen (Str) Real)
+(declare-fun char-at (Str Real) Str)
 
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
@@ -347,7 +386,7 @@ let z3prelude = "\
                      (FUN (f Fun)))))
 (declare-fun prim->str (JS) Str)\n"
 
-let is_sat (p : ctx) : bool =
+let is_sat (p : ctx) hint : bool =
   (* Only ask z3 if we have constraints to ask about *)
   match List.filter (fun c -> match c with Hint _ -> false | _ -> true) p.constraints with
   | [] -> true | _ ->
@@ -417,10 +456,12 @@ let is_sat (p : ctx) : bool =
 
   output_string outch "(check-sat)";
   if log_z3 then Printf.printf "(check-sat)\n";
+  if log_z3 then Printf.printf "%s\n" hint;
   close_out outch;
   flush stdout;
   let res = input_line inch in
   close_in inch; 
+  let  _ = Unix.close_process (inch, outch) in
   if log_z3 then Printf.printf "z3 said: %s\n\n" res;
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
   (res = "sat")

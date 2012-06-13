@@ -52,7 +52,7 @@ module S5 = struct
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
     (* let (inch, outch) = z3 in begin *)
     let results = Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath in
-    Ljs_sym_eval.print_results results
+    Ljs_sym_z3.print_results results
   (* close_in inch; close_out outch *)
 
   let env (path : string) : unit =

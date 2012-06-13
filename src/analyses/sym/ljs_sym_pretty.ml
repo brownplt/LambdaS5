@@ -5,7 +5,7 @@ open Format
 open FormatExt
 
 let print_hidden = false
-let verbose_objs = true
+let verbose_objs = false
 
 let rec vert_intersperse a lst = match lst with
   | [] -> []
@@ -47,7 +47,7 @@ let rec value (v, rec_stuff) =
       end
     | None -> loc_box
   end
-  | Closure func -> text "(closure)"
+  | Closure _ -> text "(closure)"
   (* | Lambda (p,lbl, ret, exn, xs, e) -> *)
   (*   label verbose lbl (vert [squish [text "lam"; parens (horz (text "Ret" :: text ret :: text "," :: *)
   (*                                                                text "Exn" :: text exn :: text ";" ::  *)
@@ -64,7 +64,7 @@ and obj ((o, hide), rec_stuff) =
     horz ([text hide_str; text "NewSymObj";]
     @ if not verbose_objs then [] else
     [brackets (horz (map (fun loc -> text (Store.print_loc loc)) locs))])
-  | SymObj f -> helper f (hide_str ^ "@sym") rec_stuff
+  | SymObj (f, locs) -> helper f (hide_str ^ "@sym") rec_stuff
   | ConObj f -> helper f (hide_str ^ "@") rec_stuff
 and helper { attrs = attrsv; conps = conpsv; symps = sympsv; } prefix rec_stuff = 
   let do_val =
@@ -182,13 +182,14 @@ and con_prop (f, p) = prop ("'" ^ f ^ "'", p)
 ;;
 
 (*let to_string x = x Format.str_formatter; Format.flush_str_formatter();;*)
+
 let updateWith f k v m =
   Store.update k
     (try f v (Store.lookup k m)
     with Not_found -> v) m
 
 let invert_env pc : (id list) Store.t =
-  IdMap.fold
+  env_fold 
     (fun id vloc inv_map ->
       match sto_lookup_val vloc pc with
       | ObjPtr oloc -> updateWith (@) oloc [id] inv_map
@@ -219,11 +220,13 @@ let store { objs = objs; vals = vals } =
 
 let store_to_string = to_string store
 
-let env env_map = vert
-  (map (fun (id, loc) ->
-         horz [text id; text ":"; 
-               text (Store.print_loc loc);])
-       (IdMap.bindings env_map))
+let env the_env = vert
+  (env_fold
+    (fun id loc printers ->
+       (horz [text id; text ":"; 
+             text (Store.print_loc loc);])
+       :: printers)
+    the_env [])
 
 let env_to_string = to_string env
 

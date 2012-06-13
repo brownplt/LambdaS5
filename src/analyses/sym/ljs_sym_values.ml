@@ -27,6 +27,9 @@ exception TypeError of string
 type symbool = BTrue | BFalse | BSym of id
 type symstring = SString of string | SSym of id
 
+(* Stack of maps from var id to store locations *)
+type env = (Store.loc IdMap.t) list
+
 type value =
   (* Scalar types *)
   | Null
@@ -35,7 +38,7 @@ type value =
   | String of string
   | True
   | False
-  | Closure of (value list -> ctx -> int -> (result list * exresult list))
+  | Closure of id list * exp * env (* (args, body, env) *)
   (* ObjPtr is a pointer to an obj in the object store *)
   | ObjPtr of Store.loc
   (* NewSym is an uninitialized symbolic value,
@@ -47,9 +50,9 @@ type value =
 
 and objlit =
   | ConObj of objfields
-  | SymObj of objfields
-  (* Placeholder for uninitialized sym objects
-   * Holds the locs of all objects in the store when it was created *)
+  (* Holds the locs of all objects in the store when it was created *)
+  | SymObj of objfields * Store.loc list
+  (* Placeholder for uninitialized sym objects *)
   | NewSymObj of Store.loc list
 and objfields = { attrs: attrsv;
                   conps: propv IdMap.t; (* props with concrete field names *)
@@ -88,8 +91,6 @@ and ctx = { constraints : sym_exp list;
             (* if true, new objs will be hidden in the store *)
             hide_objs : bool;
             print_env : env; }
-
-and env = Store.loc IdMap.t
 
 (* language of constraints *)
 and sym_exp =
@@ -160,30 +161,40 @@ let bind_both (ret, exn) f g =
 let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
 let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
 
-let collect res_list = 
+let collect cmp res_list = 
   map (fun grp -> (fst (List.hd grp), map snd grp))
-    (group (fun (v1,_) (v2,_) -> compare v1 v2) res_list)
+    (group (fun (v1,_) (v2,_) -> cmp v1 v2) res_list)
+
+(* Abstraction for environment.
+ * We use a list to represent a stack of variable binding maps. *)
+(* TODO It might be more efficient to replace this with a stack
+ * containing only the changed binding at each level. This would save time
+ * during garbage collection, but lose time during lookup. There must
+ * be a good compromise... *)
+let mt_env = [IdMap.empty]
+
+(* These functions all operate on the top of the env stack.
+ * I.e., they operate on the current scope of the program.
+ * This is what most of the evaluator thinks of as "environment" *)
+let cur_env = List.hd
+let env_lookup id env = IdMap.find id (cur_env env)
+let env_mem id env = IdMap.mem id (cur_env env)
+(* env_add creates a new env on the stack,
+ * identical except for the new addition *)
+let env_add id loc env = (IdMap.add id loc (cur_env env)) :: env
+let env_fold f env acc = IdMap.fold f (cur_env env) acc 
+
+(* We can later add functions that take advantage of the
+ * entire stack, which will be useful for the garbage collector *)
+
 
 let mtPath = {
   constraints = [];
   vars = IdMap.empty;
   store = { objs = Store.empty; vals = Store.empty };
   hide_objs = true;
-  print_env = IdMap.empty; (* the env to use when printing results *)
+  print_env = mt_env; (* the env to use when printing results *)
 }
-
-let ty_to_string t = match t with
-  | TNull -> "TNull"
-  | TUndef -> "TUndef"
-  | TString -> "TString"
-  | TSymString -> "TSymString"
-  | TBool -> "TBool"
-  | TNum -> "TNum"
-  | TObjPtr -> "TObjPtr"
-  | TFun arity -> "TFun(" ^ (string_of_int arity) ^ ")"
-  | TAny -> "TAny"
-  | TData -> "TData"
-  | TAccessor -> "TAccessor"
 
 let add_var id ty hint ctx = 
   { ctx with vars = IdMap.add id (ty, hint) ctx.vars }
@@ -209,6 +220,19 @@ let field_str field ctx =
   match field with
   | SymField f -> (f, add_var f TSymString f ctx)
   | ConField f -> const_string f ctx
+
+let ty_to_string t = match t with
+  | TNull -> "TNull"
+  | TUndef -> "TUndef"
+  | TString -> "TString"
+  | TSymString -> "TSymString"
+  | TBool -> "TBool"
+  | TNum -> "TNum"
+  | TObjPtr -> "TObjPtr"
+  | TFun arity -> "TFun(" ^ (string_of_int arity) ^ ")"
+  | TAny -> "TAny"
+  | TData -> "TData"
+  | TAccessor -> "TAccessor"
 
 let check_type id t pc =
   try 
@@ -309,6 +333,12 @@ let new_sym hint pc =
       pc.store.objs [] in
   new_sym_from_locs locs "" hint pc
 
+(* A fresh sym is a new sym that isn't equal to any objects
+ * already in the store. *)
+(* TODO probably still want to allow its prototype to have locs *)
+let new_sym_fresh hint pc =
+  new_sym_from_locs [] "" hint pc
+
 (* Creates a new sym obj whose attributes are all symbolic. Most are scalars, or scalar
  * opts, except for the prototype, which could be a scalar (hopefully Null) or an obj, so
  * we use a NewSym. The locs for this NewSym (i.e., the locs of every object it could be
@@ -320,14 +350,15 @@ let init_sym_obj locs loc hint_s pc =
   let proto, pc = new_sym_from_locs locs "proto"
                           ("new %proto for " ^ (Store.print_loc loc)) pc in
   let proto_loc, pc = sto_alloc_val proto pc in
-  bind (alloc_sym_scalar_opt "code" "code attr" pc)
-    (fun (code_loc_opt, pc) ->
-      bind (alloc_sym_scalar_opt "primval" "primval attr" pc)
-        (fun (pv_loc_opt, pc) ->
-          let ret = (SymObj {
-            attrs = { code = code_loc_opt; proto = proto_loc; extensible = sym_ext;
-                      klass = sym_klass; primval = pv_loc_opt };
-            conps = IdMap.empty;
-            symps = IdMap.empty
-          }) in
-          return ret (sto_update_obj loc ret pc)))
+  (*bind (alloc_sym_scalar_opt "code" "code attr" pc) *)
+  (*  (fun (code_loc_opt, pc) ->*)
+  (*    bind (alloc_sym_scalar_opt "primval" "primval attr" pc)*)
+  (*      (fun (pv_loc_opt, pc) ->*)
+  let pv_loc, pc = alloc_sym_scalar "primval" "primval attr" pc in
+  let ret = SymObj ({
+    attrs = { code = None; proto = proto_loc; extensible = sym_ext;
+              klass = sym_klass; primval = Some pv_loc };
+    conps = IdMap.empty;
+    symps = IdMap.empty
+  }, locs) in
+  return ret (sto_update_obj loc ret pc)
