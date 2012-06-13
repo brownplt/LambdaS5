@@ -83,14 +83,14 @@ and exresult = exval * ctx
 (* Obj store holds (obj, hide), where hide = true indicates
  * that the object is an LJS internal and therefore not a
  * possible assignment for a new sym value. *)
-and ('valty, 'objty) sto_type =
-  { vals : 'valty Store.t;
-    objs : ('objty * bool) Store.t }
-and sto = (value, objlit) sto_type 
+and ('v, 'o) sto =
+  { vals : 'v Store.t;
+    objs : 'o Store.t }
+and sto_type = (value, objlit * bool) sto
 
 and ctx = { constraints : sym_exp list;
             vars : typeEnv;
-            store : sto;
+            store : sto_type;
             (* if true, new objs will be hidden in the store *)
             hide_objs : bool;
             print_env : env; }
