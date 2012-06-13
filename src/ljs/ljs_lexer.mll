@@ -10,15 +10,6 @@ let comment_start_p = ref dummy_pos
 
 let block_comment_buf = Buffer.create 120
 
-(* Requires: start < String.length str *)
-let rec drop_spaces (str : string) (start : int) = 
-  match String.get str start with
-    ' '  -> drop_spaces str (start + 1)
-  | '\t' -> drop_spaces str (start + 1)
-  | '\r' -> drop_spaces str (start + 1)
-  | '\n' -> drop_spaces str (start + 1)
-  |  _   -> String.sub str start (String.length str - start)
-
 (* TODO: if integer conversions overflow, treat as a float *)
 let parse_num_lit (s : string) : token =
   if S.contains s 'x' || S.contains s 'X'
