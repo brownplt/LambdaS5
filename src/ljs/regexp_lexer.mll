@@ -4,45 +4,37 @@
   open Regexp_parser
   open Regexp_syntax
 
-
-module S = String
-
-let comment_start_p = ref dummy_pos
-
-let block_comment_buf = Buffer.create 120
-
-(* TODO: if integer conversions overflow, treat as a float *)
-let parse_num_lit (s : string) : token =
-  if S.contains s 'x' || S.contains s 'X'
-    then INT (int_of_string s)
-    else if S.contains s '.'
-           then NUM (float_of_string s)
-           else if S.contains s 'e' || S.contains s 'E'
-                  then NUM (float_of_string s)
-                  else INT (int_of_string s)
 }
 
 (* dec_digit+ corresponds to DecimalDigits in the spec. *)
 let dec_digit = ['0'-'9']
 
-let signed_int = dec_digit+ | ('+' dec_digit+) | ('-' dec_digit+)
-
-let expt_part = ['e' 'E'] signed_int
-
 let dec_int_lit = '0' | (['1'-'9'] dec_digit*)
 
-let hex = ['0'-'9' 'A'-'f' 'a'-'f']
+let hex = ['0'-'9' 'A'-'F' 'a'-'f']
 
-let hex_lit = ("0x" | "0X") hex+
+let hex_lit = "x" hex hex
 
-let dec_lit = 
-  (signed_int '.' dec_digit* expt_part?) | 
-  ('.' dec_digit+ expt_part?) |
-  (dec_int_lit expt_part?)
-
-let num_lit = dec_lit | hex_lit
+let unicode_lit = "u" hex hex hex hex
 
 let ident = ['a'-'z' 'A'-'Z' '$' '_' '%']['%']?['a'-'z' 'A'-'Z' '0'-'9' '$' '_' '-']*
+
+(* http://es5.github.com/#x15.10 *)
+let pattern_character = [^ '\\' '$' '.' '*' '+' '?' '(' ')' '[' ']' '{' '}' '|']
+let control_escape = '\\'['f' 'n' 'r' 't' 'v']
+let control_letter = '\\''c'['a'-'z' 'A'-'Z']
+
+(* NOTE(joe): This is incompletely implemented.  These are characters
+that can be escaped to represent themselves.  In the spec, this is
+defined as SourceCharacter (any unicode character) *but not* an
+IdentifierPart, which contains interesting sets like alphanumerics, _, $,
+and others.  Since ocamllex doesn't have support for unicode, I'm punting
+on this right now.  Ulex (available at
+http://www.cduce.org/download.html) is the right choice, but we should
+move all our parsers to Ulex at once when we decide it's a deal breaker,
+since eval and other pieces of the toolchain also have unicode issues. *)
+
+let identity_lit = '\\'[^ 'a'-'z' 'A'-'Z' '0'-'9' '$' '_' '-']
 
 let digit = ['0'-'9']
 
@@ -56,6 +48,7 @@ rule token = parse
   | "$" { DOLLAR }
   | "^" { CARET }
   | "=" { EQUALS }
+  | "." { DOT }
   | "*" { TIMES }
   | "+" { PLUS }
   | "?" { QUESTION }
@@ -64,9 +57,14 @@ rule token = parse
   | "}" { RBRACE }
   | "[" { LBRACK }
   | "]" { RBRACK }
-  | "b" { LITTLEB }
-  | "B" { BIGB }
-  | num_lit as x { parse_num_lit x }
-  | hex_lit { HEX }
+  | "\\b" { BACKLITTLEB }
+  | "\\B" { BACKBIGB }
+  | control_escape as x { CONTROLESCAPE x }
+  | control_letter as x { CONTROLLETTER x }
+  | pattern_character as x { PATTERNC (Char.escaped x) }
+  | dec_int_lit as x { INT (int_of_string x) }
+  | hex_lit as x { HEX x }
+  | unicode_lit as x { UNICODE x }
+  | identity_lit as x { IDENTITY x }
 
   | eof { EOF }
