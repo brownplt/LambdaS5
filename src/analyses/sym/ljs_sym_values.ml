@@ -187,8 +187,13 @@ let env_mem id env = IdMap.mem id (cur_env env)
 let env_add id loc env = (IdMap.add id loc (cur_env env)) :: env
 let env_fold f env acc = IdMap.fold f (cur_env env) acc 
 
-(* We can later add functions that take advantage of the
- * entire stack, which will be useful for the garbage collector *)
+(* Functions that take advantage of the entire stack,
+ * which are useful for the garbage collector. *)
+
+(* Returns a list of all bindings in the env.
+ * May contain duplicates. *)
+let env_bindings env = List.concat (map IdMap.bindings env)
+
 
 
 let mtPath = {

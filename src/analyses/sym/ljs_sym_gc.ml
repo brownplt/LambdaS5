@@ -9,7 +9,9 @@ let init_mstore (store : sto_type) : marked_store =
   { vals = Store.map mark_false store.vals;
     objs = Store.map mark_false store.objs; }
 
-let root_set env = [] (* TODO *)
+(* The root set is the *set* of all locs in the env.
+ * We'll represent it with a list with no duplicates. *)
+let root_set env = nub (map snd (env_bindings env))
 
 let mark_true loc v sto = Store.update loc (v, true) sto
 

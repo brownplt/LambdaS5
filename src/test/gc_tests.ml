@@ -25,10 +25,17 @@ let mt = Store.empty
 let string_of_list = String.concat ", "
 let string_of_locs locs = string_of_list (map Store.print_loc locs)
 
-let assert_equal_locs =
+let sort = List.sort compare
+
+let assert_equal_locs locs1 locs2 =
+  assert_equal ~printer: string_of_locs
+    (sort locs1) (sort locs2)
+
+let assert_equal_locs_pair (l11, l12) (l21, l22) =
   assert_equal ~printer: (fun (l1, l2) ->
     "(marked: " ^ string_of_locs l1
     ^ ", unmarked: " ^ string_of_locs l2 ^ ")")
+    (sort l11, sort l12) (sort l21, sort l22)
 
 let vloc1, vals1 = Store.alloc (String "v1") Store.empty
 let vloc2, vals2 = Store.alloc (String "v2") vals1
@@ -37,23 +44,23 @@ let vloc4, vals4 = Store.alloc Null vals3
 
 let basic_mark_tests = "Basic mark tests" >::: [
   ("basic1" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([vloc1], [])
        (vlocs (mark_val vloc1
                  (init_mstore (sto vals1 mt)))));
   ("basic2" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([vloc1], [vloc2])
        (vlocs (mark_val vloc1
                  (init_mstore (sto vals2 mt)))));
   ("basic3" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([vloc1; vloc2], [])
        (vlocs (mark_val vloc1
                  (mark_val vloc2
                     (init_mstore (sto vals2 mt))))));
   ("basic4" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([vloc1; vloc3], [vloc2])
        (vlocs (mark_val vloc3
                  (mark_val vloc1
@@ -74,12 +81,12 @@ let ptrloc6, vals6 = Store.alloc (ObjPtr oloc6) vals4
 
 let obj_ptr_mark_tests = "ObjPtr mark tests" >::: [
   ("ptr1" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([oloc5], [])
        (olocs (mark_val ptrloc5
                  (init_mstore (sto vals5 objs5)))));
   ("ptr2 - through props and proto" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([vloc1; vloc2; vloc3; ptrloc6], [vloc4])
        (vlocs (mark_val ptrloc6
                  (init_mstore (sto vals6 objs6)))));
@@ -99,17 +106,17 @@ let ptrloc9, vals9 = Store.alloc (NewSym ("v8", [oloc6])) vals6
 let sym_mark_tests = "Sym loc lists mark tests" >::: [
   (* Following sym loc lists *)
   ("sym1 - SymObj loc list" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([oloc5; oloc6; oloc7], [])
        (olocs (mark_val ptrloc7
                  (init_mstore (sto vals7 objs7)))));
   ("sym2 - NewSymObj loc list" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([oloc5; oloc8], [oloc6])
        (olocs (mark_val ptrloc8
                  (init_mstore (sto vals8 objs8)))));
   ("sym3 - NewSym loc list" >:: fun () ->
-     assert_equal_locs
+     assert_equal_locs_pair
        ([vloc1; vloc2; vloc3; ptrloc9], [vloc4; ptrloc6])
        (vlocs (mark_val ptrloc9
                  (init_mstore (sto vals9 objs8)))));
@@ -119,21 +126,29 @@ let sym_mark_tests = "Sym loc lists mark tests" >::: [
 (*let closure_mark_tests = "Closure mark tests" >::: [*)
 (*  ("closure1" >:: fun () ->*)
 
+let env1 = env_add "v1" vloc1 mt_env
+let env2 = env_add "v2" vloc2 env1
+let env3 = env_add "v2" vloc3 env2
+let env4 = env_add "v3" vloc1 env2
 
-(*let env1 = env_add "v1" vloc1 mt_env*)
-(*let env2 = env_add "v2" vloc2 env1*)
-(*let env3 = env_add "v3" vloc3 env2 *)
-(*let env3' = env_add "v3" vloc1 env3 [> shadowing <]*)
-(*let env4 = env_add "ptr4" vloc4 env3*)
-(*let env5 = env_add "ptr5" vloc5 env4*)
-(*let env6 = env_add "ptr6" vloc6 env5 *)
-(*let env7 = env_add "ptr7" vloc7 env6*)
-(*let env8 = env_add "v8" vloc8 env7*)
+let root_set_tests = "Root set tests" >::: [
+  ("root0" >:: fun () ->
+     assert_equal_locs [] (root_set mt_env));
+  ("root1" >:: fun () ->
+     assert_equal_locs [vloc1] (root_set env1));
+  ("root2" >:: fun () ->
+     assert_equal_locs [vloc1; vloc2] (root_set env2));
+  ("root3 - shadowing" >:: fun () ->
+     assert_equal_locs [vloc1; vloc2; vloc3] (root_set env3));
+  ("root4 - dup locs" >:: fun () ->
+     assert_equal_locs [vloc1; vloc2] (root_set env4));
+]
 
 let tests = "All GC tests" >::: [
   basic_mark_tests;
   obj_ptr_mark_tests;
   sym_mark_tests;
+  root_set_tests;
 ]
 
 let _ = run_test_tt_main tests
