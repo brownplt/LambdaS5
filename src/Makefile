@@ -1,6 +1,6 @@
 .PHONY = clean builddir debug
 
-INCLUDES = analyses/cfg,analyses/cps,analyses/sym,js,exprjs,ljs,util,experimental
+INCLUDES = analyses/cfg,analyses/cps,analyses/sym,js,exprjs,ljs,util,experimental,test
 
 OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix,str,graph -lflags -I,../lib -Is $(INCLUDES) -cflags -annot -cflags -I,../lib -Is $(INCLUDES)
 
@@ -16,4 +16,6 @@ clean:
 builddir:
 	@mkdir ../obj 2> /dev/null || true
 
+test: debug
+	$(OCAMLBUILD) regexp_tests.d.byte
 

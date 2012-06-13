@@ -76,8 +76,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
   | E.RegExpr (p, s) -> 
     let re_attrs = { S.primval = None;
                      S.code = None;
-                     S.proto = Some (S.Id (p, "%RegexpProto"));
-                     S.klass = "Regexp"; (* correct? *)
+                     S.proto = Some (S.Id (p, "%RegExpProto"));
+                     S.klass = "RegExp"; (* correct? *)
                      S.extensible = true; } in
     let lit_data = S.Data ({S.value = S.String (p, s); S.writable = false;}, false, false) in
     S.Object (p, re_attrs, [("%lit", lit_data)])
