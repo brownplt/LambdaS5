@@ -23,16 +23,6 @@ let unbool b = match b with
 let interp_error pos message =
   raise (PrimErr ([], String ("[interp] (" ^ Pos.string_of_pos pos ^ ") " ^ message)))
 
-let apply p store func args = match func with
-  | Closure c -> c args store
-  | ObjLoc loc -> begin match get_obj store loc with
-      | ({ code = Some (Closure c) }, _) -> c args store
-      | _ -> failwith "Applied an object without a code attribute"
-  end
-  | _ -> failwith (interp_error p 
-                     ("Applied non-function, was actually " ^ 
-                         pretty_value func))
-
 let rec get_prop p store obj field =
   match obj with
     | Null -> None
@@ -184,6 +174,24 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       | Stack_overflow ->
         raise (PrimErr ([exp], String "s5_eval overflowed the Ocaml stack"))
     end in
+  let rec apply p store func args = match func with
+    | Closure (env, xs, body) ->
+      let alloc_arg argval argname (store, env) =
+        let (new_loc, store) = add_var store argval in
+        let env' = IdMap.add argname new_loc env in
+        (store, env') in
+      if (List.length args) != (List.length xs) then
+        arity_mismatch_err p xs args
+      else
+        let (store, env) = (List.fold_right2 alloc_arg args xs (store, env)) in
+        eval body env store
+    | ObjLoc loc -> begin match get_obj store loc with
+        | ({ code = Some f }, _) -> apply p store f args
+        | _ -> failwith "Applied an object without a code attribute"
+    end
+    | _ -> failwith (interp_error p 
+                       ("Applied non-function, was actually " ^ 
+                         pretty_value func)) in
   match exp with
   | S.Hint (_, _, e) -> eval e env store
   | S.Undefined _ -> Undefined, store
@@ -471,22 +479,14 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
   | S.Throw (p, e) -> let (v, s) = eval e env store in
     raise (Throw ([], v, s))
   | S.Lambda (p, xs, e) -> 
-    let alloc_arg argval argname (store, env) =
-      let (new_loc, store) = add_var store argval in
-      let env' = IdMap.add argname new_loc env in
-      (store, env') in
-    let closure args store =
-      if (List.length args) != (List.length xs) then
-        arity_mismatch_err p xs args
-      else
-        let (store, env) = (List.fold_right2 alloc_arg args xs (store, env)) in
-        eval e env store in
-    Closure closure, store
+    Closure (env, xs, e), store
   | S.Eval (p, e) ->
     begin match eval e env store with
       | String s, store -> eval_op s env store jsonPath
       | v, store -> v, store
     end
+
+
 
 and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ Pos.string_of_pos p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 

@@ -5,6 +5,9 @@ open Ljs_pretty
 open Format
 open FormatExt
 
+type env = Store.loc IdMap.t
+type label = string
+
 type value =
   | Null
   | Undefined
@@ -15,7 +18,7 @@ type value =
       (* Objects shouldn't have VarCells in them, but can have any of
       the other kinds of values *)
   | ObjLoc of Store.loc
-  | Closure of (value list -> store -> (value * store))
+  | Closure of env * id list * exp
 and store = ((attrsv * (propv IdMap.t)) Store.t * value Store.t)
 and
   attrsv = { code : value option;
@@ -51,9 +54,6 @@ let add_var (objs, vars) new_val =
   let new_loc, vars' = Store.alloc new_val vars in
   new_loc, (objs, vars')
 
-type env = Store.loc IdMap.t
-type label = string
-
 exception Break of exp list * label * value * store
 exception Throw of exp list * value * store
 
@@ -64,8 +64,8 @@ let pretty_value v = match v with
   | False -> "false"
   | Undefined -> "undefined"
   | Null -> "null"
-  | Closure c -> "function"
-  | ObjLoc o -> "object"
+  | Closure _ -> "function"
+  | ObjLoc _ -> "object"
 
 let pretty_valuef v = text (pretty_value v)
 
