@@ -10,16 +10,17 @@ let attrs k ploc =
 let prop vloc =
   (Data ({ value = vloc; writable = BTrue }, BTrue, BTrue))
 
+let locs_of s = map fst (Store.bindings s)
+
 let locs get_one_store mstore =
   let marked, unmarked =
     Store.partition (fun _ (_, mkd) -> mkd) (get_one_store mstore) in
-  let locs_of s = map fst (Store.bindings s) in
   (locs_of marked, locs_of unmarked)
 
 let vlocs = locs (fun msto -> msto.vals)
 let olocs = locs (fun msto -> msto.objs)
 
-let sto vs os = { vals = vs; objs = os }
+let sto vs os = mstore_of_store { vals = vs; objs = os }
 let mt = Store.empty
 
 let string_of_list = String.concat ", "
@@ -47,24 +48,24 @@ let basic_mark_tests = "Basic mark tests" >::: [
      assert_equal_locs_pair
        ([vloc1], [])
        (vlocs (mark_val vloc1
-                 (init_mstore (sto vals1 mt)))));
+                 (sto vals1 mt))));
   ("basic2" >:: fun () ->
      assert_equal_locs_pair
        ([vloc1], [vloc2])
        (vlocs (mark_val vloc1
-                 (init_mstore (sto vals2 mt)))));
+                 (sto vals2 mt))));
   ("basic3" >:: fun () ->
      assert_equal_locs_pair
        ([vloc1; vloc2], [])
        (vlocs (mark_val vloc1
                  (mark_val vloc2
-                    (init_mstore (sto vals2 mt))))));
+                    (sto vals2 mt)))));
   ("basic4" >:: fun () ->
      assert_equal_locs_pair
        ([vloc1; vloc3], [vloc2])
        (vlocs (mark_val vloc3
                  (mark_val vloc1
-                    (init_mstore (sto vals3 mt))))));
+                    (sto vals3 mt)))));
 ]
 
 let oloc5, objs5 = Store.alloc
@@ -84,12 +85,12 @@ let obj_ptr_mark_tests = "ObjPtr mark tests" >::: [
      assert_equal_locs_pair
        ([oloc5], [])
        (olocs (mark_val ptrloc5
-                 (init_mstore (sto vals5 objs5)))));
+                 (sto vals5 objs5))));
   ("ptr2 - through props and proto" >:: fun () ->
      assert_equal_locs_pair
        ([vloc1; vloc2; vloc3; ptrloc6], [vloc4])
        (vlocs (mark_val ptrloc6
-                 (init_mstore (sto vals6 objs6)))));
+                 (sto vals6 objs6))));
 ]
 
 let oloc7, objs7 = Store.alloc
@@ -109,31 +110,27 @@ let sym_mark_tests = "Sym loc lists mark tests" >::: [
      assert_equal_locs_pair
        ([oloc5; oloc6; oloc7], [])
        (olocs (mark_val ptrloc7
-                 (init_mstore (sto vals7 objs7)))));
+                 (sto vals7 objs7))));
   ("sym2 - NewSymObj loc list" >:: fun () ->
      assert_equal_locs_pair
        ([oloc5; oloc8], [oloc6])
        (olocs (mark_val ptrloc8
-                 (init_mstore (sto vals8 objs8)))));
+                 (sto vals8 objs8))));
   ("sym3 - NewSym loc list" >:: fun () ->
      assert_equal_locs_pair
        ([vloc1; vloc2; vloc3; ptrloc9], [vloc4; ptrloc6])
        (vlocs (mark_val ptrloc9
-                 (init_mstore (sto vals9 objs8)))));
+                 (sto vals9 objs8))));
 ]
 
-(* TODO closure relies on root set finding *)
-(*let closure_mark_tests = "Closure mark tests" >::: [*)
-(*  ("closure1" >:: fun () ->*)
-
-let env1 = env_add "v1" vloc1 mt_env
+let env1 = env_add "v1" vloc1 mt_envs
 let env2 = env_add "v2" vloc2 env1
 let env3 = env_add "v2" vloc3 env2
 let env4 = env_add "v3" vloc1 env2
 
 let root_set_tests = "Root set tests" >::: [
   ("root0" >:: fun () ->
-     assert_equal_locs [] (root_set mt_env));
+     assert_equal_locs [] (root_set mt_envs));
   ("root1" >:: fun () ->
      assert_equal_locs [vloc1] (root_set env1));
   ("root2" >:: fun () ->
@@ -144,11 +141,51 @@ let root_set_tests = "Root set tests" >::: [
      assert_equal_locs [vloc1; vloc2] (root_set env4));
 ]
 
+let val_locs sto = locs_of sto.vals
+let obj_locs sto = locs_of sto.objs
+
+(* These assume the basic tests for mark passed *)
+let sweep_tests = "Sweep tests" >::: [
+  ("sweep1" >:: fun () ->
+     assert_equal_locs []
+       (val_locs (sweep (sto vals1 mt))));
+  ("sweep2" >:: fun () ->
+     assert_equal_locs [vloc1]
+       (val_locs (sweep (mark_val vloc1 (sto vals1 mt)))));
+  ("sweep3" >:: fun () ->
+     assert_equal_locs [vloc1]
+       (val_locs (sweep (mark_val vloc1 (sto vals2 mt)))));
+  ("sweep4" >:: fun () ->
+     assert_equal_locs [oloc6]
+       (obj_locs (sweep (mark_val ptrloc6 (sto vals6 objs6)))));
+]
+
+let undef = Ljs_syntax.Undefined Pos.dummy
+let cloc10, vals10 = Store.alloc (Closure ([], undef, cur_env env1)) vals1
+let env11 = env_add "f" cloc10 env1
+let vals11 = Store.update cloc10 (Closure ([], undef, cur_env env11)) vals10
+
+(* These assume that root set tests passed *)
+let closure_tests = "Closure tests" >::: [
+  ("closure1" >:: fun () ->
+     assert_equal_locs_pair
+       ([vloc1; cloc10], [])
+       (vlocs (mark_val cloc10
+                 (sto vals10 mt))));
+  ("closure2 - recursive" >:: fun () ->
+     assert_equal_locs_pair
+       ([vloc1; cloc10], [])
+       (vlocs (mark_val cloc10
+                 (sto vals11 mt))));
+]
+
 let tests = "All GC tests" >::: [
   basic_mark_tests;
   obj_ptr_mark_tests;
   sym_mark_tests;
   root_set_tests;
+  sweep_tests;
+  closure_tests;
 ]
 
 let _ = run_test_tt_main tests

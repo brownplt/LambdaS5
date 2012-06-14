@@ -97,6 +97,9 @@ val iota : int -> int list
 val curry : ('a * 'b -> 'c) -> ('a -> 'b -> 'c)
 val uncurry : ('a -> 'b -> 'c) -> ('a * 'b -> 'c)
 
+(* Switches the order of args for a two-arg function *)
+val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
+
 (** [group cmp lst] collects like elts of [lst] into lists using [cmp] to check equality.
   * Returns a list of lists, where all like elts are in one sublist *)
 val group : ('a -> 'a -> int) -> 'a list -> 'a list list 

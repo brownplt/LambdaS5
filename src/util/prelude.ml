@@ -150,6 +150,8 @@ let iota n = iota' (n - 1) []
 let curry f = (fun a b -> f(a,b))
 let uncurry f = (fun (a,b) -> f a b)
 
+let flip f = (fun a b -> f b a)
+
 let group (cmp : ('a -> 'a -> int)) (lst : 'a list) : 'a list list =
   let sorted = List.sort cmp lst in
   List.fold_left

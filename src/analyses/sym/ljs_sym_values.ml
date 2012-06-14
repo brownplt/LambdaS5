@@ -27,8 +27,10 @@ exception TypeError of string
 type symbool = BTrue | BFalse | BSym of id
 type symstring = SString of string | SSym of id
 
-(* Stack of maps from var id to store locations *)
-type env = (Store.loc IdMap.t) list
+(* Maps var ids to store locations *)
+type env = (id * Store.loc) list
+(* Represents the envs in the call stack of the evaluator *)
+type env_stack = env list
 
 type value =
   (* Scalar types *)
@@ -168,32 +170,40 @@ let collect cmp res_list =
   map (fun grp -> (fst (List.hd grp), map snd grp))
     (group (fun (v1,_) (v2,_) -> cmp v1 v2) res_list)
 
-(* Abstraction for environment.
- * We use a list to represent a stack of variable binding maps. *)
-(* TODO It might be more efficient to replace this with a stack
- * containing only the changed binding at each level. This would save time
- * during garbage collection, but lose time during lookup. There must
- * be a good compromise... *)
-let mt_env = [IdMap.empty]
+(* Abstraction for environment *)
 
-(* These functions all operate on the top of the env stack.
- * I.e., they operate on the current scope of the program.
- * This is what most of the evaluator thinks of as "environment" *)
-let cur_env = List.hd
-let env_lookup id env = IdMap.find id (cur_env env)
-let env_mem id env = IdMap.mem id (cur_env env)
-(* env_add creates a new env on the stack,
- * identical except for the new addition *)
-let env_add id loc env = (IdMap.add id loc (cur_env env)) :: env
-let env_fold f env acc = IdMap.fold f (cur_env env) acc 
+(* The "environment" is actually a stack of envs, representing
+ * the call stack. The top env on the stack has the all of the
+ * bindings currently in scope. *)
+let mt_env = []
+let mt_envs = [mt_env]
 
-(* Functions that take advantage of the entire stack,
- * which are useful for the garbage collector. *)
-
-(* Returns a list of all bindings in the env.
+(* Functions that take advantage of the entire stack, which
+ * are useful for the garbage collector and for closures. *)
+let cur_env envs = List.hd envs
+let f_cur_env f envs = (f (List.hd envs)) :: (List.tl envs)
+let push_env env envs = env :: envs
+(* Returns a list of all bindings in the env stack.
  * May contain duplicates. *)
-let env_bindings env = List.concat (map IdMap.bindings env)
+let envs_bindings envs =
+  fold_left
+    (fun bindings env ->
+       List.rev_append env bindings)
+    [] envs
 
+(* Functions that operate on an env stack as if it were
+ * just the top env on the stack. This is useful when we 
+ * only care about the current scope. *)
+let env_lookup id envs = List.assoc id (cur_env envs)
+let env_mem id envs = List.mem_assoc id (cur_env envs)
+let env_add id loc envs =
+  f_cur_env (fun env -> (id, loc) :: env) envs
+
+(* Functions on one env *)
+let env_fold f env acc = (* includes shadowed bindings *)
+  List.fold_right 
+    (fun (id, loc) acc -> f id loc acc)
+    env acc
 
 
 let mtPath = {
