@@ -23,6 +23,11 @@ let stop_sym_keyword = "STOP SYM EVAL"
 
 (* flags for debugging *)
 let print_store = false (* print store at each eval call *)
+let gc_on = true (* do garbage collection *) 
+
+let do_gc envs pc = 
+  if not gc_on then pc else
+  { pc with store = garbage_collect envs pc.store }
 
 let val_sym v = match v with SymScalar x -> (SId x) | _ -> (Concrete v)
 
@@ -531,7 +536,7 @@ let rec eval jsonPath maxDepth depth
       (* This catches new syms in handwritten LJS, but not desugared JS.
        * Desugared JS new syms are caught in GetField. *)
       if x = new_sym_keyword then begin
-        let pc = { pc with store = garbage_collect envs pc.store } in
+        let pc = do_gc envs pc in
         uncurry return
           (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
       end
@@ -877,7 +882,7 @@ let rec eval jsonPath maxDepth depth
                * Also need to make sure hasProperty returns true. *)
               match fv with
               | String fstr when fstr = new_sym_keyword ->
-                let pc = { pc with store = garbage_collect envs pc.store } in
+                let pc = do_gc envs pc in
                 uncurry return
                   (new_sym (new_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
               | String fstr when fstr = fresh_sym_keyword ->

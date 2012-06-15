@@ -91,6 +91,8 @@ let garbage_collect (envs : env_stack) (store : sto_type) : sto_type =
     printf "START GC\n";
     printf "Current time: %f secs\n" start_time;
     printf "Store size: %d (%d vals, %d objs)\n" t v o;
+    let h = Store.fold (fun _ (_, hide) count -> if hide then count + 1 else count) store.objs 0 in
+    printf "Num hidden objs: %d" h;
     print_newline();
 
     let new_store = sweep (mark envs store) in
@@ -102,6 +104,8 @@ let garbage_collect (envs : env_stack) (store : sto_type) : sto_type =
     printf "END GC\n";
     printf "Current time: %f secs\n" end_time;
     printf "Store size: %d (%d vals, %d objs)\n" t' v' o';
+    let h = Store.fold (fun _ (_, hide) count -> if hide then count + 1 else count) new_store.objs 0 in
+    printf "Num hidden objs: %d" h;
     print_newline();
     printf "RESULTS\n";
     printf "Time taken: %f secs\n" (end_time -. start_time);
