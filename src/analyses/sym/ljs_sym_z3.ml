@@ -384,7 +384,10 @@ let z3prelude = "\
                      (STR (s Str))
                      (OBJPTR (loc Int))
                      (FUN (f Fun)))))
-(declare-fun prim->str (JS) Str)\n"
+
+(declare-fun prim->str (JS) Str)
+(define-fun primitive? ((x JS)) Bool true)
+"
 
 let is_sat (p : ctx) hint : bool =
   (* Only ask z3 if we have constraints to ask about *)
