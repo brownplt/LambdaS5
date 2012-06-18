@@ -1,4 +1,4 @@
-// "ok", "ok"
+// "ok"
 // could be scalars or objects
 let (x = NEWSYM)
 let (y = x)
