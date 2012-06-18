@@ -931,7 +931,7 @@ let rec eval jsonPath maxDepth depth
                         (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
                   (fun (new_obj, pc) ->
                     return newval (sto_update_obj obj_loc new_obj pc))
-              else throw_str "SetField NYI for non-writable fields" pc)
+              else throw_str ("Can't write to non-writable field " ^ fst (field_str f pc)) pc)
         | Some (Accessor ({ setter = sloc; }, _, _)) ->
           apply p (sto_lookup_val sloc pc) setter_params envs pc nested_eval
         | None -> add_field obj_loc f newval pc

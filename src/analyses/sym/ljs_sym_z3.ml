@@ -6,6 +6,7 @@ open Prelude
 open Format
 open FormatExt
 
+
 let log_z3 = true
 let simple_print = true (* print in human readable form *)
 
@@ -367,6 +368,7 @@ let z3prelude = "\
 (declare-fun length (Str) Real)
 (declare-fun strlen (Str) Real)
 (declare-fun char-at (Str Real) Str)
+(declare-fun numstr->num (Str) Real)
 
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
@@ -389,7 +391,10 @@ let z3prelude = "\
 (define-fun primitive? ((x JS)) Bool true)
 "
 
+let tot = ref 0.;;
+
 let is_sat (p : ctx) hint : bool =
+  let t1 = Sys.time() in
   (* Only ask z3 if we have constraints to ask about *)
   match List.filter (fun c -> match c with Hint _ -> false | _ -> true) p.constraints with
   | [] -> true | _ ->
@@ -467,5 +472,11 @@ let is_sat (p : ctx) hint : bool =
   let  _ = Unix.close_process (inch, outch) in
   if log_z3 then Printf.printf "z3 said: %s\n\n" res;
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
+  if log_z3 then begin
+    let t2 = Sys.time() in
+    tot := !tot +. (t2 -. t1);
+    Printf.printf "z3 took: %f secs\n" (t2 -. t1);
+    Printf.printf "total: %f secs\n\n" (!tot)
+  end;
   (res = "sat")
     
