@@ -6,7 +6,6 @@ open Ljs
 open Ljs_sym_values
 open Ljs_sym_delta
 open Ljs_sym_z3
-open Ljs_sym_compare
 open Ljs_sym_gc
 open Ljs_pretty
 open SpiderMonkey
@@ -209,8 +208,7 @@ let get_obj_attr oattr attrs pc = match attrs, oattr with
   | { code=Some cloc}, S.Code -> return (sto_lookup_val cloc pc) pc
   | { code=None}, S.Code -> return Null pc
   | { primval=Some pvloc}, S.Primval -> return (sto_lookup_val pvloc pc) pc
-  | { primval=None}, S.Primval ->
-    failwith "[interp] Got Primval attr of None"
+  | { primval=None}, S.Primval -> throw_str "[interp] Got Primval attr of None" pc
   | { klass=sym_klass }, S.Klass -> branch_string sym_klass pc
 
 let set_obj_attr oattr obj_loc newattr pc =
@@ -594,8 +592,7 @@ let rec eval jsonPath maxDepth depth
                  * for our special keywords and we need to fake it returning true. *)
                 begin match e2_val with
                 | String fstr when fstr = new_sym_keyword
-                                || fstr = fresh_sym_keyword
-                                || fstr = compare_keyword -> return True pc
+                                || fstr = fresh_sym_keyword -> return True pc
                 | _ ->
 
                 bind (check_field e2_val pc)
@@ -888,10 +885,6 @@ let rec eval jsonPath maxDepth depth
               | String fstr when fstr = fresh_sym_keyword ->
                 uncurry return
                   (new_sym_fresh (fresh_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
-              (* Same for the compare command *)
-              | String fstr when fstr = compare_keyword ->
-                return True pc (* temp disable *)
-                (*compare_results p args envs pc eval*)
 
               | _ ->
 
@@ -1126,4 +1119,4 @@ let rec eval_expr expr jsonPath maxDepth pc =
         throw_str ("Uncaught exception: " ^ err_msg) pc
       | Break (l, v) -> throw_str ("Broke to top of execution, missed label: " ^ l) pc)
     in
-    (collect compare rets, exns)
+    (rets, exns)

@@ -19,6 +19,7 @@ let rec vert_intersperse a lst = match lst with
 let prim_to_z3 op = match op with
   | "NOT" -> "not"
   | "stx=" -> "="
+  | "!" -> "bang"
   | _ -> op
 
 let rec value v store = 
@@ -260,7 +261,8 @@ let simple_pc result pc =
 
 let simple_to_string result pc = simple_pc result pc Format.str_formatter; Format.flush_str_formatter() 
 
-let print_results (ret_grps, exn_grps) = 
+let print_results (rets, exns) = 
+  let ret_grps, exn_grps = collect compare rets, collect compare exns in
   List.iter
     (fun (v, pcs) ->
       (*print_string "##########\n";*)
@@ -356,6 +358,18 @@ let op1_defs =
       | TObjPtr -> "object"
       | _ -> failwith "Shouldn't hit")
       ^ ")")
+  ^
+  def_op1 "bang" "Bool" "false"
+    (fun ty -> match ty with
+      | TNull -> "true"
+      | TUndef -> "true"
+      | TString -> "(= x S_)"
+      | TBool -> "(not (b x))"
+      (* TODO look at delta fun and figure out what they were using <> for *)
+      | TNum -> "(or (= (n x) 0.) (not (= (n x) (n x))))"
+      | TFun _ -> "false"
+      | TObjPtr -> "false"
+      | _ -> failwith "Shouldn't hit")
 
 let z3prelude = "\
 (set-option :produce-models true)
