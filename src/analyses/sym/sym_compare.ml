@@ -1,35 +1,43 @@
 open Format
 open Prelude
-module S = Ljs_syntax
 open Ljs_sym_values
-open Ljs_sym_delta
-
-let compare_keyword = "COMPARE_RESULTS"
-let args_id = compare_keyword ^ "_ARGS"
 
 let max_equiv_depth = 3
 
-(* To be compatible with the way functions are desugared in LJS,
- * we need to wrap the OCaml function we want to execute in an
- * LJS function object, put it in the store, and then return a
- * ptr to it. *)
-let wrap_with_func_obj env pc f = 
-  let proto_loc, pc = sto_alloc_val Null pc in
-  (*let closure_loc, pc = sto_alloc_val (Closure f) pc in*)
-  let func_obj = ConObj {
-    attrs = { primval = None; proto = proto_loc;
-              code = None; (* temp disabled *)
-              (*code = Some closure_loc; [> func (%this, %args) { do our thing } <]*)
-              klass = SString "Function"; extensible = BTrue };
-    conps = IdMap.empty; symps = IdMap.empty;
-  } in
-  let func_obj_loc, pc = sto_alloc_obj func_obj pc in
-  return (ObjPtr func_obj_loc) pc
+(* TODO make this automatic somehow *)
+let proj_root = "/Users/Jonah/Documents/spring2012/research/LambdaS5/"
 
-(* Allocs a val in the store, binding it to id in the env *)
-let bind_val id v env pc =
-  let vloc, pc = sto_alloc_val v pc in
-  (IdMap.add id vloc env, pc)
+let rec read_until chan test : unit =
+  let line = input_line chan in
+  if test line then ()
+  else read_until chan test
+  
+let sym_eval js_path =
+  (* Convert JS to AST *)
+  let ast_path = js_path ^ ".ast" in
+  let js2ast = proj_root ^ "bin/js " ^
+    proj_root ^ "tests/json_print.js " ^
+    js_path ^ " > " ^ ast_path
+  in
+  if Sys.command js2ast <> 0
+  then failwith ("Could not convert JS to AST: " ^ js_path)
+  else 
+  (* Run the symbolic evaluator on the AST,*)
+  (* outputting the raw OCaml results. *)
+  let symeval = proj_root ^ "obj/s5.d.byte" ^
+    " -desugar " ^ ast_path ^
+    " -env " ^ proj_root ^ "envs/es5.env" ^
+    " -sym-eval-raw"
+  in
+  let chan = Unix.open_process_in symeval in
+  (* Read the raw results back into OCaml values *)
+  begin
+    try read_until chan (fun line -> line = "RAW RESULTS");
+    with End_of_file -> failwith ("Couldn't find RAW RESULTS in " ^ js_path)
+  end;
+  let results = ((input_value chan) : result list * exresult list) in
+  let _ = Unix.close_process_in chan in
+  results
 
 (* Given two result values and the list of contexts from which
  * they were produced, returns true if there is a pair (v1,pc1) from
@@ -85,8 +93,8 @@ and equiv_obj d (loc1, pc1) (loc2, pc2) =
    * because we'd have to check the obj at every loc in
    * their lists for equality as well. *)
   | NewSymObj _, NewSymObj _ ->
-    (*printf "%s\n" "NewSymObj false";*)
-      false
+      (* eh, let it be true for now *)
+      true (*false*) 
   (* TODO Preliminary idea: diff obj types aren't equal.
    * This is probably wrong. More likely is that a sym obj
    * is equal to any con obj as long as all the fields present
@@ -162,77 +170,49 @@ let our_cmp v1 v2 =
   | NewSym _, NewSym _ -> 1
   | _, _ -> compare v1 v2
 
-(* Returns an ObjPtr to a function object that can be eval'd
- * to compare the results stored in args. *)
-let compare_results p args env pc eval =
-  (wrap_with_func_obj env pc (fun args pc _ ->
-    (* Extract the functions to compare from the args obj.
-     * We construct exps to give to the eval that will run the
-     * desired functions. *)
-    let args_obj = List.nth args 1 in
-    let env, pc = bind_val args_id args_obj env pc in
-    let get_exp n = S.GetField (p, S.Id (p, args_id), S.String (p, n), S.Null p) in
-    let fexp1, fexp2, target_fexp = get_exp "0", get_exp "1", get_exp "2" in
+let sym_compare path1 path2 : unit =
+  let (rets1, exns1) = sym_eval path1 in
+  let (rets2, exns2) = sym_eval path2 in
+  (*printf "Got results 1: %d results\n" (List.length rets1);*)
+  (*printf "Got results 2: %d results\n" (List.length rets2);*)
+  
+  (* Group returned pcs into equivalence classes by value *)
+  let classes1 = collect our_cmp rets1 in
+  let classes2 = collect our_cmp rets2 in
 
-    (* Helper to eval an exp in a context *)
-    let eval_fexp fexp pc = eval (S.App (p, fexp, [S.Null p; S.Null p])) env pc in
-    (* Helper to eval the target in the context produced by fexp *)
-    let eval_target_after fexp =
-      bind (eval_fexp fexp pc)
-        (fun (_, pc) -> eval_fexp target_fexp pc)
-    in
+  printf "%s\n" ">>>>>> Results to compare:";
+  List.iter
+    (fun (v,pcs) -> printf "%s, " (Ljs_sym_pretty.val_to_string v))
+    classes1;
+  (*Ljs_sym_z3.print_results (rets1, []);*)
+  printf "\n%s\n" "=======";
+  List.iter
+    (fun (v,pcs) -> printf "%s, " (Ljs_sym_pretty.val_to_string v))
+    classes2;
+  (*Ljs_sym_z3.print_results (rets2, []);*)
+  printf "\n%s\n" "<<<<<<< End compare";
 
-    let (trets1, _) = eval_target_after fexp1 in
-    let (trets2, _) = eval_target_after fexp2 in
-    (* Group returned pcs into equivalence classes by value *)
-    let targets1 = collect our_cmp trets1 in
-    let targets2 = collect our_cmp trets2 in
+  (* Check for result set equivalence.
+   * Our metric will be, for each return value in classes1,
+   * does there exist an equivalent return value in classes2 *)
+  let equiv_results =
+    List.for_all
+      (fun res_class ->
+        let res = List.exists (equivalent res_class) classes2 in
+        if not res then begin
+          printf "%s\n"
+            ("No matching result for " ^ Ljs_sym_pretty.val_to_string (fst res_class));
+          printf "%s\n" "\nwhen compared against:\n";
+          Ljs_sym_z3.print_results (rets2, [])
+        end;
+        res)
+      classes1
+  in
+  printf "Comparison result: %b\n" equiv_results
+  (*equiv_results*)
 
-    printf "%s\n" (">>>>>> found " ^ compare_keyword ^ " <<<<<<");
-    printf "%s\n" "####### Results to compare:";
-    List.iter
-      (fun (v,pcs) -> printf "%s, " (Ljs_sym_pretty.val_to_string v))
-      targets1;
-    (*Ljs_sym_z3.print_results (targets1, []);*)
-    printf "\n%s\n" "============";
-    List.iter
-      (fun (v,pcs) -> printf "%s, " (Ljs_sym_pretty.val_to_string v))
-      targets2;
-    (*Ljs_sym_z3.print_results (targets2, []);*)
-    printf "\n%s\n" "####### End compare";
-
-    (* Check for result set equivalence.
-     * Our metric will be, for each return value in targets1,
-     * does there exist an equivalent return value in targets2 *)
-    let equiv_results =
-      List.for_all
-        (fun res_class ->
-          let res = List.exists (equivalent res_class) targets2 in
-          if not res then begin
-            printf "%s\n"
-              ("No matching result for " ^ Ljs_sym_pretty.val_to_string (fst res_class));
-            Ljs_sym_z3.print_results ([res_class], []);
-            printf "%s\n" "\nwhen compared against:\n";
-            Ljs_sym_z3.print_results (targets2, [])
-          end;
-          res)
-        targets1
-    in
-    printf "Comparison result: %b\n" equiv_results;
-    return (bool equiv_results) pc))
-
-    (*let (rets2, exns2) = eval (S.App (p, func2e, [S.Null p; S.Null p])) env pc in*)
-    (*| _ ->*)
-    (*  failwith*)
-    (*    (compare_keyword ^ " given wrong args.\n"*)
-    (*    ^ "usage: " ^ compare_keyword ^ "(func1, func2, targetFunc)\n"*)
-    (*    ^ "where target func returns the value to compare.")))*)
-  (*let wrapper_obj = ConObj {*)
-  (*  attrs = { primval = None; proto = fst (sto_alloc_val Null pc);*)
-  (*            code = None; klass = SString "Object"; extensible = BTrue; };*)
-  (*  conps = IdMap.add "0"*)
-  (*            (Data ({ value = func_obj_loc; writable = BTrue; }, BTrue, BTrue))*)
-  (*            IdMap.empty;*)
-  (*  symps = IdMap.empty;*)
-  (*} in*)
-  (*let wrapper_obj_loc, pc = sto_alloc_obj wrapper_obj pc in*)
+let _ =
+  if Array.length Sys.argv - 1 <> 2 then
+    printf "Usage: sym-compare file1.js file2.js\n"
+  else
+    sym_compare Sys.argv.(1) Sys.argv.(2)

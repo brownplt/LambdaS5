@@ -48,12 +48,21 @@ module S5 = struct
     printf "%s" (pretty_value v);
     print_newline ()
 
+  let do_sym_eval () =
+    Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath
+
   let sym_eval () : unit =
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
     (* let (inch, outch) = z3 in begin *)
-    let results = Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath in
+    let results = do_sym_eval() in
     Ljs_sym_z3.print_results results
   (* close_in inch; close_out outch *)
+
+  let sym_eval_raw () : unit = 
+    let results = do_sym_eval() in
+    print_string "RAW RESULTS"; print_newline();
+    output_value stdout results;
+    print_newline()
 
   let env (path : string) : unit =
     let envFunc = Ljs.parse_es5_env (open_in path) path in
@@ -146,6 +155,8 @@ module S5 = struct
         "abstractly evaluate code in CPS form");
         ("-sym-eval", Arg.Unit sym_eval,
         "evaluate code symbolically");
+        ("-sym-eval-raw", Arg.Unit sym_eval_raw,
+        "evaluate code symbolically and print raw OCaml results");
         ("-env", Arg.String env,
          "wrap the program in an environment");
         ("-json", Arg.String set_json,

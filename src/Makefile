@@ -20,3 +20,5 @@ test: debug
 	$(OCAMLBUILD) regexp_tests.d.byte
 	$(OCAMLBUILD) gc_tests.d.byte
 
+compare: debug
+	$(OCAMLBUILD) sym_compare.d.byte

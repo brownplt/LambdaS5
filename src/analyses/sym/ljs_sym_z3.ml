@@ -6,6 +6,7 @@ open Prelude
 open Format
 open FormatExt
 
+
 let log_z3 = true
 let simple_print = true (* print in human readable form *)
 
@@ -18,6 +19,7 @@ let rec vert_intersperse a lst = match lst with
 let prim_to_z3 op = match op with
   | "NOT" -> "not"
   | "stx=" -> "="
+  | "!" -> "bang"
   | _ -> op
 
 let rec value v store = 
@@ -259,7 +261,8 @@ let simple_pc result pc =
 
 let simple_to_string result pc = simple_pc result pc Format.str_formatter; Format.flush_str_formatter() 
 
-let print_results (ret_grps, exn_grps) = 
+let print_results (rets, exns) = 
+  let ret_grps, exn_grps = collect compare rets, collect compare exns in
   List.iter
     (fun (v, pcs) ->
       (*print_string "##########\n";*)
@@ -355,6 +358,18 @@ let op1_defs =
       | TObjPtr -> "object"
       | _ -> failwith "Shouldn't hit")
       ^ ")")
+  ^
+  def_op1 "bang" "Bool" "false"
+    (fun ty -> match ty with
+      | TNull -> "true"
+      | TUndef -> "true"
+      | TString -> "(= x S_)"
+      | TBool -> "(not (b x))"
+      (* TODO look at delta fun and figure out what they were using <> for *)
+      | TNum -> "(or (= (n x) 0.) (not (= (n x) (n x))))"
+      | TFun _ -> "false"
+      | TObjPtr -> "false"
+      | _ -> failwith "Shouldn't hit")
 
 let z3prelude = "\
 (set-option :produce-models true)
@@ -367,6 +382,7 @@ let z3prelude = "\
 (declare-fun length (Str) Real)
 (declare-fun strlen (Str) Real)
 (declare-fun char-at (Str Real) Str)
+(declare-fun numstr->num (Str) Real)
 
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
@@ -384,9 +400,15 @@ let z3prelude = "\
                      (STR (s Str))
                      (OBJPTR (loc Int))
                      (FUN (f Fun)))))
-(declare-fun prim->str (JS) Str)\n"
+
+(declare-fun prim->str (JS) Str)
+(define-fun primitive? ((x JS)) Bool true)
+"
+
+let tot = ref 0.;;
 
 let is_sat (p : ctx) hint : bool =
+  let t1 = Sys.time() in
   (* Only ask z3 if we have constraints to ask about *)
   match List.filter (fun c -> match c with Hint _ -> false | _ -> true) p.constraints with
   | [] -> true | _ ->
@@ -464,5 +486,11 @@ let is_sat (p : ctx) hint : bool =
   let  _ = Unix.close_process (inch, outch) in
   if log_z3 then Printf.printf "z3 said: %s\n\n" res;
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
+  if log_z3 then begin
+    let t2 = Sys.time() in
+    tot := !tot +. (t2 -. t1);
+    Printf.printf "z3 took: %f secs\n" (t2 -. t1);
+    Printf.printf "total: %f secs\n\n" (!tot)
+  end;
   (res = "sat")
     
