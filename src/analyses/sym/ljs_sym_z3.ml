@@ -8,7 +8,7 @@ open FormatExt
 
 
 let log_z3 = true
-let simple_print = false (* print in human readable form *)
+let simple_print = true (* print in human readable form *)
 
 
 let rec vert_intersperse a lst = match lst with
