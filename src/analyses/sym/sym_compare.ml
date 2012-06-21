@@ -1,6 +1,7 @@
 open Format
 open Prelude
 open Ljs_sym_values
+open Ljs_sym_z3
 
 let max_equiv_depth = 3
 
@@ -49,10 +50,12 @@ let rec equivalent (v1, pcs1) (v2, pcs2) =
 and equiv_value d (v1, pcs1) (v2, pcs2) =
   match v1, v2 with
   (* punt on symbolic values for now *)
-  | SymScalar _, SymScalar _
-  | SymScalar _, NewSym _
-  | NewSym _, SymScalar _
-  | NewSym _, NewSym _ -> true
+  (*| SymScalar _, SymScalar _*)
+  (*| SymScalar _, NewSym _*)
+  (*| NewSym _, SymScalar _*)
+  (*| NewSym _, NewSym _ -> true*)
+  | SymScalar id, _ -> equiv_sym (id, pcs1) (v2, pcs2)
+  | _, SymScalar id -> equiv_sym (id, pcs2) (v1, pcs1)
   | ObjPtr oloc1, ObjPtr oloc2 ->
     if d = 0 then true else
     (* Because we don't group ObjPtrs when collecting,
@@ -61,12 +64,6 @@ and equiv_value d (v1, pcs1) (v2, pcs2) =
       assert (List.length pcs1 = 1 && List.length pcs2 = 1);
       equiv_obj (d - 1) (oloc1, List.hd pcs1) (oloc2, List.hd pcs2)
     end
-    (*List.exists*)
-    (*  (fun pc1 ->*)
-    (*    List.exists*)
-    (*      (fun pc2 ->*)
-      (*  pcs2)*)
-      (*pcs1*)
   (* otherwise just check equality *)
   (* TODO this will always be false for sym vs. concrete *)
   | _, _ -> begin
@@ -75,6 +72,16 @@ and equiv_value d (v1, pcs1) (v2, pcs2) =
      * Luckily, compare nan nan = 0! *)
     (compare v1 v2 = 0)
     end
+
+and equiv_sym (id1, pcs1) (v2, pcs2) =
+  match v2 with
+  | SymScalar id2 -> true (* TODO *)
+  | ObjPtr _ -> false
+  | _ -> (* assert id1 = v2 with pcs1, ask z3 *)
+    let pcs1 =
+      map (add_assert (is_equal (SId id1) (Concrete v2))) pcs1 in
+    List.exists (fun pc -> is_sat pc "equiv_sym") pcs1
+
 
 and equiv_lookup d (vloc1, pc1) (vloc2, pc2) =
   equiv_value d (sto_lookup_val vloc1 pc1, [pc1])
@@ -201,9 +208,14 @@ let sym_compare path1 path2 : unit =
         let res = List.exists (equivalent res_class) classes2 in
         if not res then begin
           printf "%s\n"
-            ("No matching result for " ^ Ljs_sym_pretty.val_to_string (fst res_class));
+            ("No matching result for "
+             ^ Ljs_sym_pretty.val_to_string (fst res_class));
+          print_results
+            (map (fun pc -> (fst res_class, pc))
+               (snd res_class),
+             []);
           printf "%s\n" "\nwhen compared against:\n";
-          Ljs_sym_z3.print_results (rets2, [])
+          print_results (rets2, [])
         end;
         res)
       classes1

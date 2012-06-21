@@ -49,7 +49,11 @@ module S5 = struct
     print_newline ()
 
   let do_sym_eval () =
-    Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath
+    let t1 = Sys.time() in
+    let res = Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath in
+    let t2 = Sys.time() in
+    printf "Spent %f secs in sym eval\n" (t2 -. t1);
+    res
 
   let sym_eval () : unit =
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
