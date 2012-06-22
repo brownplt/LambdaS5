@@ -300,7 +300,7 @@ let print_results (rets, exns) =
   List.iter
     (fun (v, pcs) -> match v with
       | Ljs_sym_values.Throw v ->
-        printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
+        printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (List.length pcs)
       | _ -> printf "Exn: something other than a Throw\n")
     exn_grps
   (*let t2 = Sys.time() in*)
@@ -433,6 +433,7 @@ let is_sat (p : ctx) hint : bool =
 
   let { constraints = cs; vars = vs; store = store } = p in
 
+  Printf.printf "num vars %d\n" (IdMap.cardinal vs);
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
@@ -486,9 +487,9 @@ let is_sat (p : ctx) hint : bool =
   List.iter print_pc rest;
 
   output_string outch "(check-sat)";
+  close_out outch;
   if log_z3 then Printf.printf "(check-sat)\n";
   if log_z3 then Printf.printf "%s\n" hint;
-  close_out outch;
   flush stdout;
   let res = input_line inch in
   close_in inch; 

@@ -12,6 +12,8 @@ let max_equiv_depth = 3
 (* TODO make this automatic somehow *)
 let proj_root = "/Users/Jonah/Documents/spring2012/research/LambdaS5/"
 
+let rename_prefix = "a"
+
 (** TYPES                                *)
 (*****************************************)
 
@@ -47,6 +49,42 @@ let rec read_until chan test : unit =
   if test line then ()
   else read_until chan test
 
+(* Produces the list of f applies to each pair of xs and ys,
+ * in the reverse order of what you might expect.
+ * I.e. combinations pair [1;2] [3;4] =
+ * [(2, 4); (2, 3); (1, 4); (1, 3)] *)
+let combinations (f : ('x -> 'y -> 'z)) xs ys : 'z list =
+  List.fold_left (fun acc1 x ->
+    List.fold_left (fun acc2 y ->
+                 (f x y) :: acc2)
+      acc1 ys)
+    [] xs
+
+(* Renames every sym id in the program context to start with prefix. *)
+(* Note that we only rename the parts that will be used in Ljs_sym_z3.is_sat. *)
+let alpha_rename prefix pc =
+  let rename id =
+    (* We won't rename concrete string constants, because
+     * there's no problem with those overlapping (they're constants!) *)
+    if String.length id >= 2 && String.sub id 0 2 = "S_"
+    then id
+    else (prefix ^ id)
+  in
+  { pc with
+    constraints =
+      map
+        (exp_map
+           (fun exp -> match exp with
+              | SId id -> SId (rename id)
+              | SLet (id, e) -> SLet (rename id, e)
+              | _ -> exp))
+        pc.constraints;
+    vars =
+      IdMap.fold
+        (fun id t res -> IdMap.add (rename id) t res)
+        pc.vars IdMap.empty;
+  }
+
 (** PRINTING                             *)
 (*****************************************)
 
@@ -69,30 +107,40 @@ let print_comp_results results =
 (*****************************************)
 
 let sym_eval js_path =
-  (* Convert JS to AST *)
-  let ast_path = js_path ^ ".ast" in
-  let js2ast = proj_root ^ "bin/js " ^
-    proj_root ^ "tests/json_print.js " ^
-    js_path ^ " > " ^ ast_path
-  in
-  if Sys.command js2ast <> 0
-  then failwith ("Could not convert JS to AST: " ^ js_path)
-  else 
-  (* Run the symbolic evaluator on the AST,*)
-  (* outputting the raw OCaml results. *)
-  let symeval = proj_root ^ "obj/s5.d.byte" ^
-    " -desugar " ^ ast_path ^
-    " -env " ^ proj_root ^ "envs/es5.env" ^
-    " -sym-eval-raw"
-  in
-  let chan = Unix.open_process_in symeval in
+  let res_file = js_path ^ ".raw" in
+  if (Sys.file_exists res_file) then
+    printf "Using cached results: %s" res_file
+  else begin
+    let ast_path = js_path ^ ".ast" in
+    if (Sys.file_exists ast_path) then
+      printf "Using cached AST: %s" res_file
+    else begin
+      let js2ast = proj_root ^ "bin/js " ^
+        proj_root ^ "tests/json_print.js " ^
+        js_path ^ " > " ^ ast_path
+      in
+      if Sys.command js2ast <> 0
+      then failwith ("Could not convert JS to AST: " ^ js_path)
+      else ()
+    end;
+    (* Run the symbolic evaluator on the AST,*)
+    (* outputting the raw OCaml results. *)
+    let symeval = proj_root ^ "obj/s5.d.byte" ^
+      " -desugar " ^ ast_path ^
+      " -env " ^ proj_root ^ "envs/es5.env" ^
+      " -sym-eval-raw > " ^ res_file
+    in
+    let _ = Sys.command symeval in ()
+  end;
+
   (* Read the raw results back into OCaml values *)
+  let chan = open_in res_file in
   begin
     try read_until chan (fun line -> line = "RAW RESULTS");
-    with End_of_file -> failwith ("Couldn't find RAW RESULTS in " ^ js_path)
+    with End_of_file -> failwith ("Couldn't find RAW RESULTS in " ^ res_file)
   end;
   let results = ((input_value chan) : result list * exresult list) in
-  let _ = Unix.close_process_in chan in
+  close_in chan;
   results
  
 (** CHECKING EQUIVALENCE                 *)
@@ -126,12 +174,30 @@ let rec equiv_value d (v1, pcs1) (v2, pcs2) =
 
 and equiv_sym (id1, pcs1) (v2, pcs2) =
   match v2 with
-  | SymScalar id2 -> true (* TODO *)
+  | SymScalar id2 ->
+    let id2 = rename_prefix ^ id2 in
+    let pcs2 = map (alpha_rename rename_prefix) pcs2 in
+    let joint_pcs = 
+      combinations
+        (fun pc1 pc2 ->
+          { pc1 with
+            (* We only care about constraints and vars
+             * because that's all that we use in
+             * Ljs_sym_z3.is_sat *)
+            constraints = pc1.constraints @ pc2.constraints;
+            (* Var maps key sets should be disjoint, so
+             * we can union them like so. *)
+            vars = IdMap.fold IdMap.add pc1.vars pc2.vars; })
+        pcs1 pcs2
+    in
+    List.exists (fun pc -> is_sat pc ("equiv_sym " ^ id1 ^ ", " ^ id2))
+      (map (add_assert (is_equal (SId id1) (SId id2))) joint_pcs)
+
   | ObjPtr _ -> false
-  | _ -> (* assert id1 = v2 with pcs1, ask z3 *)
-    let pcs1 =
-      map (add_assert (is_equal (SId id1) (Concrete v2))) pcs1 in
-    List.exists (fun pc -> is_sat pc "equiv_sym") pcs1
+  | Closure _ (* uhh, who knows? *)
+  | _ ->
+    List.exists (fun pc -> is_sat pc ("equiv_sym " ^ id1))
+      (map (add_assert (is_equal (SId id1) (Concrete v2))) pcs1)
 
 and equiv_obj d (loc1, pc1) (loc2, pc2) =
   let obj1 = sto_lookup_obj loc1 pc1 in
