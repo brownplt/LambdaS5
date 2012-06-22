@@ -428,7 +428,8 @@ let is_sat (p : ctx) hint : bool =
     List.fold_left
       (fun pc type_str -> add_const_string type_str pc)
       p
-      ["undefined"; "null"; "string"; "number"; "boolean"; "function"; "object"]
+      ["undefined"; "null"; "string"; "number";
+       "boolean"; "function"; "object"; ""]
   in
 
   let { constraints = cs; vars = vs; store = store } = p in
