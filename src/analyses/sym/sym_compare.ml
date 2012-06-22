@@ -109,20 +109,16 @@ let print_comp_results results =
 let sym_eval js_path =
   let res_file = js_path ^ ".raw" in
   if (Sys.file_exists res_file) then
-    printf "Using cached results: %s" res_file
+    printf "Using cached results: %s\n" res_file
   else begin
     let ast_path = js_path ^ ".ast" in
-    if (Sys.file_exists ast_path) then
-      printf "Using cached AST: %s" res_file
-    else begin
-      let js2ast = proj_root ^ "bin/js " ^
-        proj_root ^ "tests/json_print.js " ^
-        js_path ^ " > " ^ ast_path
-      in
-      if Sys.command js2ast <> 0
-      then failwith ("Could not convert JS to AST: " ^ js_path)
-      else ()
-    end;
+    let js2ast = proj_root ^ "bin/js " ^
+      proj_root ^ "tests/json_print.js " ^
+      js_path ^ " > " ^ ast_path
+    in
+    if Sys.command js2ast <> 0
+    then failwith ("Could not convert JS to AST: " ^ js_path)
+    else
     (* Run the symbolic evaluator on the AST,*)
     (* outputting the raw OCaml results. *)
     let symeval = proj_root ^ "obj/s5.d.byte" ^
@@ -324,6 +320,7 @@ let sym_compare path1 path2 : unit =
   (* Check for result set equivalence.
    * Our metric will be, for each return value in classes1,
    * does there exist an equivalent return value in classes2 *)
+  (* TODO need to check the converse as well *)
   let results = equiv_classes classes1 classes2 in
   printf "Comparison result: %b\n"
     (List.for_all
