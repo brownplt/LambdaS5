@@ -63,13 +63,13 @@ let combinations (f : ('x -> 'y -> 'z)) xs ys : 'z list =
 (* Renames every sym id in the program context to start with prefix. *)
 (* Note that we only rename the parts that will be used in Ljs_sym_z3.is_sat. *)
 let alpha_rename prefix pc =
-  let rename id =
+  let rename id = prefix ^ id in
     (* We won't rename concrete string constants, because
      * there's no problem with those overlapping (they're constants!) *)
-    if String.length id >= 2 && String.sub id 0 2 = "S_"
-    then id
-    else (prefix ^ id)
-  in
+    (*if String.length id >= 2 && String.sub id 0 2 = "S_"*)
+    (*then id*)
+    (*else (prefix ^ id)*)
+  (*in*)
   { pc with
     constraints =
       map
@@ -96,9 +96,9 @@ let print_comp_results results =
             (val_to_string (fst c1))
             (val_to_string (fst c2))
       | Diff (c1, cs2) -> begin
-          printf "No match for: %s\n" (val_to_string (fst c1));
+          printf "No match for: %s\n\n" (val_to_string (fst c1));
           print_results (results_of_class c1, []);
-          printf "\nwhen compared against:\n";
+          printf "\nwhen compared against:\n\n";
           print_results (results_of_classes cs2, [])
         end) 
     results
@@ -126,7 +126,8 @@ let sym_eval js_path =
       " -env " ^ proj_root ^ "envs/es5.env" ^
       " -sym-eval-raw > " ^ res_file
     in
-    let _ = Sys.command symeval in ()
+    let _ = Sys.command symeval in
+    Sys.remove ast_path
   end;
 
   (* Read the raw results back into OCaml values *)
@@ -315,18 +316,39 @@ let sym_compare path1 path2 : unit =
     (fun (v,pcs) -> printf "%s, " (Ljs_sym_pretty.val_to_string v))
     classes2;
   (*Ljs_sym_z3.print_results (rets2, []);*)
-  printf "\n%s\n" "<<<<<< Comparing...";
+  printf "\n%s\n\n" "<<<<<< Comparing...";
 
   (* Check for result set equivalence.
    * Our metric will be, for each return value in classes1,
    * does there exist an equivalent return value in classes2 *)
   (* TODO need to check the converse as well *)
+  let bool_of_results = List.for_all
+    (fun r -> match r with Equiv _ -> true | _ -> false)
+  in
+
   let results = equiv_classes classes1 classes2 in
-  printf "Comparison result: %b\n"
-    (List.for_all
-       (fun r -> match r with Equiv _ -> true | _ -> false)
-       results);
-  print_comp_results results
+  let prelim_res = bool_of_results results in
+
+  let converse_results =
+    if not prelim_res then [] else
+      let unchecked_classes2 =
+        List.filter
+          (fun cls ->
+            List.for_all
+              (fun res -> match res with
+                | Equiv (_, c2) -> cls != c2
+                | _ -> false)
+              results)
+          classes2
+      in equiv_classes unchecked_classes2 classes1
+  in
+  let final_res = bool_of_results converse_results in
+
+  printf "Comparison result: %b\n\n" final_res;
+  printf "=> results:\n";
+  print_comp_results results;
+  printf "<= results:\n";
+  print_comp_results converse_results
 
 let _ =
   if Array.length Sys.argv - 1 <> 2 then
