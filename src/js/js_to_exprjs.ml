@@ -4,7 +4,17 @@ module J = Js_syntax
 open Prelude
 open Js_pretty
 
+open String
+
 exception ParseError of string
+
+let split_regexp s =
+  let before_flags = String.rindex s '/' in
+  (* Index 1 always, because regexps look like /foo/g, so we cut off
+   * the initial / *)
+  let pattern = String.sub s 1 (before_flags - 1) in
+  let flags = String.sub s before_flags (((String.length s) - before_flags) - 1) in
+  (pattern, flags)
 
 let rec jse_to_exprjs (e : J.expr) : E.expr =
   match e with
@@ -17,7 +27,11 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Bool (b) -> if b then E.True (p) else E.False (p)
         | J.Num (n) -> E.Num (p, n)
         | J.Str (s) -> E.String (p, s) 
-        | J.Regexp (s) -> E.RegExpr (p, s)
+        | J.Regexp (s) ->
+          let (pattern_part, flags_part) = split_regexp s in
+          E.NewExpr (p, E.IdExpr (p, "%RegExpGlobalFuncObj"),
+                     [E.String (p, pattern_part);
+                      E.String (p, flags_part)])
       in result
   | J.Array (p, el) -> 
       E.ArrayExpr (p, List.map jse_to_exprjs el)
