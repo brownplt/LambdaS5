@@ -29,7 +29,7 @@ let rec value v store =
   | Num n -> 
     if (n = infinity) then text "(NUM inf)"
     else if (n = neg_infinity) then text "(NUM neg_inf)"
-    else if (n <> n) then text "(NUM NaN)"
+    else if (n <> n) then text "(NUM nan)"
     else parens (horz [text "NUM"; text (string_of_float n)])
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
@@ -165,7 +165,7 @@ let rec simplep_value v =
   | Num n -> 
     if (n = infinity) then text "inf"
     else if (n = neg_infinity) then text "neg_inf"
-    else if (n <> n) then text "NaN"
+    else if (n <> n) then text "nan"
     else text (string_of_float n)
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "true"
@@ -350,7 +350,7 @@ let op1_defs =
     | TUndef -> "false"
     | TString -> "(not (= (length (s x)) 0.))"
     | TBool -> "(b x)"
-    | TNum -> "(not (or (= (n x) NaN) (= (n x) 0.)))"
+    | TNum -> "(not (or (= (n x) nan) (= (n x) 0.)))"
     | TFun _ -> "true"
     | TObjPtr -> "true"
     | _ -> failwith "Shouldn't hit")
@@ -395,7 +395,7 @@ let z3prelude = "\
 
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
-(define-fun NaN () Real 876545689.24565432)
+(define-fun nan () Real 876545689.24565432)
 (declare-const closure Fun)
 
 (declare-datatypes ()
@@ -487,9 +487,9 @@ let is_sat (p : ctx) hint : bool =
   if log_z3 then Printf.printf ";; Other constraints:\n";
   List.iter print_pc rest;
 
-  output_string outch "(check-sat)";
+  output_string outch "(check-sat-using (then simplify solve-eqs smt))";
   close_out outch;
-  if log_z3 then Printf.printf "(check-sat)\n";
+  if log_z3 then Printf.printf "(check-sat-using (then simplify solve-eqs smt))\n";
   if log_z3 then Printf.printf "%s\n" hint;
   flush stdout;
   let res = input_line inch in
