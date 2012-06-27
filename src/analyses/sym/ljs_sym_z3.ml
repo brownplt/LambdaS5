@@ -29,7 +29,7 @@ let rec value v store =
   | Num n -> 
     if (n = infinity) then text "(NUM inf)"
     else if (n = neg_infinity) then text "(NUM neg_inf)"
-    else if (n <> n) then text "(NUM NaN)"
+    else if (n <> n) then text "(NUM nan)"
     else parens (horz [text "NUM"; text (string_of_float n)])
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "(BOOL true)"
@@ -158,14 +158,14 @@ and exp e store =
 ;;
 let to_string v store = exp v store Format.str_formatter; Format.flush_str_formatter() 
 
-let rec simple_value v = 
+let rec simplep_value v = 
   match v with
   | Null -> text "null"
   | Undefined -> text "undefined"
   | Num n -> 
     if (n = infinity) then text "inf"
     else if (n = neg_infinity) then text "neg_inf"
-    else if (n <> n) then text "NaN"
+    else if (n <> n) then text "nan"
     else text (string_of_float n)
   | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
   | True -> text "true"
@@ -175,50 +175,56 @@ let rec simple_value v =
   | SymScalar id -> text id
   | NewSym (id, loc) -> parens (text ("NewSym " ^ id))
 
-let rec simple_exp e = 
+let rec simplep_exp e = 
   match e with
   | Hint s -> horz [text ";;"; text s] 
-  | Concrete v -> simple_value v
+  | Concrete v -> simplep_value v
   | SLoc l -> text (Store.print_loc l)
   | SId id -> text id
   | SOp1 (op, e) -> 
-    parens (horz [text (prim_to_z3 op); simple_exp e])
+    parens (horz [text (prim_to_z3 op); simplep_exp e])
   | SOp2 (op, e1, e2) ->
-    parens (horz [text (prim_to_z3 op); simple_exp e1; simple_exp e2])
+    parens (horz [text (prim_to_z3 op); simplep_exp e1; simplep_exp e2])
   | SApp (f, args) ->
-    parens (horz (simple_exp f :: (map (fun a -> simple_exp a) args)))
+    parens (horz (simplep_exp f :: (map (fun a -> simplep_exp a) args)))
   | SLet (id, e1) ->
-    parens (horz [parens(horz[text "let"; text id; simple_exp e1])])
-  | SCastJS (t, e) -> simple_exp e
-  | SUncastJS (t, e) -> simple_exp e
-  | SNot e -> parens (horz [text "not"; simple_exp e])
-  | SAnd es -> parens (horz (text "and" :: (map (fun e -> simple_exp e) es)))
-  | SOr es -> parens (horz (text "or" :: (map (fun e -> simple_exp e) es)))
-  | SImplies (pre, post) -> parens (horz [text "=>"; simple_exp pre; simple_exp post])
-  | SAssert e -> simple_exp e
+    parens (horz [parens(horz[text "let"; text id; simplep_exp e1])])
+  | SNot e -> parens (horz [text "not"; simplep_exp e])
+  | SAnd es -> parens (horz (text "and" :: (map (fun e -> simplep_exp e) es)))
+  | SOr es -> parens (horz (text "or" :: (map (fun e -> simplep_exp e) es)))
+  | SImplies (pre, post) -> parens (horz [text "=>"; simplep_exp pre; simplep_exp post])
   | _ -> text "Missed something"
 
-let substitute exp id_defs =
-  let rec sub exp = match exp with
-  | SId id ->
-    begin try sub (IdMap.find id id_defs)
-    with Not_found -> exp end
-  | SOp1 (op, e) ->
-    if op = "prim->bool"
-    then sub e
-    else SOp1 (op, sub e)
-  | SOp2 (op, e1, e2) -> SOp2 (op, sub e1, sub e2)
-  | SApp (f, args) -> SApp (f, map sub args)
-  | SCastJS (t, e) -> sub e
-  | SUncastJS (t, e) -> sub e
-  | SNot e -> SNot (sub e)
-  | SAnd es -> SAnd (map sub es)
-  | SOr es -> SOr (map sub es)
-  | SImplies (pre, post) -> SImplies (sub pre, sub post)
-  | SAssert e -> sub e
-  | _ -> exp
-  in sub exp
+let simplify_exp exp =
+  exp_map
+    (fun exp ->
+      match exp with
+      | SNot (SNot e) -> e
+      | _ -> exp)
+    (exp_map
+      (fun exp ->
+        match exp with
+        | SOp1 ("prim->bool", e) -> e
+        | SOp1 ("!", e) -> SNot e
+        | _ -> exp)
+       (exp_map
+          (fun exp ->
+            match exp with
+            | SCastJS (_, e)
+            | SUncastJS (_, e) -> e
+            | SAssert e -> e
+            | _ -> exp)
+          exp))
 
+let rec substitute exp id_defs =
+  exp_map
+    (fun exp ->
+      match exp with
+      | SId id ->
+        begin try substitute (IdMap.find id id_defs) id_defs
+        with Not_found -> exp end
+      | _ -> exp)
+    exp
 
 let simplify result cs =
   let (lets, assns) = List.partition (fun c -> match c with SLet _ -> true | _ -> false) cs in
@@ -242,7 +248,7 @@ let simplify result cs =
     IdMap.add id (substitute (SId id) id_defs) id_defs
   | _ -> id_defs
   in
-  (id_defs, assns)
+  (IdMap.map simplify_exp id_defs, map simplify_exp assns)
 
 let simple_pc result pc =
   let (id_defs, assns) = simplify result pc.constraints in
@@ -250,10 +256,10 @@ let simple_pc result pc =
     | SymScalar id ->
       [horz [text id;
             text "="; 
-            simple_exp (IdMap.find id id_defs);]]
+            simplep_exp (IdMap.find id id_defs);]]
     | _ -> []
   in
-  let assns = map (fun a -> simple_exp a) assns in
+  let assns = map (fun a -> simplep_exp a) assns in
   vert (res @ [
     text "Assns:";
     vert assns;
@@ -263,6 +269,7 @@ let simple_to_string result pc = simple_pc result pc Format.str_formatter; Forma
 
 let print_results (rets, exns) = 
   let ret_grps, exn_grps = collect compare rets, collect compare exns in
+  (*let t1 = Sys.time() in*)
   List.iter
     (fun (v, pcs) ->
       (*print_string "##########\n";*)
@@ -283,7 +290,7 @@ let print_results (rets, exns) =
             List.iter 
               (fun c -> printf "%s\n" (to_string c pc))
               pc.Ljs_sym_values.constraints
-          end
+          end;
           (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
         ) pcs;
       (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
@@ -293,9 +300,11 @@ let print_results (rets, exns) =
   List.iter
     (fun (v, pcs) -> match v with
       | Ljs_sym_values.Throw v ->
-        printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v)
+        printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (List.length pcs)
       | _ -> printf "Exn: something other than a Throw\n")
     exn_grps
+  (*let t2 = Sys.time() in*)
+  (*printf "printresult %f\n" (t2 -. t1)*)
 
 (*let ty_to_typeof tp = match tp with*)
 (*  | TNull -> Some "null"*)
@@ -341,7 +350,7 @@ let op1_defs =
     | TUndef -> "false"
     | TString -> "(not (= (length (s x)) 0.))"
     | TBool -> "(b x)"
-    | TNum -> "(not (or (= (n x) NaN) (= (n x) 0.)))"
+    | TNum -> "(not (or (= (n x) nan) (= (n x) 0.)))"
     | TFun _ -> "true"
     | TObjPtr -> "true"
     | _ -> failwith "Shouldn't hit")
@@ -386,7 +395,7 @@ let z3prelude = "\
 
 (define-fun neg_inf () Real (- 0.0 1234567890.984321))
 (define-fun inf () Real 12345678.321)
-(define-fun NaN () Real 876545689.24565432)
+(define-fun nan () Real 876545689.24565432)
 (declare-const closure Fun)
 
 (declare-datatypes ()
@@ -419,11 +428,13 @@ let is_sat (p : ctx) hint : bool =
     List.fold_left
       (fun pc type_str -> add_const_string type_str pc)
       p
-      ["undefined"; "null"; "string"; "number"; "boolean"; "function"; "object"]
+      ["undefined"; "null"; "string"; "number";
+       "boolean"; "function"; "object"; ""]
   in
 
   let { constraints = cs; vars = vs; store = store } = p in
 
+  Printf.printf "num vars %d\n" (IdMap.cardinal vs);
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
   if log_z3 then Printf.printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
@@ -476,10 +487,10 @@ let is_sat (p : ctx) hint : bool =
   if log_z3 then Printf.printf ";; Other constraints:\n";
   List.iter print_pc rest;
 
-  output_string outch "(check-sat)";
-  if log_z3 then Printf.printf "(check-sat)\n";
-  if log_z3 then Printf.printf "%s\n" hint;
+  output_string outch "(check-sat-using (then simplify solve-eqs smt))";
   close_out outch;
+  if log_z3 then Printf.printf "(check-sat-using (then simplify solve-eqs smt))\n";
+  if log_z3 then Printf.printf "%s\n" hint;
   flush stdout;
   let res = input_line inch in
   close_in inch; 

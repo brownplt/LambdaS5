@@ -27,6 +27,9 @@ exception TypeError of string
 type symbool = BTrue | BFalse | BSym of id
 type symstring = SString of string | SSym of id
 
+(* Used within GetField and SetField only *)
+type field_type = SymField of id | ConField of id
+
 (* Maps var ids to store locations *)
 type env = (id * Store.loc) list
 (* Represents the envs in the call stack of the evaluator *)
@@ -118,8 +121,33 @@ and sym_exp =
   | SIsMissing of sym_exp
   | SGetField of id * id
 
-(* Used within GetField and SetField only *)
-type field_type = SymField of id | ConField of id
+(* Recursively applies f to all nested expressions in e,
+ * then applies f to the result. So f can assume that all
+ * sub-expressions have already had f applied to them.
+ * Unfortunately, its not a *true* map because the exp type
+ * isn't polymorphic. *)
+let rec exp_map f e =
+  let emf = exp_map f in
+  let res = match e with
+  | Hint _
+  | Concrete _
+  | STime _
+  | SLoc _
+  | SGetField _
+  | SId _ -> e (* no nested exps *)
+  | SOp1 (op, e) -> SOp1 (op, emf e)
+  | SOp2 (op, e1, e2) -> SOp2 (op, emf e1, emf e2)
+  | SApp (fu, args) -> SApp (fu, map emf args)
+  | SLet (id, e) -> SLet (id, emf e)
+  | SCastJS (t, e) -> SCastJS (t, emf e)
+  | SUncastJS (t, e) -> SUncastJS (t, emf e)
+  | SNot e -> SNot (emf e)
+  | SAnd es -> SAnd (map emf es)
+  | SOr es -> SOr (map emf es)
+  | SImplies (pre, post) -> SImplies (emf pre, emf post)
+  | SAssert e -> SAssert (emf e)
+  | SIsMissing e -> SIsMissing (emf e)
+  in f res
 
 let is_equal a b = SApp (SId "=", [a; b])
 let is_not_equal a b = SNot (is_equal a b)

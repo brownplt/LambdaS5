@@ -7,8 +7,12 @@ else
   TMP=$1
 fi
 
+RETMP=`mktemp -t js.XXXXXX`
+../bin/js json_print.js ../lib/js-regexp/regexp.js > $RETMP
+
 ../bin/js json_print.js $TMP > $TMP.ast
-ocamlrun ../obj/s5.d.byte -desugar $TMP.ast -print es5 \
+ocamlrun ../obj/s5.d.byte -desugar $TMP.ast -env ../envs/regexp.env \
+	-desugar-env $RETMP -print es5 \
         -json ../src/desugar.sh -env ../envs/es5.env \
         -eval
 #rm $TMP.ast

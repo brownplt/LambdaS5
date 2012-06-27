@@ -49,7 +49,11 @@ module S5 = struct
     print_newline ()
 
   let do_sym_eval () =
-    Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath
+    let t1 = Sys.time() in
+    let res = Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath in
+    let t2 = Sys.time() in
+    printf "Spent %f secs in sym eval\n" (t2 -. t1);
+    res
 
   let sym_eval () : unit =
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
@@ -76,12 +80,21 @@ module S5 = struct
     let fvs = Js_syntax.used_vars_sel !srcJS in
     printf "%s\n" ((FormatExt.to_string (fun lst -> (vert (map text lst))))
                             (IdSet.elements fvs))
-    
-  let desugar_spidermonkey_js (path : string) : unit = 
+  
+  let desugar_spidermonkey_js (path : string) = 
     let ast = SpiderMonkey.parse_spidermonkey (open_in path) path in
     let (used_ids, exprjsd) = js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "global")) in
     let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
-    srcEJS := exprjsd; srcES5 := desugard
+    (exprjsd, desugard)
+
+  let desugar_replace (path : string) : unit =
+    let (exprjsd, ljsd) = desugar_spidermonkey_js path in
+    srcEJS := exprjsd; srcES5 := ljsd
+
+  (* Warning: does not update srcEJS *)
+  let desugar_prepend (path : string) : unit =
+    let (exprjsd, ljsd) = desugar_spidermonkey_js path in
+    srcES5 := Ljs_syntax.Seq (Pos.dummy, ljsd, !srcES5)
 
   let desugar_c3_js (path : string) : unit = 
     let ast = C3.parse_c3 (open_in path) path in
@@ -127,8 +140,10 @@ module S5 = struct
   let main () : unit =
     Arg.parse
       [
-        ("-desugar", Arg.String desugar_spidermonkey_js,
+        ("-desugar", Arg.String desugar_replace,
         "<file> desugar json ast file");
+        ("-desugar-env", Arg.String desugar_prepend,
+        "<file> desugar json ast file and prepend to existing LambdaJS expr");
         ("-load", Arg.String load_spidermonkey_js,
         "<file> load file as JavaScript AST");
         ("-fvs", Arg.Unit get_fvs,
