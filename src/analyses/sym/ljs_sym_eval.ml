@@ -158,20 +158,25 @@ let rec add_field_helper force obj_loc field newval pc =
   match sto_lookup_obj obj_loc pc with
   | ((SymObj ({ attrs = { extensible = symext; }}, _)) as o)
   | ((ConObj { attrs = { extensible = symext; }}) as o) ->
-    bind (branch_bool symext pc)
-      (fun (ext, pc) -> 
-        if not (force || ext) then return (field, None, Undefined) pc else
-          let vloc, pc = sto_alloc_val newval pc in
-          (* TODO : Create Accessor fields once we figure out sym code *)
-          let new_prop, pc =
-            if force then (* Only want a sym prop if called by get_prop *)
-              let symwrit, pc = new_sym_bool "writable" "add_field writable" pc in
-              let symenum, pc = new_sym_bool "enum" "add_field enum" pc in
-              let symconf, pc = new_sym_bool "config" "add_field config" pc in
-              (Data ({ value = vloc; writable = symwrit; }, symenum, symconf)), pc
-            else
-              (Data ({ value = vloc; writable = BTrue; }, BTrue, BTrue)), pc
-          in
+    bind
+      (if force then (* Create a new sym prop *)
+        (* TODO : Create Accessor fields once we figure out sym code *)
+        let vloc, pc = sto_alloc_val newval pc in
+        let symwrit, pc = new_sym_bool "writable" "add_field writable" pc in
+        let symenum, pc = new_sym_bool "enum" "add_field enum" pc in
+        let symconf, pc = new_sym_bool "config" "add_field config" pc in
+        return (Some (Data ({ value = vloc; writable = symwrit; }, symenum, symconf))) pc
+      else (* Check extensible and create a new concrete prop *)
+        bind (branch_bool symext pc)
+          (fun (ext, pc) -> 
+            if not ext then return None pc else
+              let vloc, pc = sto_alloc_val newval pc in
+              return (Some (Data ({ value = vloc; writable = BTrue; }, BTrue, BTrue))) pc))
+      (* Add the prop that we got from above *)
+      (fun (new_prop, pc) ->
+        match new_prop with
+        | None -> return (field, None, Undefined) pc
+        | Some new_prop ->
           bind (set_prop obj_loc o field new_prop pc)
             (fun (new_obj, pc) -> 
               return (field, Some new_prop, newval)
