@@ -61,7 +61,7 @@ let rec get_attr store attr obj field = match obj, field with
           | Data ({ value = v; }, _, _), S.Value -> v
           | Accessor ({ getter = gv; }, _, _), S.Getter -> gv
           | Accessor ({ setter = sv; }, _, _), S.Setter -> sv
-          | _ -> failwith "bad access of attribute"
+          | _ -> interp_error Pos.dummy "bad access of attribute"
         end
   | _ -> failwith ("[interp] get-attr didn't get an object and a string.")
 
@@ -488,7 +488,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
 
 
 
-and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ Pos.string_of_pos p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
+and arity_mismatch_err p xs args = interp_error p ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 
 (* This function is exactly as ridiculous as you think it is.  We read,
    parse, desugar, and evaluate the string, storing it to temp files along

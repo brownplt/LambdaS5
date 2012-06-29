@@ -14,6 +14,7 @@ tests/sym/harness/*/*.es5.result
 
 build/
 *~
+*#
 src/_build/
 
 *.tgz
