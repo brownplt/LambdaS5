@@ -292,14 +292,20 @@ let check_type id t pc =
     end
   with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
 
+(* Produces a new context and a bool that is true if the new
+ * context did not change (i.e. is the exact same context).
+ * If the context didn't change, then we know it's constraints
+ * are still satisfiable. *)
 let add_constraint c ctx =
-  { ctx with constraints = c :: ctx.constraints }
-     
-let add_constraints cs ctx =
-  { ctx with constraints = List.rev_append cs ctx.constraints }
+  (* Only add new constraints. *)
+  if List.exists (fun c' -> c = c') ctx.constraints
+  then (ctx, true)
+  else ({ ctx with constraints = c :: ctx.constraints }, false)
 
 let add_assert a = add_constraint (SAssert a)
-let add_let a b = add_constraint (SLet (a, b))
+let add_let a b ctx = fst (add_constraint (SLet (a, b)) ctx)
+let add_hint s ctx = fst (add_constraint (Hint s) ctx)
+
 
 let sto_alloc_val v ctx = 
   let (loc, sto) = Store.alloc v ctx.store.vals in
@@ -330,8 +336,6 @@ let sto_lookup_obj_pair loc ctx =
 let sto_lookup_val loc ctx = 
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
   Store.lookup loc ctx.store.vals
-
-let hint s pc = add_constraint (Hint s) pc
 
 (* Returns the loc of a newly allocated SymScalar *)
 let alloc_sym_scalar name hint_s pc =

@@ -90,8 +90,8 @@ let branch_bool sym_bool pc = match sym_bool with
   | BTrue -> return true pc
   | BFalse -> return false pc
   | BSym id -> combine
-    (return true (add_constraint (SAssert (SCastJS (TBool, SId id))) pc))
-    (return false (add_constraint (SAssert (SNot (SCastJS (TBool, SId id)))) pc))
+    (return true (fst (add_assert (SCastJS (TBool, SId id)) pc)))
+    (return false (fst (add_assert (SNot (SCastJS (TBool, SId id))) pc)))
 
 let branch_string sym_str pc = match sym_str with
   | SString str -> return (String str) pc
@@ -108,7 +108,7 @@ let branch_sym v pc =
     let branch newval pc = return newval
       (* Update every location in the store that has a NewSym
        * with the same id, since that sym value has now been init'd *)
-      (hint
+      (add_hint
         ("Branched replacing NewSym " ^ id
         ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
         { pc with store =
@@ -414,7 +414,7 @@ let check_field field pc =
 let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
   match obj_ptr with
   | NewSym (id, locs) -> failwith "Impossible"
-  | SymScalar id -> return (field, None) (add_assert (is_null_sym id) pc)
+  | SymScalar id -> return (field, None) (fst (add_assert (is_null_sym id) pc))
   | Null -> return (field, None) pc
   | ObjPtr obj_loc -> 
     let helper objv is_sym sym_locs pc =
@@ -427,9 +427,9 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
             (fun f' v' branches ->
               let field' = wrap_f f' in
               let f'str, pc = field_str field' pc in
-              let pc = add_assert (is_equal (SId fstr) (SId f'str)) pc in
+              let pc, unchanged = add_assert (is_equal (SId fstr) (SId f'str)) pc in
               let new_branch =
-                if is_sat pc
+                if unchanged || is_sat pc
                      ("get_prop " ^ Ljs_sym_pretty.val_to_string obj_ptr ^ " at " ^ fstr)
                 then (return (field', Some v') pc)
                 else none
@@ -442,17 +442,18 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
           in
           let branches = combine con_branches (prop_branches (fun f -> SymField f) symps) in
           let assert_neq wrap_f =
-            (fun f' _ pc ->
+            (fun f' _ (pc, all_unchanged) ->
               let f'str, pc = field_str (wrap_f f') pc in
-              add_assert (is_not_equal (SId fstr) (SId f'str)) pc) in
-          let none_pc = IdMap.fold (assert_neq (fun f -> SymField f)) symps pc in
-          let none_pc = match field with
-          | ConField f -> none_pc
-          | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps none_pc
+              let pc, unchanged =
+                add_assert (is_not_equal (SId fstr) (SId f'str)) pc in
+              (pc, unchanged && all_unchanged)) in
+          let none_pc, unchanged = IdMap.fold (assert_neq (fun f -> SymField f)) symps (pc, true) in
+          let none_pc, unchanged = match field with
+          | ConField f -> none_pc, unchanged
+          | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps (none_pc, unchanged)
           in
           let none_branch = 
-            if not (is_sat none_pc 
-                     ("get_prop none " ^ Ljs_sym_pretty.val_to_string obj_ptr))
+            if not (unchanged || is_sat none_pc ("get_prop none " ^ Ljs_sym_pretty.val_to_string obj_ptr))
             then none
             else
               if check_proto && (not is_sym || sym_proto_depth > 0) then
@@ -570,7 +571,7 @@ let rec eval jsonPath maxDepth depth
               let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
                 ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
               return (SymScalar ret_op1)
-                (add_constraint (SLet (ret_op1, SOp1 (op, SId id))) pc)
+                (add_let ret_op1 (SOp1 (op, SId id)) pc)
             | ObjPtr obj_loc ->
               begin match sto_lookup_obj obj_loc pc with
               | NewSymObj locs ->
@@ -660,13 +661,15 @@ let rec eval jsonPath maxDepth depth
           match c_val with
           | True -> eval t envs pc'
           | SymScalar id -> 
-            let true_pc = add_constraint (SAssert (SCastJS (TBool, SId id))) pc' in
-            let false_pc  = add_constraint (SAssert (SNot (SCastJS (TBool, SId id)))) pc' in
             combine
-              (if is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
+              (let (true_pc, unchanged) =
+                 add_assert (SCastJS (TBool, SId id)) pc' in
+               if unchanged || is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
                then (eval t envs true_pc)
                else none)
-              (if is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
+              (let (false_pc, unchanged) =
+                 add_assert (SNot (SCastJS (TBool, SId id))) pc' in
+               if unchanged || is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
                then (eval f envs false_pc)
                else none)
           (* TODO should ObjPtr's be truthy? *)
@@ -699,8 +702,8 @@ let rec eval jsonPath maxDepth depth
                   ([], fpc) argvs in
                 let (res_id, res_pc) = fresh_var "AP" TAny "result of function call" pcs' in 
                 return (SymScalar res_id)
-                  (add_constraint (SLet (res_id, (SApp (SId fid, vs))))
-                     (add_constraint (SLet (fid, (SId f))) res_pc))
+                  (add_let res_id (SApp (SId fid, vs))
+                     (add_let fid (SId f) res_pc))
               | _ -> apply p f_val argvs envs pcs nested_eval))
         
     | S.Seq (p, e1, e2) -> 

@@ -170,7 +170,7 @@ let rec is_array ctx obj = begin
       | SString s -> return (bool (s = "Array")) ctx
       | SSym id -> 
         let (arrStr, ctx) = const_string "Array" ctx in
-        return True (add_assert (is_equal (SId id) (SId arrStr)) ctx)
+        return True (fst (add_assert (is_equal (SId id) (SId arrStr)) ctx))
         (* TODO false branch? *)
       end
     | NewSymObj locs -> bind (init_sym_obj locs loc "" ctx) 
