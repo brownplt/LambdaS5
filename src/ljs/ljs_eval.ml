@@ -61,7 +61,7 @@ let rec get_attr store attr obj field = match obj, field with
           | Data ({ value = v; }, _, _), S.Value -> v
           | Accessor ({ getter = gv; }, _, _), S.Getter -> gv
           | Accessor ({ setter = sv; }, _, _), S.Setter -> sv
-          | _ -> failwith "bad access of attribute"
+          | _ -> interp_error Pos.dummy "bad access of attribute"
         end
   | _ -> failwith ("[interp] get-attr didn't get an object and a string.")
 
