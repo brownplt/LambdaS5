@@ -758,13 +758,22 @@ let add_preamble p used_ids var_ids final =
   let define_id id =
     S.App (p, S.Id (p, "%defineGlobalAccessors"), [S.String (p, id)]) in
   let define_var id =
-    S.App (p, S.Id (p, "%defineGlobalVar"), [S.String (p, id)]) in
+    S.App (p, S.Id (p, "%defineGlobalVar"), [S.Id (p, "%context"); S.String (p, id)]) in
   let rec dops_of_ids def_fun lst base = match lst with
     | [] -> base
     | id :: rest -> S.Seq (p, def_fun id, dops_of_ids def_fun rest base) in
   dops_of_ids define_var var_ids (dops_of_ids define_id used_ids final)
-    
+
+let rec is_strict_mode exp = match exp with
+  | S.Seq (_, S.String (_, "use strict"), _) -> true
+  | S.Seq (_, S.String _, exp) -> is_strict_mode exp
+  | _ -> false
+
 let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
   let (names, inner) = strip_lets e [] in
   let desugared = ejs_to_ljs inner in
-  add_preamble p (IdSet.elements used_ids) names desugared
+  let binder =
+    if is_strict_mode desugared then "%strictContext" else "%nonstrictContext" in
+  S.Let (p, "%context", S.Id (p, binder),
+    add_preamble p (IdSet.elements used_ids) names desugared)
+
