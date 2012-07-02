@@ -318,6 +318,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let obj_id = mk_id "obj" in
     let fun_id = mk_id "fun" in
     begin match e with
+      | E.BracketExpr (_, E.IdExpr (_, "%context"), E.String (_, "eval")) ->
+        S.App (p, S.Id (p, "%maybeDirectEval"), [S.Id (p, "%this"); S.Id (p, "%context"); args_obj])
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
         S.Let (p, fun_id, ejs_to_ljs e,
           appexpr_check (S.Id (p, fun_id))
