@@ -1,3 +1,7 @@
 var x;
 
-if(Object.getOwnPropertyDescriptor(this, "x") !== undefined) { print('passed'); }
+var g = Object.getOwnPropertyDescriptor(this, "x");
+console.log(this);
+if(g.value === undefined && g.writable === true && g.configurable === true && g.enumerable === true) {
+  print('Passed!');
+}
