@@ -102,15 +102,15 @@ let branch_string sym_str pc = match sym_str with
 (* If given a NewSym, initializes it, creating a branch for
  * every possible value it could be (either an ObjPtr to every
  * object that was in the store when it was created, or a SymScalar). *)
-let branch_sym v pc = 
+let branch_sym p v pc = 
   match v with
   | NewSym (id, obj_locs) ->
     let branch newval pc = return newval
       (* Update every location in the store that has a NewSym
        * with the same id, since that sym value has now been init'd *)
       (add_hint
-        ("Branched replacing NewSym " ^ id
-        ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
+        ("Replaced NewSym " ^ id ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
+        p
         { pc with store =
           { pc.store with vals =
             Store.mapi
@@ -457,7 +457,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
             then none
             else
               if check_proto && (not is_sym || sym_proto_depth > 0) then
-                bind (branch_sym (sto_lookup_val ploc none_pc) none_pc)
+                bind (branch_sym p (sto_lookup_val ploc none_pc) none_pc)
                   (fun (protov, pc) ->
                     let sym_proto_depth' =
                       if is_sym
@@ -516,7 +516,7 @@ let rec eval jsonPath maxDepth depth
    * which determines whether e is a scalar or a pointer. For instance, the expression
    * e + 1 means e must be a scalar. But the expression e[0] means that e is a pointer.
    * In either case, eval_sym should be used to evaluate e. *)
-  let eval_sym exp envs pc = bind (eval exp envs pc) (uncurry branch_sym) in
+  let eval_sym p exp envs pc = bind (eval exp envs pc) (uncurry (branch_sym p)) in
 
   let pc = { pc with print_env = (cur_env envs); } in
 
@@ -561,7 +561,7 @@ let rec eval jsonPath maxDepth depth
 
     | S.Op1 (p, op, e) ->
       bind 
-        (eval_sym e envs pc)
+        (eval_sym p e envs pc)
         (fun (ev, pc) -> 
           try
             match ev with
@@ -586,10 +586,10 @@ let rec eval jsonPath maxDepth depth
         
     | S.Op2 (p, op, e1, e2) -> 
       bind
-        (eval_sym e1 envs pc)
+        (eval_sym p e1 envs pc)
         (fun (e1_val, pc) ->
           bind 
-            (eval_sym e2 envs pc)
+            (eval_sym p e2 envs pc)
             (fun (e2_val, pc) -> 
               (* Special case for op2s on objects *)
               match op with
@@ -656,7 +656,7 @@ let rec eval jsonPath maxDepth depth
         
     | S.If (p, c, t, f) ->
       bind 
-        (eval_sym c envs pc)
+        (eval_sym p c envs pc)
         (fun (c_val, pc') -> 
           match c_val with
           | True -> eval t envs pc'
@@ -664,11 +664,13 @@ let rec eval jsonPath maxDepth depth
             combine
               (let (true_pc, unchanged) =
                  add_assert (SCastJS (TBool, SId id)) pc' in
+               let true_pc = add_hint ("if true") p true_pc in
                if unchanged || is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
                then (eval t envs true_pc)
                else none)
               (let (false_pc, unchanged) =
                  add_assert (SNot (SCastJS (TBool, SId id))) pc' in
+               let false_pc = add_hint ("if false") p false_pc in
                if unchanged || is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
                then (eval f envs false_pc)
                else none)
@@ -677,7 +679,7 @@ let rec eval jsonPath maxDepth depth
         
     | S.App (p, f, args) -> 
       bind 
-        (eval_sym f envs pc)
+        (eval_sym p f envs pc)
         (fun (f_val, pc_f) ->
           let args_pcs : (value list * ctx) list * (exval * ctx) list =
             List.fold_left 
@@ -763,7 +765,7 @@ let rec eval jsonPath maxDepth depth
             bind
               (match protoexp with
               | None -> return Undefined pc_v
-              | Some pexp -> eval_sym pexp envs pc_v)
+              | Some pexp -> eval_sym p pexp envs pc_v)
               (fun (p, pc_p) ->
                 let (ploc, pc_p) = sto_alloc_val p pc_p in
                 bind
@@ -814,9 +816,9 @@ let rec eval jsonPath maxDepth depth
     (* GetAttr gets the specified attr of one property of an object, as opposed to
      * getting an attr of the object itself. *)
     | S.GetAttr (p, attr, obj_ptr, field) ->
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc_o) -> 
-          bind (eval_sym field envs pc_o) 
+          bind (eval_sym p field envs pc_o) 
             (fun (fv, pc_f) -> 
               bind (check_field fv pc_f)
                  (fun (fv, pc') -> 
@@ -827,9 +829,9 @@ let rec eval jsonPath maxDepth depth
                      | None -> return Undefined pc'))))
 
     | S.SetAttr (p, attr, obj_ptr, field, newval) ->
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc_o) -> 
-          bind (eval_sym field envs pc_o) 
+          bind (eval_sym p field envs pc_o) 
             (fun (fv, pc_f) -> 
               bind (eval newval envs pc_f)
                 (fun (newvalv, pc_v) ->
@@ -846,7 +848,7 @@ let rec eval jsonPath maxDepth depth
                 
 
     | S.GetObjAttr (p, oattr, obj_ptr) -> 
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc) -> 
           match obj_ptrv with
           | ObjPtr obj_loc -> begin match sto_lookup_obj obj_loc pc with
@@ -859,9 +861,9 @@ let rec eval jsonPath maxDepth depth
           | _ -> throw_str "GetObjAttr given non-object" pc)
 
     | S.SetObjAttr (p, oattr, obj_ptr, newattr) ->
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc) -> 
-          bind (eval_sym newattr envs pc) (* eval_sym b/c it could be a proto *)
+          bind (eval_sym p newattr envs pc) (* eval_sym b/c it could be a proto *)
             (fun (newattrv, pc) ->
               match obj_ptrv with
               | ObjPtr obj_loc -> set_obj_attr oattr obj_loc newattrv pc
@@ -877,9 +879,9 @@ let rec eval jsonPath maxDepth depth
      * constraints must be checked by Z3.
      *)
     | S.GetField (p, obj_ptr, f, args) -> 
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc) -> 
-          bind (eval_sym f envs pc) 
+          bind (eval_sym p f envs pc) 
             (fun (fv, pc) -> 
 
               (* In desugared JS, GetField is called on the global object
@@ -937,9 +939,9 @@ let rec eval jsonPath maxDepth depth
           apply p (sto_lookup_val sloc pc) setter_params envs pc nested_eval
         | None -> add_field obj_loc f newval pc
       in
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc_o) -> 
-          bind (eval_sym f envs pc_o) 
+          bind (eval_sym p f envs pc_o) 
             (fun (fv, pc_f) -> 
               bind (eval v envs pc_f)
                 (fun (vv, pc_v) -> 
@@ -956,9 +958,9 @@ let rec eval jsonPath maxDepth depth
                               | _ -> failwith "Impossible -- should be an ObjPtr"))))))
 
     | S.DeleteField (p, obj_ptr, f) ->
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc) -> 
-          bind (eval_sym f envs pc) 
+          bind (eval_sym p f envs pc) 
             (fun (fv, pc) -> 
               bind (check_field fv pc)
                 (fun (fv, pc) -> 
@@ -981,7 +983,7 @@ let rec eval jsonPath maxDepth depth
 
 
     | S.OwnFieldNames (p, obj_ptr) ->
-      bind (eval_sym obj_ptr envs pc)
+      bind (eval_sym p obj_ptr envs pc)
         (fun (obj_ptrv, pc) ->
           match obj_ptrv with
           | ObjPtr obj_loc ->

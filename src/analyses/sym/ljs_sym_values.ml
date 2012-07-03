@@ -102,7 +102,7 @@ and ctx = { constraints : sym_exp list;
 
 (* language of constraints *)
 and sym_exp =
-  | Hint of string
+  | Hint of string * Pos.t
   | Concrete of value 
   | STime of int
   | SLoc of Store.loc
@@ -304,7 +304,7 @@ let add_constraint c ctx =
 
 let add_assert a = add_constraint (SAssert a)
 let add_let a b ctx = fst (add_constraint (SLet (a, b)) ctx)
-let add_hint s ctx = fst (add_constraint (Hint s) ctx)
+let add_hint s p ctx = fst (add_constraint (Hint (s, p)) ctx)
 
 
 let sto_alloc_val v ctx = 

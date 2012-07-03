@@ -102,7 +102,7 @@ and exp e store =
     | TObjPtr -> parens (horz [text "OBJPTR"; e])
     | _ -> e in
   match e with
-  | Hint s -> horz [text ";;"; text s] 
+  | Hint (s, p) -> horz [text ";;"; text s; text (Pos.string_of_pos p)] 
   | Concrete v -> value v store
   | STime t -> int t
   | SLoc l -> text (Store.print_loc l)
@@ -177,7 +177,7 @@ let rec simplep_value v =
 
 let rec simplep_exp e = 
   match e with
-  | Hint s -> horz [text ";;"; text s] 
+  | Hint (s, p) -> horz [text ";;"; text s; text (Pos.string_of_pos p)] 
   | Concrete v -> simplep_value v
   | SLoc l -> text (Store.print_loc l)
   | SId id -> text id
