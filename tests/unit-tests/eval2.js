@@ -1,4 +1,4 @@
 function foo() {
-    eval("print('passed');");
+    eval("'use strict';print('passed');");
 }
 foo();
