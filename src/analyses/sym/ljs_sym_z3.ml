@@ -271,6 +271,7 @@ let print_results results =
   (* TODO better printing *)
   let rets = just_values results in 
   let exns = just_exns results in 
+  let unsats = just_unsats results in
   let ret_grps, exn_grps = collect compare rets, collect compare exns in
   (*let t1 = Sys.time() in*)
   List.iter
@@ -305,7 +306,11 @@ let print_results results =
       | Ljs_sym_values.Throw v ->
         printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (List.length pcs)
       | _ -> printf "Exn: something other than a Throw\n")
-    exn_grps
+    exn_grps;
+
+  printf "Unsat branches: %d" (List.length unsats)
+
+
   (*let t2 = Sys.time() in*)
   (*printf "printresult %f\n" (t2 -. t1)*)
 

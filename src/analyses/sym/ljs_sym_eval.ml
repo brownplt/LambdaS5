@@ -424,7 +424,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
                 if unchanged || is_sat pc
                      ("get_prop " ^ Ljs_sym_pretty.val_to_string obj_ptr ^ " at " ^ fstr)
                 then return (field', Some v') pc
-                else none
+                else unsat pc
               in combine new_branch branches)
             props none
           in
@@ -446,7 +446,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
           in
           let none_branch = 
             if not (unchanged || is_sat none_pc ("get_prop none " ^ Ljs_sym_pretty.val_to_string obj_ptr))
-            then none
+            then unsat none_pc
             else
               if check_proto && (not is_sym || sym_proto_depth > 0) then
                 bind (branch_sym p (sto_lookup_val ploc none_pc) none_pc)
@@ -657,14 +657,14 @@ let rec eval jsonPath maxDepth depth
                  add_assert (SCastJS (TBool, SId id)) pc' in
                let true_pc = add_hint ("if true") p true_pc in
                if unchanged || is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
-               then (eval t envs true_pc)
-               else none)
+               then eval t envs true_pc
+               else unsat true_pc)
               (let (false_pc, unchanged) =
                  add_assert (SNot (SCastJS (TBool, SId id))) pc' in
                let false_pc = add_hint ("if false") p false_pc in
                if unchanged || is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
-               then (eval f envs false_pc)
-               else none)
+               then eval f envs false_pc
+               else unsat false_pc)
           (* TODO should ObjPtr's be truthy? *)
           | _ -> eval f envs pc')
         
