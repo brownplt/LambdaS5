@@ -85,7 +85,7 @@ let rec apply p func args envs pc nested_eval = match func with
                          Ljs_sym_pretty.val_to_string func))
 
 (* Creates all possible branches for a symbolic boolean value,
- * returning results whose values are ocaml bools. *)
+ * returning results whose values are OCaml bools. *)
 let branch_bool sym_bool pc = match sym_bool with
   | BTrue -> return true pc
   | BFalse -> return false pc
@@ -388,8 +388,8 @@ let check_field field pc =
   match field with
   | String f    -> return (ConField f) pc
   | SymScalar f -> return (SymField f) pc
-  | _ -> throw_str ("get_field called with non-string/sym field: " ^
-                                  Ljs_sym_pretty.val_to_string field) pc
+  | _ -> throw_str ("get_field called with non-string/sym field: "
+                    ^ Ljs_sym_pretty.val_to_string field) pc
 
 (* Assume we are given field = String or SymScalar, and obj = Null or ObjPtr, then
    To Lookup a field on an obj: 
@@ -423,7 +423,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
               let new_branch =
                 if unchanged || is_sat pc
                      ("get_prop " ^ Ljs_sym_pretty.val_to_string obj_ptr ^ " at " ^ fstr)
-                then (return (field', Some v') pc)
+                then return (field', Some v') pc
                 else none
               in combine new_branch branches)
             props none
@@ -672,8 +672,8 @@ let rec eval jsonPath maxDepth depth
       bind 
         (eval_sym p f envs pc)
         (fun (f_val, pc_f) ->
-          let args_pcs : (value list * ctx) list * (exval * ctx) list =
-            List.fold_left 
+          bind 
+            (List.fold_left 
               (fun avpcs arg ->
                 bind avpcs
                   (fun ((argvs : value list), (pcs : ctx)) -> 
@@ -683,8 +683,7 @@ let rec eval jsonPath maxDepth depth
                       (eval arg envs pcs)
                       (fun (argv, pcs') ->
                         return (argvs @ [argv]) pcs')))
-              ([([], pc_f)], []) args in
-          bind args_pcs
+              (return [] pc_f) args)
             (fun (argvs, pcs) ->
               match f_val with
               | SymScalar f -> 
@@ -786,8 +785,8 @@ let rec eval jsonPath maxDepth depth
                                 return (Accessor ({ getter = v2loc; setter = v3loc},
                                                   symbool enum, symbool config)) pc_v3))
                     in
-                    let propvs_pcs  = 
-                      List.fold_left
+                    bind
+                      (List.fold_left
                         (fun maps_pcs (name, prop) -> 
                           bind maps_pcs
                             (fun (map, pc) ->
@@ -796,8 +795,7 @@ let rec eval jsonPath maxDepth depth
                                 (fun (propv, pc_v) -> 
                                   let (_, pc') = const_string name pc_v in
                                   return (IdMap.add name propv map) pc')))
-                        ([(IdMap.empty, pc_c)], []) propse in
-                    bind propvs_pcs
+                        (return IdMap.empty pc_c) propse)
                       (fun (propvs, pc_psv) -> 
                         let objv = ConObj { attrs = attrsv; conps = propvs; symps = IdMap.empty; } in
                         let (loc, pc_obj) = sto_alloc_obj objv pc_psv in
@@ -1093,7 +1091,7 @@ and eval_op str envs jsonPath maxDepth pc =
   end
 
 let rec eval_expr expr jsonPath maxDepth pc = 
-  let (rets, exns) =
+  let results =
     bind_exn
       (eval jsonPath maxDepth 0 expr mt_envs pc)
       (fun (e, pc) -> match e with
@@ -1118,4 +1116,4 @@ let rec eval_expr expr jsonPath maxDepth pc =
         throw_str ("Uncaught exception: " ^ err_msg) pc
       | Break (l, v) -> throw_str ("Broke to top of execution, missed label: " ^ l) pc)
     in
-    (rets, exns)
+    results
