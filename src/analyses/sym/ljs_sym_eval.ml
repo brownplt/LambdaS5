@@ -105,19 +105,21 @@ let branch_string sym_str pc = match sym_str with
 let branch_sym p v pc = 
   match v with
   | NewSym (id, obj_locs) ->
-    let branch newval pc = return newval
-      (* Update every location in the store that has a NewSym
-       * with the same id, since that sym value has now been init'd *)
-      (add_hint
-        ("Replaced NewSym " ^ id ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
-        p
-        { pc with store =
-          { pc.store with vals =
-            Store.mapi
-              (fun loc v -> match v with
-              | NewSym (id', _) -> if id' = id then newval else v
-              | _ -> v)
-              pc.store.vals }})
+    let branch newval pc =
+      add_trace_pt (p, "Replaced NewSym " ^ id ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
+        (return newval
+          (* Update every location in the store that has a NewSym
+           * with the same id, since that sym value has now been init'd *)
+          (add_hint
+            ("Replaced NewSym " ^ id ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
+            p
+            { pc with store =
+              { pc.store with vals =
+                Store.mapi
+                  (fun loc v -> match v with
+                  | NewSym (id', _) -> if id' = id then newval else v
+                  | _ -> v)
+                  pc.store.vals }}))
     in
     combine
       (* One branch for if its a scalar *)
@@ -424,8 +426,9 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
                 if unchanged || is_sat pc
                      ("get_prop " ^ Ljs_sym_pretty.val_to_string obj_ptr ^ " at " ^ fstr)
                 then return (field', Some v') pc
-                else unsat pc
-              in combine new_branch branches)
+                else unsat pc in
+              let new_branch = add_trace_pt (p, fstr ^ " = " ^ f'str) new_branch in
+              combine new_branch branches)
             props none
           in
           let con_branches = match field with
@@ -457,6 +460,9 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
                       else sym_proto_depth in
                     sym_get_prop_helper check_proto sym_proto_depth' p pc protov field) 
               else return (field, None) pc in
+          (* Only add a trace if we actually did some branching *)
+          let none_branch = if branches = none then none_branch else
+            add_trace_pt (p, fstr ^ " <> all fields") none_branch in
           combine none_branch branches
       end in
       bind potential_props (fun ((field, prop), pc) ->
@@ -653,18 +659,20 @@ let rec eval jsonPath maxDepth depth
           | True -> eval t envs pc'
           | SymScalar id -> 
             combine
-              (let (true_pc, unchanged) =
-                 add_assert (SCastJS (TBool, SId id)) pc' in
-               let true_pc = add_hint ("if true") p true_pc in
-               if unchanged || is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
-               then eval t envs true_pc
-               else unsat true_pc)
-              (let (false_pc, unchanged) =
-                 add_assert (SNot (SCastJS (TBool, SId id))) pc' in
-               let false_pc = add_hint ("if false") p false_pc in
-               if unchanged || is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
-               then eval f envs false_pc
-               else unsat false_pc)
+              (add_trace_pt (p, "if true")
+                (let (true_pc, unchanged) =
+                   add_assert (SCastJS (TBool, SId id)) pc' in
+                 let true_pc = add_hint ("if true") p true_pc in
+                 if unchanged || is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
+                 then eval t envs true_pc
+                 else unsat true_pc))
+              (add_trace_pt (p, "if false")
+                (let (false_pc, unchanged) =
+                   add_assert (SNot (SCastJS (TBool, SId id))) pc' in
+                 let false_pc = add_hint ("if false") p false_pc in
+                 if unchanged || is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
+                 then eval f envs false_pc
+                 else unsat false_pc))
           (* TODO should ObjPtr's be truthy? *)
           | _ -> eval f envs pc')
         
