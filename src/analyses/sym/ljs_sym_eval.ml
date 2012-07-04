@@ -135,13 +135,13 @@ let set_conps o conps = { o with conps = conps }
 let set_symps o symps = { o with symps = symps }
 
 let rec set_prop loc o f prop pc = match o, f with
-  | SymObj (o, locs), SymField f -> return (SymObj (set_symps o (IdMap.add f prop (get_symps o)), locs)) pc
-  | SymObj (o, locs), ConField f -> return (SymObj (set_conps o (IdMap.add f prop (get_conps o)), locs)) pc
-  | ConObj o, SymField f -> return (ConObj (set_symps o (IdMap.add f prop (get_symps o)))) pc
-  | ConObj o, ConField f -> return (ConObj (set_conps o (IdMap.add f prop (get_conps o)))) pc
+  | SymObj (o, locs), SymField f -> (SymObj (set_symps o (IdMap.add f prop (get_symps o)), locs), pc)
+  | SymObj (o, locs), ConField f -> (SymObj (set_conps o (IdMap.add f prop (get_conps o)), locs), pc)
+  | ConObj o, SymField f -> (ConObj (set_symps o (IdMap.add f prop (get_symps o))), pc)
+  | ConObj o, ConField f -> (ConObj (set_conps o (IdMap.add f prop (get_conps o))), pc)
   | NewSymObj locs, _ ->
-    bind (init_sym_obj locs loc "init_sym_obj set_prop" pc)
-      (fun (o, pc) -> set_prop loc o f prop pc)
+    let o, pc = init_sym_obj locs loc "init_sym_obj set_prop" pc in
+    set_prop loc o f prop pc
 
 let get_prop o f = match f with 
   | SymField f -> IdMap.find f (get_symps o)
@@ -177,15 +177,12 @@ let rec add_field_helper force obj_loc field newval pc =
         match new_prop with
         | None -> return (field, None, Undefined) pc
         | Some new_prop ->
-          bind (set_prop obj_loc o field new_prop pc)
-            (fun (new_obj, pc) -> 
-              return (field, Some new_prop, newval)
-                (sto_update_obj obj_loc new_obj pc)))
+          let new_obj, pc = set_prop obj_loc o field new_prop pc in
+          return (field, Some new_prop, newval)
+            (sto_update_obj obj_loc new_obj pc))
   | NewSymObj locs ->
-    bind
-      (init_sym_obj locs obj_loc "init_sym_obj add_field" pc)
-      (fun (_, pc) -> 
-        add_field_helper force obj_loc field newval pc)
+    let _, pc = init_sym_obj locs obj_loc "init_sym_obj add_field" pc in
+    add_field_helper force obj_loc field newval pc
 
 let add_field loc field v pc = bind (add_field_helper false loc field v pc)
   (fun ((_, _, v), pc) -> return v pc)
@@ -217,35 +214,35 @@ let get_obj_attr oattr attrs pc = match attrs, oattr with
   | { klass=sym_klass }, S.Klass -> branch_string sym_klass pc
 
 let set_obj_attr oattr obj_loc newattr pc =
-  let update_attr ({ attrs = attrs } as o) pc = bind
-    (match oattr, newattr with
+  let update_attrs o wrap_obj =
+    let set_attrs newattrs pc =
+      let new_obj = wrap_obj { o with attrs = newattrs } in
+      let pc = sto_update_obj obj_loc new_obj pc in
+      return newattr pc
+    in
+    match oattr, newattr with
     | S.Proto, ObjPtr _
     | S.Proto, Null ->
       let ploc, pc = sto_alloc_val newattr pc in
-      return { attrs with proto=ploc } pc
+      set_attrs { o.attrs with proto=ploc } pc
     | S.Proto, _ ->
       throw_str ("[interp] Update proto given invalid value: "
                  ^ Ljs_sym_pretty.val_to_string newattr) pc
-    | S.Extensible, True -> return { attrs with extensible=BTrue } pc
-    | S.Extensible, False -> return { attrs with extensible=BFalse } pc
+    | S.Extensible, True -> set_attrs { o.attrs with extensible=BTrue } pc
+    | S.Extensible, False -> set_attrs { o.attrs with extensible=BFalse } pc
       (* TODO do we need to assert that this sym is a bool? *)
-    | S.Extensible, SymScalar id -> return { attrs with extensible=BSym id } pc
+    | S.Extensible, SymScalar id -> set_attrs { o.attrs with extensible=BSym id } pc
     | S.Extensible, _ ->
       throw_str ("[interp] Update extensible given invalid value: "
                  ^ Ljs_sym_pretty.val_to_string newattr) pc
     | S.Code, _ -> throw_str "[interp] Can't update Code" pc
     | S.Primval, _ -> throw_str "[interp] Can't update Primval" pc
-    | S.Klass, _ -> throw_str "[interp] Can't update Klass" pc)
-    (fun (newattrs, pc) ->
-       return { o with attrs = newattrs } pc)
+    | S.Klass, _ -> throw_str "[interp] Can't update Klass" pc
   in
-  bind
-    (match sto_lookup_obj obj_loc pc with
-    | ConObj o -> bind (update_attr o pc) (fun (newo, pc) -> return (ConObj newo) pc)
-    | SymObj (o, locs) -> bind (update_attr o pc) (fun (newo, pc) -> return (SymObj (newo, locs)) pc)
-    | NewSymObj _ -> failwith "Impossible! Should have init'd NewSymObj.")
-    (fun (newo, pc) ->
-      return newattr (sto_update_obj obj_loc newo pc))
+  match sto_lookup_obj obj_loc pc with
+  | ConObj o -> update_attrs o (fun o -> ConObj o) 
+  | SymObj (o, locs) -> update_attrs o (fun o -> (SymObj (o, locs)))
+  | NewSymObj _ -> failwith "Impossible! Should have init'd NewSymObj."
 
 (* Gets an attr of a prop of an object *)
 (*let get_attr attr props field pc = *)
@@ -277,92 +274,95 @@ let get_attr attr prop pc = match prop, attr with
 *)
 let set_attr p attr obj_loc field prop newval pc =
   let objv = sto_lookup_obj obj_loc pc in
-  let ext_branches = match objv with
-  | ConObj { attrs = { extensible = ext; } }
-  | SymObj ({ attrs = { extensible = ext; } }, _) -> branch_bool ext pc
-  | NewSymObj _ -> failwith "Impossible! set_attr given NewSymObj"
+  let set_new_prop newprop pc =
+    let new_obj, pc = set_prop obj_loc objv field newprop pc in
+    return True (sto_update_obj obj_loc new_obj pc)
   in
-  let make_updated_prop ext pc =
-    match prop with
+  bind
+    (match objv with
+    | ConObj { attrs = { extensible = ext; } }
+    | SymObj ({ attrs = { extensible = ext; } }, _) -> branch_bool ext pc
+    | NewSymObj _ -> failwith "Impossible! set_attr given NewSymObj")
+    (fun (ext, pc) -> match prop with
     | None ->
       if ext then match attr with
       | S.Getter ->
         let vloc, pc = sto_alloc_val newval pc in 
         let uloc, pc = sto_alloc_val Undefined pc in
-        return (Accessor ({ getter = vloc; setter = uloc; },
+        set_new_prop (Accessor ({ getter = vloc; setter = uloc; },
                   BFalse, BFalse)) pc
       | S.Setter ->
         let vloc, pc = sto_alloc_val newval pc in 
         let uloc, pc = sto_alloc_val Undefined pc in
-        return (Accessor ({ getter = uloc; setter = vloc; },
+        set_new_prop (Accessor ({ getter = uloc; setter = vloc; },
                   BFalse, BFalse)) pc
       | S.Value ->
         let vloc, pc = sto_alloc_val newval pc in 
-        return (Data ({ value = vloc; writable = BFalse; }, BFalse, BFalse)) pc
+        set_new_prop (Data ({ value = vloc; writable = BFalse; }, BFalse, BFalse)) pc
       | S.Writable ->
         let uloc, pc = sto_alloc_val Undefined pc in
-        return (Data ({ value = uloc; writable = symboolv newval },
+        set_new_prop (Data ({ value = uloc; writable = symboolv newval },
               BFalse, BFalse)) pc
       | S.Enum ->
         let uloc, pc = sto_alloc_val Undefined pc in
-        return (Data ({ value = uloc; writable = BFalse },
+        set_new_prop (Data ({ value = uloc; writable = BFalse },
               symboolv newval, BTrue)) pc
       | S.Config ->
         let uloc, pc = sto_alloc_val Undefined pc in
-        return (Data ({ value = uloc; writable = BFalse },
+        set_new_prop (Data ({ value = uloc; writable = BFalse },
               BTrue, symboolv newval)) pc
       else
         failwith "[interp] Extending inextensible object ."
-    | Some prop ->
+    | Some prop -> begin
       (* 8.12.9: "If a field is absent, then its value is considered
          to be false" -- we ensure that fields are present and
          (and false, if they would have been absent). *)
-      begin match prop, attr, newval with
+      match prop, attr, newval with
         (* S.Writable true -> false when configurable is false *)
         | Data ({ writable = BTrue } as d, enum, config), S.Writable, new_w ->
-          return (Data ({ d with writable = symboolv new_w }, enum, config)) pc
+          set_new_prop (Data ({ d with writable = symboolv new_w }, enum, config)) pc
         | Data (d, enum, BTrue), S.Writable, new_w ->
-          return (Data ({ d with writable = symboolv new_w }, enum, BTrue)) pc
+          set_new_prop (Data ({ d with writable = symboolv new_w }, enum, BTrue)) pc
         (* Updating values only checks writable *)
         | Data ({ writable = BTrue } as d, enum, config), S.Value, v ->
           let vloc, pc = sto_alloc_val v pc in
-          return (Data ({ d with value = vloc }, enum, config)) pc
+          set_new_prop (Data ({ d with value = vloc }, enum, config)) pc
         (* If we had a data property, update it to an accessor *)
         | Data (d, enum, BTrue), S.Setter, setterv ->
           let sloc, pc = sto_alloc_val setterv pc in
           let uloc, pc = sto_alloc_val Undefined pc in
-          return (Accessor ({ getter = uloc; setter = sloc }, enum, BTrue)) pc
+          set_new_prop (Accessor ({ getter = uloc; setter = sloc }, enum, BTrue)) pc
         | Data (d, enum, BTrue), S.Getter, getterv ->
           let gloc, pc = sto_alloc_val getterv pc in
           let uloc, pc = sto_alloc_val Undefined pc in
-          return (Accessor ({ getter = gloc; setter = uloc }, enum, BTrue)) pc
+          set_new_prop (Accessor ({ getter = gloc; setter = uloc }, enum, BTrue)) pc
         (* Accessors can update their getter and setter properties *)
         | Accessor (a, enum, BTrue), S.Getter, getterv ->
           let gloc, pc = sto_alloc_val getterv pc in
-          return (Accessor ({ a with getter = gloc }, enum, BTrue)) pc
+          set_new_prop (Accessor ({ a with getter = gloc }, enum, BTrue)) pc
         | Accessor (a, enum, BTrue), S.Setter, setterv ->
           let sloc, pc = sto_alloc_val setterv pc in
-          return (Accessor ({ a with setter = sloc }, enum, BTrue)) pc
+          set_new_prop (Accessor ({ a with setter = sloc }, enum, BTrue)) pc
         (* An accessor can be changed into a data property *)
         | Accessor (a, enum, BTrue), S.Value, v ->
           let vloc, pc = sto_alloc_val v pc in
-          return (Data ({ value = vloc; writable = BFalse; }, enum, BTrue)) pc
+          set_new_prop (Data ({ value = vloc; writable = BFalse; }, enum, BTrue)) pc
         | Accessor (a, enum, BTrue), S.Writable, w ->
           let uloc, pc = sto_alloc_val Undefined pc in
-          return (Data ({ value = uloc; writable = symboolv w; }, enum, BTrue)) pc
+          set_new_prop (Data ({ value = uloc; writable = symboolv w; }, enum, BTrue)) pc
         (* enumerable and configurable need configurable=true *)
         | Data (d, _, BTrue), S.Enum, new_enum ->
-          return (Data (d, symboolv new_enum, BTrue)) pc
+          set_new_prop (Data (d, symboolv new_enum, BTrue)) pc
         | Data (d, enum, BTrue), S.Config, new_config ->
-          return (Data (d, enum, symboolv new_config)) pc
+          set_new_prop (Data (d, enum, symboolv new_config)) pc
         | Data (d, enum, BFalse), S.Config, False ->
-          return (Data (d, enum, BFalse)) pc
+          set_new_prop (Data (d, enum, BFalse)) pc
         | Accessor (a, enum, BTrue), S.Config, new_config ->
-          return (Accessor (a, enum, symboolv new_config)) pc
+          set_new_prop (Accessor (a, enum, symboolv new_config)) pc
         | Accessor (a, enum, BTrue), S.Enum, new_enum ->
-          return (Accessor (a, symboolv new_enum, BTrue)) pc
+          set_new_prop (Accessor (a, symboolv new_enum, BTrue)) pc
         | Accessor (a, enum, BFalse), S.Config, False ->
-          return (Accessor (a, enum, BFalse)) pc
+          set_new_prop (Accessor (a, enum, BFalse)) pc
         | _ ->
           let fstr = match field with ConField f | SymField f -> f in
           throw_str (interp_error p ("Can't set attr "
@@ -371,15 +371,7 @@ let set_attr p attr obj_loc field prop newval pc =
             ^ Ljs_sym_pretty.val_to_string newval
             ^ " for field: " ^ fstr)) pc
             (*^ (FormatExt.to_string (curry Ljs_sym_pretty.prop)) (fstr, prop))) pc*)
-      end
-    in
-    bind ext_branches
-      (fun (ext, pc) ->
-        bind (make_updated_prop ext pc)
-          (fun (newprop, pc) ->
-            bind (set_prop obj_loc objv field newprop pc)
-              (fun (new_obj, pc) ->
-                return True (sto_update_obj obj_loc new_obj pc))))
+      end)
 
 (* 8.10.5, steps 7/8 "If iscallable(getter) is false and getter is not
    undefined..." *)
@@ -489,9 +481,8 @@ let rec sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field =
     | ConObj o -> helper o false None pc
     | SymObj (o, locs) -> helper o true (Some locs) pc
     | NewSymObj locs ->
-      bind (init_sym_obj locs obj_loc "init_sym_obj sym_get_prop" pc) 
-        (fun (_, pc) ->
-          sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field)
+      let _, pc = (init_sym_obj locs obj_loc "init_sym_obj sym_get_prop" pc) in
+      sym_get_prop_helper check_proto sym_proto_depth p pc obj_ptr field
     end
   | _ -> throw_str (interp_error p 
          "get_prop on a non-object.  The expression was (get-prop " 
@@ -575,8 +566,8 @@ let rec eval jsonPath maxDepth depth
             | ObjPtr obj_loc ->
               begin match sto_lookup_obj obj_loc pc with
               | NewSymObj locs ->
-                bind (init_sym_obj locs obj_loc "op1 init_sym_obj" pc)
-                  (fun (_, pc) -> op1 pc op ev)
+                let _, pc = init_sym_obj locs obj_loc "op1 init_sym_obj" pc in
+                op1 pc op ev
               | _ -> op1 pc op ev
               end
             | _ -> op1 pc op ev
@@ -929,11 +920,9 @@ let rec eval jsonPath maxDepth depth
                   end | _ -> failwith "Impossible! update_prop shouldn't get NewSymObj"
                 in
                 let vloc, pc = sto_alloc_val newval pc in
-                bind
-                  (set_prop obj_loc objv f
-                        (Data ({ value = vloc; writable = BTrue }, enum, config)) pc)
-                  (fun (new_obj, pc) ->
-                    return newval (sto_update_obj obj_loc new_obj pc))
+                let new_obj, pc = set_prop obj_loc objv f
+                  (Data ({ value = vloc; writable = BTrue }, enum, config)) pc in
+                return newval (sto_update_obj obj_loc new_obj pc)
               else throw_str ("Can't write to non-writable field " ^ fst (field_str f pc)) pc)
         | Some (Accessor ({ setter = sloc; }, _, _)) ->
           apply p (sto_lookup_val sloc pc) setter_params envs pc nested_eval

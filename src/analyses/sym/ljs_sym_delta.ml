@@ -154,8 +154,8 @@ let rec object_to_string ctx obj = begin
       | SSym id -> "[object " ^ id ^ "]"
       in return (String objstr) (add_const_string objstr ctx)
     | NewSymObj locs ->
-      bind (init_sym_obj locs loc "object_to_string init_sym_obj" ctx) 
-        (fun (_, ctx) -> object_to_string ctx obj)
+      let _, ctx = init_sym_obj locs loc "object_to_string init_sym_obj" ctx in
+      object_to_string ctx obj
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
@@ -173,8 +173,9 @@ let rec is_array ctx obj = begin
         return True (fst (add_assert (is_equal (SId id) (SId arrStr)) ctx))
         (* TODO false branch? *)
       end
-    | NewSymObj locs -> bind (init_sym_obj locs loc "" ctx) 
-      (fun (_, ctx) -> is_array ctx obj)
+    | NewSymObj locs -> 
+      let _, ctx = init_sym_obj locs loc "" ctx in
+      is_array ctx obj
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")

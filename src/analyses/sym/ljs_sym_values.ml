@@ -343,11 +343,6 @@ let alloc_sym_scalar name hint_s pc =
   let (sym_loc, pc) = sto_alloc_val (SymScalar sym_id) pc in
   (sym_loc, pc)
 
-let alloc_sym_scalar_opt name hint_s pc =
-  let (sym_loc, pc') = alloc_sym_scalar name hint_s pc in
-  combine
-    (return (Some sym_loc) pc')
-    (return None pc)
 
 (* Creates a new symbolic boolean to be used as an attr *)
 let new_sym_bool name hint_s pc =
@@ -400,10 +395,6 @@ let init_sym_obj locs loc hint_s pc =
   let proto, pc = new_sym_from_locs locs "proto"
                           ("new %proto for " ^ (Store.print_loc loc)) pc in
   let proto_loc, pc = sto_alloc_val proto pc in
-  (*bind (alloc_sym_scalar_opt "code" "code attr" pc) *)
-  (*  (fun (code_loc_opt, pc) ->*)
-  (*    bind (alloc_sym_scalar_opt "primval" "primval attr" pc)*)
-  (*      (fun (pv_loc_opt, pc) ->*)
   let pv_loc, pc = alloc_sym_scalar "primval" "primval attr" pc in
   let ret = SymObj ({
     attrs = { code = None; proto = proto_loc; extensible = sym_ext;
@@ -411,4 +402,4 @@ let init_sym_obj locs loc hint_s pc =
     conps = IdMap.empty;
     symps = IdMap.empty
   }, locs) in
-  return ret (sto_update_obj loc ret pc)
+  (ret, sto_update_obj loc ret pc)
