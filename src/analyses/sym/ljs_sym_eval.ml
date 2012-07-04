@@ -493,7 +493,7 @@ let sym_get_own_prop = sym_get_prop_helper false max_sym_proto_depth
 
 let rec eval jsonPath maxDepth depth
       exp (envs : env_stack) (pc : ctx)
-      : result list * exresult list = 
+      : results = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if (not pc.hide_objs) && print_store then printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);

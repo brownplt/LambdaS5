@@ -267,7 +267,10 @@ let simple_pc result pc =
 
 let simple_to_string result pc = simple_pc result pc Format.str_formatter; Format.flush_str_formatter() 
 
-let print_results (rets, exns) = 
+let print_results results = 
+  (* TODO better printing *)
+  let rets = just_values results in 
+  let exns = just_exns results in 
   let ret_grps, exn_grps = collect compare rets, collect compare exns in
   (*let t1 = Sys.time() in*)
   List.iter

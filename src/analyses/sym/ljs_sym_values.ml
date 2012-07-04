@@ -82,9 +82,6 @@ and exval =
   | Throw of value
 and label = string
 
-and result = value * ctx
-and exresult = exval * ctx
-
 (* Obj store holds (obj, hide), where hide = true indicates
  * that the object is an LJS internal and therefore not a
  * possible assignment for a new sym value. *)
@@ -169,30 +166,85 @@ let lookup_field o f = SApp(SId "lookupField", [o; f])
 let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])
 let update_dataField o f v = SApp(SId "updateField", [o; f; v])
   
+type result = value * ctx
+type exn_result = exval * ctx
+type unsat_result = ctx
+
+type results = result list * exn_result list * unsat_result list
 
 (* monad *)
-let return v (pc : ctx) = ([(v,pc)], [])
-let throw v (pc : ctx) = ([], [(v, pc)])
-let also_return v pc (rets,exns) = ((v,pc)::rets,exns)
-let also_throw v pc (rets,exns) = (rets,(v,pc)::exns)
-let combine (r1,e1) (r2,e2) = (List.rev_append r1 r2, List.rev_append e1 e2)
-let none = ([],[])
+let none = ([], [], [])
+let return v pc = ([(v,pc)], [], [])
+let throw ev pc = ([], [(ev,pc)], [])
+let unsat pc = ([], [], [pc])
 
-(* usually, the types are
-   bind_both ((ret : result list), (exn : exresult list)) 
-   (f : result -> (result list * exresult list))
-   (g : exresult -> (result list * exresult list)) 
-   : (result list * exresult list)
-   but in fact the function is slightly more polymorphic than that *)
-let bind_both (ret, exn) f g =
-  let f_ret = List.map f ret in
-  let g_exn = List.map g exn in
-  List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
-    (List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
-       none f_ret)
-    g_exn
-let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
-let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
+let combine (r1,e1,u1) (r2,e2,u2) = (
+  List.rev_append r1 r2,
+  List.rev_append e1 e2,
+  List.rev_append u1 u2
+)
+
+let bind_all (rets, exns, uns) f g h =
+  let f_rets = List.map f rets in
+  let g_exns = List.map g exns in
+  let h_uns = List.map h uns in
+  List.fold_left combine
+    (List.fold_left combine
+      (List.fold_left combine
+        none h_uns)
+      g_exns)
+    f_rets
+
+let bind rs f = bind_all rs f (uncurry throw) unsat
+let bind_exn rs g = bind_all rs (uncurry return) g unsat
+let bind_unsat rs h = bind_all rs (uncurry return) (uncurry throw) h
+
+let bind_both rs f g = bind_all rs f g unsat
+
+let just_values (rets, _, _) = rets
+let just_exns (_, exns, _) = exns
+let just_unsats (_, _, uns) = uns
+
+(* Alternate monad implementation *)
+(*type 'a result =*)
+(*  | Value of 'a * ctx*)
+(*  | Exn of exval * ctx*)
+(*  | Unsat of ctx*)
+
+(*type results = value result list*)
+
+(*let ret result = [ result ]*)
+(*let return v (pc : ctx) = ret (Value (v, pc))*)
+(*let throw ev (pc : ctx) = ret (Exn (ev, pc))*)
+(*let unsat (pc : ctx) = ret (Unsat pc)*)
+(*let combine = List.rev_append*)
+(*let none = []*)
+
+(*let bind_all results f g h =*)
+(*  List.fold_left *)
+(*    (fun results result ->*)
+(*      List.rev_append*)
+(*        (match result with*)
+(*        | Value (v, pc) -> f (v, pc)*)
+(*        | Exn (ev, pc) -> g (ev, pc)*)
+(*        | Unsat pc -> h pc)*)
+(*        results)*)
+(*    [] results*)
+
+(*let bind rs f = bind_all rs f (uncurry throw) unsat*)
+(*let bind_exn rs g = bind_all rs (uncurry return) g unsat*)
+(*let bind_unsat rs h = bind_all rs (uncurry return) (uncurry throw) h*)
+
+(*let bind_both rs f g = bind_all rs f g unsat*)
+
+(*let just_values results =*)
+(*  List.fold_left (fun vals res -> match res with Value (v, pc) -> (v, pc)::vals | _ -> vals) [] results*)
+(*let just_exns results = *)
+(*  List.fold_left (fun vals res -> match res with Exn (v, pc) -> (v, pc)::vals | _ -> vals) [] results*)
+(*let just_unsats results =*)
+(*  List.fold_left (fun vals res -> match res with Unsat pc -> pc::vals | _ -> vals) [] results*)
+
+
 
 let collect cmp res_list = 
   map (fun grp -> (fst (List.hd grp), map snd grp))
@@ -342,7 +394,6 @@ let alloc_sym_scalar name hint_s pc =
   let (sym_id, pc) = fresh_var name TAny hint_s pc in
   let (sym_loc, pc) = sto_alloc_val (SymScalar sym_id) pc in
   (sym_loc, pc)
-
 
 (* Creates a new symbolic boolean to be used as an attr *)
 let new_sym_bool name hint_s pc =

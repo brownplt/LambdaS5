@@ -257,7 +257,7 @@ let numstr ctx = function
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "numstr")
 
-let op1 ctx op v : (result list * exresult list) =
+let op1 ctx op v : results =
   let r f ctx v = uncurry return (f ctx v) in
   let op1_fun = match op with
   | "typeof" -> r typeof
