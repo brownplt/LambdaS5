@@ -1,5 +1,5 @@
-var test1 = eval("this") === window;
-var test2 = eval("this") === this;
+var test1 = eval("'use strict';this") === window;
+var test2 = eval("'use strict';this") === this;
 if (test1 && test2) {
   console.log("Passed");
 }

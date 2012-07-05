@@ -1,5 +1,5 @@
 try {
-  eval("throw this;");
+  eval("'use strict';throw this;");
 }
 catch (e) {
   if (e === window) {

@@ -1,6 +1,6 @@
 var x = 5;
 function g(x) {
-  eval("var x = 22;");
+  eval("'use strict';var x = 22;");
   return x === 17;
 }
 if (g(17) && window.x === 5) {
