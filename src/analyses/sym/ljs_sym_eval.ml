@@ -106,7 +106,7 @@ let branch_sym p v pc =
   match v with
   | NewSym (id, obj_locs) ->
     let branch newval pc =
-      add_trace_pt (p, "Replaced NewSym " ^ id ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
+      add_trace_pt (p, id ^ " -> " ^ Ljs_sym_pretty.val_to_string newval)
         (return newval
           (* Update every location in the store that has a NewSym
            * with the same id, since that sym value has now been init'd *)
