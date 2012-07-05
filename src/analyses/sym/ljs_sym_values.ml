@@ -165,129 +165,116 @@ let lookup_store t l = SApp(SId "lookup", [t; l])
 let lookup_field o f = SApp(SId "lookupField", [o; f])
 let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])
 let update_dataField o f v = SApp(SId "updateField", [o; f; v])
+
+(* List monad *) 
+type 'a list_mo = 'a list
+
+let list_none = []
+let list_unit a = [a]
+let list_join = List.concat
+let list_map = List.map
+let list_combine = List.append
+(*let list_bind (lm : 'a list_mo) (f : ('a -> 'b list_mo)) : 'b list_mo =*)
+(*  list_join (list_map lm)*)
+
+(* Trace monad (aka writer) *)
+type trace_pt = Pos.t * string
+type 'a trace_mo = 'a * trace_pt list
+
+let trace_unit a = (a, [])
+
+let trace_join (tmm : ('a trace_mo) trace_mo) : 'a trace_mo =
+  let ((a, t1), t2) = tmm in
+  (a, t1 @ t2)
+
+let trace_map (f : ('a -> 'b)) (tm : 'a trace_mo) : 'b trace_mo =
+  let (a, trace) = tm in
+  (f a, trace)
+
+(*let trace_bind (tm : 'a trace_mo) (f : ('a -> 'b trace_mo)) : 'b trace_mo =  *)
+(*  trace_join (trace_map tm)*)
+
+let trace_add (pt : trace_pt) : unit trace_mo = ((), [pt])
+
+(* Results monad, created by composing the two previous monads. *)
+type 'a res_mo = ('a trace_mo) list_mo
+
+let res_none = list_none
+let res_unit a = list_unit (trace_unit a)
+let res_combine = list_combine
+
+let res_add_trace pt : unit res_mo = list_unit (trace_add pt)
+
+(* Takes a nested monad of the inverse type and flips it into a res_mo. *)
+(* Note that this is the only function in the composition that needs
+ * to take advantage of the internal structure of one of the monads.
+ * All the other functions use the map and join interfaces *)
+let swap (tm : ('a list_mo) trace_mo) : 'a res_mo = 
+  let (lm, trace) = tm in
+  list_map (fun a -> (a, trace)) lm
+
+let res_map (f : 'a -> 'b) (rm : 'a res_mo) : 'b res_mo =
+  list_map (trace_map f) rm
+
+(* This is where the magic happens (actually we just make the types match up).
+ * The types of each expression are on the right (read from bottom to top). *)
+let res_join (rmm : ('a res_mo) res_mo) : 'a res_mo =
+  list_map trace_join       (* : 'a trace_mo list_mo *)
+    (list_join              (* : 'a trace_mo trace_mo list_mo *)
+      (list_map swap        (* : 'a trace_mo trace_mo list_mo list_mo *)
+        rmm))               (* : 'a trace_mo list_mo trace_mo list_mo *)
   
-(* Result types *)
-type result = value * ctx
-type exn_result = exval * ctx
-type unsat_result = ctx
+let res_bind (rm : 'a res_mo) (f : ('a -> 'b res_mo)) : 'b res_mo =
+  res_join (res_map f rm)
 
-(* Monad to collect result branches *)
-let res_none = ([], [], [])
-let res_return res = ([res], [], [])
-let res_throw  res = ([], [res], [])
-let res_unsat  res = ([], [], [res])
+let res_filter rm test =
+  res_bind rm (fun r -> if test r then res_unit r else res_none)
 
-let combine (r1,e1,u1) (r2,e2,u2) = (
-  List.rev_append r1 r2,
-  List.rev_append e1 e2,
-  List.rev_append u1 u2
-)
-
-let bind_all (rets, exns, uns) f g h =
-  let f_rets = List.map f rets in
-  let g_exns = List.map g exns in
-  let h_uns = List.map h uns in
-  List.fold_left combine
-    (List.fold_left combine
-      (List.fold_left combine
-        res_none h_uns)
-      g_exns)
-    f_rets
-
-(* Writer monad to implement traces *)
-type branch_label = string
-type trace_pt = (Pos.t * branch_label)
-type trace = trace_pt list
-type 'x traced = 'x * trace
-
-let trace_none = []
-let trace_unit x = (x, trace_none)
-let trace_bind (traced : 'x traced) (f : ('x -> 'y traced)) : 'y traced =
-  let (x, trace) = traced in
-  let (y, new_trace) = f x in
-  (y, new_trace @ trace) 
-
-let trace_add pt traced = trace_bind traced (fun x -> (x, [pt]))
-
-
-(* Combining the two monads to get traced results *)
-type results =
-    (result traced) list
-  * (exn_result traced) list
-  * (unsat_result traced) list
-(*type results = result list * exn_result list * unsat_result list*)
+(* Now let's build our actual monad *)
+type 'a result =
+  | Value of 'a * ctx
+  | Exn of exval * ctx
+  | Unsat of ctx
+type results = (value result) res_mo
 
 let none = res_none
-let return v pc = res_return (trace_unit (v, pc))
-let throw ev pc = res_throw (trace_unit (ev, pc))
-let unsat pc = res_unsat (trace_unit pc)
+let return v pc = res_unit (Value (v, pc))
+let throw ev pc = res_unit (Exn (ev, pc))
+let unsat    pc = res_unit (Unsat pc)
 
-(* Takes (f : ('x -> 'x traced results)) and produces a function
- * that has signature ('x traced -> 'x traced results), where the
- * new function applies f to the 'x and passes along the
- * original trace to all the results *)
-let pass f =
-  (fun traced ->
-    (* here we just want the original result *)
-    let (x, _) = traced in
-    let results = f x in
-    (* whereas here we just use the original trace *)
-    let add ret_fun res = ret_fun (trace_bind traced (fun _ -> res)) in
-    bind_all results (add res_return) (add res_throw) (add res_unsat))
+let combine = res_combine
 
-let bind        rs f = bind_all rs (pass f) res_throw res_unsat
-let bind_exn    rs g = bind_all rs res_return (pass g) res_unsat
-let bind_unsat  rs h = bind_all rs res_return res_throw (pass h)
+let bind_all rm f g h =
+  res_bind rm (fun r -> match r with
+              | Value (v, pc) -> f (v, pc)
+              | Exn (ev, pc) -> g (ev, pc)
+              | Unsat pc -> h pc)
 
-let bind_both rs f g = bind (bind_exn rs g) f
+let bind rm f = bind_all rm f (uncurry throw) unsat
+let bind_exn rm g = bind_all rm (uncurry return) g unsat
+let bind_unit rm h = bind_all rm (uncurry return) (uncurry throw) h
 
-let just_values (rets, _, _) = rets
-let just_exns (_, exns, _) = exns
-let just_unsats (_, _, uns) = uns
+let bind_both rm f g = bind_exn (bind rm f) g
 
-let add_trace_pt pt results =
-  let add ret_fun traced_res = ret_fun (trace_add pt traced_res) in
-  bind_all results (add res_return) (add res_throw) (add res_unsat)
+let just_values rm =
+  res_map 
+    (fun r -> match r with Value (v, pc) -> (v, pc) | _ -> failwith "filter fail")
+    (res_filter rm (fun r -> match r with Value _ -> true | _ -> false))
 
-(* Alternate monad implementation *)
-(*type 'a result =*)
-(*  | Value of 'a * ctx*)
-(*  | Exn of exval * ctx*)
-(*  | Unsat of ctx*)
+let just_exns rm =
+  res_map 
+    (fun r -> match r with Exn (ev, pc) -> (ev, pc) | _ -> failwith "filter fail")
+    (res_filter rm (fun r -> match r with Exn _ -> true | _ -> false))
 
-(*type results = value result list*)
+let just_unsats rm =
+  res_map 
+    (fun r -> match r with Unsat pc -> pc | _ -> failwith "filter fail")
+    (res_filter rm (fun r -> match r with Unsat _ -> true | _ -> false))
 
-(*let ret result = [ result ]*)
-(*let return v (pc : ctx) = ret (Value (v, pc))*)
-(*let throw ev (pc : ctx) = ret (Exn (ev, pc))*)
-(*let unsat (pc : ctx) = ret (Unsat pc)*)
-(*let combine = List.rev_append*)
-(*let none = []*)
-
-(*let bind_all results f g h =*)
-(*  List.fold_left *)
-(*    (fun results result ->*)
-(*      List.rev_append*)
-(*        (match result with*)
-(*        | Value (v, pc) -> f (v, pc)*)
-(*        | Exn (ev, pc) -> g (ev, pc)*)
-(*        | Unsat pc -> h pc)*)
-(*        results)*)
-(*    [] results*)
-
-(*let bind rs f = bind_all rs f (uncurry throw) unsat*)
-(*let bind_exn rs g = bind_all rs (uncurry return) g unsat*)
-(*let bind_unsat rs h = bind_all rs (uncurry return) (uncurry throw) h*)
-
-(*let bind_both rs f g = bind_all rs f g unsat*)
-
-(*let just_values results =*)
-(*  List.fold_left (fun vals res -> match res with Value (v, pc) -> (v, pc)::vals | _ -> vals) [] results*)
-(*let just_exns results = *)
-(*  List.fold_left (fun vals res -> match res with Exn (v, pc) -> (v, pc)::vals | _ -> vals) [] results*)
-(*let just_unsats results =*)
-(*  List.fold_left (fun vals res -> match res with Unsat pc -> pc::vals | _ -> vals) [] results*)
-
+let add_trace_pt pt rm =
+  res_bind rm
+    (fun r -> res_bind (res_add_trace pt)
+      (fun () -> res_unit r))
 
 
 let collect cmp res_list = 
