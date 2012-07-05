@@ -175,7 +175,7 @@ let list_join = List.concat
 let list_map = List.map
 let list_combine = List.append
 (*let list_bind (lm : 'a list_mo) (f : ('a -> 'b list_mo)) : 'b list_mo =*)
-(*  list_join (list_map lm)*)
+(*  list_join (list_map f lm)*)
 
 (* Trace monad (aka writer) *)
 type trace_pt = Pos.t * string
@@ -192,7 +192,7 @@ let trace_map (f : ('a -> 'b)) (tm : 'a trace_mo) : 'b trace_mo =
   (f a, trace)
 
 (*let trace_bind (tm : 'a trace_mo) (f : ('a -> 'b trace_mo)) : 'b trace_mo =  *)
-(*  trace_join (trace_map tm)*)
+(*  trace_join (trace_map f tm)*)
 
 let trace_add (pt : trace_pt) : unit trace_mo = ((), [pt])
 
@@ -202,7 +202,6 @@ type 'a res_mo = ('a trace_mo) list_mo
 let res_none = list_none
 let res_unit a = list_unit (trace_unit a)
 let res_combine = list_combine
-
 let res_add_trace pt : unit res_mo = list_unit (trace_add pt)
 
 (* Takes a nested monad of the inverse type and flips it into a res_mo. *)
@@ -243,6 +242,10 @@ let throw ev pc = res_unit (Exn (ev, pc))
 let unsat    pc = res_unit (Unsat pc)
 
 let combine = res_combine
+let add_trace_pt pt rm =
+  res_bind
+    (res_add_trace pt)
+    (fun () -> rm)
 
 let bind_all rm f g h =
   res_bind rm (fun r -> match r with
@@ -270,11 +273,6 @@ let just_unsats rm =
   res_map 
     (fun r -> match r with Unsat pc -> pc | _ -> failwith "filter fail")
     (res_filter rm (fun r -> match r with Unsat _ -> true | _ -> false))
-
-let add_trace_pt pt rm =
-  res_bind rm
-    (fun r -> res_bind (res_add_trace pt)
-      (fun () -> res_unit r))
 
 
 let collect cmp res_list = 
