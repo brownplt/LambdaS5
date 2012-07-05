@@ -14,6 +14,7 @@ def testFile(useC3, f):
     return "<li class='%s'><a href='%s'>%s</a>%s</li>" % \
       (typ, str(f), str(f), message)
 
+  print(str(f))
   parsed = parse(useC3, buildHarnessed(open(f)))
   if parsed == "ParseError":
     return (mkRow('skipped', " (ParseError)"), 0, 0, 1, 0, 0)
@@ -57,7 +58,10 @@ def testDir(useC3, d):
     spassed += fsPassed
     sfailed += fsFailed
     skipped += fSkipped
-    inner += fHtml
+#    try:
+	    #      inner += fHtml
+#    finally:
+    inner += "<div>Skipped for parsing reasons</div>"
 
   color = 'failed'
   if failed == 0:
@@ -189,8 +193,8 @@ Tests run at %s
   summary.close()
 
 def main(args):
-  spiderMonkeyDir = 'test262/test/suite/sputnik_converted'
-  ieDir = 'test262/test/suite/ietestcenter'
+  spiderMonkeyDir = 'test262/test/suite/converted/'
+  ieDir = 'test262/test/suite/converted/'
   try:
     os.mkdir(result_dir)
   except:
