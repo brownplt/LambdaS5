@@ -2,8 +2,6 @@ var o = {
     test: function testcase() {
         "use strict";
 
-        print('In test');
-
         try {
             eval("var _13_1_9_fun = function (param1, param2, param1) { };");
             return false;
@@ -17,5 +15,5 @@ if(o.test()) {
   print("Passed.");
 }
 else {
-  print("Failed.");
+  console.log("We expect this to fail until non-strict mode is implemented.  Future regression ftw.");
 }

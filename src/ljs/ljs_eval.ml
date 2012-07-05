@@ -21,17 +21,7 @@ let unbool b = match b with
   | _ -> failwith ("tried to unbool a non-bool" ^ (pretty_value b))
 
 let interp_error pos message =
-  "[interp] (" ^ string_of_position pos ^ ") " ^ message
-
-let apply p store func args = match func with
-  | Closure c -> c args store
-  | ObjLoc loc -> begin match get_obj store loc with
-      | ({ code = Some (Closure c) }, _) -> c args store
-      | _ -> failwith "Applied an object without a code attribute"
-  end
-  | _ -> failwith (interp_error p 
-                     ("Applied non-function, was actually " ^ 
-                         pretty_value func))
+  raise (PrimErr ([], String ("[interp] (" ^ Pos.string_of_pos pos ^ ") " ^ message)))
 
 let rec get_prop p store obj field =
   match obj with
@@ -71,7 +61,7 @@ let rec get_attr store attr obj field = match obj, field with
           | Data ({ value = v; }, _, _), S.Value -> v
           | Accessor ({ getter = gv; }, _, _), S.Getter -> gv
           | Accessor ({ setter = sv; }, _, _), S.Setter -> sv
-          | _ -> failwith "bad access of attribute"
+          | _ -> interp_error Pos.dummy "bad access of attribute"
         end
   | _ -> failwith ("[interp] get-attr didn't get an object and a string.")
 
@@ -169,7 +159,6 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
-
 let rec eval jsonPath exp env (store : store) : (value * store) =
   let eval exp env store =
     begin try eval jsonPath exp env store
@@ -180,7 +169,29 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         raise (Throw (exp::exprs, v, s))
       | PrimErr (exprs, v) ->
         raise (PrimErr (exp::exprs, v))
+      | Sys.Break ->
+        raise (PrimErr ([exp], String "s5_eval stopped by user interrupt"))
+      | Stack_overflow ->
+        raise (PrimErr ([exp], String "s5_eval overflowed the Ocaml stack"))
     end in
+  let rec apply p store func args = match func with
+    | Closure (env, xs, body) ->
+      let alloc_arg argval argname (store, env) =
+        let (new_loc, store) = add_var store argval in
+        let env' = IdMap.add argname new_loc env in
+        (store, env') in
+      if (List.length args) != (List.length xs) then
+        arity_mismatch_err p xs args
+      else
+        let (store, env) = (List.fold_right2 alloc_arg args xs (store, env)) in
+        eval body env store
+    | ObjLoc loc -> begin match get_obj store loc with
+        | ({ code = Some f }, _) -> apply p store f args
+        | _ -> failwith "Applied an object without a code attribute"
+    end
+    | _ -> failwith (interp_error p 
+                       ("Applied non-function, was actually " ^ 
+                         pretty_value func)) in
   match exp with
   | S.Hint (_, _, e) -> eval e env store
   | S.Undefined _ -> Undefined, store
@@ -194,7 +205,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         (get_var store (IdMap.find x env), store)
       with Not_found ->
         failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
-                    (string_of_position p))
+                    (Pos.string_of_pos p))
     end
   | S.SetBang (p, x, e) -> begin
       try
@@ -204,7 +215,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
         new_val, store
       with Not_found ->
         failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-                    (string_of_position p))
+                    (Pos.string_of_pos p))
     end
   | S.Object (p, attrs, props) -> 
     let { S.primval = vexp;
@@ -288,7 +299,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                   Undefined, store (* TODO: Check error in case of non-extensible *)
             end
           | _ -> failwith ("[interp] Update field didn't get an object and a string" 
-                           ^ string_of_position p ^ " : " ^ (pretty_value obj_value) ^ 
+                           ^ Pos.string_of_pos p ^ " : " ^ (pretty_value obj_value) ^ 
                              ", " ^ (pretty_value f_value))
       end
   | S.GetField (p, obj, f, args) ->
@@ -305,7 +316,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
               | None -> Undefined, store
             end
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
-                 ^ string_of_position p 
+                 ^ Pos.string_of_pos p 
                  ^ ". Instead, it got " 
                  ^ pretty_value obj_value 
                  ^ " and " 
@@ -329,7 +340,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
               end
             end
           | _ -> failwith ("[interp] Delete field didn't get an object and a string at " 
-                           ^ string_of_position p 
+                           ^ Pos.string_of_pos p 
                            ^ ". Instead, it got " 
                            ^ pretty_value obj_val
                            ^ " and " 
@@ -468,24 +479,16 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
   | S.Throw (p, e) -> let (v, s) = eval e env store in
     raise (Throw ([], v, s))
   | S.Lambda (p, xs, e) -> 
-    let alloc_arg argval argname (store, env) =
-      let (new_loc, store) = add_var store argval in
-      let env' = IdMap.add argname new_loc env in
-      (store, env') in
-    let closure args store =
-      if (List.length args) != (List.length xs) then
-        arity_mismatch_err p xs args
-      else
-        let (store, env) = (List.fold_right2 alloc_arg args xs (store, env)) in
-        eval e env store in
-    Closure closure, store
+    Closure (env, xs, e), store
   | S.Eval (p, e) ->
     begin match eval e env store with
       | String s, store -> eval_op s env store jsonPath
       | v, store -> v, store
     end
 
-and arity_mismatch_err p xs args = failwith ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ " at " ^ string_of_position p ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
+
+
+and arity_mismatch_err p xs args = interp_error p ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 
 (* This function is exactly as ridiculous as you think it is.  We read,
    parse, desugar, and evaluate the string, storing it to temp files along
@@ -514,17 +517,27 @@ and eval_op str env store jsonPath =
     parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
   let (used_ids, exprjsd) = 
     try
-      js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "%global"))
+      js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
     with ParseError _ -> raise (Throw ([], String "EvalError", store))
     in
-  let desugard = exprjs_to_ljs used_ids exprjsd in
+  let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
   if (IdMap.mem "%global" env) then
-    (Ljs_pretty.exp desugard std_formatter; print_newline ();
-     eval jsonPath desugard env store (* TODO: which env? *))
+     eval jsonPath desugard env store (* TODO: which env? *)
   else
     (failwith "no global")
 
-let rec eval_expr expr jsonPath = try
+let err show_stack trace message = 
+  if show_stack then begin
+      eprintf "%s\n" (string_stack_trace trace);
+      eprintf "%s\n" message;
+      failwith "Runtime error"
+    end
+  else
+    eprintf "%s\n" message;
+    failwith "Runtime error"
+
+let rec eval_expr expr jsonPath print_trace = try
+  Sys.catch_break true;
   eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
 with
   | Throw (t, v, store) ->
@@ -540,10 +553,7 @@ with
                 with Not_found -> string_of_value v store
                 end
           | v -> (pretty_value v) in
-        printf "%s\nUncaught exception: %s\n" (string_stack_trace t) err_msg;
-        failwith "Uncaught exception"
+        err print_trace t (sprintf "Uncaught exception: %s\n" err_msg)
   | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
   | PrimErr (t, v) ->
-      printf "%s\nUncaught error: %s\n" (string_stack_trace t) (pretty_value v);
-      failwith "Uncaught error"
-
+      err print_trace t (sprintf "Uncaught error: %s\n" (pretty_value v))

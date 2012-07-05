@@ -30,18 +30,18 @@
 
   let json_error str  = raise (Json_error str)
 			
-  let rhs_loc n = (Parsing.rhs_start_pos n, Parsing.rhs_end_pos n)
+  let rhs_loc n = Pos.real (Parsing.rhs_start_pos n, Parsing.rhs_end_pos n)
 		    
   let unclosed opening_name opening_num closing_name closing_num =
     let msg = 
       sprintf "%s:\nSyntax error: '%s' expected.\n\
                %s:\nThis '%s' might be unmatched."
-	(string_of_position (rhs_loc closing_num)) closing_name
-	(string_of_position (rhs_loc opening_num)) opening_name in
+	(Pos.string_of_pos (rhs_loc closing_num)) closing_name
+	(Pos.string_of_pos (rhs_loc opening_num)) opening_name in
     json_error msg
 
   let syntax_error s num =
-    let msg = sprintf "%s:\n%s" (string_of_position (rhs_loc num)) s in
+    let msg = sprintf "%s:\n%s" (Pos.string_of_pos (rhs_loc num)) s in
     json_error msg
 
 %}

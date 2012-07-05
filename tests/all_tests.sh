@@ -4,7 +4,7 @@ PASSED=0
 FAILED=0
 
 for file in `ls unit-tests/*.js`; do
-  STR1=`./silent.sh $file | grep "passed"`
+  STR1=`./s5 $file | grep "passed\|Passed"`
 
   if [ -n "$STR1" ]; then
     PASSED=$(($PASSED+1))

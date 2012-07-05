@@ -76,8 +76,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
   | E.RegExpr (p, s) -> 
     let re_attrs = { S.primval = None;
                      S.code = None;
-                     S.proto = Some (S.Id (p, "%RegexpProto"));
-                     S.klass = "Regexp"; (* correct? *)
+                     S.proto = Some (S.Id (p, "%RegExpProto"));
+                     S.klass = "RegExp"; (* correct? *)
                      S.extensible = true; } in
     let lit_data = S.Data ({S.value = S.String (p, s); S.writable = false;}, false, false) in
     S.Object (p, re_attrs, [("%lit", lit_data)])
@@ -235,7 +235,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     | "typeof" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.Op1 (p, "typeof", S.GetField (p, context, fldexpr, noargs_obj))
+          S.Op1 (p, "typeof", S.GetField (p, context, fldexpr, noargs_obj (Pos.synth p)))
         | _ -> S.Op1 (p, "typeof", target)
       end
     | "delete" -> let result = match exp with
@@ -318,6 +318,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let obj_id = mk_id "obj" in
     let fun_id = mk_id "fun" in
     begin match e with
+      | E.BracketExpr (_, E.IdExpr (_, "%context"), E.String (_, "eval")) ->
+        S.App (p, S.Id (p, "%maybeDirectEval"), [S.Id (p, "%this"); S.Id (p, "%context"); args_obj])
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
         S.Let (p, fun_id, ejs_to_ljs e,
           appexpr_check (S.Id (p, fun_id))
@@ -360,7 +362,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       | E.LetExpr (p, "%%after", after, real_bdy) ->
         (ejs_to_ljs real_bdy, ejs_to_ljs after)
       | _ -> (ejs_to_ljs bdy, S.Undefined (p)) in
-    get_while t b after
+    get_while (Pos.synth p) t b after
   | E.LabelledExpr (p, lbl, exp) -> S.Label (p, lbl, ejs_to_ljs exp)
   | E.BreakExpr (p, id, e) -> S.Break (p, id, ejs_to_ljs e)
   | E.ForInExpr (p, nm, vl, bdy) ->
@@ -516,19 +518,19 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
             cl_to_seq cl)))
   | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
-and a_attrs = {
+and a_attrs pos = {
   S.primval = None;
       S.code = None;
-      S.proto = Some (S.Id (dummy_pos, "%ArrayProto"));
+      S.proto = Some (S.Id (pos, "%ArrayProto"));
       S.klass = "Array";
       S.extensible = true; }
 
-and noargs_obj = S.Object (dummy_pos, a_attrs, [])
+and noargs_obj pos = S.Object (pos, a_attrs pos, [])
 
-and onearg_obj a = 
+and onearg_obj pos a = 
   let r = { S.value = a; S.writable = true; } in
   let p = S.Data (r, true, true) in
-  S.Object (dummy_pos, a_attrs, [("0", p)])
+  S.Object (pos, a_attrs pos, [("0", p)])
 
 and get_fobj p args body context =
   let contains_illegals = 
@@ -559,6 +561,17 @@ and get_fobj p args body context =
                       S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
                              S.Id (p, func_id)))))
            
+and strip_lets e nms = match e with
+  | E.LetExpr (p, nm, vl, rst) ->
+    let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
+    if prefix = "%%" then
+      let l = (String.length nm) - 2 in
+      let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
+    else
+      let (final_nms, final_e) = strip_lets rst nms in
+      (final_nms, E.LetExpr (p, nm, vl, final_e))
+  | _ -> (nms, e)
+
 (* The first stage of desugaring creates exprjs let expressions corresponding
  * to JavaScript declared variables.  create_context is used to translate those
  * variables into the final representation (let-bound es5 variables with
@@ -567,17 +580,7 @@ and get_fobj p args body context =
  *)
 (* TODO(joe): overlapping vars and argument names goes here *)
 and create_context p args body parent =
-  let rec strip_lets e nms = match e with
-    | E.LetExpr (p, nm, vl, rst) ->
-      let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
-      if prefix = "%%" then
-        let l = (String.length nm) - 2 in
-        let next_nms = (String.sub nm 2 l) :: nms in strip_lets rst next_nms
-      else
-        let (final_nms, final_e) = strip_lets rst nms in
-        (final_nms, E.LetExpr (p, nm, vl, final_e))
-    | _ -> (nms, e)
-  and add_props props e =
+  let rec add_props props e =
     List.fold_right (fun prop e -> S.Let (p, prop, S.Undefined p, e)) props e
   and add_arg param index e = S.Let (p, param, S.GetField (p, S.Id (p, "%args"), S.String (p, string_of_int index), S.Null p), e)
   and add_args args' e = List.fold_right2 add_arg args' (Prelude.iota (List.length args')) e
@@ -587,7 +590,7 @@ and create_context p args body parent =
         S.Label (p, "%ret",
           S.Break (p, "%ret", S.Id (p, uid))))
     and setter uid =
-      let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), noargs_obj) in
+      let newval = S.GetField (p, S.Id (p, "args"), S.String (p, "0"), noargs_obj (Pos.synth p)) in
       (* TODO(joe): unused variable: what's it doing here? *)
       (* let setterao = onearg_obj newval in *)
       S.Lambda (p, ["this"; "args"],
@@ -622,7 +625,7 @@ and get_lambda p args body =
         S.Id (p, "%context"), 
         S.String (p, "arguments"), 
         S.Id (p, "%args"), 
-        onearg_obj (S.Id (p, "%args"))), 
+        onearg_obj (Pos.synth p) (S.Id (p, "%args"))), 
       desugared) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
@@ -636,8 +639,7 @@ and remove_dupes lst =
       helper rest (first :: seen) next in
   List.rev (helper lst [] [])
 
-and get_while tst body after =
-  let p = dummy_pos in
+and get_while p tst body after =
   (* This is to insert the label (if it exists) at 
    * the correct location in the desugared code *)
   let real_body = match body with
@@ -703,8 +705,7 @@ and get_while tst body after =
           S.Undefined (p)))),
     S.App (p, S.Id (p, "%while"), [test; bdy; aftr]))
 
-and prop_itr = 
-  let p = dummy_pos in
+and prop_itr p = 
   let tst =
     S.Op2 (p, "hasOwnProperty", 
       S.Id (p, "%obj"), 
@@ -731,14 +732,14 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
   let doloop_id = mk_id "do_loop" in
   S.Let (p, doloop_id,
     S.Lambda (p, [], 
-      S.Rec (p, "%get_itr", prop_itr,
+      S.Rec (p, "%get_itr", prop_itr (Pos.synth p),
       S.Let (p, "%pnameobj", S.App (p, S.Id (p, "%propertyNames"), [robj]),
       S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
       S.Seq (p, 
               S.App (p, 
                 S.Id (p, "%set-property"), 
                 [context; nms; S.App (p, S.Id (p, "%prop_itr"), [])]),
-             get_while tst bdy after))))),
+             get_while (Pos.synth p) tst bdy after))))),
     S.If (p, undef_test p robj,
       S.Undefined (p),
       S.If (p, S.Op2 (p, "stx=", robj, S.Null (p)),
@@ -753,20 +754,26 @@ and appexpr_check f app p =
   S.Let (p, ftype, S.Op1 (p, "typeof", f),
     S.If (p, not_function, error, app))
 
-let add_preamble used_ids final = 
-  let p = dummy_pos in
+let add_preamble p used_ids var_ids final = 
   let define_id id =
     S.App (p, S.Id (p, "%defineGlobalAccessors"), [S.String (p, id)]) in
-  let rec dops_of_ids lst = match lst with
-    | [] -> final
-    | [id] -> S.Seq (p, define_id id, final)
-    | id :: rest -> S.Seq (p, define_id id, dops_of_ids rest) in
-  dops_of_ids (IdSet.elements used_ids)
-    
-let exprjs_to_ljs (used_ids : IdSet.t) (e : E.expr) : S.exp =
-  let p = dummy_pos in
-  let (uids, real_body, ncontext) = create_context p [] e (Some (S.Id (p, "%global"))) in
-  let desugared = ejs_to_ljs real_body in
-  let final = 
-    S.Let (p, "%this", S.Id (p, "%context"), desugared) in
-  add_preamble used_ids (S.Let (p, "%context", ncontext, final))
+  let define_var id =
+    S.App (p, S.Id (p, "%defineGlobalVar"), [S.Id (p, "%context"); S.String (p, id)]) in
+  let rec dops_of_ids def_fun lst base = match lst with
+    | [] -> base
+    | id :: rest -> S.Seq (p, def_fun id, dops_of_ids def_fun rest base) in
+  dops_of_ids define_var var_ids (dops_of_ids define_id used_ids final)
+
+let rec is_strict_mode exp = match exp with
+  | S.Seq (_, S.String (_, "use strict"), _) -> true
+  | S.Seq (_, S.String _, exp) -> is_strict_mode exp
+  | _ -> false
+
+let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
+  let (names, inner) = strip_lets e [] in
+  let desugared = ejs_to_ljs inner in
+  let binder =
+    if is_strict_mode desugared then "%strictContext" else "%nonstrictContext" in
+  S.Let (p, "%context", S.Id (p, binder),
+    add_preamble p (IdSet.elements used_ids) names desugared)
+

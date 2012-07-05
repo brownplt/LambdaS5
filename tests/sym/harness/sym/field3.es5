@@ -1,5 +1,6 @@
-// 1, 1, 3
-let (f = %%newsym)
+// 1, 3
+// plus one exn when f = symobj
+let (f = NEWSYM)
 let (obj = {[#proto: null,]
     "x": {#value 1, #writable true},
     "y": {#value 2, #writable true}

@@ -1,0 +1,5 @@
+// "pass"
+let (x = NEWSYM)
+let (y = prim("-", x, 0))
+if (prim("<", x, y)) { "fail" }
+else { "pass" }

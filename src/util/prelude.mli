@@ -1,15 +1,20 @@
 type id = string
 
-type pos = Lexing.position * Lexing.position
 
 module Pos : sig
-  type t = pos
+  type t = Lexing.position * Lexing.position * bool (* start, end, is synthetic? *)
+  val dummy : t
   val compare : t -> t -> int
   val before : t -> t -> bool
+  val synth : t -> t
+  val synthetic : Lexing.position * Lexing.position -> t
+  val real : Lexing.position * Lexing.position -> t
+  val rangeToString : Lexing.position -> Lexing.position -> string
   val string_of_pos : t -> string
+  val toLexPos : t -> Lexing.position * Lexing.position
+  val isSynthetic : t -> bool
+  val fname : t -> string
 end
-
-val dummy_pos : pos
 
 module IntSet : Set.S
   with type elt = int
@@ -29,17 +34,17 @@ module IdHashtbl : Hashtbl.S
   with type key = id
 
 module PosSet : Set.S 
-  with type elt = pos
+  with type elt = Pos.t
 
 module PosSetExt : SetExt.S 
-  with type elt = pos
+  with type elt = Pos.t
   and type t = PosSet.t
 
 module PosMap : Map.S
-  with type key = pos
+  with type key = Pos.t
 
 module PosMapExt : MapExt.S
-  with type key = pos
+  with type key = Pos.t
   with type +'a t = 'a PosMap.t
 
 module IdMap : Map.S
@@ -59,8 +64,6 @@ val map : ('a -> 'b) -> 'a list -> 'b list
 val second2 : ('b -> 'c) -> 'a * 'b -> 'a * 'c
 
 val third3 : ('c -> 'd) -> 'a * 'b * 'c -> 'a * 'b * 'd
-
-val string_of_position : pos -> string
 
 val snd3 : 'a * 'b * 'c -> 'b
 
@@ -93,3 +96,10 @@ val iota : int -> int list
 
 val curry : ('a * 'b -> 'c) -> ('a -> 'b -> 'c)
 val uncurry : ('a -> 'b -> 'c) -> ('a * 'b -> 'c)
+
+(* Switches the order of args for a two-arg function *)
+val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
+
+(** [group cmp lst] collects like elts of [lst] into lists using [cmp] to check equality.
+  * Returns a list of lists, where all like elts are in one sublist *)
+val group : ('a -> 'a -> int) -> 'a list -> 'a list list 

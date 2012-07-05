@@ -105,6 +105,9 @@ let print store v = match v with
   | Num n -> let s = string_of_float n in printf "%S\n" s; Undefined
   | _ -> failwith ("[interp] Print received non-string: " ^ pretty_value v)
 
+let pretty store v =
+  printf "%s\n%!" (string_of_value v store); Undefined
+
 let is_extensible store obj = match obj with
   | ObjLoc loc -> begin match get_obj store loc with
       | ({ extensible = true; }, _) -> True
@@ -176,8 +179,12 @@ let sine store = function
   | _ -> raise (PrimErr ([], str "sin"))
 
 let numstr store = function
+  | String "" -> Num 0.
   | String s -> Num (try float_of_string s with Failure _ -> nan)
   | _ -> raise (PrimErr ([], str "numstr"))
+
+let current_utc store = function
+  | _ -> Num (Unix.gettimeofday ())
 
 let op1 store op = match op with
   | "typeof" -> typeof store
@@ -186,6 +193,7 @@ let op1 store op = match op with
   | "prim->num" -> prim_to_num store
   | "prim->bool" -> prim_to_bool store
   | "print" -> print store
+  | "pretty" -> pretty store
   | "object-to-string" -> object_to_string store
   | "strlen" -> strlen store
   | "is-array" -> is_array store
@@ -203,7 +211,8 @@ let op1 store op = match op with
   | "~" -> bnot store
   | "sin" -> sine store
   | "numstr->num" -> numstr store
-  | _ -> failwith ("no implementation of unary operator: " ^ op)
+  | "current-utc-millis" -> current_utc store
+  | _ -> raise (PrimErr ([], String ("no implementation of unary operator: " ^ op)))
 
 let arith store s i_op f_op v1 v2 = match v1, v2 with
   | Num x, Num y -> Num (f_op x y)
@@ -401,4 +410,4 @@ let op2 store op = match op with
   | "pow" -> pow store
   | "to-fixed" -> to_fixed store
   | "isAccessor" -> is_accessor store
-  | _ -> failwith ("no implementation of binary operator: " ^ op)
+  | _ -> raise (PrimErr ([], String ("no implementation of binary operator: " ^ op)))

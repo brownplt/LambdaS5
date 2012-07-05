@@ -1,5 +1,5 @@
-// 2, 2
-let (f = %%newsym)
+// 2
+let (f = NEWSYM)
 let (obj = {[#proto: null,]}) {
 obj[f = 1];
 obj["x" = 2];

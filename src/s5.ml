@@ -17,16 +17,18 @@ module S5 = struct
   open Format
   open FormatExt
 
-  let srcJS = ref [Js_syntax.Stmt (Js_syntax.Expr (dummy_pos, Js_syntax.Lit
-(dummy_pos, Js_syntax.Null)))]
-  let srcES5 = ref (Ljs_syntax.Undefined dummy_pos)
-  let srcEJS = ref (Exprjs_syntax.Undefined (dummy_pos))
-  let cpsES5 = ref (Ljs_cps.AppRetCont(Ljs_cps.Label.dummy, Ljs_cps.RetId(Ljs_cps.Label.dummy,"fake"), Ljs_cps.Id(dummy_pos,Ljs_cps.Label.dummy,"fake")))
+  let srcJS = ref [Js_syntax.Stmt (Js_syntax.Expr (Pos.dummy, Js_syntax.Lit(Pos.dummy, Js_syntax.Null)))]
+  let srcES5 = ref (Ljs_syntax.Undefined Pos.dummy)
+  let srcEJS = ref (Exprjs_syntax.Undefined (Pos.dummy))
+  let cpsES5 = ref (Ljs_cps.AppRetCont(Pos.dummy, Ljs_cps.Label.dummy, 
+                                       Ljs_cps.RetId(Pos.dummy, Ljs_cps.Label.dummy,"fake"), 
+                                       Ljs_cps.Id(Pos.dummy,Ljs_cps.Label.dummy,"fake")))
 
   let jsonPath = ref ""
+  let stack_trace = ref true
 
   let load_s5 (path : string) : unit =
-    srcES5 := Ljs_syntax.Seq (dummy_pos, !srcES5,
+    srcES5 := Ljs_syntax.Seq (Pos.dummy, !srcES5,
 		              Ljs.parse_es5 (open_in path) path)
 
   let set_json (path : string) : unit =
@@ -42,23 +44,29 @@ module S5 = struct
     | _ -> failwith "bad option string"
 
   let eval () : unit =
-    let (v, _) = Ljs_eval.eval_expr !srcES5 !jsonPath in
+    let (v, _) = Ljs_eval.eval_expr !srcES5 !jsonPath !stack_trace in
     printf "%s" (pretty_value v);
     print_newline ()
+
+  let do_sym_eval () =
+    let t1 = Sys.time() in
+    let res = Ljs_sym_eval.eval_expr !srcES5 !jsonPath 50 Ljs_sym_values.mtPath in
+    let t2 = Sys.time() in
+    printf "Spent %f secs in sym eval\n" (t2 -. t1);
+    res
 
   let sym_eval () : unit =
     (* let z3 = Unix.open_process "z3 -smt2 -in" in *)
     (* let (inch, outch) = z3 in begin *)
-    let (results, exns) = 
-      Ljs_sym_eval.eval_expr !srcES5 !jsonPath 25 Ljs_sym_values.mtPath in
-    List.iter (fun (v, p) -> printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
-      List.iter (fun c -> printf "%s\n" 
-        (Ljs_sym_z3.to_string c p)) p.Ljs_sym_values.constraints;
-      printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);
-      print_newline())
-      results
-    (*List.iter (fun (Ljs_sym_values.Throw v, p) -> printf "Exn: %s:\n" (Ljs_sym_pretty.val_to_string v); print_newline()) exns*)
+    let results = do_sym_eval() in
+    Ljs_sym_z3.print_results results
   (* close_in inch; close_out outch *)
+
+  let sym_eval_raw () : unit = 
+    let results = do_sym_eval() in
+    print_string "RAW RESULTS"; print_newline();
+    output_value stdout results;
+    print_newline()
 
   let env (path : string) : unit =
     let envFunc = Ljs.parse_es5_env (open_in path) path in
@@ -72,17 +80,26 @@ module S5 = struct
     let fvs = Js_syntax.used_vars_sel !srcJS in
     printf "%s\n" ((FormatExt.to_string (fun lst -> (vert (map text lst))))
                             (IdSet.elements fvs))
-    
-  let desugar_spidermonkey_js (path : string) : unit = 
+  
+  let desugar_spidermonkey_js (path : string) = 
     let ast = SpiderMonkey.parse_spidermonkey (open_in path) path in
-    let (used_ids, exprjsd) = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
-    let desugard = exprjs_to_ljs used_ids exprjsd in
-    srcEJS := exprjsd; srcES5 := desugard
+    let (used_ids, exprjsd) = js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "global")) in
+    let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
+    (exprjsd, desugard)
+
+  let desugar_replace (path : string) : unit =
+    let (exprjsd, ljsd) = desugar_spidermonkey_js path in
+    srcEJS := exprjsd; srcES5 := ljsd
+
+  (* Warning: does not update srcEJS *)
+  let desugar_prepend (path : string) : unit =
+    let (exprjsd, ljsd) = desugar_spidermonkey_js path in
+    srcES5 := Ljs_syntax.Seq (Pos.dummy, ljsd, !srcES5)
 
   let desugar_c3_js (path : string) : unit = 
     let ast = C3.parse_c3 (open_in path) path in
-    let (used_ids, exprjsd) = js_to_exprjs ast (Exprjs_syntax.IdExpr (dummy_pos, "global")) in
-    let desugard = exprjs_to_ljs used_ids exprjsd in
+    let (used_ids, exprjsd) = js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "global")) in
+    let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
     srcEJS := exprjsd; srcES5 := desugard
 
   (* let cfg () : unit = *)
@@ -94,7 +111,7 @@ module S5 = struct
   let cps () =
     cpsES5 := Ljs_cps.cps_tail !srcES5 
       "%error"
-      (Ljs_cps.RetId(Ljs_cps.Label.dummy,"%answer"))
+      (Ljs_cps.RetId(Pos.dummy, Ljs_cps.Label.dummy,"%answer"))
   let alphatize () = 
     cpsES5 := fst (Ljs_cps_util.alphatize true (!cpsES5, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) 
   let uncps () =
@@ -117,11 +134,16 @@ module S5 = struct
              FX.horz [FX.text "ERROR  <="; Ljs_cps_absdelta.ValueLattice.pretty err]] Format.str_formatter;
     printf "%s\n" (Format.flush_str_formatter ())
 
+  let no_stack_trace () =
+    stack_trace := false
+
   let main () : unit =
     Arg.parse
       [
-        ("-desugar", Arg.String desugar_spidermonkey_js,
+        ("-desugar", Arg.String desugar_replace,
         "<file> desugar json ast file");
+        ("-desugar-env", Arg.String desugar_prepend,
+        "<file> desugar json ast file and prepend to existing LambdaJS expr");
         ("-load", Arg.String load_spidermonkey_js,
         "<file> load file as JavaScript AST");
         ("-fvs", Arg.Unit get_fvs,
@@ -148,10 +170,14 @@ module S5 = struct
         "abstractly evaluate code in CPS form");
         ("-sym-eval", Arg.Unit sym_eval,
         "evaluate code symbolically");
+        ("-sym-eval-raw", Arg.Unit sym_eval_raw,
+        "evaluate code symbolically and print raw OCaml results");
         ("-env", Arg.String env,
          "wrap the program in an environment");
         ("-json", Arg.String set_json,
-         "the path to a script that converts js to json")
+         "the path to a script that converts js to json");
+        ("-no-stack-trace", Arg.Unit no_stack_trace,
+         "don't print stack traces from the interpreter")
       ]
       load_s5
       "Usage: s5 <action> <path> ...";;

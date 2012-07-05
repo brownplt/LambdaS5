@@ -1,0 +1,25 @@
+let (assert = func(cond) {
+  if (prim("!", cond)) {
+    throw "Assert failed"
+  } else { null }
+})
+
+let (fact = func(n) {
+  rec (helper = func(n, acc) {
+    if (n === 1) {
+      acc
+    } else {
+      helper(prim("-", n, 1), prim("*", n, acc))
+    }
+  })
+  helper(n, 1)
+})
+
+let (x = NEWSYM) {
+
+assert(prim("typeof", x) === "number");
+assert(prim(">=", x, 1));
+assert(prim("<=", x, 5));
+
+fact(x)
+}

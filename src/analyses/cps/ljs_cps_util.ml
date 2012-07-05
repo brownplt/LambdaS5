@@ -35,28 +35,28 @@ let no_free_vars exp (env : unit IdMap.t) : bool =
     | C.OwnFieldNames (_, _, obj) -> free_val env obj
   and free_ret env ret =
     match ret with
-    | C.RetId(_, id) -> env $$ [id]
-    | C.RetLam(_, arg, body) -> free_exp (env ++ [arg]) body
+    | C.RetId(_, _, id) -> env $$ [id]
+    | C.RetLam(_, _, arg, body) -> free_exp (env ++ [arg]) body
   and free_exn env exn =
     match exn with
-    | C.ExnId(_, id) -> env $$ [id]
-    | C.ExnLam(_, arg, lbl, body) -> free_exp (env ++ [arg; lbl]) body
+    | C.ExnId(_, _, id) -> env $$ [id]
+    | C.ExnLam(_, _, arg, lbl, body) -> free_exp (env ++ [arg; lbl]) body
   and free_exp env exp =
     match exp with
     | C.LetValue(_,_, id, value, exp) -> free_val env value && free_exp (env ++ [id]) exp
     | C.RecValue(_,_, id, value, exp) -> let env' = env ++ [id] in
                                      free_val env' value && free_exp env' exp
     | C.LetPrim(_,_, id, prim, exp) -> free_prim env prim && free_exp (env ++ [id]) exp
-    | C.LetRetCont(_,ret, r, exp) -> free_ret env r && free_exp (env ++ [ret]) exp
-    | C.LetExnCont(_,exn, e, exp) -> free_exn env e && free_exp (env ++ [exn]) exp
+    | C.LetRetCont(_,_,ret, r, exp) -> free_ret env r && free_exp (env ++ [ret]) exp
+    | C.LetExnCont(_,_,exn, e, exp) -> free_exn env e && free_exp (env ++ [exn]) exp
     | C.If(_,_, cond, trueBranch, falseBranch) ->
       free_val env cond && List.for_all (free_exp env) [trueBranch; falseBranch]
     | C.AppFun(_,_, func, ret, exn, args) ->
       free_ret env ret
       && free_exn env exn
       && List.for_all (free_val env) (func::args)
-    | C.AppRetCont(_,ret, arg) -> free_ret env ret && free_val env arg
-    | C.AppExnCont(_,exn, arg, label) -> free_exn env exn && List.for_all (free_val env) [arg;label]
+    | C.AppRetCont(_, _,ret, arg) -> free_ret env ret && free_val env arg
+    | C.AppExnCont(_, _,exn, arg, label) -> free_exn env exn && List.for_all (free_val env) [arg;label]
     | C.Eval(_,_, eval) -> true in
   free_exp env exp
 
@@ -153,32 +153,32 @@ let alphatize allowUnbound (exp, env) =
 
   and alph_ret (ret, env) =
     match ret with
-    | C.RetId(p, id) -> 
+    | C.RetId(p, l, id) -> 
       let (id', env') = update (id, env) in
-      (C.RetId(p, id'), env')
-    | C.RetLam(p, arg, body) ->
+      (C.RetId(p, l, id'), env')
+    | C.RetLam(p, l, arg, body) ->
       let (arg', env1) = update (arg, env) in
       let (body', env2) = alph_exp (body, env1) in
-      (C.RetLam(p, arg', body'), env2)
+      (C.RetLam(p, l, arg', body'), env2)
 
   and alph_exn (exn, env) =
     match exn with
-    | C.ExnId(p, id) -> 
+    | C.ExnId(p, l, id) -> 
       let (id', env') = update (id, env) in
-      (C.ExnId(p, id'), env')
-    | C.ExnLam(p, arg, lbl, body) ->
+      (C.ExnId(p, l, id'), env')
+    | C.ExnLam(p, l, arg, lbl, body) ->
       let (arg', env1) = update (arg, env) in
       let (lbl', env2) = update (lbl, env1) in
       let (body', env3) = alph_exp (body, env2) in
-      (C.ExnLam(p, arg', lbl', body'), env3)
+      (C.ExnLam(p, l, arg', lbl', body'), env3)
 
   and lookup_ret (ret, env) =
     match ret with
-    | C.RetId(p, id) -> (C.RetId(p, lookup (id, env)), env)
+    | C.RetId(p, l, id) -> (C.RetId(p, l, lookup (id, env)), env)
     | _ -> alph_ret (ret, env)
   and lookup_exn (exn, env) =
     match exn with
-    | C.ExnId(p, id) -> (C.ExnId(p, lookup (id, env)), env)
+    | C.ExnId(p, l, id) -> (C.ExnId(p, l, lookup (id, env)), env)
     | _ -> alph_exn (exn, env)
 
   and alph_exp (exp, env) =
@@ -198,16 +198,16 @@ let alphatize allowUnbound (exp, env) =
       let (id', env2) = update (id, env1) in (* let binding happens after value *)
       let (exp', env3) = alph_exp (exp, env2) in
       (C.LetPrim(p,l, id', prim', exp'), env3)
-    | C.LetRetCont (l,ret, r, exp) ->
+    | C.LetRetCont (p,l,ret, r, exp) ->
       let (r', env1) = alph_ret (r, env) in
       let (ret', env3) = update (ret, env) in
       let (exp', env4) = alph_exp (exp, env3) in
-      (C.LetRetCont(l,ret', r', exp'), merge env1 env4)
-    | C.LetExnCont (l,exn, e, exp) ->
+      (C.LetRetCont(p,l,ret', r', exp'), merge env1 env4)
+    | C.LetExnCont (p,l,exn, e, exp) ->
       let (e', env1) = alph_exn (e, env) in
       let (exn', env4) = update (exn, env) in
       let (exp', env5) = alph_exp (exp, env4) in
-      (C.LetExnCont(l,exn', e', exp'), merge env1 env5)
+      (C.LetExnCont(p,l,exn', e', exp'), merge env1 env5)
     | C.If(p,l, cond, trueBranch, falseBranch) ->
       let (cond', env1) = alph_val (cond, env) in
       let (true', env2) = alph_exp (trueBranch, env1) in
@@ -220,15 +220,15 @@ let alphatize allowUnbound (exp, env) =
       let (revArgs', env4) = List.fold_left (fun (revArgs, env) arg ->
         let (arg', env') = alph_val (arg,env) in (arg'::revArgs, env')) ([],env3) args in
       (C.AppFun(p,l, func', ret', exn', List.rev revArgs'), env4)
-    | C.AppRetCont(l,ret, arg) ->
+    | C.AppRetCont(p,l,ret, arg) ->
       let (ret', env1) = lookup_ret (ret, env) in
       let (arg', env2) = alph_val (arg, env1) in
-      (C.AppRetCont(l,ret', arg'), env2)
-    | C.AppExnCont(l,exn, arg, label) ->
+      (C.AppRetCont(p,l,ret', arg'), env2)
+    | C.AppExnCont(p,l,exn, arg, label) ->
       let (exn', env1) = lookup_exn (exn, env) in
       let (arg', env2) = alph_val (arg, env1) in
       let (label', env3) = alph_val (label, env2) in
-      (C.AppExnCont(l,exn', arg', label'), env3)
+      (C.AppExnCont(p,l,exn', arg', label'), env3)
     | C.Eval(p,l, eval) -> (C.Eval(p,l, eval), env)
   in alph_exp (exp, env)
 
@@ -267,7 +267,7 @@ let print_rets env store =
   IdMap.iter (fun id addr -> printf "  %s -> %s" id (V.ADDRESS.toString addr);
     match (Ljs_cps_values.Store.find addr store) with
     | V.Answer -> printf " -> ANS\n"
-    | V.RetCont(l, arg, _, _,_,_) -> printf " -> RET(%s->...)[...]\n" arg) env
+    | V.RetCont(_, l, arg, _, _,_,_) -> printf " -> RET(%s->...)[...]\n" arg) env
 let print_all_rets env store = 
   printf "Return Env:\n";
   IdMap.iter (fun id addr -> printf "  %s -> %s\n" id (V.ADDRESS.toString addr)) env;
@@ -275,7 +275,7 @@ let print_all_rets env store =
   Ljs_cps_values.Store.iter (fun addr ret ->
     match ret with
     | V.Answer -> printf "  %s -> ANS\n" (V.ADDRESS.toString addr)
-    | V.RetCont(l, arg, body, _,_,_) -> printf "  %s -> RET(%s->...)\n" (V.ADDRESS.toString addr) arg
+    | V.RetCont(_, l, arg, body, _,_,_) -> printf "  %s -> RET(%s->...)\n" (V.ADDRESS.toString addr) arg
   ) store 
 
 let print_exns env store = 
@@ -285,7 +285,7 @@ let print_exns env store =
   Ljs_cps_values.Store.iter (fun addr ret ->
     match ret with
     | V.Error -> printf "  %s -> ERR\n" (V.ADDRESS.toString addr)
-    | V.ExnCont(l, arg, lbl, body, _,_,_) -> printf "  %s -> RET(%s, %s->...)\n" (V.ADDRESS.toString addr) arg lbl
+    | V.ExnCont(_, l, arg, lbl, body, _,_,_) -> printf "  %s -> RET(%s, %s->...)\n" (V.ADDRESS.toString addr) arg lbl
   ) store
 
 
@@ -308,10 +308,10 @@ let dump_heap_as_dot prefix bindingEnv bindingStore retEnv retStore exnEnv exnSt
     (addr, V.pretty_bind value, b,r,e)::acc) bindingStore [] in
   let retsMap = Ljs_cps_values.Store.fold (fun addr ret acc -> match ret with 
     | V.Answer -> (addr, "ANSWER", IdMap.empty, IdMap.empty, IdMap.empty)::acc
-    | V.RetCont(_, arg, _, b, r, s) -> (addr, "RET("^arg^"->...)", b, r, s)::acc) retStore [] in
+    | V.RetCont(_, _, arg, _, b, r, s) -> (addr, "RET("^arg^"->...)", b, r, s)::acc) retStore [] in
   let exnsMap = Ljs_cps_values.Store.fold (fun addr ret acc -> match ret with 
     | V.Error -> (addr, "ERROR", IdMap.empty, IdMap.empty, IdMap.empty)::acc
-    | V.ExnCont(_, arg, lbl, _, b, r, s) -> (addr, "RET("^arg^", "^lbl^"->...)", b, r, s)::acc) exnStore [] in
+    | V.ExnCont(_, _, arg, lbl, _, b, r, s) -> (addr, "RET("^arg^", "^lbl^"->...)", b, r, s)::acc) exnStore [] in
   (* let fmt_bindings name env envName = *)
   (*   let bindRecord = IdMap.fold (fun id _ acc -> *)
   (*     (horz [squish [text "<TR><TD PORT=\""; text id; text "\">";  *)

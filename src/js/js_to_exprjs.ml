@@ -4,7 +4,17 @@ module J = Js_syntax
 open Prelude
 open Js_pretty
 
+open String
+
 exception ParseError of string
+
+let split_regexp s =
+  let before_flags = String.rindex s '/' in
+  (* Index 1 always, because regexps look like /foo/g, so we cut off
+   * the initial / *)
+  let pattern = String.sub s 1 (before_flags - 1) in
+  let flags = String.sub s before_flags (((String.length s) - before_flags) - 1) in
+  (pattern, flags)
 
 let rec jse_to_exprjs (e : J.expr) : E.expr =
   match e with
@@ -17,7 +27,11 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Bool (b) -> if b then E.True (p) else E.False (p)
         | J.Num (n) -> E.Num (p, n)
         | J.Str (s) -> E.String (p, s) 
-        | J.Regexp (s) -> E.RegExpr (p, s)
+        | J.Regexp (s) ->
+          let (pattern_part, flags_part) = split_regexp s in
+          E.NewExpr (p, E.IdExpr (p, "%RegExpGlobalFuncObj"),
+                     [E.String (p, pattern_part);
+                      E.String (p, flags_part)])
       in result
   | J.Array (p, el) -> 
       E.ArrayExpr (p, List.map jse_to_exprjs el)
@@ -35,10 +49,10 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
         | J.Get (nm, sel) ->
           let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
-          (p, name, E.Getter (name, srcElts sel parent))
+          (p, name, E.Getter (name, srcElts p sel parent))
         | J.Set (nm, argnm, sel) ->
           let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
-          let let_body = srcElts sel parent in
+          let let_body = srcElts p sel parent in
           let inner_let = (* will be stripped off in next stage *)
             E.LetExpr (p, argnm, E.Undefined (p), let_body) in
           (p, name, E.Setter (name, inner_let)) in
@@ -55,7 +69,7 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | [] -> final
         | first :: rest -> let newnm = "%%" ^ first in
           E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
-      let last = srcElts body parent in
+      let last = srcElts p body parent in
       let funcbody = match nm with
         | Some s ->
           E.LetExpr (p, "%%" ^ s, E.Undefined (p),
@@ -210,27 +224,25 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
   | J.With _ -> raise (ParseError ("WithError"))
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 
-and srcElts (ss : J.srcElt list) (context : E.expr) : E.expr =
-  let p = dummy_pos in
+and srcElts p (ss : J.srcElt list) (context : E.expr) : E.expr =
   let se_to_e se = match se with
     | J.Stmt (s) -> jss_to_exprjs s
     | J.FuncDecl (nm, args, body) ->
-      E.FuncStmtExpr (p, nm, args, create_context body context) in
+      E.FuncStmtExpr (p, nm, args, create_context p body context) in
   let reordered = J.reorder_sel ss in
   match reordered with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
-    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts rest context) 
+    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts p rest context) 
 
-and create_context (ss : J.srcElt list) (parent : E.expr) : E.expr = 
-  let p = dummy_pos in
+and create_context p (ss : J.srcElt list) (parent : E.expr) : E.expr = 
   let rec fvl_to_letchain fvl final = match fvl with
     | [] -> final
     | first :: rest -> let newnm = "%%" ^ first in
       E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
   let free_vars = IdSet.elements (J.fv_sel ss) in
   let reordered = J.reorder_sel ss in
-  let last = srcElts reordered parent in
+  let last = srcElts p reordered parent in
   fvl_to_letchain free_vars last
 
-let js_to_exprjs ss parent = (J.used_vars_sel ss, create_context ss parent)
+let js_to_exprjs p ss parent = (J.used_vars_sel ss, create_context p ss parent)

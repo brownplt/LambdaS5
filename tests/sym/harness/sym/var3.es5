@@ -1,5 +1,5 @@
-// "ok", "ok"
+// "ok"
 // could be scalars or objects
-let (x = %%newsym)
+let (x = NEWSYM)
 let (y = x)
 if (prim("stx=", x, y)) { "ok" } else { "fail" }
