@@ -122,8 +122,8 @@ let sym_eval js_path =
     (* Run the symbolic evaluator on the AST,*)
     (* outputting the raw OCaml results. *)
     let symeval = proj_root ^ "obj/s5.d.byte" ^
-      " -desugar " ^ ast_path ^
-      " -env " ^ proj_root ^ "envs/es5.env" ^
+      " -js " ^ ast_path ^ " -js-to-s5" ^
+      " -env " ^ proj_root ^ "envs/es5.env" ^ " -apply" ^
       " -sym-eval-raw > " ^ res_file
     in
     let _ = Sys.command symeval in

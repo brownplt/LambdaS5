@@ -11,10 +11,12 @@ RETMP=`mktemp -t js.XXXXXX`
 ../bin/js json_print.js ../lib/js-regexp/regexp.js > $RETMP
 
 ../bin/js json_print.js $TMP > $TMP.ast
-ocamlrun ../obj/s5.d.byte -desugar $TMP.ast -env ../envs/regexp.env \
-	-desugar-env $RETMP \
-        -json ../tests/desugar.sh -env ../envs/es5.env \
-        -eval 
+ocamlrun ../obj/s5.d.byte -set-json ../tests/desugar.sh \
+  -js $TMP.ast -js-to-s5 \
+  -env ../envs/regexp.env -apply \
+  -js $RETMP -js-to-s5 -to-env -apply \
+  -env ../envs/es5.env -apply \
+  -eval
 EX=$?
 rm $TMP.ast
 

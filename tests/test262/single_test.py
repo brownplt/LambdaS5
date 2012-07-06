@@ -103,15 +103,15 @@ def run(useC3, json):
 
   if useC3:
     command = ["ocamlrun", "../../obj/s5.d.byte",
-               "-c3desugar", jsonfilename,
-               "-env", "../../envs/es5.env",
-               "-json", "./c3desugar.bat",
+               "-set-json", "./c3desugar.bat",
+               "-c3-js", jsonfilename, "-js-to-s5",
+               "-env", "../../envs/es5.env", "-apply",
                "-eval"]
   else:
     command = ["ocamlrun", "../../obj/s5.d.byte",
-               "-desugar", jsonfilename,
-               "-env", "../../envs/es5.env",
-               "-json", "./desugar.sh",
+               "-set-json", "./desugar.sh",
+               "-js", jsonfilename, "-js-to-s5",
+               "-env", "../../envs/es5.env", "-apply",
                "-eval"]
 
   p = subprocess.Popen(command,
