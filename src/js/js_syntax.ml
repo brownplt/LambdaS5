@@ -169,14 +169,15 @@ let rec var_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
     | For (_, e1, e2, e3, bdy) ->
       let found_vars = IdSetExt.unions (map evars [e1; e2; e3]) in
       IdSet.union found_vars (var_vars_stmt bdy)
-    | ForVar (_, _, e1, e2, bdy) ->
+    | ForVar (_, decl, e1, e2, bdy) ->
       let found_vars = IdSetExt.unions (map evars [e1; e2]) in
-      IdSet.union found_vars (var_vars_stmt bdy)
+      IdSetExt.unions [found_vars; (var_vars_stmt bdy);
+                       IdSetExt.unions (map decl_var decl)]
     | ForIn (_, e1, e2, bdy) ->
       let found_vars = IdSetExt.unions (map var_vars_expr [e1; e2]) in
       IdSet.union found_vars (var_vars_stmt bdy)
-    | ForInVar (_, _, e, bdy) ->
-      IdSet.union (var_vars_expr e) (var_vars_stmt bdy)
+    | ForInVar (_, decl, e, bdy) ->
+      IdSetExt.unions [(var_vars_expr e); (var_vars_stmt bdy); decl_var decl]
     | Labeled (_, _, bdy) -> var_vars_stmt bdy
     | Continue _ | Break _ -> IdSet.empty
     | Return (_, e) -> evars e
