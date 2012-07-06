@@ -18,18 +18,14 @@ let null_test p v =
 let type_test p v typ =
   S.Op2 (p, "stx=", S.Op1 (p, "typeof", v), S.String (p, typ))
 
-let is_object_type p o =
-  S.If (p, type_test p o "object", S.True (p), type_test p o "function")
+let is_object_type p o = S.App (p, S.Id (p, "%IsObject"), [o])
 
 let throw_typ_error p msg =
   S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.String (p, msg)])
 
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
-  match obj with
-    | S.Id (p, "%context") ->
-      S.App (p, S.Id (p, "%EnvLookup"), [obj; fld])
-    | _ -> S.GetField (p, obj, fld, argsobj)
+  S.GetField (p, obj, fld, argsobj)
 
 let to_string p v =
   match v with
@@ -202,39 +198,31 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%PostIncrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PostIncrement"), [obj; fld])
         | _ -> failwith "desugaring error: postfix:++"
       end
     | "postfix:--" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%PostDecrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PostDecrement"), [obj; fld])
         | _ -> failwith "desugaring error: postfix:--"
       end
     | "prefix:++" -> let target = ejs_to_ljs exp in 
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%IncrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PrefixIncrement"), [obj; fld])
         | _ -> failwith "desugaring error: prefix:++"
       end
     | "prefix:--" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%DecrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PrefixDecrement"), [obj; fld])
         | _ -> failwith "desugaring error: prefix:--"
       end
     | "typeof" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
+        | S.GetField (_, (S.Id (_, "%context") as context), fldexpr, _) ->
           S.Op1 (p, "typeof", S.GetField (p, context, fldexpr, noargs_obj (Pos.synth p)))
         | _ -> S.Op1 (p, "typeof", target)
       end
