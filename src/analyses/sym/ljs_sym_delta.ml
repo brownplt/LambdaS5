@@ -154,8 +154,8 @@ let rec object_to_string ctx obj = begin
       | SSym id -> "[object " ^ id ^ "]"
       in return (String objstr) (add_const_string objstr ctx)
     | NewSymObj locs ->
-      bind (init_sym_obj locs loc "object_to_string init_sym_obj" ctx) 
-        (fun (_, ctx) -> object_to_string ctx obj)
+      let _, ctx = init_sym_obj locs loc "object_to_string init_sym_obj" ctx in
+      object_to_string ctx obj
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "object-to-string, wasn't given object")
@@ -170,11 +170,12 @@ let rec is_array ctx obj = begin
       | SString s -> return (bool (s = "Array")) ctx
       | SSym id -> 
         let (arrStr, ctx) = const_string "Array" ctx in
-        return True (add_assert (is_equal (SId id) (SId arrStr)) ctx)
+        return True (fst (add_assert (is_equal (SId id) (SId arrStr)) ctx))
         (* TODO false branch? *)
       end
-    | NewSymObj locs -> bind (init_sym_obj locs loc "" ctx) 
-      (fun (_, ctx) -> is_array ctx obj)
+    | NewSymObj locs -> 
+      let _, ctx = init_sym_obj locs loc "" ctx in
+      is_array ctx obj
   end
   | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "is-array")
@@ -256,7 +257,7 @@ let numstr ctx = function
   | NewSym _ | SymScalar _ -> failwith "prim got a symbolic exp"
   | _ -> raise (PrimError "numstr")
 
-let op1 ctx op v : (result list * exresult list) =
+let op1 ctx op v : results =
   let r f ctx v = uncurry return (f ctx v) in
   let op1_fun = match op with
   | "typeof" -> r typeof

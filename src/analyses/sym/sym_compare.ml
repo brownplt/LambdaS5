@@ -14,6 +14,8 @@ let proj_root = "/Users/Jonah/Documents/spring2012/research/LambdaS5/"
 
 let rename_prefix = "a"
 
+let use_cached = ref false (* to be set by args *)
+
 (** TYPES                                *)
 (*****************************************)
 
@@ -108,7 +110,7 @@ let print_comp_results results =
 
 let sym_eval js_path =
   let res_file = js_path ^ ".raw" in
-  if (Sys.file_exists res_file) then
+  if (!use_cached) && Sys.file_exists res_file then
     printf "Using cached results: %s\n" res_file
   else begin
     let ast_path = js_path ^ ".ast" in
@@ -321,7 +323,6 @@ let sym_compare path1 path2 : unit =
   (* Check for result set equivalence.
    * Our metric will be, for each return value in classes1,
    * does there exist an equivalent return value in classes2 *)
-  (* TODO need to check the converse as well *)
   let bool_of_results = List.for_all
     (fun r -> match r with Equiv _ -> true | _ -> false)
   in
@@ -351,7 +352,12 @@ let sym_compare path1 path2 : unit =
   print_comp_results converse_results
 
 let _ =
-  if Array.length Sys.argv - 1 <> 2 then
-    printf "Usage: sym-compare file1.js file2.js\n"
+  let paths = ref [] in
+  Arg.parse
+    [ ("-c", Arg.Set use_cached, "use cached results for programs if found") ]
+    (fun (path) -> paths := path :: !paths)
+    "Usage: sym-compare [-c] file1.js file2.js\n";
+  if List.length !paths <> 2 then
+    eprintf "sym-compare expects two JS programs!"
   else
-    sym_compare Sys.argv.(1) Sys.argv.(2)
+    sym_compare (List.hd !paths) (List.hd (List.tl !paths))

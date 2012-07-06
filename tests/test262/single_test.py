@@ -84,6 +84,11 @@ def parse(useC3, js):
     return (parseerror, err)
 
   out = decode(out)
+  try:
+    out = out.decode('utf-8')
+  finally:
+    return (parseerror, out)
+
   if useC3 and (out.find("Syntax error") != -1):
     return (parseerror, out)
 

@@ -3,6 +3,10 @@ function f1(a) {
    return a;
 }
 
-if (!(f1(1) !== 1)) {
-   print("passed");
+try {
+  f1(1);
+} catch(e) {
+  if (e instanceof SyntaxError) {
+     console.log("passed");
+  }
 }

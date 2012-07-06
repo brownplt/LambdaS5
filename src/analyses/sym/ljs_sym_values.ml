@@ -82,9 +82,6 @@ and exval =
   | Throw of value
 and label = string
 
-and result = value * ctx
-and exresult = exval * ctx
-
 (* Obj store holds (obj, hide), where hide = true indicates
  * that the object is an LJS internal and therefore not a
  * possible assignment for a new sym value. *)
@@ -102,7 +99,7 @@ and ctx = { constraints : sym_exp list;
 
 (* language of constraints *)
 and sym_exp =
-  | Hint of string
+  | Hint of string * Pos.t
   | Concrete of value 
   | STime of int
   | SLoc of Store.loc
@@ -168,31 +165,115 @@ let lookup_store t l = SApp(SId "lookup", [t; l])
 let lookup_field o f = SApp(SId "lookupField", [o; f])
 let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])
 let update_dataField o f v = SApp(SId "updateField", [o; f; v])
+
+(* List monad *) 
+type 'a list_mo = 'a list
+
+let list_none = []
+let list_unit a = [a]
+let list_join = List.concat
+let list_map = List.map
+let list_combine = List.append
+(*let list_bind (lm : 'a list_mo) (f : ('a -> 'b list_mo)) : 'b list_mo =*)
+(*  list_join (list_map f lm)*)
+
+(* Trace monad (aka writer) *)
+type trace_pt = Pos.t * string
+type 'a trace_mo = 'a * trace_pt list
+
+let trace_unit a = (a, [])
+
+let trace_join (tmm : ('a trace_mo) trace_mo) : 'a trace_mo =
+  let ((a, t1), t2) = tmm in
+  (a, t1 @ t2)
+
+let trace_map (f : ('a -> 'b)) (tm : 'a trace_mo) : 'b trace_mo =
+  let (a, trace) = tm in
+  (f a, trace)
+
+(*let trace_bind (tm : 'a trace_mo) (f : ('a -> 'b trace_mo)) : 'b trace_mo =  *)
+(*  trace_join (trace_map f tm)*)
+
+let trace_add (pt : trace_pt) : unit trace_mo = ((), [pt])
+
+(* Results monad, created by composing the two previous monads. *)
+type 'a res_mo = ('a trace_mo) list_mo
+
+let res_none = list_none
+let res_unit a = list_unit (trace_unit a)
+let res_combine = list_combine
+let res_add_trace pt : unit res_mo = list_unit (trace_add pt)
+
+(* Takes a nested monad of the inverse type and flips it into a res_mo. *)
+(* Note that this is the only function in the composition that needs
+ * to take advantage of the internal structure of one of the monads.
+ * All the other functions use the map and join interfaces *)
+let swap (tm : ('a list_mo) trace_mo) : 'a res_mo = 
+  let (lm, trace) = tm in
+  list_map (fun a -> (a, trace)) lm
+
+let res_map (f : 'a -> 'b) (rm : 'a res_mo) : 'b res_mo =
+  list_map (trace_map f) rm
+
+(* This is where the magic happens (actually we just make the types match up).
+ * The types of each expression are on the right (read from bottom to top). *)
+let res_join (rmm : ('a res_mo) res_mo) : 'a res_mo =
+  list_map trace_join       (* : 'a trace_mo list_mo *)
+    (list_join              (* : 'a trace_mo trace_mo list_mo *)
+      (list_map swap        (* : 'a trace_mo trace_mo list_mo list_mo *)
+        rmm))               (* : 'a trace_mo list_mo trace_mo list_mo *)
   
+let res_bind (rm : 'a res_mo) (f : ('a -> 'b res_mo)) : 'b res_mo =
+  res_join (res_map f rm)
 
-(* monad *)
-let return v (pc : ctx) = ([(v,pc)], [])
-let throw v (pc : ctx) = ([], [(v, pc)])
-let also_return v pc (rets,exns) = ((v,pc)::rets,exns)
-let also_throw v pc (rets,exns) = (rets,(v,pc)::exns)
-let combine (r1,e1) (r2,e2) = (List.rev_append r1 r2, List.rev_append e1 e2)
-let none = ([],[])
+let res_filter rm test =
+  res_bind rm (fun r -> if test r then res_unit r else res_none)
 
-(* usually, the types are
-   bind_both ((ret : result list), (exn : exresult list)) 
-   (f : result -> (result list * exresult list))
-   (g : exresult -> (result list * exresult list)) 
-   : (result list * exresult list)
-   but in fact the function is slightly more polymorphic than that *)
-let bind_both (ret, exn) f g =
-  let f_ret = List.map f ret in
-  let g_exn = List.map g exn in
-  List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
-    (List.fold_left (fun (rets,exns) (ret',exn') -> (List.rev_append ret' rets, List.rev_append exn' exns))
-       none f_ret)
-    g_exn
-let bind (ret,exn) f = bind_both (ret,exn) f (fun x -> ([], [x]))
-let bind_exn (ret,exn) g = bind_both (ret,exn) (fun x -> ([x], [])) g
+(* Now let's build our actual monad *)
+type 'a result =
+  | Value of 'a * ctx
+  | Exn of exval * ctx
+  | Unsat of ctx
+type results = (value result) res_mo
+
+let none = res_none
+let return v pc = res_unit (Value (v, pc))
+let throw ev pc = res_unit (Exn (ev, pc))
+let unsat    pc = res_unit (Unsat pc)
+
+let combine = res_combine
+let add_trace_pt pt rm =
+  res_bind
+    (res_add_trace pt)
+    (fun () -> rm)
+
+let bind_all rm f g h =
+  res_bind rm (fun r -> match r with
+              | Value (v, pc) -> f (v, pc)
+              | Exn (ev, pc) -> g (ev, pc)
+              | Unsat pc -> h pc)
+
+let bind rm f = bind_all rm f (uncurry throw) unsat
+let bind_exn rm g = bind_all rm (uncurry return) g unsat
+let bind_unit rm h = bind_all rm (uncurry return) (uncurry throw) h
+
+let bind_both rm f g = bind_exn (bind rm f) g
+
+let just_values rm =
+  res_map 
+    (fun r -> match r with Value (v, pc) -> (v, pc) | _ -> failwith "filter fail")
+    (res_filter rm (fun r -> match r with Value _ -> true | _ -> false))
+
+let just_exns rm =
+  res_map 
+    (fun r -> match r with Exn (ev, pc) -> (ev, pc) | _ -> failwith "filter fail")
+    (res_filter rm (fun r -> match r with Exn _ -> true | _ -> false))
+
+let just_unsats rm =
+  res_map 
+    (fun r -> match r with Unsat pc -> pc | _ -> failwith "filter fail")
+    (res_filter rm (fun r -> match r with Unsat _ -> true | _ -> false))
+
 
 let collect cmp res_list = 
   map (fun grp -> (fst (List.hd grp), map snd grp))
@@ -292,14 +373,20 @@ let check_type id t pc =
     end
   with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
 
+(* Produces a new context and a bool that is true if the new
+ * context did not change (i.e. is the exact same context).
+ * If the context didn't change, then we know it's constraints
+ * are still satisfiable. *)
 let add_constraint c ctx =
-  { ctx with constraints = c :: ctx.constraints }
-     
-let add_constraints cs ctx =
-  { ctx with constraints = List.rev_append cs ctx.constraints }
+  (* Only add new constraints. *)
+  if List.exists (fun c' -> c = c') ctx.constraints
+  then (ctx, true)
+  else ({ ctx with constraints = c :: ctx.constraints }, false)
 
 let add_assert a = add_constraint (SAssert a)
-let add_let a b = add_constraint (SLet (a, b))
+let add_let a b ctx = fst (add_constraint (SLet (a, b)) ctx)
+let add_hint s p ctx = fst (add_constraint (Hint (s, p)) ctx)
+
 
 let sto_alloc_val v ctx = 
   let (loc, sto) = Store.alloc v ctx.store.vals in
@@ -331,19 +418,11 @@ let sto_lookup_val loc ctx =
 (*   Printf.eprintf "looking for %s in vals\n" (Store.print_loc loc); *)
   Store.lookup loc ctx.store.vals
 
-let hint s pc = add_constraint (Hint s) pc
-
 (* Returns the loc of a newly allocated SymScalar *)
 let alloc_sym_scalar name hint_s pc =
   let (sym_id, pc) = fresh_var name TAny hint_s pc in
   let (sym_loc, pc) = sto_alloc_val (SymScalar sym_id) pc in
   (sym_loc, pc)
-
-let alloc_sym_scalar_opt name hint_s pc =
-  let (sym_loc, pc') = alloc_sym_scalar name hint_s pc in
-  combine
-    (return (Some sym_loc) pc')
-    (return None pc)
 
 (* Creates a new symbolic boolean to be used as an attr *)
 let new_sym_bool name hint_s pc =
@@ -396,10 +475,6 @@ let init_sym_obj locs loc hint_s pc =
   let proto, pc = new_sym_from_locs locs "proto"
                           ("new %proto for " ^ (Store.print_loc loc)) pc in
   let proto_loc, pc = sto_alloc_val proto pc in
-  (*bind (alloc_sym_scalar_opt "code" "code attr" pc) *)
-  (*  (fun (code_loc_opt, pc) ->*)
-  (*    bind (alloc_sym_scalar_opt "primval" "primval attr" pc)*)
-  (*      (fun (pv_loc_opt, pc) ->*)
   let pv_loc, pc = alloc_sym_scalar "primval" "primval attr" pc in
   let ret = SymObj ({
     attrs = { code = None; proto = proto_loc; extensible = sym_ext;
@@ -407,4 +482,4 @@ let init_sym_obj locs loc hint_s pc =
     conps = IdMap.empty;
     symps = IdMap.empty
   }, locs) in
-  return ret (sto_update_obj loc ret pc)
+  (ret, sto_update_obj loc ret pc)

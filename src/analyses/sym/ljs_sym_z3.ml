@@ -102,7 +102,7 @@ and exp e store =
     | TObjPtr -> parens (horz [text "OBJPTR"; e])
     | _ -> e in
   match e with
-  | Hint s -> horz [text ";;"; text s] 
+  | Hint (s, p) -> horz [text ";;"; text s; text (Pos.string_of_pos p)] 
   | Concrete v -> value v store
   | STime t -> int t
   | SLoc l -> text (Store.print_loc l)
@@ -177,7 +177,7 @@ let rec simplep_value v =
 
 let rec simplep_exp e = 
   match e with
-  | Hint s -> horz [text ";;"; text s] 
+  | Hint (s, p) -> horz [text ";;"; text s; text (Pos.string_of_pos p)] 
   | Concrete v -> simplep_value v
   | SLoc l -> text (Store.print_loc l)
   | SId id -> text id
@@ -267,42 +267,83 @@ let simple_pc result pc =
 
 let simple_to_string result pc = simple_pc result pc Format.str_formatter; Format.flush_str_formatter() 
 
-let print_results (rets, exns) = 
-  let ret_grps, exn_grps = collect compare rets, collect compare exns in
+let print_trace trace =
+  printf "%s\n" (String.concat " - "
+                   (map (fun (pos, lbl) ->
+                           lbl ^ " @ " ^ Pos.string_of_pos pos)
+                           trace))
+
+let print_results results = 
+  (* TODO better printing *)
+  let rets = just_values results in 
+  let exns = just_exns results in 
+  let unsats = just_unsats results in
+  (*let ret_grps, exn_grps = collect compare rets, collect compare exns in*)
   (*let t1 = Sys.time() in*)
   List.iter
-    (fun (v, pcs) ->
-      (*print_string "##########\n";*)
+    (fun ((v, pc), trace) ->
       printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
-      List.iter
-        (fun pc ->
-          print_string "----------\n";
-          if simple_print then begin
-            (match v with
-            | ObjPtr loc ->
-              (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
-              printf "Var names: %s\n" (Ljs_sym_pretty.rec_val_to_string v pc);
-              printf "Value:\n%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
-            | _ -> ());
-          (*print_string "##########\n";*)
-            printf "%s\n" (simple_to_string v pc)
-          end else begin
-            List.iter 
-              (fun c -> printf "%s\n" (to_string c pc))
-              pc.Ljs_sym_values.constraints
-          end;
-          (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
-        ) pcs;
-      (*printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);*)
-      print_newline())
-    ret_grps;
+      print_string "----------\n";
+      if simple_print then begin
+        (match v with
+        | ObjPtr loc ->
+          (*printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);*)
+          printf "Var names: %s\n" (Ljs_sym_pretty.rec_val_to_string v pc);
+          printf "Value:\n%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)
+        | _ -> ());
+      (*print_string "##########\n";*)
+        printf "%s\n" (simple_to_string v pc)
+      end else begin
+        List.iter 
+          (fun c -> printf "%s\n" (to_string c pc))
+          pc.Ljs_sym_values.constraints
+      end;
+      print_trace trace
+      (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
+    ) rets;
+  (*List.iter*)
+  (*  (fun (v, pcs) ->*)
+  (*    [>print_string "##########\n";<]*)
+  (*    printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);*)
+  (*    List.iter*)
+  (*      (fun pc ->*)
+  (*        print_string "----------\n";*)
+  (*        if simple_print then begin*)
+  (*          (match v with*)
+  (*          | ObjPtr loc ->*)
+  (*            [>printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);<]*)
+  (*            printf "Var names: %s\n" (Ljs_sym_pretty.rec_val_to_string v pc);*)
+  (*            printf "Value:\n%s\n" (Ljs_sym_pretty.rec_obj_to_string (sto_lookup_obj_pair loc pc) pc)*)
+  (*          | _ -> ());*)
+  (*        [>print_string "##########\n";<]*)
+  (*          printf "%s\n" (simple_to_string v pc)*)
+  (*        end else begin*)
+  (*          List.iter *)
+  (*            (fun c -> printf "%s\n" (to_string c pc))*)
+  (*            pc.Ljs_sym_values.constraints*)
+  (*        end;*)
+  (*        [>printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)<]*)
+  (*      ) pcs;*)
+  (*    [>printf "%s\n" (Ljs_sym_pretty.store_to_string p.Ljs_sym_values.store);<]*)
+  (*    print_newline())*)
+  (*  ret_grps;*)
 
   List.iter
-    (fun (v, pcs) -> match v with
+    (fun ((v, pc), trace) -> match v with
       | Ljs_sym_values.Throw v ->
-        printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (List.length pcs)
+        printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (-1); (*(List.length pcs)*)
+        print_trace trace
       | _ -> printf "Exn: something other than a Throw\n")
-    exn_grps
+    exns;
+
+  printf "Unsat branches: %d" (List.length unsats);
+  (*List.iter (fun (pc, trace) -> printf "Unsat\n"; print_trace trace) unsats;*)
+
+  let trace = Ljs_sym_trace.trace_from_results results in
+  printf "%s\n" (Ljs_sym_trace.trace_to_string trace)
+
+
+
   (*let t2 = Sys.time() in*)
   (*printf "printresult %f\n" (t2 -. t1)*)
 
