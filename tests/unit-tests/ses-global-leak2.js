@@ -15,8 +15,6 @@
       if (err instanceof TypeError) { return false; }
       return 'valueOf() threw: ' + err;
     } finally {
-      console.log(Object.prototype);
-      console.log(global);
       delete global.___global_valueOf_function___;
     }
     if (that === void 0) {
