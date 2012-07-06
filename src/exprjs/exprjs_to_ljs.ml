@@ -539,7 +539,7 @@ and get_fobj p args body context =
     List.exists (fun nm -> (nm = "arguments") || (nm = "eval")) args in
   let uargs = remove_dupes args in
   if (uargs <> args) || contains_illegals then
-    S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]) else
+    S.App (p, S.Id (p, "%SyntaxError"), [S.String (p, "Illegal function definition")]) else
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
   let fobj_attrs =

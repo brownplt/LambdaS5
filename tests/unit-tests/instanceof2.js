@@ -7,7 +7,7 @@ function Foo() {
 
 }
 
-Foo.prototype = new Bar();
+Bar.prototype = new Foo();
 
 var o2 = new Bar();
 

@@ -1,9 +1,12 @@
 function foo() {
-   var x = 3;
-   delete x;
-   if (x === 3) {
-      print("passed");
-   }
+  var x = 3;
+  delete x;
 }
 
-foo();
+try {
+  foo();
+} catch(e) {
+  if (e instanceof SyntaxError) {
+    console.log("passed");
+  }
+}
