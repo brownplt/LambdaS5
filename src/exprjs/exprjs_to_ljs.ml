@@ -223,7 +223,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     | "typeof" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.GetField (_, (S.Id (_, "%context") as context), fldexpr, _) ->
-          S.Op1 (p, "typeof", S.GetField (p, context, fldexpr, noargs_obj (Pos.synth p)))
+          S.App (p, S.Id (p, "%Typeof"), [context; fldexpr])
         | _ -> S.Op1 (p, "typeof", target)
       end
     | "delete" -> let result = match exp with
