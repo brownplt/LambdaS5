@@ -19,5 +19,6 @@ ocamlrun ../obj/s5.d.byte -set-json ../tests/desugar.sh \
   -eval
 EX=$?
 rm $TMP.ast
+rm /tmp/js.*
 
 exit $EX

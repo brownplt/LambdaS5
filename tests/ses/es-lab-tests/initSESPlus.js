@@ -2169,6 +2169,8 @@ var ses;
   function makeMutableProtoPatcher(constr, classString) {
     var proto = constr.prototype;
     var baseToString = objToString.call(proto);
+    console.log(constr);
+    console.log(classString);
     if (baseToString !== '[object ' + classString + ']') {
       throw new TypeError('unexpected: ' + baseToString);
     }
@@ -3293,17 +3295,18 @@ var ses;
     });
   }
 
-  try {
+//  try {
     var reports = testRepairReport(baseKludges);
     if (ses.ok()) {
       reports.push.apply(reports, testRepairReport(supportedKludges));
     }
     logger.reportRepairs(reports);
-  } catch (err) {
+/*  } catch (err) {
     ses.updateMaxSeverity(ses.severities.NOT_SUPPORTED);
     var during = aboutTo ? '(' + aboutTo.join('') + ') ' : '';
-    logger.error('ES5 Repair ' + during + 'failed with: ', err);
-  }
+    throw ('ES5 Repair ' + during + 'failed with: ', err);
+//    logger.error('ES5 Repair ' + during + 'failed with: ', err);
+  }*/
 
   logger.reportMax();
 

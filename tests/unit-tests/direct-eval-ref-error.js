@@ -1,4 +1,4 @@
-var x = 33;
+this.x = 33;
 (function() {
   try {
     eval("delete window.x; x;");
