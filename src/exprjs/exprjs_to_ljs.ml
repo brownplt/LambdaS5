@@ -18,18 +18,14 @@ let null_test p v =
 let type_test p v typ =
   S.Op2 (p, "stx=", S.Op1 (p, "typeof", v), S.String (p, typ))
 
-let is_object_type p o =
-  S.If (p, type_test p o "object", S.True (p), type_test p o "function")
+let is_object_type p o = S.App (p, S.Id (p, "%IsObject"), [o])
 
 let throw_typ_error p msg =
   S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.String (p, msg)])
 
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
-  match obj with
-    | S.Id (p, "%context") ->
-      S.App (p, S.Id (p, "%EnvLookup"), [obj; fld])
-    | _ -> S.GetField (p, obj, fld, argsobj)
+  S.GetField (p, obj, fld, argsobj)
 
 let to_string p v =
   match v with
@@ -202,44 +198,37 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
   | E.PrefixExpr (p, op, exp) -> let result = match op with
     | "postfix:++" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%PostIncrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PostIncrement"), [obj; fld])
         | _ -> failwith "desugaring error: postfix:++"
       end
     | "postfix:--" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%PostDecrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PostDecrement"), [obj; fld])
         | _ -> failwith "desugaring error: postfix:--"
       end
     | "prefix:++" -> let target = ejs_to_ljs exp in 
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%IncrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PrefixIncrement"), [obj; fld])
         | _ -> failwith "desugaring error: prefix:++"
       end
     | "prefix:--" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.App (p, S.Id (p, "%DecrementCheck"), [context; fldexpr])
         | S.GetField (_, obj, fld, _) ->
           S.App (p, S.Id (p, "%PrefixDecrement"), [obj; fld])
         | _ -> failwith "desugaring error: prefix:--"
       end
     | "typeof" -> let target = ejs_to_ljs exp in
       begin match target with
-        | S.App (_, S.Id (_, "%EnvLookup"), [context; fldexpr]) ->
-          S.Op1 (p, "typeof", S.GetField (p, context, fldexpr, noargs_obj (Pos.synth p)))
+        | S.GetField (_, (S.Id (_, "%context") as context), fldexpr, _) ->
+          S.App (p, S.Id (p, "%Typeof"), [context; fldexpr])
         | _ -> S.Op1 (p, "typeof", target)
       end
     | "delete" -> let result = match exp with
       | E.BracketExpr (pp, obj, fld) -> 
+        let fld_id = mk_id "fld" in
         let fld_str = S.Op1 (p, "prim->str", ejs_to_ljs fld)
         and sobj = ejs_to_ljs obj in
         (* TODO(joe): unused var --- what's it doing here? *)
@@ -249,12 +238,13 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
             let null = S.Null (p) in
             S.App (pp, S.Id (pp, "%ThrowSyntaxError"), [null; null])
           | _ ->
-            S.If (p, S.Op2 (p, "hasProperty", sobj, fld_str),
-              S.If (p,
-                S.GetAttr (pp, S.Config, sobj, fld_str),
-                S.DeleteField (pp, sobj, fld_str),
-                throw_typ_error p "Deleting non-configurable field"),
-              S.True (p))
+            S.Let (p, fld_id, fld_str,
+              S.If (p, S.Op2 (p, "hasProperty", sobj, S.Id (p, fld_id)),
+                S.If (p,
+                  S.GetAttr (pp, S.Config, sobj, S.Id (p, fld_id)),
+                  S.DeleteField (pp, sobj, S.Id (p, fld_id)),
+                  throw_typ_error p "Deleting non-configurable field"),
+                S.True (p)))
         end
       | _ -> S.True (p) in result
     | "-" -> S.App(p, S.Id (p, "%UnaryNeg"), [ejs_to_ljs exp])
@@ -537,7 +527,7 @@ and get_fobj p args body context =
     List.exists (fun nm -> (nm = "arguments") || (nm = "eval")) args in
   let uargs = remove_dupes args in
   if (uargs <> args) || contains_illegals then
-    S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.Null (p)]) else
+    S.App (p, S.Id (p, "%SyntaxError"), [S.String (p, "Illegal function definition")]) else
   let call = get_lambda p args body in
   let fproto = S.Id (p, "%FunctionProto") in
   let fobj_attrs =
@@ -614,22 +604,20 @@ and create_context p args body parent =
   let uids = List.map mk_id nl in
   let uids' = List.map mk_id args in
   let prop_pairs = get_prop_pairs (nl@args) (uids@uids') [] in
-  (uids, real_body, (add_props uids (add_args uids' (S.Object (p, c_attrs, prop_pairs)))))
+  (* TODO(joe): is data good enough here?  what about using arguments
+   * in a catch block? *)
+  let arg_prop = ("arguments", S.Data ({
+    S.value = S.Id (p, "%args");
+    S.writable = true;
+  }, false, false)) in
+  (uids, real_body, (add_props uids (add_args uids' (S.Object (p, c_attrs, arg_prop::prop_pairs)))))
 
 and get_lambda p args body = 
   let (uids, real_body, ncontext) = create_context p args body (Some (S.Id (p, "%parent"))) in
   let desugared = ejs_to_ljs real_body in
-  let final = 
-    S.Seq (p,
-      S.SetField (p, 
-        S.Id (p, "%context"), 
-        S.String (p, "arguments"), 
-        S.Id (p, "%args"), 
-        onearg_obj (Pos.synth p) (S.Id (p, "%args"))), 
-      desugared) in
   S.Lambda (p, ["%this"; "%args"],
     S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, S.Seq (p, final, S.Undefined (p)))))
+      S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p)))))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
@@ -756,7 +744,7 @@ and appexpr_check f app p =
 
 let add_preamble p used_ids var_ids final = 
   let define_id id =
-    S.App (p, S.Id (p, "%defineGlobalAccessors"), [S.String (p, id)]) in
+    S.App (p, S.Id (p, "%defineGlobalAccessors"), [S.Id (p, "%context"); S.String (p, id)]) in
   let define_var id =
     S.App (p, S.Id (p, "%defineGlobalVar"), [S.Id (p, "%context"); S.String (p, id)]) in
   let rec dops_of_ids def_fun lst base = match lst with
