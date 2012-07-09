@@ -620,8 +620,9 @@ and get_lambda p args body =
   let (uids, real_body, ncontext) = create_context p args body (Some (S.Id (p, "%parent"))) in
   let desugared = ejs_to_ljs real_body in
   S.Lambda (p, ["%this"; "%args"],
-    S.Label (p, "%ret",
-      S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p)))))
+    S.Let (p, "%this", S.App (p, S.Id (p, "%maybePrim"), [S.Id (p, "%this")]),
+      S.Label (p, "%ret",
+        S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p))))))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
