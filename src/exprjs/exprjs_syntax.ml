@@ -31,6 +31,7 @@ type expr =
   | ThrowExpr of Pos.t * expr
   | SwitchExpr of Pos.t * expr * case list
   | FuncStmtExpr of Pos.t * id * id list * expr
+  | WithExpr of Pos.t * expr * expr
   | HintExpr of Pos.t * string * expr
 
 and prop =
@@ -73,4 +74,5 @@ let pos_of_expr expr = match expr with
   | ThrowExpr (pos, _) -> pos
   | SwitchExpr (pos, _, _) -> pos
   | FuncStmtExpr (pos, _, _, _) -> pos
+  | WithExpr (pos, _, _) -> pos
   | HintExpr (pos, _, _) -> pos

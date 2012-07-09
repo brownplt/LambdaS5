@@ -506,6 +506,10 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
         S.Let (p, "%fallthrough", S.False (p),
           S.Let (p, disc_id, ejs_to_ljs d,
             cl_to_seq cl)))
+  | E.WithExpr (p, obj, body) ->
+    S.Let (p, "%context", S.App (p, S.Id (p, "%makeWithContext"),
+                                    [S.Id (p, "%context"); ejs_to_ljs obj]),
+           ejs_to_ljs body)
   | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
 and a_attrs pos = {

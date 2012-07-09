@@ -181,7 +181,7 @@ let rec var_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
     | Labeled (_, _, bdy) -> var_vars_stmt bdy
     | Continue _ | Break _ -> IdSet.empty
     | Return (_, e) -> evars e
-    | With _ -> IdSet.empty
+    | With (p, e1, e2) -> IdSet.union (var_vars_expr e1) (var_vars_stmt e2)
     | Switch (_, e, cl) ->
       let case_vars c = match c with
         | Case (_, e, st) -> IdSet.union (var_vars_expr e) (var_vars_stmt st)
