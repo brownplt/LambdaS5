@@ -284,8 +284,7 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
   let used_vars_se se = match se with
     | Stmt s -> used_vars_stmt s
     | FuncDecl (nm, args, bdy) -> 
-      IdSet.union (IdSet.singleton nm)
-        (IdSet.diff (used_vars_sel bdy) (IdSetExt.from_list args)) in
+      IdSet.diff (used_vars_sel bdy) (IdSetExt.from_list args) in
 
   match sel with
     | [] -> IdSet.empty
