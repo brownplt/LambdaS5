@@ -296,7 +296,7 @@ let rec fv_sel (sel : srcElt list) : Prelude.IdSet.t =
   | [] -> IdSet.empty
   | first :: rest -> let fv_f = match first with
     | Stmt s -> fv s
-    | FuncDecl _ -> IdSet.empty in
+    | FuncDecl (nm, _, _) -> IdSet.singleton nm in
     IdSet.union fv_f (fv_sel rest)
 
 and getfd_lst sel = match sel with
