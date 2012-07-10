@@ -55,7 +55,7 @@ let ljs_bool b = if b then S.True (Pos.dummy) else S.False (Pos.dummy)
 let make_set_field p obj fld value =
   match obj with
   | S.Id (p, "%context") -> 
-    S.App (p, S.Id (p, "%EnvCheckAssign"), [obj; fld; value])
+    S.App (p, S.Id (p, "%EnvCheckAssign"), [obj; fld; value; S.Id (p, "#strict")])
   | _ -> S.App (p, S.Id (p, "%set-property"), [obj; fld; value])
 
 let make_args_obj p args =
@@ -316,7 +316,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let fun_id = mk_id "fun" in
     begin match e with
       | E.BracketExpr (_, E.IdExpr (_, "%context"), E.String (_, "eval")) ->
-        S.App (p, S.Id (p, "%maybeDirectEval"), [S.Id (p, "%this"); S.Id (p, "%context"); args_obj])
+        S.App (p, S.Id (p, "%maybeDirectEval"), [S.Id (p, "%this"); S.Id (p, "%context"); args_obj; S.Id (p, "#strict")])
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
         S.Let (p, fun_id, ejs_to_ljs e,
           appexpr_check (S.Id (p, fun_id))
@@ -629,9 +629,8 @@ and get_lambda p args body =
   (* A function is strict if it says so, or if its enclosing context is.
      The default is false (see create_context). *)
   let strict = if is_strict_mode desugared then S.True (p)
-               else S.GetObjAttr (p, S.Primval, S.Id (p, "%parent")) in
-  let desugared' =
-    S.Seq (p, S.SetObjAttr (p, S.Primval, S.Id (p, "%context"), strict), desugared) in
+               else S.Id (p, "#strict") in
+  let desugared' = S.Let (p, "#strict", strict, desugared) in
   S.Lambda (p, ["%this"; "%args"],
     S.Let (p, "%this", S.App (p, S.Id (p, "%resolveThis"), [strict; S.Id (p, "%this")]),
       S.Label (p, "%ret",
@@ -777,6 +776,6 @@ let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
   let binder =
     if is_strict_mode desugared then "%strictContext" else "%nonstrictContext" in
   S.Let (p, "%context", S.Id (p, binder),
-    S.Seq (p, S.SetObjAttr (p, S.Primval, S.Id (p, "%context"), strict),
+    S.Let (p, "#strict", strict,
       add_preamble p (IdSet.elements used_ids) names desugared))
 
