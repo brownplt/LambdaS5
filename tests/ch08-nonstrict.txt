@@ -1,0 +1,1016 @@
+ch08/8.1/S8.1_A1_T1 passed in non-strict mode
+ch08/8.1/S8.1_A1_T2 passed in non-strict mode
+ch08/8.1/S8.1_A2_T1 passed in non-strict mode
+ch08/8.1/S8.1_A2_T2 passed in non-strict mode
+=== ch08/8.1/S8.1_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-VixnN8.js:931:-1--18
+../envs/es5.env:5010:55-5014:1
+../envs/es5.env:5013:9-44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.1/S8.1_A4 passed in non-strict mode
+ch08/8.1/S8.1_A5 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_1 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_10 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_11 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_12 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_13 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_14 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_15 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_16 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_17 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_18 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_19 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_2 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_20 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_21 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_22 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_23 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_24 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_25 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_26 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_27 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_28 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_29 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_3 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_30 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_31 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_32 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_33 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_34 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_35 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_36 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_37 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_38 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_39 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_4 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_40 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_41 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_42 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_43 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_44 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_45 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_46 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_47 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_48 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_49 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_5 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_6 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_7 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_8 passed in non-strict mode
+ch08/8.12/8.12.1/8.12.1-1_9 passed in non-strict mode
+ch08/8.12/8.12.3/S8.12.3_A1 passed in non-strict mode
+ch08/8.12/8.12.3/S8.12.3_A2 passed in non-strict mode
+ch08/8.12/8.12.3/S8.12.3_A3 passed in non-strict mode
+=== ch08/8.12/8.12.4/8.14.4-8-b_1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:901:-5-902:-54
+/tmp/test262-yxYM0u.js:901:-5-902:-54
+/tmp/test262-yxYM0u.js:901:-9--28
+/tmp/test262-yxYM0u.js:901:-9--28
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:934:-5--25
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.12/8.12.4/8.14.4-8-b_2 passed in strict mode
+=== ch08/8.12/8.12.4/S8.12.4_A1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-Hz7253.js:930:-1--11
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch08/8.12/8.12.5/8.12.5-3-b_1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:901:-5-902:-54
+/tmp/test262-qcTMiK.js:901:-5-902:-54
+/tmp/test262-qcTMiK.js:901:-9--28
+/tmp/test262-qcTMiK.js:901:-9--28
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:934:-5--8
+/tmp/test262-qcTMiK.js:954:-9--44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.12/8.12.5/8.12.5-3-b_2 passed in non-strict mode
+ch08/8.12/8.12.5/8.12.5-5-b_1 passed in non-strict mode
+ch08/8.12/8.12.5/S8.12.5_A1 passed in non-strict mode
+ch08/8.12/8.12.5/S8.12.5_A2 passed in non-strict mode
+ch08/8.12/8.12.6/S8.12.6_A1 passed in non-strict mode
+ch08/8.12/8.12.6/S8.12.6_A2_T1 passed in non-strict mode
+ch08/8.12/8.12.6/S8.12.6_A2_T2 passed in non-strict mode
+ch08/8.12/8.12.6/S8.12.6_A3 passed in non-strict mode
+=== ch08/8.12/8.12.7/S8.12.7_A1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-nv4Ar2.js:931:-1-932:-69
+/tmp/test262-nv4Ar2.js:931:-1-932:-69
+/tmp/test262-nv4Ar2.js:931:-5--28
+/tmp/test262-nv4Ar2.js:931:-5--28
+/tmp/test262-nv4Ar2.js:931:-5--18
+/tmp/test262-nv4Ar2.js:931:-5--18
+/tmp/test262-nv4Ar2.js:931:-5--18
+/tmp/test262-nv4Ar2.js:931:-5--18
+../envs/es5.env:29:40-32:7
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.12/8.12.7/S8.12.7_A2_T1 passed in non-strict mode
+=== ch08/8.12/8.12.7/S8.12.7_A2_T2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-2gcVXp.js:943:-1-944:-180
+/tmp/test262-2gcVXp.js:943:-1-944:-180
+/tmp/test262-2gcVXp.js:943:-5--34
+/tmp/test262-2gcVXp.js:943:-5--34
+/tmp/test262-2gcVXp.js:943:-5--25
+/tmp/test262-2gcVXp.js:943:-5--25
+/tmp/test262-2gcVXp.js:943:-5--25
+/tmp/test262-2gcVXp.js:943:-5--25
+../envs/es5.env:29:40-32:7
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.12/8.12.7/S8.12.7_A3 passed in non-strict mode
+ch08/8.12/8.12.8/S8.12.8_A1 passed in non-strict mode
+ch08/8.12/8.12.8/S8.12.8_A2 passed in non-strict mode
+ch08/8.12/8.12.8/S8.12.8_A3 passed in non-strict mode
+ch08/8.12/8.12.8/S8.12.8_A4 passed in non-strict mode
+ch08/8.12/8.12.9/8.12.9-9-b-i_1 passed in non-strict mode
+ch08/8.12/8.12.9/8.12.9-9-b-i_2 passed in non-strict mode
+=== ch08/8.12/8.12.9/8.12.9-9-c-i_1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:901:-5-902:-54
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch08/8.12/8.12.9/8.12.9-9-c-i_2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:901:-5-902:-54
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.2/S8.2_A1_T1 passed in non-strict mode
+ch08/8.2/S8.2_A1_T2 passed in non-strict mode
+ch08/8.2/S8.2_A2 failed in non-strict mode as expected
+=== ch08/8.2/S8.2_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-Rti0o1.js:931:-1-932:-68
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:289:-5--35
+Uncaught exception: "#1: typeof null === "object". Actual: null"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.3/S8.3_A1_T1 passed in non-strict mode
+ch08/8.3/S8.3_A1_T2 passed in non-strict mode
+ch08/8.3/S8.3_A2.1 failed in non-strict mode as expected
+ch08/8.3/S8.3_A2.2 failed in non-strict mode as expected
+ch08/8.3/S8.3_A3 passed in non-strict mode
+ch08/8.4/S8.4_A1 passed in non-strict mode
+ch08/8.4/S8.4_A10 passed in non-strict mode
+ch08/8.4/S8.4_A11 passed in non-strict mode
+ch08/8.4/S8.4_A12 passed in non-strict mode
+ch08/8.4/S8.4_A13_T1 failed in non-strict mode as expected
+ch08/8.4/S8.4_A13_T2 failed in non-strict mode as expected
+ch08/8.4/S8.4_A13_T3 failed in non-strict mode as expected
+ch08/8.4/S8.4_A14_T1 failed in non-strict mode as expected
+ch08/8.4/S8.4_A14_T2 failed in non-strict mode as expected
+ch08/8.4/S8.4_A14_T3 failed in non-strict mode as expected
+ch08/8.4/S8.4_A2 passed in non-strict mode
+ch08/8.4/S8.4_A3 passed in non-strict mode
+ch08/8.4/S8.4_A4 passed in non-strict mode
+ch08/8.4/S8.4_A5 passed in non-strict mode
+ch08/8.4/S8.4_A6.1 passed in non-strict mode
+ch08/8.4/S8.4_A6.2 passed in non-strict mode
+ch08/8.4/S8.4_A7.1 failed in non-strict mode as expected
+ch08/8.4/S8.4_A7.2 failed in non-strict mode as expected
+ch08/8.4/S8.4_A7.3 failed in non-strict mode as expected
+ch08/8.4/S8.4_A7.4 failed in non-strict mode as expected
+ch08/8.4/S8.4_A8 passed in non-strict mode
+ch08/8.4/S8.4_A9_T1 passed in non-strict mode
+ch08/8.4/S8.4_A9_T2 passed in non-strict mode
+ch08/8.4/S8.4_A9_T3 passed in non-strict mode
+ch08/8.5/S8.5_A1 passed in non-strict mode
+=== ch08/8.5/S8.5_A10 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-1CypWB.js:929:-1--17
+../envs/es5.env:5010:55-5014:1
+../envs/es5.env:5013:9-44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.5/S8.5_A11_T1 passed in non-strict mode
+ch08/8.5/S8.5_A11_T2 passed in non-strict mode
+ch08/8.5/S8.5_A12.1 passed in non-strict mode
+ch08/8.5/S8.5_A12.2 passed in non-strict mode
+ch08/8.5/S8.5_A13_T1 passed in non-strict mode
+ch08/8.5/S8.5_A13_T2 passed in non-strict mode
+ch08/8.5/S8.5_A14_T1 passed in non-strict mode
+ch08/8.5/S8.5_A14_T2 passed in non-strict mode
+=== ch08/8.5/S8.5_A2.1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-Omk3Sp.js:934:-1-935:-124
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:289:-5--35
+Uncaught exception: "#1: var x = 9007199254740994.0; var y = 1.0 - 1/65536.0; var z = x + y; var d = z - x; d === 0. Actual: 2"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch08/8.5/S8.5_A2.2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-I1bxI_.js:934:-1-935:-108
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:289:-5--35
+Uncaught exception: "#1: var x = 9007199254740994.0; var y = 1.0 - 1/65536.0; var z = x + y; var d = z - x; d !== 2"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.5/S8.5_A3 passed in non-strict mode
+=== ch08/8.5/S8.5_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-eocj9S.js:929:-1--12
+../envs/es5.env:5010:55-5014:1
+../envs/es5.env:5013:9-44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.5/S8.5_A5 passed in non-strict mode
+ch08/8.5/S8.5_A6 passed in non-strict mode
+ch08/8.5/S8.5_A7 passed in non-strict mode
+ch08/8.5/S8.5_A8 passed in non-strict mode
+=== ch08/8.5/S8.5_A9 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-a8eUFx.js:929:-1--15
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.6/S8.6_A2_T1 passed in non-strict mode
+ch08/8.6/S8.6_A2_T2 passed in non-strict mode
+ch08/8.6/S8.6_A3_T1 passed in non-strict mode
+ch08/8.6/S8.6_A3_T2 passed in non-strict mode
+ch08/8.6/S8.6_A4_T1 passed in non-strict mode
+=== ch08/8.6/8.6.1/S8.6.1_A1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-nqXRLP.js:930:-1--9
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.6/8.6.1/S8.6.1_A2 passed in non-strict mode
+=== ch08/8.6/8.6.1/S8.6.1_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-9vkAw3.js:931:-1-932:-77
+/tmp/test262-9vkAw3.js:931:-1-932:-77
+/tmp/test262-9vkAw3.js:931:-5--32
+/tmp/test262-9vkAw3.js:931:-5--32
+/tmp/test262-9vkAw3.js:931:-5--22
+/tmp/test262-9vkAw3.js:931:-5--22
+/tmp/test262-9vkAw3.js:931:-5--22
+/tmp/test262-9vkAw3.js:931:-5--22
+../envs/es5.env:29:40-32:7
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.6/8.6.2/S8.6.2_A1 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A2 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A3 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A4 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A5_T1 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A5_T2 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A5_T3 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A5_T4 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A6 passed in non-strict mode
+ch08/8.6/8.6.2/S8.6.2_A7 failed in non-strict mode as expected
+ch08/8.6/8.6.2/S8.6.2_A8 passed in non-strict mode
+ch08/8.7/S8.7.1_A1 passed in non-strict mode
+=== ch08/8.7/S8.7.1_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-7pvivT.js:933:-1-934:-70
+/tmp/test262-7pvivT.js:933:-1-934:-70
+/tmp/test262-7pvivT.js:933:-11--12
+../envs/es5.env:242:31-244:7
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.7/S8.7.2_A1_T1 failed in non-strict mode as expected
+ch08/8.7/S8.7.2_A1_T2 failed in non-strict mode as expected
+ch08/8.7/S8.7.2_A2 passed in non-strict mode
+ch08/8.7/S8.7.2_A3 passed in non-strict mode
+ch08/8.7/S8.7_A1 passed in non-strict mode
+ch08/8.7/S8.7_A2 passed in non-strict mode
+ch08/8.7/S8.7_A3 passed in non-strict mode
+ch08/8.7/S8.7_A4 passed in non-strict mode
+=== ch08/8.7/S8.7_A5_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-vaiY5X.js:950:-1-951:-106
+/tmp/test262-vaiY5X.js:950:-1-951:-106
+/tmp/test262-vaiY5X.js:950:-5--27
+/tmp/test262-vaiY5X.js:950:-5--27
+/tmp/test262-vaiY5X.js:950:-12--17
+../envs/es5.env:242:31-244:7
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch08/8.7/S8.7_A5_T2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-S5XCQq.js:950:-1-951:-101
+/tmp/test262-S5XCQq.js:950:-1-951:-101
+/tmp/test262-S5XCQq.js:950:-5--26
+/tmp/test262-S5XCQq.js:950:-5--26
+/tmp/test262-S5XCQq.js:950:-12--17
+../envs/es5.env:242:31-244:7
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch08/8.7/S8.7_A6 passed in non-strict mode
+ch08/8.7/S8.7_A7 passed in non-strict mode
+ch08/8.7/8.7.2/8.7.2-1-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-2-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-3-1-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-3-a-1gs failed in strict mode as expected
+ch08/8.7/8.7.2/8.7.2-3-a-2gs failed in strict mode as expected
+ch08/8.7/8.7.2/8.7.2-3-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-4-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-5-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-6-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-7-s passed in strict mode
+ch08/8.7/8.7.2/8.7.2-8-s passed in strict mode
+ch08/8.8/S8.8_A2_T1 passed in non-strict mode
+ch08/8.8/S8.8_A2_T2 passed in non-strict mode
+ch08/8.8/S8.8_A2_T3 passed in non-strict mode
+=== intl402/ch08/8.0/8.0 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:901:-5-902:-54
+/tmp/test262-uG9Pu2.js:901:-5-902:-54
+/tmp/test262-uG9Pu2.js:901:-9--28
+/tmp/test262-uG9Pu2.js:901:-9--28
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:935:-3-936:-43
+/tmp/test262-uG9Pu2.js:935:-3-936:-43
+/tmp/test262-uG9Pu2.js:935:-7--37
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-23--27
+../envs/es5.env:905:28-911:3
+../envs/es5.env:908:11-910:5
+../envs/es5.env:224:28-228:1
+Uncaught exception: "Unbound identifier: Intl"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== intl402/ch08/8.1/8.1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:901:-5-902:-54
+/tmp/test262-FfEbTt.js:901:-5-902:-54
+/tmp/test262-FfEbTt.js:901:-9--28
+/tmp/test262-FfEbTt.js:901:-9--28
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:934:-3-935:-41
+/tmp/test262-FfEbTt.js:934:-3-935:-41
+/tmp/test262-FfEbTt.js:934:-7--25
+/tmp/test262-FfEbTt.js:934:-7--11
+../envs/es5.env:905:28-911:3
+../envs/es5.env:908:11-910:5
+../envs/es5.env:224:28-228:1
+Uncaught exception: "Unbound identifier: Intl"
+
+Fatal error: exception Failure("Runtime error")
+===
+
+=== Summary ===
+ - Ran 184 tests
+ - Passed 163 tests (88.6%)
+ - Failed 21 tests (11.4%)
+
+Failed tests
+  ch08/8.1/S8.1_A3 in non-strict mode
+  ch08/8.12/8.12.4/8.14.4-8-b_1 in non-strict mode
+  ch08/8.12/8.12.4/S8.12.4_A1 in non-strict mode
+  ch08/8.12/8.12.5/8.12.5-3-b_1 in non-strict mode
+  ch08/8.12/8.12.7/S8.12.7_A1 in non-strict mode
+  ch08/8.12/8.12.7/S8.12.7_A2_T2 in non-strict mode
+  ch08/8.12/8.12.9/8.12.9-9-c-i_1 in non-strict mode
+  ch08/8.12/8.12.9/8.12.9-9-c-i_2 in non-strict mode
+  ch08/8.2/S8.2_A3 in non-strict mode
+  ch08/8.5/S8.5_A10 in non-strict mode
+  ch08/8.5/S8.5_A2.1 in non-strict mode
+  ch08/8.5/S8.5_A2.2 in non-strict mode
+  ch08/8.5/S8.5_A4 in non-strict mode
+  ch08/8.5/S8.5_A9 in non-strict mode
+  ch08/8.6/8.6.1/S8.6.1_A1 in non-strict mode
+  ch08/8.6/8.6.1/S8.6.1_A3 in non-strict mode
+  ch08/8.7/S8.7.1_A2 in non-strict mode
+  ch08/8.7/S8.7_A5_T1 in non-strict mode
+  ch08/8.7/S8.7_A5_T2 in non-strict mode
+  intl402/ch08/8.0/8.0 in non-strict mode
+  intl402/ch08/8.1/8.1 in non-strict mode
+
+ch08/8.1/S8.1_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-VixnN8.js:931:-1--18
+../envs/es5.env:5010:55-5014:1
+../envs/es5.env:5013:9-44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.12/8.12.4/8.14.4-8-b_1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:937:-1--22
+/tmp/test262-yxYM0u.js:901:-5-902:-54
+/tmp/test262-yxYM0u.js:901:-5-902:-54
+/tmp/test262-yxYM0u.js:901:-9--28
+/tmp/test262-yxYM0u.js:901:-9--28
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:901:-9--19
+/tmp/test262-yxYM0u.js:934:-5--25
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.12/8.12.4/S8.12.4_A1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-Hz7253.js:930:-1--11
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.12/8.12.5/8.12.5-3-b_1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:957:-1--22
+/tmp/test262-qcTMiK.js:901:-5-902:-54
+/tmp/test262-qcTMiK.js:901:-5-902:-54
+/tmp/test262-qcTMiK.js:901:-9--28
+/tmp/test262-qcTMiK.js:901:-9--28
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:901:-9--19
+/tmp/test262-qcTMiK.js:934:-5--8
+/tmp/test262-qcTMiK.js:954:-9--44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.12/8.12.7/S8.12.7_A1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-nv4Ar2.js:931:-1-932:-69
+/tmp/test262-nv4Ar2.js:931:-1-932:-69
+/tmp/test262-nv4Ar2.js:931:-5--28
+/tmp/test262-nv4Ar2.js:931:-5--28
+/tmp/test262-nv4Ar2.js:931:-5--18
+/tmp/test262-nv4Ar2.js:931:-5--18
+/tmp/test262-nv4Ar2.js:931:-5--18
+/tmp/test262-nv4Ar2.js:931:-5--18
+../envs/es5.env:29:40-32:7
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.12/8.12.7/S8.12.7_A2_T2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-2gcVXp.js:943:-1-944:-180
+/tmp/test262-2gcVXp.js:943:-1-944:-180
+/tmp/test262-2gcVXp.js:943:-5--34
+/tmp/test262-2gcVXp.js:943:-5--34
+/tmp/test262-2gcVXp.js:943:-5--25
+/tmp/test262-2gcVXp.js:943:-5--25
+/tmp/test262-2gcVXp.js:943:-5--25
+/tmp/test262-2gcVXp.js:943:-5--25
+../envs/es5.env:29:40-32:7
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.12/8.12.9/8.12.9-9-c-i_1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:940:-1--22
+/tmp/test262-D2YGLX.js:901:-5-902:-54
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:902:-9--53
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:305:-5--24
+/tmp/test262-D2YGLX.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.12/8.12.9/8.12.9-9-c-i_2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:942:-1--22
+/tmp/test262-e0ahkD.js:901:-5-902:-54
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:902:-9--53
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:305:-5--24
+/tmp/test262-e0ahkD.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.2/S8.2_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-Rti0o1.js:931:-1-932:-68
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:932:-3--67
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:305:-5--24
+/tmp/test262-Rti0o1.js:289:-5--35
+Uncaught exception: "#1: typeof null === "object". Actual: null"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.5/S8.5_A10 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-1CypWB.js:929:-1--17
+../envs/es5.env:5010:55-5014:1
+../envs/es5.env:5013:9-44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.5/S8.5_A2.1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-Omk3Sp.js:934:-1-935:-124
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:935:-3--123
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:305:-5--24
+/tmp/test262-Omk3Sp.js:289:-5--35
+Uncaught exception: "#1: var x = 9007199254740994.0; var y = 1.0 - 1/65536.0; var z = x + y; var d = z - x; d === 0. Actual: 2"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.5/S8.5_A2.2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-I1bxI_.js:934:-1-935:-108
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:935:-3--107
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:305:-5--24
+/tmp/test262-I1bxI_.js:289:-5--35
+Uncaught exception: "#1: var x = 9007199254740994.0; var y = 1.0 - 1/65536.0; var z = x + y; var d = z - x; d !== 2"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.5/S8.5_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-eocj9S.js:929:-1--12
+../envs/es5.env:5010:55-5014:1
+../envs/es5.env:5013:9-44
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.5/S8.5_A9 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-a8eUFx.js:929:-1--15
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.6/8.6.1/S8.6.1_A1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-nqXRLP.js:930:-1--9
+../envs/es5.env:4949:42-5008:7
+../envs/es5.env:4951:2-5008:5
+../envs/es5.env:4953:2-5008:5
+../envs/es5.env:4959:2-5008:5
+../envs/es5.env:4959:42-5008:5
+../envs/es5.env:4962:2-5007:2
+../envs/es5.env:4962:43-5007:2
+../envs/es5.env:4963:2-11
+../envs/es5.env:4953:26-4957:3
+../envs/es5.env:4954:14-4956:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.6/8.6.1/S8.6.1_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-9vkAw3.js:931:-1-932:-77
+/tmp/test262-9vkAw3.js:931:-1-932:-77
+/tmp/test262-9vkAw3.js:931:-5--32
+/tmp/test262-9vkAw3.js:931:-5--32
+/tmp/test262-9vkAw3.js:931:-5--22
+/tmp/test262-9vkAw3.js:931:-5--22
+/tmp/test262-9vkAw3.js:931:-5--22
+/tmp/test262-9vkAw3.js:931:-5--22
+../envs/es5.env:29:40-32:7
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.7/S8.7.1_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-7pvivT.js:933:-1-934:-70
+/tmp/test262-7pvivT.js:933:-1-934:-70
+/tmp/test262-7pvivT.js:933:-11--12
+../envs/es5.env:242:31-244:7
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.7/S8.7_A5_T1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-vaiY5X.js:950:-1-951:-106
+/tmp/test262-vaiY5X.js:950:-1-951:-106
+/tmp/test262-vaiY5X.js:950:-5--27
+/tmp/test262-vaiY5X.js:950:-5--27
+/tmp/test262-vaiY5X.js:950:-12--17
+../envs/es5.env:242:31-244:7
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch08/8.7/S8.7_A5_T2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-S5XCQq.js:950:-1-951:-101
+/tmp/test262-S5XCQq.js:950:-1-951:-101
+/tmp/test262-S5XCQq.js:950:-5--26
+/tmp/test262-S5XCQq.js:950:-5--26
+/tmp/test262-S5XCQq.js:950:-12--17
+../envs/es5.env:242:31-244:7
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+intl402/ch08/8.0/8.0 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:969:-1--22
+/tmp/test262-uG9Pu2.js:901:-5-902:-54
+/tmp/test262-uG9Pu2.js:901:-5-902:-54
+/tmp/test262-uG9Pu2.js:901:-9--28
+/tmp/test262-uG9Pu2.js:901:-9--28
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:901:-9--19
+/tmp/test262-uG9Pu2.js:935:-3-936:-43
+/tmp/test262-uG9Pu2.js:935:-3-936:-43
+/tmp/test262-uG9Pu2.js:935:-7--37
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-7--28
+/tmp/test262-uG9Pu2.js:935:-23--27
+../envs/es5.env:905:28-911:3
+../envs/es5.env:908:11-910:5
+../envs/es5.env:224:28-228:1
+Uncaught exception: "Unbound identifier: Intl"
+
+Fatal error: exception Failure("Runtime error")
+
+intl402/ch08/8.1/8.1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5374:0
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:958:-1--22
+/tmp/test262-FfEbTt.js:901:-5-902:-54
+/tmp/test262-FfEbTt.js:901:-5-902:-54
+/tmp/test262-FfEbTt.js:901:-9--28
+/tmp/test262-FfEbTt.js:901:-9--28
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:901:-9--19
+/tmp/test262-FfEbTt.js:934:-3-935:-41
+/tmp/test262-FfEbTt.js:934:-3-935:-41
+/tmp/test262-FfEbTt.js:934:-7--25
+/tmp/test262-FfEbTt.js:934:-7--11
+../envs/es5.env:905:28-911:3
+../envs/es5.env:908:11-910:5
+../envs/es5.env:224:28-228:1
+Uncaught exception: "Unbound identifier: Intl"
+
+Fatal error: exception Failure("Runtime error")
+

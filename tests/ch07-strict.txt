@@ -1,0 +1,83 @@
+ch07/7.6/7.6.1/7.6.1.2-1gs failed in strict mode as expected
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-17-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-18-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-19-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-20-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-21-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-22-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-23-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-24-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1-25-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-1-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-10-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-11-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-12-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-13-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-14-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-16-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-2-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-3-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-4-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-5-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-6-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-7-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-8-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/7.6.1.2-9-s passed in strict mode
+ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.15 failed in strict mode as expected
+ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.18 failed in strict mode as expected
+ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.21 failed in strict mode as expected
+ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.22 failed in strict mode as expected
+ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.23 failed in strict mode as expected
+ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.24 failed in strict mode as expected
+ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.26 failed in strict mode as expected
+ch07/7.8/7.8.3/7.8.3-1-s passed in strict mode
+ch07/7.8/7.8.3/7.8.3-1gs failed in strict mode as expected
+ch07/7.8/7.8.3/7.8.3-2-s passed in strict mode
+ch07/7.8/7.8.3/7.8.3-2gs failed in strict mode as expected
+ch07/7.8/7.8.3/7.8.3-3-s passed in strict mode
+ch07/7.8/7.8.3/7.8.3-3gs failed in strict mode as expected
+ch07/7.8/7.8.3/7.8.3-4-s passed in strict mode
+ch07/7.8/7.8.3/7.8.3-5-s passed in strict mode
+ch07/7.8/7.8.3/7.8.3-6-s passed in strict mode
+ch07/7.8/7.8.3/7.8.3-7-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-1-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-10-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-11-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-12-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-13-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-14-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-15-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-16-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-17-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-18-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-19-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-1gs failed in strict mode as expected
+ch07/7.8/7.8.4/7.8.4-2-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-20-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-21-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-22-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-23-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-24-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-25-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-26-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-27-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-28-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-29-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-3-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-30-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-31-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-32-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-33-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-4-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-5-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-6-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-7-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-8-s passed in strict mode
+ch07/7.8/7.8.4/7.8.4-9-s passed in strict mode
+ch07/7.8/7.8.4/S7.8.4_A4.3_T1 failed in strict mode as expected
+ch07/7.8/7.8.4/S7.8.4_A4.3_T2 failed in strict mode as expected
+
+=== Summary ===
+ - Ran 78 tests
+ - All tests succeeded
+
