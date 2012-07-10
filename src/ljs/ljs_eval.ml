@@ -280,7 +280,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                                enum, config))
                         props) in
                 v_value, store
-              | Some (Data _) -> raise (PrimErr ([], String ("Field " ^ s ^ " not writable!")))
+              | Some (Data _) -> raise (Throw ([], String ("Field not writable"), store))
               | Some (Accessor ({ setter = setterv; }, enum, config)) ->
                 (* 8.12.5, step 5 *)
                 apply p store setterv [obj_value; args_value]
