@@ -1,4 +1,5 @@
 (function(global) {
+  "use strict";
   function testGlobalLeak(desc, that) {
     if (that === void 0) { return false; }
     if (that === global) { return true; }

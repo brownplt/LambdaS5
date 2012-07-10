@@ -309,4 +309,13 @@ and removefd_lst sel = match sel with
   | (FuncDecl _) :: rest -> removefd_lst rest
   | s :: rest -> s :: removefd_lst rest
 
-and reorder_sel sel = List.append (getfd_lst sel) (removefd_lst sel)
+(* preserve these for strict mode determination *)
+and start_strings sel acc = match sel with
+  | ((Stmt (Expr (_, Lit (_, Str _)))) as s) :: rest ->
+    (start_strings rest (s :: acc))
+  | e :: rest -> acc, (e :: rest)
+  | [] -> acc, []
+  
+and reorder_sel sel =
+  let directives, stmts = start_strings sel [] in
+    List.concat [directives; (getfd_lst stmts); (removefd_lst stmts)]

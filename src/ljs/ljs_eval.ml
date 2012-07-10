@@ -383,7 +383,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
                   failwith ("[interp] Update extensible failed: " ^
                             (pretty_value attrv))
               | S.Code, _ -> failwith "[interp] Can't update Code"
-              | S.Primval, _ -> failwith "[interp] Can't update Primval"
+              | S.Primval, v -> { attrs with primval=Some v }
               | S.Klass, _ -> failwith "[interp] Can't update Klass" in
             attrv, set_obj store loc (attrs', props)
         | _ -> failwith ("[interp] SetObjAttr got a non-object: " ^

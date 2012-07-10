@@ -42,6 +42,13 @@ let prop_accessor_check p v =
     | S.Id (p, "%context") -> v
     | _ -> S.App (p, S.Id (p, "%PropAccessorCheck"), [v])
 
+let rec is_strict_mode exp = match exp with
+  | S.Seq (_, S.String (_, "use strict"), _) -> true
+  | S.Seq (_, S.String _, exp) -> is_strict_mode exp
+  | _ -> false
+
+let ljs_bool b = if b then S.True (Pos.dummy) else S.False (Pos.dummy)
+
 (* 15.4: A property name P (in the form of a String value) is an array index if and
  * only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to
  * 2^32−1 *)
@@ -599,7 +606,7 @@ and create_context p args body parent =
       get_prop_pairs rest uid_rest ((nm, a) :: prs)
     | _ -> failwith "Fatal: unmatched id/arg lengths in create_context" in
   let c_attrs = { 
-    S.primval = None;
+    S.primval = Some (S.False (p));
     S.code = None; 
     S.proto = parent;
     S.klass = "Object";
@@ -619,10 +626,16 @@ and create_context p args body parent =
 and get_lambda p args body = 
   let (uids, real_body, ncontext) = create_context p args body (Some (S.Id (p, "%parent"))) in
   let desugared = ejs_to_ljs real_body in
+  (* A function is strict if it says so, or if its enclosing context is.
+     The default is false (see create_context). *)
+  let strict = if is_strict_mode desugared then S.True (p)
+               else S.GetObjAttr (p, S.Primval, S.Id (p, "%parent")) in
+  let desugared' =
+    S.Seq (p, S.SetObjAttr (p, S.Primval, S.Id (p, "%context"), strict), desugared) in
   S.Lambda (p, ["%this"; "%args"],
-    S.Let (p, "%this", S.App (p, S.Id (p, "%maybePrim"), [S.Id (p, "%this")]),
+    S.Let (p, "%this", S.App (p, S.Id (p, "%resolveThis"), [strict; S.Id (p, "%this")]),
       S.Label (p, "%ret",
-        S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p))))))
+        S.Let (p, "%context", ncontext, S.Seq (p, desugared', S.Undefined (p))))))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
@@ -757,16 +770,13 @@ let add_preamble p used_ids var_ids final =
     | id :: rest -> S.Seq (p, def_fun id, dops_of_ids def_fun rest base) in
   dops_of_ids define_var var_ids (dops_of_ids define_id used_ids final)
 
-let rec is_strict_mode exp = match exp with
-  | S.Seq (_, S.String (_, "use strict"), _) -> true
-  | S.Seq (_, S.String _, exp) -> is_strict_mode exp
-  | _ -> false
-
 let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
   let (names, inner) = strip_lets e [] in
   let desugared = ejs_to_ljs inner in
+  let strict = ljs_bool (is_strict_mode desugared) in
   let binder =
     if is_strict_mode desugared then "%strictContext" else "%nonstrictContext" in
   S.Let (p, "%context", S.Id (p, binder),
-    add_preamble p (IdSet.elements used_ids) names desugared)
+    S.Seq (p, S.SetObjAttr (p, S.Primval, S.Id (p, "%context"), strict),
+      add_preamble p (IdSet.elements used_ids) names desugared))
 
