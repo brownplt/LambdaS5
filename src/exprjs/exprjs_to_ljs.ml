@@ -555,10 +555,19 @@ and get_fobj p args body context =
                            false, true) in
   let length_prop = S.Data ({ S.value = S.Num (p, (float_of_int param_len)); S.writable = true}, 
                            false, true) in
+  let errorer = S.Id (p, "%ThrowTypeError") in
+  let errorer_prop = S.Accessor ({ S.getter = errorer; S.setter = errorer },
+                                 false, false) in
   let func_id = mk_id "thisfunc" in
   S.Let (p, proto_id, proto_obj,
          S.Let (p, "%parent", context,
-               S.Let (p, func_id, S.Object (p, fobj_attrs, [("prototype", proto_prop); ("length", length_prop)]),
+               S.Let (p, func_id, S.Object (p, fobj_attrs, [
+                        ("prototype", proto_prop);
+                        ("length", length_prop);
+                        ("caller", errorer_prop);
+                        ("callee", errorer_prop);
+                        ("arguments", errorer_prop)
+                      ]),
                       S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
                              S.Id (p, func_id)))))
            
