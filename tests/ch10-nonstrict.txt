@@ -4,17 +4,17 @@ ch10/10.1/S10.1.1_A1_T3 passed in non-strict mode
 ch10/10.1/S10.1.1_A2_T1 passed in non-strict mode
 === ch10/10.1/S10.1.6_A1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-XHwG6A.js:934:-1-935:-47
-/tmp/test262-XHwG6A.js:934:-1-935:-47
-/tmp/test262-XHwG6A.js:934:-5--16
-/tmp/test262-XHwG6A.js:934:-5--16
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:931:-10--11
-../envs/es5.env:242:31-244:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uPvHZV.js:934:-1-935:-47
+/tmp/test262-uPvHZV.js:934:-1-935:-47
+/tmp/test262-uPvHZV.js:934:-5--16
+/tmp/test262-uPvHZV.js:934:-5--16
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:931:-10--11
+../envs/es5.env:253:31-255:7
 Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
 
 Fatal error: exception Failure("Runtime error")
@@ -22,15 +22,15 @@ Fatal error: exception Failure("Runtime error")
 ch10/10.1/S10.1.6_A1_T2 passed in non-strict mode
 === ch10/10.1/S10.1.6_A1_T3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:930:-3-931:-79
-/tmp/test262-ch2LGW.js:930:-3-931:-79
-/tmp/test262-ch2LGW.js:930:-14--23
-../envs/es5.env:242:31-244:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:930:-3-931:-79
+/tmp/test262-Bib6V6.js:930:-3-931:-79
+/tmp/test262-Bib6V6.js:930:-14--23
+../envs/es5.env:253:31-255:7
 Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
 
 Fatal error: exception Failure("Runtime error")
@@ -86,14 +86,14 @@ ch10/10.1/10.1.1/10.1.1-9-s passed in non-strict mode
 ch10/10.2/10.2.1/S10.2.1_A1 passed in non-strict mode
 === ch10/10.2/10.2.1/S10.2.1_A2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
+../envs/es5.env:6:0-5370:0
 Uncaught exception: "ReferenceError: Illegal function definition"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.2/10.2.1/S10.2.1_A3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
+../envs/es5.env:6:0-5370:0
 Uncaught exception: "ReferenceError: Illegal function definition"
 
 Fatal error: exception Failure("Runtime error")
@@ -144,16 +144,17 @@ ch10/10.4/S10.4A1.1_T2 passed in non-strict mode
 ch10/10.4/S10.4_A1.1_T1 passed in non-strict mode
 === ch10/10.4/10.4.1/S10.4.1_A1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-oFhf3L.js:935:-1-936:-62
-/tmp/test262-oFhf3L.js:935:-1-936:-62
-/tmp/test262-oFhf3L.js:935:-4--27
-/tmp/test262-oFhf3L.js:935:-4--27
-/tmp/test262-oFhf3L.js:935:-4--17
-/tmp/test262-oFhf3L.js:935:-4--17
-/tmp/test262-oFhf3L.js:935:-4--17
-/tmp/test262-oFhf3L.js:935:-4--17
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-TnmmMm.js:935:-1-936:-62
+/tmp/test262-TnmmMm.js:935:-1-936:-62
+/tmp/test262-TnmmMm.js:935:-4--27
+/tmp/test262-TnmmMm.js:935:-4--27
+/tmp/test262-TnmmMm.js:935:-4--17
+/tmp/test262-TnmmMm.js:935:-4--17
+/tmp/test262-TnmmMm.js:935:-4--17
+/tmp/test262-TnmmMm.js:935:-4--17
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
@@ -161,25 +162,26 @@ Fatal error: exception Failure("Runtime error")
 ch10/10.4/10.4.1/S10.4.1_A1_T2 passed in non-strict mode
 === ch10/10.4/10.4.2/10.4.2-1-1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:901:-5-902:-54
-/tmp/test262-QNPqeU.js:901:-5-902:-54
-/tmp/test262-QNPqeU.js:901:-9--28
-/tmp/test262-QNPqeU.js:901:-9--28
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:931:-3--6
-/tmp/test262-QNPqeU.js:941:-5--31
-/tmp/test262-QNPqeU.js:941:-5--31
-/tmp/test262-QNPqeU.js:941:-5--31
-/tmp/test262-QNPqeU.js:941:-5--31
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:901:-5-902:-54
+/tmp/test262-ACyz53.js:901:-5-902:-54
+/tmp/test262-ACyz53.js:901:-9--28
+/tmp/test262-ACyz53.js:901:-9--28
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:931:-3--6
+/tmp/test262-ACyz53.js:941:-5--31
+/tmp/test262-ACyz53.js:941:-5--31
+/tmp/test262-ACyz53.js:941:-5--31
+/tmp/test262-ACyz53.js:941:-5--31
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
@@ -190,50 +192,52 @@ Fatal error: exception Failure("Function Delcarations not allowed as statements"
 ===
 === ch10/10.4/10.4.2/10.4.2-1-3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:901:-5-902:-54
-/tmp/test262-o8DuNT.js:901:-5-902:-54
-/tmp/test262-o8DuNT.js:901:-9--28
-/tmp/test262-o8DuNT.js:901:-9--28
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:932:-9--12
-/tmp/test262-o8DuNT.js:949:-13--37
-/tmp/test262-o8DuNT.js:949:-13--37
-/tmp/test262-o8DuNT.js:949:-13--37
-/tmp/test262-o8DuNT.js:949:-13--37
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:901:-5-902:-54
+/tmp/test262-opj8Qn.js:901:-5-902:-54
+/tmp/test262-opj8Qn.js:901:-9--28
+/tmp/test262-opj8Qn.js:901:-9--28
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:932:-9--12
+/tmp/test262-opj8Qn.js:949:-13--37
+/tmp/test262-opj8Qn.js:949:-13--37
+/tmp/test262-opj8Qn.js:949:-13--37
+/tmp/test262-opj8Qn.js:949:-13--37
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.4/10.4.2/10.4.2-1-4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:901:-5-902:-54
-/tmp/test262-bhTrC6.js:901:-5-902:-54
-/tmp/test262-bhTrC6.js:901:-9--28
-/tmp/test262-bhTrC6.js:901:-9--28
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:931:-9--12
-/tmp/test262-bhTrC6.js:944:-13--37
-/tmp/test262-bhTrC6.js:944:-13--37
-/tmp/test262-bhTrC6.js:944:-13--37
-/tmp/test262-bhTrC6.js:944:-13--37
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:901:-5-902:-54
+/tmp/test262-36UUWw.js:901:-5-902:-54
+/tmp/test262-36UUWw.js:901:-9--28
+/tmp/test262-36UUWw.js:901:-9--28
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:931:-9--12
+/tmp/test262-36UUWw.js:944:-13--37
+/tmp/test262-36UUWw.js:944:-13--37
+/tmp/test262-36UUWw.js:944:-13--37
+/tmp/test262-36UUWw.js:944:-13--37
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
@@ -274,21 +278,21 @@ ch10/10.4/10.4.2/S10.4.2_A1.2_T8 passed in non-strict mode
 ch10/10.4/10.4.2/S10.4.2_A1.2_T9 passed in non-strict mode
 === ch10/10.4/10.4.3/10.4.3-1-1-s failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:901:-5-902:-54
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:901:-5-902:-54
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -324,21 +328,21 @@ ch10/10.4/10.4.3/10.4.3-1-19-s passed in strict mode
 ch10/10.4/10.4.3/10.4.3-1-19gs passed in strict mode
 === ch10/10.4/10.4.3/10.4.3-1-2-s failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:901:-5-902:-54
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:901:-5-902:-54
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -386,21 +390,21 @@ ch10/10.4/10.4.3/10.4.3-1-39-s passed in strict mode
 ch10/10.4/10.4.3/10.4.3-1-39gs passed in strict mode
 === ch10/10.4/10.4.3/10.4.3-1-4-s failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:901:-5-902:-54
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:901:-5-902:-54
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -542,21 +546,21 @@ ch10/10.5/10.5-7-b-4-s passed in strict mode
 ch10/10.6/10.6-10-c-ii-1-s passed in strict mode
 === ch10/10.6/10.6-10-c-ii-1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:901:-5-902:-54
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:901:-5-902:-54
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -564,21 +568,21 @@ Fatal error: exception Failure("Runtime error")
 ch10/10.6/10.6-10-c-ii-2-s passed in strict mode
 === ch10/10.6/10.6-10-c-ii-2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:901:-5-902:-54
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:901:-5-902:-54
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -586,166 +590,166 @@ Fatal error: exception Failure("Runtime error")
 ch10/10.6/10.6-11-b-1 passed in non-strict mode
 === ch10/10.6/10.6-12-1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:901:-5-902:-54
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:901:-5-902:-54
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.6/10.6-12-2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:901:-5-902:-54
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:901:-5-902:-54
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.6/10.6-13-1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:901:-5-902:-54
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:901:-5-902:-54
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.6/10.6-13-a-1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:901:-5-902:-54
-/tmp/test262-JPSm5D.js:901:-5-902:-54
-/tmp/test262-JPSm5D.js:901:-9--28
-/tmp/test262-JPSm5D.js:901:-9--28
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:940:-13--24
-/tmp/test262-JPSm5D.js:940:-27--62
-/tmp/test262-JPSm5D.js:940:-27--47
-/tmp/test262-JPSm5D.js:940:-34--47
-../envs/es5.env:819:43-821:3
-../envs/es5.env:29:40-32:7
-Uncaught exception: "Callee and caller inaccessible"
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:901:-5-902:-54
+/tmp/test262-5P9fh4.js:901:-5-902:-54
+/tmp/test262-5P9fh4.js:901:-9--28
+/tmp/test262-5P9fh4.js:901:-9--28
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:940:-13--24
+/tmp/test262-5P9fh4.js:940:-27--62
+/tmp/test262-5P9fh4.js:940:-27--47
+/tmp/test262-5P9fh4.js:940:-34--47
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "object passed to ThrowTypeError"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.6/10.6-13-a-2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:901:-5-902:-54
-/tmp/test262-XD8exz.js:901:-5-902:-54
-/tmp/test262-XD8exz.js:901:-9--28
-/tmp/test262-XD8exz.js:901:-9--28
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:933:-9-936:-27
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:941:-9-944:-41
-/tmp/test262-XD8exz.js:941:-9-944:-41
-/tmp/test262-XD8exz.js:941:-12--47
-/tmp/test262-XD8exz.js:941:-12--35
-/tmp/test262-XD8exz.js:941:-12--35
-/tmp/test262-XD8exz.js:941:-12--28
-../envs/es5.env:819:43-821:3
-../envs/es5.env:29:40-32:7
-Uncaught exception: "Callee and caller inaccessible"
+../envs/es5.env:6:0-5370:0
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:901:-5-902:-54
+/tmp/test262-e_S61S.js:901:-5-902:-54
+/tmp/test262-e_S61S.js:901:-9--28
+/tmp/test262-e_S61S.js:901:-9--28
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:933:-9-936:-27
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:941:-9-944:-41
+/tmp/test262-e_S61S.js:941:-9-944:-41
+/tmp/test262-e_S61S.js:941:-12--47
+/tmp/test262-e_S61S.js:941:-12--35
+/tmp/test262-e_S61S.js:941:-12--35
+/tmp/test262-e_S61S.js:941:-12--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "object passed to ThrowTypeError"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.6/10.6-13-a-3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:901:-5-902:-54
-/tmp/test262-FH2Yxj.js:901:-5-902:-54
-/tmp/test262-FH2Yxj.js:901:-9--28
-/tmp/test262-FH2Yxj.js:901:-9--28
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:933:-9-936:-27
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:941:-8-945:-25
-/tmp/test262-FH2Yxj.js:941:-8-945:-25
-/tmp/test262-FH2Yxj.js:941:-12--47
-/tmp/test262-FH2Yxj.js:941:-12--35
-/tmp/test262-FH2Yxj.js:941:-12--35
-/tmp/test262-FH2Yxj.js:941:-12--28
-../envs/es5.env:819:43-821:3
-../envs/es5.env:29:40-32:7
-Uncaught exception: "Callee and caller inaccessible"
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:901:-5-902:-54
+/tmp/test262-7xkZv0.js:901:-5-902:-54
+/tmp/test262-7xkZv0.js:901:-9--28
+/tmp/test262-7xkZv0.js:901:-9--28
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:933:-9-936:-27
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:941:-8-945:-25
+/tmp/test262-7xkZv0.js:941:-8-945:-25
+/tmp/test262-7xkZv0.js:941:-12--47
+/tmp/test262-7xkZv0.js:941:-12--35
+/tmp/test262-7xkZv0.js:941:-12--35
+/tmp/test262-7xkZv0.js:941:-12--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "object passed to ThrowTypeError"
 
 Fatal error: exception Failure("Runtime error")
 ===
@@ -774,57 +778,57 @@ ch10/10.6/S10.6_A3_T1 passed in non-strict mode
 ch10/10.6/S10.6_A3_T2 passed in non-strict mode
 === ch10/10.6/S10.6_A3_T3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-NchtiA.js:934:-1--4
-/tmp/test262-NchtiA.js:934:-1--4
-/tmp/test262-NchtiA.js:934:-1--4
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-tX4Z3i.js:934:-1--4
+/tmp/test262-tX4Z3i.js:934:-1--4
+/tmp/test262-tX4Z3i.js:934:-1--4
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:289:-5--35
 Uncaught exception: "#1: arguments object don't exists"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.6/S10.6_A3_T4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-07H_9n.js:936:-1--4
-/tmp/test262-07H_9n.js:936:-1--4
-/tmp/test262-07H_9n.js:936:-1--4
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WjyId4.js:936:-1--4
+/tmp/test262-WjyId4.js:936:-1--4
+/tmp/test262-WjyId4.js:936:-1--4
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:289:-5--35
 Uncaught exception: "#1: arguments object don't exists"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch10/10.6/S10.6_A4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-XsSzou.js:934:-1--4
-/tmp/test262-XsSzou.js:934:-1--4
-/tmp/test262-XsSzou.js:934:-1--4
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-dJZzyr.js:934:-1--4
+/tmp/test262-dJZzyr.js:934:-1--4
+/tmp/test262-dJZzyr.js:934:-1--4
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:289:-5--35
 Uncaught exception: "#1: arguments object doesn't exists"
 
 Fatal error: exception Failure("Runtime error")
@@ -873,32 +877,32 @@ Failed tests
 
 ch10/10.1/S10.1.6_A1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-XHwG6A.js:934:-1-935:-47
-/tmp/test262-XHwG6A.js:934:-1-935:-47
-/tmp/test262-XHwG6A.js:934:-5--16
-/tmp/test262-XHwG6A.js:934:-5--16
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:934:-5--10
-/tmp/test262-XHwG6A.js:931:-10--11
-../envs/es5.env:242:31-244:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uPvHZV.js:934:-1-935:-47
+/tmp/test262-uPvHZV.js:934:-1-935:-47
+/tmp/test262-uPvHZV.js:934:-5--16
+/tmp/test262-uPvHZV.js:934:-5--16
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:934:-5--10
+/tmp/test262-uPvHZV.js:931:-10--11
+../envs/es5.env:253:31-255:7
 Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.1/S10.1.6_A1_T3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:936:-1--5
-/tmp/test262-ch2LGW.js:930:-3-931:-79
-/tmp/test262-ch2LGW.js:930:-3-931:-79
-/tmp/test262-ch2LGW.js:930:-14--23
-../envs/es5.env:242:31-244:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:936:-1--5
+/tmp/test262-Bib6V6.js:930:-3-931:-79
+/tmp/test262-Bib6V6.js:930:-3-931:-79
+/tmp/test262-Bib6V6.js:930:-14--23
+../envs/es5.env:253:31-255:7
 Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
 
 Fatal error: exception Failure("Runtime error")
@@ -921,55 +925,57 @@ Fatal error: exception Failure("[interp] Unbound identifier: %maybeDirectEval in
 
 ch10/10.2/10.2.1/S10.2.1_A2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
+../envs/es5.env:6:0-5370:0
 Uncaught exception: "ReferenceError: Illegal function definition"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.2/10.2.1/S10.2.1_A3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
+../envs/es5.env:6:0-5370:0
 Uncaught exception: "ReferenceError: Illegal function definition"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.4/10.4.1/S10.4.1_A1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-oFhf3L.js:935:-1-936:-62
-/tmp/test262-oFhf3L.js:935:-1-936:-62
-/tmp/test262-oFhf3L.js:935:-4--27
-/tmp/test262-oFhf3L.js:935:-4--27
-/tmp/test262-oFhf3L.js:935:-4--17
-/tmp/test262-oFhf3L.js:935:-4--17
-/tmp/test262-oFhf3L.js:935:-4--17
-/tmp/test262-oFhf3L.js:935:-4--17
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-TnmmMm.js:935:-1-936:-62
+/tmp/test262-TnmmMm.js:935:-1-936:-62
+/tmp/test262-TnmmMm.js:935:-4--27
+/tmp/test262-TnmmMm.js:935:-4--27
+/tmp/test262-TnmmMm.js:935:-4--17
+/tmp/test262-TnmmMm.js:935:-4--17
+/tmp/test262-TnmmMm.js:935:-4--17
+/tmp/test262-TnmmMm.js:935:-4--17
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.4/10.4.2/10.4.2-1-1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:944:-1--22
-/tmp/test262-QNPqeU.js:901:-5-902:-54
-/tmp/test262-QNPqeU.js:901:-5-902:-54
-/tmp/test262-QNPqeU.js:901:-9--28
-/tmp/test262-QNPqeU.js:901:-9--28
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:901:-9--19
-/tmp/test262-QNPqeU.js:931:-3--6
-/tmp/test262-QNPqeU.js:941:-5--31
-/tmp/test262-QNPqeU.js:941:-5--31
-/tmp/test262-QNPqeU.js:941:-5--31
-/tmp/test262-QNPqeU.js:941:-5--31
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:944:-1--22
+/tmp/test262-ACyz53.js:901:-5-902:-54
+/tmp/test262-ACyz53.js:901:-5-902:-54
+/tmp/test262-ACyz53.js:901:-9--28
+/tmp/test262-ACyz53.js:901:-9--28
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:901:-9--19
+/tmp/test262-ACyz53.js:931:-3--6
+/tmp/test262-ACyz53.js:941:-5--31
+/tmp/test262-ACyz53.js:941:-5--31
+/tmp/test262-ACyz53.js:941:-5--31
+/tmp/test262-ACyz53.js:941:-5--31
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
@@ -980,50 +986,52 @@ Fatal error: exception Failure("Function Delcarations not allowed as statements"
 
 ch10/10.4/10.4.2/10.4.2-1-3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:952:-1--22
-/tmp/test262-o8DuNT.js:901:-5-902:-54
-/tmp/test262-o8DuNT.js:901:-5-902:-54
-/tmp/test262-o8DuNT.js:901:-9--28
-/tmp/test262-o8DuNT.js:901:-9--28
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:901:-9--19
-/tmp/test262-o8DuNT.js:932:-9--12
-/tmp/test262-o8DuNT.js:949:-13--37
-/tmp/test262-o8DuNT.js:949:-13--37
-/tmp/test262-o8DuNT.js:949:-13--37
-/tmp/test262-o8DuNT.js:949:-13--37
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:952:-1--22
+/tmp/test262-opj8Qn.js:901:-5-902:-54
+/tmp/test262-opj8Qn.js:901:-5-902:-54
+/tmp/test262-opj8Qn.js:901:-9--28
+/tmp/test262-opj8Qn.js:901:-9--28
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:901:-9--19
+/tmp/test262-opj8Qn.js:932:-9--12
+/tmp/test262-opj8Qn.js:949:-13--37
+/tmp/test262-opj8Qn.js:949:-13--37
+/tmp/test262-opj8Qn.js:949:-13--37
+/tmp/test262-opj8Qn.js:949:-13--37
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.4/10.4.2/10.4.2-1-4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:947:-1--22
-/tmp/test262-bhTrC6.js:901:-5-902:-54
-/tmp/test262-bhTrC6.js:901:-5-902:-54
-/tmp/test262-bhTrC6.js:901:-9--28
-/tmp/test262-bhTrC6.js:901:-9--28
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:901:-9--19
-/tmp/test262-bhTrC6.js:931:-9--12
-/tmp/test262-bhTrC6.js:944:-13--37
-/tmp/test262-bhTrC6.js:944:-13--37
-/tmp/test262-bhTrC6.js:944:-13--37
-/tmp/test262-bhTrC6.js:944:-13--37
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:947:-1--22
+/tmp/test262-36UUWw.js:901:-5-902:-54
+/tmp/test262-36UUWw.js:901:-5-902:-54
+/tmp/test262-36UUWw.js:901:-9--28
+/tmp/test262-36UUWw.js:901:-9--28
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:901:-9--19
+/tmp/test262-36UUWw.js:931:-9--12
+/tmp/test262-36UUWw.js:944:-13--37
+/tmp/test262-36UUWw.js:944:-13--37
+/tmp/test262-36UUWw.js:944:-13--37
+/tmp/test262-36UUWw.js:944:-13--37
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Deleting non-configurable field"
 
 Fatal error: exception Failure("Runtime error")
@@ -1034,327 +1042,327 @@ Fatal error: exception Failure("[interp] Unbound identifier: %maybeDirectEval in
 
 ch10/10.4/10.4.3/10.4.3-1-1-s in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:945:-1--22
-/tmp/test262-oZOjDv.js:901:-5-902:-54
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:902:-9--53
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:305:-5--24
-/tmp/test262-oZOjDv.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:945:-1--22
+/tmp/test262-S36i_S.js:901:-5-902:-54
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:902:-9--53
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:305:-5--24
+/tmp/test262-S36i_S.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.4/10.4.3/10.4.3-1-2-s in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:945:-1--22
-/tmp/test262-AeyPGU.js:901:-5-902:-54
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:902:-9--53
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:305:-5--24
-/tmp/test262-AeyPGU.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:945:-1--22
+/tmp/test262-Zq8t2w.js:901:-5-902:-54
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:902:-9--53
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:305:-5--24
+/tmp/test262-Zq8t2w.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.4/10.4.3/10.4.3-1-4-s in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:945:-1--22
-/tmp/test262-h6e_Hp.js:901:-5-902:-54
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:902:-9--53
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:305:-5--24
-/tmp/test262-h6e_Hp.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:945:-1--22
+/tmp/test262-jmUO1e.js:901:-5-902:-54
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:902:-9--53
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:305:-5--24
+/tmp/test262-jmUO1e.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-10-c-ii-1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:938:-1--22
-/tmp/test262-sQiI4n.js:901:-5-902:-54
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:902:-9--53
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:305:-5--24
-/tmp/test262-sQiI4n.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:938:-1--22
+/tmp/test262-RGR5zu.js:901:-5-902:-54
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:902:-9--53
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:305:-5--24
+/tmp/test262-RGR5zu.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-10-c-ii-2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:939:-1--22
-/tmp/test262-wTjdO2.js:901:-5-902:-54
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:902:-9--53
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:305:-5--24
-/tmp/test262-wTjdO2.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:939:-1--22
+/tmp/test262-fOWM2A.js:901:-5-902:-54
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:902:-9--53
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:305:-5--24
+/tmp/test262-fOWM2A.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-12-1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:938:-1--22
-/tmp/test262-mXwvVI.js:901:-5-902:-54
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:902:-9--53
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:305:-5--24
-/tmp/test262-mXwvVI.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:938:-1--22
+/tmp/test262-OxcQ_L.js:901:-5-902:-54
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:902:-9--53
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:305:-5--24
+/tmp/test262-OxcQ_L.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-12-2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:939:-1--22
-/tmp/test262-lxBmVq.js:901:-5-902:-54
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:902:-9--53
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:305:-5--24
-/tmp/test262-lxBmVq.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:939:-1--22
+/tmp/test262-s2m5Fe.js:901:-5-902:-54
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:902:-9--53
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:305:-5--24
+/tmp/test262-s2m5Fe.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-13-1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:938:-1--22
-/tmp/test262-8B1Ewb.js:901:-5-902:-54
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:902:-9--53
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:305:-5--24
-/tmp/test262-8B1Ewb.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:938:-1--22
+/tmp/test262-kt6LQt.js:901:-5-902:-54
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:902:-9--53
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:305:-5--24
+/tmp/test262-kt6LQt.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-13-a-1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:962:-1--22
-/tmp/test262-JPSm5D.js:901:-5-902:-54
-/tmp/test262-JPSm5D.js:901:-5-902:-54
-/tmp/test262-JPSm5D.js:901:-9--28
-/tmp/test262-JPSm5D.js:901:-9--28
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:901:-9--19
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:930:-9--12
-/tmp/test262-JPSm5D.js:940:-13--24
-/tmp/test262-JPSm5D.js:940:-27--62
-/tmp/test262-JPSm5D.js:940:-27--47
-/tmp/test262-JPSm5D.js:940:-34--47
-../envs/es5.env:819:43-821:3
-../envs/es5.env:29:40-32:7
-Uncaught exception: "Callee and caller inaccessible"
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:962:-1--22
+/tmp/test262-5P9fh4.js:901:-5-902:-54
+/tmp/test262-5P9fh4.js:901:-5-902:-54
+/tmp/test262-5P9fh4.js:901:-9--28
+/tmp/test262-5P9fh4.js:901:-9--28
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:901:-9--19
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:930:-9--12
+/tmp/test262-5P9fh4.js:940:-13--24
+/tmp/test262-5P9fh4.js:940:-27--62
+/tmp/test262-5P9fh4.js:940:-27--47
+/tmp/test262-5P9fh4.js:940:-34--47
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "object passed to ThrowTypeError"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-13-a-2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:952:-1--22
-/tmp/test262-XD8exz.js:901:-5-902:-54
-/tmp/test262-XD8exz.js:901:-5-902:-54
-/tmp/test262-XD8exz.js:901:-9--28
-/tmp/test262-XD8exz.js:901:-9--28
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:901:-9--19
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:948:-5--12
-/tmp/test262-XD8exz.js:933:-9-936:-27
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:934:-13--20
-/tmp/test262-XD8exz.js:941:-9-944:-41
-/tmp/test262-XD8exz.js:941:-9-944:-41
-/tmp/test262-XD8exz.js:941:-12--47
-/tmp/test262-XD8exz.js:941:-12--35
-/tmp/test262-XD8exz.js:941:-12--35
-/tmp/test262-XD8exz.js:941:-12--28
-../envs/es5.env:819:43-821:3
-../envs/es5.env:29:40-32:7
-Uncaught exception: "Callee and caller inaccessible"
+../envs/es5.env:6:0-5370:0
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:952:-1--22
+/tmp/test262-e_S61S.js:901:-5-902:-54
+/tmp/test262-e_S61S.js:901:-5-902:-54
+/tmp/test262-e_S61S.js:901:-9--28
+/tmp/test262-e_S61S.js:901:-9--28
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:901:-9--19
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:948:-5--12
+/tmp/test262-e_S61S.js:933:-9-936:-27
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:934:-13--20
+/tmp/test262-e_S61S.js:941:-9-944:-41
+/tmp/test262-e_S61S.js:941:-9-944:-41
+/tmp/test262-e_S61S.js:941:-12--47
+/tmp/test262-e_S61S.js:941:-12--35
+/tmp/test262-e_S61S.js:941:-12--35
+/tmp/test262-e_S61S.js:941:-12--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "object passed to ThrowTypeError"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/10.6-13-a-3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:953:-1--22
-/tmp/test262-FH2Yxj.js:901:-5-902:-54
-/tmp/test262-FH2Yxj.js:901:-5-902:-54
-/tmp/test262-FH2Yxj.js:901:-9--28
-/tmp/test262-FH2Yxj.js:901:-9--28
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:901:-9--19
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:949:-5--12
-/tmp/test262-FH2Yxj.js:933:-9-936:-27
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:934:-13--20
-/tmp/test262-FH2Yxj.js:941:-8-945:-25
-/tmp/test262-FH2Yxj.js:941:-8-945:-25
-/tmp/test262-FH2Yxj.js:941:-12--47
-/tmp/test262-FH2Yxj.js:941:-12--35
-/tmp/test262-FH2Yxj.js:941:-12--35
-/tmp/test262-FH2Yxj.js:941:-12--28
-../envs/es5.env:819:43-821:3
-../envs/es5.env:29:40-32:7
-Uncaught exception: "Callee and caller inaccessible"
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:953:-1--22
+/tmp/test262-7xkZv0.js:901:-5-902:-54
+/tmp/test262-7xkZv0.js:901:-5-902:-54
+/tmp/test262-7xkZv0.js:901:-9--28
+/tmp/test262-7xkZv0.js:901:-9--28
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:901:-9--19
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:949:-5--12
+/tmp/test262-7xkZv0.js:933:-9-936:-27
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:934:-13--20
+/tmp/test262-7xkZv0.js:941:-8-945:-25
+/tmp/test262-7xkZv0.js:941:-8-945:-25
+/tmp/test262-7xkZv0.js:941:-12--47
+/tmp/test262-7xkZv0.js:941:-12--35
+/tmp/test262-7xkZv0.js:941:-12--35
+/tmp/test262-7xkZv0.js:941:-12--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "object passed to ThrowTypeError"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/S10.6_A3_T3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-NchtiA.js:934:-1--4
-/tmp/test262-NchtiA.js:934:-1--4
-/tmp/test262-NchtiA.js:934:-1--4
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:940:-3--46
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:305:-5--24
-/tmp/test262-NchtiA.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-tX4Z3i.js:934:-1--4
+/tmp/test262-tX4Z3i.js:934:-1--4
+/tmp/test262-tX4Z3i.js:934:-1--4
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:940:-3--46
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:305:-5--24
+/tmp/test262-tX4Z3i.js:289:-5--35
 Uncaught exception: "#1: arguments object don't exists"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/S10.6_A3_T4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-07H_9n.js:936:-1--4
-/tmp/test262-07H_9n.js:936:-1--4
-/tmp/test262-07H_9n.js:936:-1--4
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:942:-3--46
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:305:-5--24
-/tmp/test262-07H_9n.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WjyId4.js:936:-1--4
+/tmp/test262-WjyId4.js:936:-1--4
+/tmp/test262-WjyId4.js:936:-1--4
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:942:-3--46
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:305:-5--24
+/tmp/test262-WjyId4.js:289:-5--35
 Uncaught exception: "#1: arguments object don't exists"
 
 Fatal error: exception Failure("Runtime error")
 
 ch10/10.6/S10.6_A4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-XsSzou.js:934:-1--4
-/tmp/test262-XsSzou.js:934:-1--4
-/tmp/test262-XsSzou.js:934:-1--4
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:940:-3--48
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:305:-5--24
-/tmp/test262-XsSzou.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-dJZzyr.js:934:-1--4
+/tmp/test262-dJZzyr.js:934:-1--4
+/tmp/test262-dJZzyr.js:934:-1--4
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:940:-3--48
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:305:-5--24
+/tmp/test262-dJZzyr.js:289:-5--35
 Uncaught exception: "#1: arguments object doesn't exists"
 
 Fatal error: exception Failure("Runtime error")

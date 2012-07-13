@@ -1,0 +1,589 @@
+ch15/15.7/15.7.1/S15.7.1.1_A1 passed in non-strict mode
+ch15/15.7/15.7.1/S15.7.1.1_A2 passed in non-strict mode
+ch15/15.7/15.7.2/S15.7.2.1_A1 passed in non-strict mode
+ch15/15.7/15.7.2/S15.7.2.1_A2 passed in non-strict mode
+ch15/15.7/15.7.2/S15.7.2.1_A3 passed in non-strict mode
+ch15/15.7/15.7.2/S15.7.2.1_A4 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3-1 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3-2 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A1 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A2 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A3 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A4 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A5 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A6 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A7 passed in non-strict mode
+ch15/15.7/15.7.3/S15.7.3_A8 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.1/15.7.3.1-1 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.1/15.7.3.1-2 passed in non-strict mode
+=== ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A1_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qTLZG5.js:931:-1--21
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A1_T2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Z9AMaN.js:930:-1-931:-77
+/tmp/test262-Z9AMaN.js:930:-1-931:-77
+/tmp/test262-Z9AMaN.js:930:-5--38
+/tmp/test262-Z9AMaN.js:930:-5--38
+/tmp/test262-Z9AMaN.js:930:-5--28
+/tmp/test262-Z9AMaN.js:930:-5--28
+/tmp/test262-Z9AMaN.js:930:-5--28
+/tmp/test262-Z9AMaN.js:930:-5--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A1_T3 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A2_T1 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A2_T2 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A3 passed in non-strict mode
+=== ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+=== ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-bfVadR.js:931:-1--21
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-QBLktV.js:930:-1-931:-51
+/tmp/test262-QBLktV.js:930:-1-931:-51
+/tmp/test262-QBLktV.js:930:-5--38
+/tmp/test262-QBLktV.js:930:-5--38
+/tmp/test262-QBLktV.js:930:-5--28
+/tmp/test262-QBLktV.js:930:-5--28
+/tmp/test262-QBLktV.js:930:-5--28
+/tmp/test262-QBLktV.js:930:-5--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A4 passed in non-strict mode
+=== ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+=== ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-38YHJL.js:931:-1--21
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-onffTE.js:930:-1-931:-51
+/tmp/test262-onffTE.js:930:-1-931:-51
+/tmp/test262-onffTE.js:930:-5--38
+/tmp/test262-onffTE.js:930:-5--38
+/tmp/test262-onffTE.js:930:-5--28
+/tmp/test262-onffTE.js:930:-5--28
+/tmp/test262-onffTE.js:930:-5--28
+/tmp/test262-onffTE.js:930:-5--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A4 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A1 passed in non-strict mode
+=== ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-kbde2n.js:930:-1--15
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-4wt2Dh.js:930:-1-931:-45
+/tmp/test262-4wt2Dh.js:930:-1-931:-45
+/tmp/test262-4wt2Dh.js:930:-5--32
+/tmp/test262-4wt2Dh.js:930:-5--32
+/tmp/test262-4wt2Dh.js:930:-5--22
+/tmp/test262-4wt2Dh.js:930:-5--22
+/tmp/test262-4wt2Dh.js:930:-5--22
+/tmp/test262-4wt2Dh.js:930:-5--22
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A4 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A1 passed in non-strict mode
+=== ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-heYKuD.js:930:-1--29
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-eNJbsv.js:930:-1-931:-59
+/tmp/test262-eNJbsv.js:930:-1-931:-59
+/tmp/test262-eNJbsv.js:930:-5--46
+/tmp/test262-eNJbsv.js:930:-5--46
+/tmp/test262-eNJbsv.js:930:-5--36
+/tmp/test262-eNJbsv.js:930:-5--36
+/tmp/test262-eNJbsv.js:930:-5--36
+/tmp/test262-eNJbsv.js:930:-5--36
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A4 passed in non-strict mode
+ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A1 passed in non-strict mode
+=== ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-3BpSXp.js:930:-1--29
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7X7AUD.js:930:-1-931:-59
+/tmp/test262-7X7AUD.js:930:-1-931:-59
+/tmp/test262-7X7AUD.js:930:-5--46
+/tmp/test262-7X7AUD.js:930:-5--46
+/tmp/test262-7X7AUD.js:930:-5--36
+/tmp/test262-7X7AUD.js:930:-5--36
+/tmp/test262-7X7AUD.js:930:-5--36
+/tmp/test262-7X7AUD.js:930:-5--36
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A4 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4-1 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A1 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A2 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A3.1 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A3.2 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A3.3 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A3.4 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A3.5 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A3.6 passed in non-strict mode
+ch15/15.7/15.7.4/S15.7.4_A3.7 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.1/S15.7.4.1_A1 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A1_T01 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A1_T02 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A1_T03 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T01 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T02 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T03 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T04 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T05 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T06 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T07 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T08 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T09 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T10 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T11 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T12 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T13 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T14 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T15 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T16 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T17 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T18 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T19 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T20 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T21 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T22 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T23 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T24 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T25 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T26 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T27 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T28 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T29 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T30 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T31 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T32 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T33 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A2_T34 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A3_T01 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A3_T02 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A3_T03 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A3_T04 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A4_T01 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A4_T02 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A4_T03 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A4_T04 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.2/S15.7.4.2_A4_T05 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.4/S15.7.4.4_A1_T01 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.4/S15.7.4.4_A1_T02 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.4/S15.7.4.4_A2_T01 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.4/S15.7.4.4_A2_T02 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.4/S15.7.4.4_A2_T03 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.4/S15.7.4.4_A2_T04 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.4/S15.7.4.4_A2_T05 passed in non-strict mode
+=== ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.1_T01 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: x in identifier lookup at ../envs/es5.env:4727:16-17")
+===
+=== ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.1_T02 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: x in identifier lookup at ../envs/es5.env:4727:16-17")
+===
+ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.3_T01 passed in non-strict mode
+ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.3_T02 passed in non-strict mode
+=== ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.4_T01 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: x in identifier lookup at ../envs/es5.env:4727:16-17")
+===
+ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A2_T01 passed in non-strict mode
+ch15/15.7/15.7.5/S15.7.5_A1_T01 passed in non-strict mode
+ch15/15.7/15.7.5/S15.7.5_A1_T02 passed in non-strict mode
+ch15/15.7/15.7.5/S15.7.5_A1_T03 passed in non-strict mode
+ch15/15.7/15.7.5/S15.7.5_A1_T04 passed in non-strict mode
+ch15/15.7/15.7.5/S15.7.5_A1_T05 passed in non-strict mode
+ch15/15.7/15.7.5/S15.7.5_A1_T06 passed in non-strict mode
+ch15/15.7/15.7.5/S15.7.5_A1_T07 passed in non-strict mode
+
+=== Summary ===
+ - Ran 121 tests
+ - Passed 104 tests (86.0%)
+ - Failed 17 tests (14.0%)
+
+Failed tests
+  ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A1_T1 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A1_T2 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A1 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A2 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A3 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A1 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A2 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A3 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A2 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A3 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A2 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A3 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A2 in non-strict mode
+  ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A3 in non-strict mode
+  ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.1_T01 in non-strict mode
+  ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.1_T02 in non-strict mode
+  ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.4_T01 in non-strict mode
+
+ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A1_T1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qTLZG5.js:931:-1--21
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.1/S15.7.3.1_A1_T2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Z9AMaN.js:930:-1-931:-77
+/tmp/test262-Z9AMaN.js:930:-1-931:-77
+/tmp/test262-Z9AMaN.js:930:-5--38
+/tmp/test262-Z9AMaN.js:930:-5--38
+/tmp/test262-Z9AMaN.js:930:-5--28
+/tmp/test262-Z9AMaN.js:930:-5--28
+/tmp/test262-Z9AMaN.js:930:-5--28
+/tmp/test262-Z9AMaN.js:930:-5--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-bfVadR.js:931:-1--21
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.2/S15.7.3.2_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-QBLktV.js:930:-1-931:-51
+/tmp/test262-QBLktV.js:930:-1-931:-51
+/tmp/test262-QBLktV.js:930:-5--38
+/tmp/test262-QBLktV.js:930:-5--38
+/tmp/test262-QBLktV.js:930:-5--28
+/tmp/test262-QBLktV.js:930:-5--28
+/tmp/test262-QBLktV.js:930:-5--28
+/tmp/test262-QBLktV.js:930:-5--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-38YHJL.js:931:-1--21
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.3/S15.7.3.3_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-onffTE.js:930:-1-931:-51
+/tmp/test262-onffTE.js:930:-1-931:-51
+/tmp/test262-onffTE.js:930:-5--38
+/tmp/test262-onffTE.js:930:-5--38
+/tmp/test262-onffTE.js:930:-5--28
+/tmp/test262-onffTE.js:930:-5--28
+/tmp/test262-onffTE.js:930:-5--28
+/tmp/test262-onffTE.js:930:-5--28
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-kbde2n.js:930:-1--15
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.4/S15.7.3.4_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-4wt2Dh.js:930:-1-931:-45
+/tmp/test262-4wt2Dh.js:930:-1-931:-45
+/tmp/test262-4wt2Dh.js:930:-5--32
+/tmp/test262-4wt2Dh.js:930:-5--32
+/tmp/test262-4wt2Dh.js:930:-5--22
+/tmp/test262-4wt2Dh.js:930:-5--22
+/tmp/test262-4wt2Dh.js:930:-5--22
+/tmp/test262-4wt2Dh.js:930:-5--22
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-heYKuD.js:930:-1--29
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.5/S15.7.3.5_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-eNJbsv.js:930:-1-931:-59
+/tmp/test262-eNJbsv.js:930:-1-931:-59
+/tmp/test262-eNJbsv.js:930:-5--46
+/tmp/test262-eNJbsv.js:930:-5--46
+/tmp/test262-eNJbsv.js:930:-5--36
+/tmp/test262-eNJbsv.js:930:-5--36
+/tmp/test262-eNJbsv.js:930:-5--36
+/tmp/test262-eNJbsv.js:930:-5--36
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-3BpSXp.js:930:-1--29
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.3/15.7.3.6/S15.7.3.6_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7X7AUD.js:930:-1-931:-59
+/tmp/test262-7X7AUD.js:930:-1-931:-59
+/tmp/test262-7X7AUD.js:930:-5--46
+/tmp/test262-7X7AUD.js:930:-5--46
+/tmp/test262-7X7AUD.js:930:-5--36
+/tmp/test262-7X7AUD.js:930:-5--36
+/tmp/test262-7X7AUD.js:930:-5--36
+/tmp/test262-7X7AUD.js:930:-5--36
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.1_T01 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: x in identifier lookup at ../envs/es5.env:4727:16-17")
+
+ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.1_T02 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: x in identifier lookup at ../envs/es5.env:4727:16-17")
+
+ch15/15.7/15.7.4/15.7.4.5/S15.7.4.5_A1.4_T01 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: x in identifier lookup at ../envs/es5.env:4727:16-17")
+

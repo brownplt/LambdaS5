@@ -2,28 +2,28 @@ ch07/7.2/S7.2_A1.1_T1 passed in non-strict mode
 ch07/7.2/S7.2_A1.1_T2 passed in non-strict mode
 === ch07/7.2/S7.2_A1.2_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-IrIKLe.js:930:-1--45
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-LAhXK3.js:930:-1--45
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.2/S7.2_A1.2_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-WyMS5P.js:936:-1--22
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-R1BLZ9.js:936:-1--22
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
@@ -91,26 +91,26 @@ ch07/7.2/S7.2_A5_T4 failed in non-strict mode as expected
 ch07/7.2/S7.2_A5_T5 failed in non-strict mode as expected
 === ch07/7.3/7.3-1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:901:-5-902:-54
-/tmp/test262-7ZgInX.js:901:-5-902:-54
-/tmp/test262-7ZgInX.js:901:-9--28
-/tmp/test262-7ZgInX.js:901:-9--28
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:930:-9--46
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:901:-5-902:-54
+/tmp/test262-aeORDT.js:901:-5-902:-54
+/tmp/test262-aeORDT.js:901:-9--28
+/tmp/test262-aeORDT.js:901:-9--28
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:930:-9--46
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
@@ -123,68 +123,68 @@ ch07/7.3/7.3-14 passed in non-strict mode
 ch07/7.3/7.3-15 passed in non-strict mode
 === ch07/7.3/7.3-2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:901:-5-902:-54
-/tmp/test262-9PwG43.js:901:-5-902:-54
-/tmp/test262-9PwG43.js:901:-9--28
-/tmp/test262-9PwG43.js:901:-9--28
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:930:-9--46
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:901:-5-902:-54
+/tmp/test262-9jvFC9.js:901:-5-902:-54
+/tmp/test262-9jvFC9.js:901:-9--28
+/tmp/test262-9jvFC9.js:901:-9--28
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:930:-9--46
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/7.3-3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:901:-5-902:-54
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:901:-5-902:-54
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/7.3-4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:901:-5-902:-54
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:901:-5-902:-54
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -195,21 +195,21 @@ ch07/7.3/7.3-6 passed in non-strict mode
 --- output ---
 You used the es5.env testlambda.  Are you sure you didn't forget to include the regexp.js library, or regexp.env?
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:901:-5-902:-54
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:901:-5-902:-54
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -218,21 +218,21 @@ Fatal error: exception Failure("Runtime error")
 --- output ---
 You used the es5.env testlambda.  Are you sure you didn't forget to include the regexp.js library, or regexp.env?
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:901:-5-902:-54
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:901:-5-902:-54
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -244,28 +244,28 @@ ch07/7.3/S7.3_A1.2_T1 passed in non-strict mode
 ch07/7.3/S7.3_A1.2_T2 passed in non-strict mode
 === ch07/7.3/S7.3_A1.3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-xXj8yg.js:930:-1--45
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fOr_Vs.js:930:-1--45
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A1.4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ZJ2Y9M.js:930:-1--45
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-MXAgtk.js:930:-1--45
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
@@ -290,34 +290,34 @@ ch07/7.3/S7.3_A4_T1 passed in non-strict mode
 ch07/7.3/S7.3_A4_T2 passed in non-strict mode
 === ch07/7.3/S7.3_A4_T3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-zaX7pz.js:935:-1-936:-98
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-asp_1u.js:935:-1-936:-98
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:289:-5--35
 Uncaught exception: "#1: var x = 0; eval("// single line comment\u2028 x = 1;"); x === 1. Actual: 0"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A4_T4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-E7gVuo.js:935:-1-936:-98
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-tKgbzg.js:935:-1-936:-98
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:289:-5--35
 Uncaught exception: "#1: var x = 0; eval("// single line comment\u2029 x = 1;"); x === 1. Actual: 0"
 
 Fatal error: exception Failure("Runtime error")
@@ -334,112 +334,112 @@ ch07/7.3/S7.3_A6_T3 failed in non-strict mode as expected
 ch07/7.3/S7.3_A6_T4 failed in non-strict mode as expected
 === ch07/7.3/S7.3_A7_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-9s1OsO.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ogznfk.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A7_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-pGrGT3.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-P25csf.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A7_T3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-86jP_r.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ZnzBBV.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A7_T4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-8ce1z8.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uYIGg4.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A7_T5 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-E2WNSL.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Y2ShNl.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A7_T6 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-cGBkoy.js:962:-1--60
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-gxpeks.js:962:-1--60
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A7_T7 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ps8crP.js:962:-1--60
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-QMH4q_.js:962:-1--60
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.3/S7.3_A7_T8 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-9LOTpU.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-LCtd3p.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
@@ -506,18 +506,18 @@ ch07/7.6/S7.6_A1.2_T1 passed in non-strict mode
 ch07/7.6/S7.6_A1.2_T2 passed in non-strict mode
 === ch07/7.6/S7.6_A1.2_T3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-tfTXE5.js:932:-1-933:-132
-/tmp/test262-tfTXE5.js:932:-1-933:-132
-/tmp/test262-tfTXE5.js:932:-5--39
-/tmp/test262-tfTXE5.js:932:-5--39
-/tmp/test262-tfTXE5.js:932:-5--30
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5133:11-22
+../envs/es5.env:6:0-5370:0
+/tmp/test262-pSpEEb.js:932:-1-933:-132
+/tmp/test262-pSpEEb.js:932:-1-933:-132
+/tmp/test262-pSpEEb.js:932:-5--39
+/tmp/test262-pSpEEb.js:932:-5--39
+/tmp/test262-pSpEEb.js:932:-5--30
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5134:11-22
 Uncaught exception: "escalating configurable from false to true"
 
 Fatal error: exception Failure("Runtime error")
@@ -526,18 +526,18 @@ ch07/7.6/S7.6_A1.3_T1 passed in non-strict mode
 ch07/7.6/S7.6_A1.3_T2 passed in non-strict mode
 === ch07/7.6/S7.6_A1.3_T3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Nf1Hwq.js:932:-1-933:-132
-/tmp/test262-Nf1Hwq.js:932:-1-933:-132
-/tmp/test262-Nf1Hwq.js:932:-5--39
-/tmp/test262-Nf1Hwq.js:932:-5--39
-/tmp/test262-Nf1Hwq.js:932:-5--30
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5133:11-22
+../envs/es5.env:6:0-5370:0
+/tmp/test262-PuPe7l.js:932:-1-933:-132
+/tmp/test262-PuPe7l.js:932:-1-933:-132
+/tmp/test262-PuPe7l.js:932:-5--39
+/tmp/test262-PuPe7l.js:932:-5--39
+/tmp/test262-PuPe7l.js:932:-5--30
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5134:11-22
 Uncaught exception: "escalating configurable from false to true"
 
 Fatal error: exception Failure("Runtime error")
@@ -550,7 +550,7 @@ ch07/7.6/S7.6_A4.1_T1 passed in non-strict mode
 ch07/7.6/S7.6_A4.1_T2 passed in non-strict mode
 === ch07/7.6/S7.6_A4.2_T1 failed in non-strict mode ===
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-Nv2ruQ.js.ast:40094:21-22:
+Fatal error: exception Json_type.Json_error("/tmp/test262-5shhGa.js.ast:40094:21-22:
 Unescaped control character \u0010 or unterminated string")
 ===
 ch07/7.6/S7.6_A4.2_T2 passed in non-strict mode
@@ -777,14 +777,14 @@ ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.8 passed in non-strict mode
 ch07/7.6/7.6.1/7.6.1.2/S7.6.1.2_A1.9 failed in non-strict mode as expected
 === ch07/7.7/S7.7_A1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-t10oXo.js:934:-3--13
-../envs/es5.env:4827:38-4829:1
-../envs/es5.env:4815:38-4821:1
-../envs/es5.env:4817:4-4820:5
-../envs/es5.env:4817:37-4820:5
-../envs/es5.env:4818:1-20
-../envs/es5.env:4818:1-20
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uHcRh3.js:934:-3--13
+../envs/es5.env:4828:38-4830:1
+../envs/es5.env:4816:38-4822:1
+../envs/es5.env:4818:4-4821:5
+../envs/es5.env:4818:37-4821:5
+../envs/es5.env:4819:1-20
+../envs/es5.env:4819:1-20
 Uncaught exception: "Field not writable"
 
 Fatal error: exception Failure("Runtime error")
@@ -802,17 +802,18 @@ ch07/7.7/S7.7_A2_T9 failed in non-strict mode as expected
 ch07/7.8/7.8.1/S7.8.1_A1_T1 passed in non-strict mode
 === ch07/7.8/7.8.1/S7.8.1_A1_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-gfDLQ8.js:930:-1-931:-48
-/tmp/test262-gfDLQ8.js:930:-1-931:-48
-/tmp/test262-gfDLQ8.js:930:-5--35
-/tmp/test262-gfDLQ8.js:930:-5--35
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-A8LEdQ.js:930:-1-931:-48
+/tmp/test262-A8LEdQ.js:930:-1-931:-48
+/tmp/test262-A8LEdQ.js:930:-5--35
+/tmp/test262-A8LEdQ.js:930:-5--35
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Not a function"
 
 Fatal error: exception Failure("Runtime error")
@@ -941,7 +942,7 @@ ch07/7.8/7.8.4/S7.8.4_A2.1_T1 passed in non-strict mode
 ch07/7.8/7.8.4/S7.8.4_A2.1_T2 passed in non-strict mode
 === ch07/7.8/7.8.4/S7.8.4_A2.2_T1 failed in non-strict mode ===
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-_0Xlzr.js.ast:40123:26-27:
+Fatal error: exception Json_type.Json_error("/tmp/test262-5n0g1G.js.ast:40123:26-27:
 Unescaped control character \u0010 or unterminated string")
 ===
 ch07/7.8/7.8.4/S7.8.4_A2.2_T2 passed in non-strict mode
@@ -952,17 +953,17 @@ ch07/7.8/7.8.4/S7.8.4_A3.2_T1 failed in non-strict mode as expected
 ch07/7.8/7.8.4/S7.8.4_A3.2_T2 failed in non-strict mode as expected
 === ch07/7.8/7.8.4/S7.8.4_A4.1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-04L41T.js:945:-1-946:-55
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-34DLCe.js:945:-1-946:-55
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:289:-5--35
 Uncaught exception: "#4: String.fromCharCode(0x000B) === "\v""
 
 Fatal error: exception Failure("Runtime error")
@@ -974,12 +975,12 @@ ch07/7.8/7.8.4/S7.8.4_A4.2_T3 passed in non-strict mode
 ch07/7.8/7.8.4/S7.8.4_A4.2_T4 passed in non-strict mode
 === ch07/7.8/7.8.4/S7.8.4_A4.2_T5 failed in non-strict mode ===
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-iYiIlZ.js.ast:40680:26-27:
+Fatal error: exception Json_type.Json_error("/tmp/test262-UaBr1w.js.ast:40680:26-27:
 Unescaped control character \u0010 or unterminated string")
 ===
 === ch07/7.8/7.8.4/S7.8.4_A4.2_T6 failed in non-strict mode ===
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-bnEO6Z.js.ast:40093:20-21:
+Fatal error: exception Json_type.Json_error("/tmp/test262-IU2AdF.js.ast:40093:20-21:
 Unescaped control character \u0010 or unterminated string")
 ===
 === ch07/7.8/7.8.4/S7.8.4_A4.2_T7 failed in non-strict mode ===
@@ -992,17 +993,17 @@ ch07/7.8/7.8.4/S7.8.4_A4.3_T2 failed in strict mode as expected
 ch07/7.8/7.8.4/S7.8.4_A4.3_T7 passed in non-strict mode
 === ch07/7.8/7.8.4/S7.8.4_A5.1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-OEEYvL.js:930:-1-931:-55
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-rHIQ5O.js:930:-1-931:-55
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:289:-5--35
 Uncaught exception: "#1: String.fromCharCode(0x0000) === "\0""
 
 Fatal error: exception Failure("Runtime error")
@@ -1011,17 +1012,17 @@ ch07/7.8/7.8.4/S7.8.4_A5.1_T2 passed in non-strict mode
 ch07/7.8/7.8.4/S7.8.4_A5.1_T3 passed in non-strict mode
 === ch07/7.8/7.8.4/S7.8.4_A6.1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-yKPsuu.js:930:-1-931:-54
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-GtMugX.js:930:-1-931:-54
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:289:-5--35
 Uncaught exception: "#0: "\x00" === String.fromCharCode("0")"
 
 Fatal error: exception Failure("Runtime error")
@@ -1030,34 +1031,34 @@ ch07/7.8/7.8.4/S7.8.4_A6.1_T2 passed in non-strict mode
 ch07/7.8/7.8.4/S7.8.4_A6.1_T3 passed in non-strict mode
 === ch07/7.8/7.8.4/S7.8.4_A6.3_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-R0XhVs.js:930:-1-931:-60
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-JY0k9Z.js:930:-1-931:-60
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:289:-5--35
 Uncaught exception: "#1: 'SYNTAX ERROR"IF NOT" IN A COMMENTF' === String.fromCharCode('1') + 'F'"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.4/S7.8.4_A7.1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Jaagr_.js:930:-1-931:-56
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5xNDOX.js:930:-1-931:-56
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:289:-5--35
 Uncaught exception: "#0: "\u0000" === String.fromCharCode("0")"
 
 Fatal error: exception Failure("Runtime error")
@@ -1073,17 +1074,17 @@ ch07/7.8/7.8.4/S7.8.4_A7.2_T5 failed in non-strict mode as expected
 ch07/7.8/7.8.4/S7.8.4_A7.2_T6 failed in non-strict mode as expected
 === ch07/7.8/7.8.4/S7.8.4_A7.3_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-HaqVAl.js:930:-1-931:-63
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Eg6sPd.js:930:-1-931:-63
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:289:-5--35
 Uncaught exception: "#1: "\u0001F" === String.fromCharCode("1") + "F""
 
 Fatal error: exception Failure("Runtime error")
@@ -1093,46 +1094,46 @@ ch07/7.8/7.8.5/7.8.5-1gs failed in non-strict mode as expected
 ch07/7.8/7.8.5/7.8.5-2gs passed in non-strict mode
 === ch07/7.8/7.8.5/S7.8.5_A1.1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-L0WxqG.js:930:-1-931:-21
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Lnohit.js:930:-1-931:-21
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:289:-5--35
 Uncaught exception: "#1: /1/"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A1.1_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-qVn9vq.js:933:-1-966:-4
-/tmp/test262-qVn9vq.js:933:-1-966:-4
-/tmp/test262-qVn9vq.js:934:-3-965:-6
-/tmp/test262-qVn9vq.js:934:-3-965:-6
-/tmp/test262-qVn9vq.js:935:-5-964:-8
-/tmp/test262-qVn9vq.js:935:-5-964:-8
-/tmp/test262-qVn9vq.js:936:-7-963:-17
-/tmp/test262-qVn9vq.js:936:-7-963:-17
-/tmp/test262-qVn9vq.js:936:-39-963:-17
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-pdfBsE.js:933:-1-966:-4
+/tmp/test262-pdfBsE.js:933:-1-966:-4
+/tmp/test262-pdfBsE.js:934:-3-965:-6
+/tmp/test262-pdfBsE.js:934:-3-965:-6
+/tmp/test262-pdfBsE.js:935:-5-964:-8
+/tmp/test262-pdfBsE.js:935:-5-964:-8
+/tmp/test262-pdfBsE.js:936:-7-963:-17
+/tmp/test262-pdfBsE.js:936:-7-963:-17
+/tmp/test262-pdfBsE.js:936:-39-963:-17
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
@@ -1149,46 +1150,46 @@ ch07/7.8/7.8.5/S7.8.5_A1.3_T5 passed in non-strict mode
 ch07/7.8/7.8.5/S7.8.5_A1.3_T6 passed in non-strict mode
 === ch07/7.8/7.8.5/S7.8.5_A1.4_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-yXXMSA.js:930:-1-931:-23
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-mOVgYC.js:930:-1-931:-23
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:289:-5--35
 Uncaught exception: "#1: /\1/"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A1.4_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Lk1XUa.js:933:-1-966:-4
-/tmp/test262-Lk1XUa.js:933:-1-966:-4
-/tmp/test262-Lk1XUa.js:934:-3-965:-6
-/tmp/test262-Lk1XUa.js:934:-3-965:-6
-/tmp/test262-Lk1XUa.js:935:-5-964:-8
-/tmp/test262-Lk1XUa.js:935:-5-964:-8
-/tmp/test262-Lk1XUa.js:936:-7-963:-17
-/tmp/test262-Lk1XUa.js:936:-7-963:-17
-/tmp/test262-Lk1XUa.js:936:-39-963:-17
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-r4pX_U.js:933:-1-966:-4
+/tmp/test262-r4pX_U.js:933:-1-966:-4
+/tmp/test262-r4pX_U.js:934:-3-965:-6
+/tmp/test262-r4pX_U.js:934:-3-965:-6
+/tmp/test262-r4pX_U.js:935:-5-964:-8
+/tmp/test262-r4pX_U.js:935:-5-964:-8
+/tmp/test262-r4pX_U.js:936:-7-963:-17
+/tmp/test262-r4pX_U.js:936:-7-963:-17
+/tmp/test262-r4pX_U.js:936:-39-963:-17
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
@@ -1199,86 +1200,86 @@ ch07/7.8/7.8.5/S7.8.5_A1.5_T3 failed in non-strict mode as expected
 ch07/7.8/7.8.5/S7.8.5_A1.5_T4 passed in non-strict mode
 === ch07/7.8/7.8.5/S7.8.5_A1.5_T5 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-njA6sO.js:930:-1--4
-/tmp/test262-njA6sO.js:930:-1--4
-/tmp/test262-njA6sO.js:930:-1--4
-/tmp/test262-njA6sO.js:935:-3-936:-119
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-V3Ot0W.js:930:-1--4
+/tmp/test262-V3Ot0W.js:930:-1--4
+/tmp/test262-V3Ot0W.js:930:-1--4
+/tmp/test262-V3Ot0W.js:935:-3-936:-119
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionFirstChar :: BackslashSequence :: \Line separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionFirstChar :: BackslashSequence :: \Line separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A1.5_T6 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-vZ6uIv.js:930:-1--4
-/tmp/test262-vZ6uIv.js:930:-1--4
-/tmp/test262-vZ6uIv.js:930:-1--4
-/tmp/test262-vZ6uIv.js:935:-3-936:-124
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Mm6ySA.js:930:-1--4
+/tmp/test262-Mm6ySA.js:930:-1--4
+/tmp/test262-Mm6ySA.js:930:-1--4
+/tmp/test262-Mm6ySA.js:935:-3-936:-124
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionFirstChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionFirstChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A2.1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-h_031p.js:930:-1-931:-22
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-c2P_20.js:930:-1-931:-22
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:289:-5--35
 Uncaught exception: "#1: /1a/"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A2.1_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-SfYYDJ.js:933:-1-967:-4
-/tmp/test262-SfYYDJ.js:933:-1-967:-4
-/tmp/test262-SfYYDJ.js:934:-3-966:-6
-/tmp/test262-SfYYDJ.js:934:-3-966:-6
-/tmp/test262-SfYYDJ.js:935:-5-965:-8
-/tmp/test262-SfYYDJ.js:935:-5-965:-8
-/tmp/test262-SfYYDJ.js:936:-7-964:-17
-/tmp/test262-SfYYDJ.js:936:-7-964:-17
-/tmp/test262-SfYYDJ.js:936:-39-964:-17
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7DGij3.js:933:-1-967:-4
+/tmp/test262-7DGij3.js:933:-1-967:-4
+/tmp/test262-7DGij3.js:934:-3-966:-6
+/tmp/test262-7DGij3.js:934:-3-966:-6
+/tmp/test262-7DGij3.js:935:-5-965:-8
+/tmp/test262-7DGij3.js:935:-5-965:-8
+/tmp/test262-7DGij3.js:936:-7-964:-17
+/tmp/test262-7DGij3.js:936:-7-964:-17
+/tmp/test262-7DGij3.js:936:-39-964:-17
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
@@ -1293,46 +1294,46 @@ ch07/7.8/7.8.5/S7.8.5_A2.3_T5 passed in non-strict mode
 ch07/7.8/7.8.5/S7.8.5_A2.3_T6 passed in non-strict mode
 === ch07/7.8/7.8.5/S7.8.5_A2.4_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-CeCT8X.js:930:-1-931:-24
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9OP1X8.js:930:-1-931:-24
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:289:-5--35
 Uncaught exception: "#1: /a\1/"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A2.4_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-0zMprs.js:933:-1-966:-4
-/tmp/test262-0zMprs.js:933:-1-966:-4
-/tmp/test262-0zMprs.js:934:-3-965:-6
-/tmp/test262-0zMprs.js:934:-3-965:-6
-/tmp/test262-0zMprs.js:935:-5-964:-8
-/tmp/test262-0zMprs.js:935:-5-964:-8
-/tmp/test262-0zMprs.js:936:-7-963:-17
-/tmp/test262-0zMprs.js:936:-7-963:-17
-/tmp/test262-0zMprs.js:936:-39-963:-17
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-h3Kbkn.js:933:-1-966:-4
+/tmp/test262-h3Kbkn.js:933:-1-966:-4
+/tmp/test262-h3Kbkn.js:934:-3-965:-6
+/tmp/test262-h3Kbkn.js:934:-3-965:-6
+/tmp/test262-h3Kbkn.js:935:-5-964:-8
+/tmp/test262-h3Kbkn.js:935:-5-964:-8
+/tmp/test262-h3Kbkn.js:936:-7-963:-17
+/tmp/test262-h3Kbkn.js:936:-7-963:-17
+/tmp/test262-h3Kbkn.js:936:-39-963:-17
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
@@ -1343,193 +1344,193 @@ ch07/7.8/7.8.5/S7.8.5_A2.5_T3 failed in non-strict mode as expected
 ch07/7.8/7.8.5/S7.8.5_A2.5_T4 passed in non-strict mode
 === ch07/7.8/7.8.5/S7.8.5_A2.5_T5 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-3Vy_dA.js:930:-1--4
-/tmp/test262-3Vy_dA.js:930:-1--4
-/tmp/test262-3Vy_dA.js:930:-1--4
-/tmp/test262-3Vy_dA.js:935:-3-936:-114
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-h02FV8.js:930:-1--4
+/tmp/test262-h02FV8.js:930:-1--4
+/tmp/test262-h02FV8.js:930:-1--4
+/tmp/test262-h02FV8.js:935:-3-936:-114
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionChar :: BackslashSequence :: \Line separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionChar :: BackslashSequence :: \Line separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A2.5_T6 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Kq0auf.js:930:-1--4
-/tmp/test262-Kq0auf.js:930:-1--4
-/tmp/test262-Kq0auf.js:930:-1--4
-/tmp/test262-Kq0auf.js:935:-3-936:-119
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-j1TYXa.js:930:-1--4
+/tmp/test262-j1TYXa.js:930:-1--4
+/tmp/test262-j1TYXa.js:930:-1--4
+/tmp/test262-j1TYXa.js:935:-3-936:-119
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T1 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-4Ozm_Y.js:931:-1-932:-90
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-FTEli9.js:931:-1-932:-90
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T2 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-6jCWF4.js:931:-1-932:-91
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-IcEH62.js:931:-1-932:-91
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === false. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T3 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-LiD6x8.js:931:-1-932:-91
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WIzVg_.js:931:-1-932:-91
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === false. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T4 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-RJ5yTe.js:931:-1-932:-90
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-1xvsg8.js:931:-1-932:-90
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T5 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-qC8FiS.js:931:-1-932:-90
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-8i3fYN.js:931:-1-932:-90
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T6 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-gFk6pZ.js:931:-1-932:-90
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-G7n2LT.js:931:-1-932:-90
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T7 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ipyc5I.js:932:-1-933:-96
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-00zCzP.js:932:-1-933:-96
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/\u0067; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T8 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-eM6ZHU.js:932:-1-933:-104
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-4niZpO.js:932:-1-933:-104
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/\u0069; regexp.ignoreCase === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 ===
 === ch07/7.8/7.8.5/S7.8.5_A3.1_T9 failed in non-strict mode ===
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-DImFiu.js:932:-1-933:-102
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-kP7n0A.js:932:-1-933:-102
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/\u006D; regexp.multiline === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
@@ -1716,28 +1717,28 @@ Expected to fail but passed ---
 
 ch07/7.2/S7.2_A1.2_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-IrIKLe.js:930:-1--45
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-LAhXK3.js:930:-1--45
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.2/S7.2_A1.2_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-WyMS5P.js:936:-1--22
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-R1BLZ9.js:936:-1--22
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
@@ -1769,94 +1770,94 @@ Empty data")
 
 ch07/7.3/7.3-1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:933:-1--22
-/tmp/test262-7ZgInX.js:901:-5-902:-54
-/tmp/test262-7ZgInX.js:901:-5-902:-54
-/tmp/test262-7ZgInX.js:901:-9--28
-/tmp/test262-7ZgInX.js:901:-9--28
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:901:-9--19
-/tmp/test262-7ZgInX.js:930:-9--46
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:933:-1--22
+/tmp/test262-aeORDT.js:901:-5-902:-54
+/tmp/test262-aeORDT.js:901:-5-902:-54
+/tmp/test262-aeORDT.js:901:-9--28
+/tmp/test262-aeORDT.js:901:-9--28
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:901:-9--19
+/tmp/test262-aeORDT.js:930:-9--46
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/7.3-2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:933:-1--22
-/tmp/test262-9PwG43.js:901:-5-902:-54
-/tmp/test262-9PwG43.js:901:-5-902:-54
-/tmp/test262-9PwG43.js:901:-9--28
-/tmp/test262-9PwG43.js:901:-9--28
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:901:-9--19
-/tmp/test262-9PwG43.js:930:-9--46
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:933:-1--22
+/tmp/test262-9jvFC9.js:901:-5-902:-54
+/tmp/test262-9jvFC9.js:901:-5-902:-54
+/tmp/test262-9jvFC9.js:901:-9--28
+/tmp/test262-9jvFC9.js:901:-9--28
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:901:-9--19
+/tmp/test262-9jvFC9.js:930:-9--46
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/7.3-3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:937:-1--22
-/tmp/test262-aMaIun.js:901:-5-902:-54
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:902:-9--53
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:305:-5--24
-/tmp/test262-aMaIun.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:937:-1--22
+/tmp/test262-4qdHno.js:901:-5-902:-54
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:902:-9--53
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:305:-5--24
+/tmp/test262-4qdHno.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/7.3-4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:937:-1--22
-/tmp/test262-1OiAcs.js:901:-5-902:-54
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:902:-9--53
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:305:-5--24
-/tmp/test262-1OiAcs.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:937:-1--22
+/tmp/test262-oziDNP.js:901:-5-902:-54
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:902:-9--53
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:305:-5--24
+/tmp/test262-oziDNP.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -1865,21 +1866,21 @@ ch07/7.3/7.3-7 in non-strict mode:
 --- output ---
 You used the es5.env testlambda.  Are you sure you didn't forget to include the regexp.js library, or regexp.env?
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:938:-1--22
-/tmp/test262-UvXZZW.js:901:-5-902:-54
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:902:-9--53
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:305:-5--24
-/tmp/test262-UvXZZW.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:938:-1--22
+/tmp/test262-5NJuye.js:901:-5-902:-54
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:902:-9--53
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:305:-5--24
+/tmp/test262-5NJuye.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
@@ -1888,49 +1889,49 @@ ch07/7.3/7.3-8 in non-strict mode:
 --- output ---
 You used the es5.env testlambda.  Are you sure you didn't forget to include the regexp.js library, or regexp.env?
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:938:-1--22
-/tmp/test262-Ckl0Qr.js:901:-5-902:-54
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:902:-9--53
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:305:-5--24
-/tmp/test262-Ckl0Qr.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:938:-1--22
+/tmp/test262-6ql_2_.js:901:-5-902:-54
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:902:-9--53
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:305:-5--24
+/tmp/test262-6ql_2_.js:289:-5--35
 Uncaught exception: "Test case returned non-true value!"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A1.3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-xXj8yg.js:930:-1--45
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fOr_Vs.js:930:-1--45
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A1.4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ZJ2Y9M.js:930:-1--45
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-MXAgtk.js:930:-1--45
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
@@ -1945,146 +1946,146 @@ Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A4_T3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-zaX7pz.js:935:-1-936:-98
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:936:-3--97
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:305:-5--24
-/tmp/test262-zaX7pz.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-asp_1u.js:935:-1-936:-98
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:936:-3--97
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:305:-5--24
+/tmp/test262-asp_1u.js:289:-5--35
 Uncaught exception: "#1: var x = 0; eval("// single line comment\u2028 x = 1;"); x === 1. Actual: 0"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A4_T4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-E7gVuo.js:935:-1-936:-98
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:936:-3--97
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:305:-5--24
-/tmp/test262-E7gVuo.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-tKgbzg.js:935:-1-936:-98
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:936:-3--97
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:305:-5--24
+/tmp/test262-tKgbzg.js:289:-5--35
 Uncaught exception: "#1: var x = 0; eval("// single line comment\u2029 x = 1;"); x === 1. Actual: 0"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-9s1OsO.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ogznfk.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-pGrGT3.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-P25csf.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-86jP_r.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ZnzBBV.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-8ce1z8.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uYIGg4.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T5 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-E2WNSL.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Y2ShNl.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T6 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-cGBkoy.js:962:-1--60
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-gxpeks.js:962:-1--60
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T7 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ps8crP.js:962:-1--60
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-QMH4q_.js:962:-1--60
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.3/S7.3_A7_T8 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-9LOTpU.js:962:-1--59
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5128:28-5132:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-LCtd3p.js:962:-1--59
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5129:28-5133:7
 Uncaught exception: "Eval threw a syntax error"
 
 Fatal error: exception Failure("Runtime error")
@@ -2101,106 +2102,107 @@ Empty data")
 
 ch07/7.6/S7.6_A1.2_T3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-tfTXE5.js:932:-1-933:-132
-/tmp/test262-tfTXE5.js:932:-1-933:-132
-/tmp/test262-tfTXE5.js:932:-5--39
-/tmp/test262-tfTXE5.js:932:-5--39
-/tmp/test262-tfTXE5.js:932:-5--30
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5133:11-22
+../envs/es5.env:6:0-5370:0
+/tmp/test262-pSpEEb.js:932:-1-933:-132
+/tmp/test262-pSpEEb.js:932:-1-933:-132
+/tmp/test262-pSpEEb.js:932:-5--39
+/tmp/test262-pSpEEb.js:932:-5--39
+/tmp/test262-pSpEEb.js:932:-5--30
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5134:11-22
 Uncaught exception: "escalating configurable from false to true"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.6/S7.6_A1.3_T3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Nf1Hwq.js:932:-1-933:-132
-/tmp/test262-Nf1Hwq.js:932:-1-933:-132
-/tmp/test262-Nf1Hwq.js:932:-5--39
-/tmp/test262-Nf1Hwq.js:932:-5--39
-/tmp/test262-Nf1Hwq.js:932:-5--30
-../envs/es5.env:5145:65-5152:1
-../envs/es5.env:5147:2-5151:3
-../envs/es5.env:5147:29-5149:3
-../envs/es5.env:5101:71-5137:1
-../envs/es5.env:5127:12-5134:5
-../envs/es5.env:5133:11-22
+../envs/es5.env:6:0-5370:0
+/tmp/test262-PuPe7l.js:932:-1-933:-132
+/tmp/test262-PuPe7l.js:932:-1-933:-132
+/tmp/test262-PuPe7l.js:932:-5--39
+/tmp/test262-PuPe7l.js:932:-5--39
+/tmp/test262-PuPe7l.js:932:-5--30
+../envs/es5.env:5146:65-5153:1
+../envs/es5.env:5148:2-5152:3
+../envs/es5.env:5148:29-5150:3
+../envs/es5.env:5102:71-5138:1
+../envs/es5.env:5128:12-5135:5
+../envs/es5.env:5134:11-22
 Uncaught exception: "escalating configurable from false to true"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.6/S7.6_A4.2_T1 in non-strict mode: 
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-Nv2ruQ.js.ast:40094:21-22:
+Fatal error: exception Json_type.Json_error("/tmp/test262-5shhGa.js.ast:40094:21-22:
 Unescaped control character \u0010 or unterminated string")
 
 ch07/7.7/S7.7_A1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-t10oXo.js:934:-3--13
-../envs/es5.env:4827:38-4829:1
-../envs/es5.env:4815:38-4821:1
-../envs/es5.env:4817:4-4820:5
-../envs/es5.env:4817:37-4820:5
-../envs/es5.env:4818:1-20
-../envs/es5.env:4818:1-20
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uHcRh3.js:934:-3--13
+../envs/es5.env:4828:38-4830:1
+../envs/es5.env:4816:38-4822:1
+../envs/es5.env:4818:4-4821:5
+../envs/es5.env:4818:37-4821:5
+../envs/es5.env:4819:1-20
+../envs/es5.env:4819:1-20
 Uncaught exception: "Field not writable"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.1/S7.8.1_A1_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-gfDLQ8.js:930:-1-931:-48
-/tmp/test262-gfDLQ8.js:930:-1-931:-48
-/tmp/test262-gfDLQ8.js:930:-5--35
-/tmp/test262-gfDLQ8.js:930:-5--35
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-/tmp/test262-gfDLQ8.js:930:-5--26
-../envs/es5.env:29:40-32:7
+../envs/es5.env:6:0-5370:0
+/tmp/test262-A8LEdQ.js:930:-1-931:-48
+/tmp/test262-A8LEdQ.js:930:-1-931:-48
+/tmp/test262-A8LEdQ.js:930:-5--35
+/tmp/test262-A8LEdQ.js:930:-5--35
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+/tmp/test262-A8LEdQ.js:930:-5--26
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
 Uncaught exception: "Not a function"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.4/S7.8.4_A2.2_T1 in non-strict mode: 
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-_0Xlzr.js.ast:40123:26-27:
+Fatal error: exception Json_type.Json_error("/tmp/test262-5n0g1G.js.ast:40123:26-27:
 Unescaped control character \u0010 or unterminated string")
 
 ch07/7.8/7.8.4/S7.8.4_A4.1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-04L41T.js:945:-1-946:-55
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:946:-3--54
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:305:-5--24
-/tmp/test262-04L41T.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-34DLCe.js:945:-1-946:-55
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:946:-3--54
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:305:-5--24
+/tmp/test262-34DLCe.js:289:-5--35
 Uncaught exception: "#4: String.fromCharCode(0x000B) === "\v""
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.4/S7.8.4_A4.2_T5 in non-strict mode: 
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-iYiIlZ.js.ast:40680:26-27:
+Fatal error: exception Json_type.Json_error("/tmp/test262-UaBr1w.js.ast:40680:26-27:
 Unescaped control character \u0010 or unterminated string")
 
 ch07/7.8/7.8.4/S7.8.4_A4.2_T6 in non-strict mode: 
 --- errors ---
-Fatal error: exception Json_type.Json_error("/tmp/test262-bnEO6Z.js.ast:40093:20-21:
+Fatal error: exception Json_type.Json_error("/tmp/test262-IU2AdF.js.ast:40093:20-21:
 Unescaped control character \u0010 or unterminated string")
 
 ch07/7.8/7.8.4/S7.8.4_A4.2_T7 in non-strict mode: 
@@ -2209,502 +2211,502 @@ Fatal error: exception Invalid_argument("Char.chr")
 
 ch07/7.8/7.8.4/S7.8.4_A5.1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-OEEYvL.js:930:-1-931:-55
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:931:-3--54
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:305:-5--24
-/tmp/test262-OEEYvL.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-rHIQ5O.js:930:-1-931:-55
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:931:-3--54
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:305:-5--24
+/tmp/test262-rHIQ5O.js:289:-5--35
 Uncaught exception: "#1: String.fromCharCode(0x0000) === "\0""
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.4/S7.8.4_A6.1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-yKPsuu.js:930:-1-931:-54
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:931:-3--53
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:305:-5--24
-/tmp/test262-yKPsuu.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-GtMugX.js:930:-1-931:-54
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:931:-3--53
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:305:-5--24
+/tmp/test262-GtMugX.js:289:-5--35
 Uncaught exception: "#0: "\x00" === String.fromCharCode("0")"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.4/S7.8.4_A6.3_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-R0XhVs.js:930:-1-931:-60
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:931:-3--59
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:305:-5--24
-/tmp/test262-R0XhVs.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-JY0k9Z.js:930:-1-931:-60
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:931:-3--59
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:305:-5--24
+/tmp/test262-JY0k9Z.js:289:-5--35
 Uncaught exception: "#1: 'SYNTAX ERROR"IF NOT" IN A COMMENTF' === String.fromCharCode('1') + 'F'"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.4/S7.8.4_A7.1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Jaagr_.js:930:-1-931:-56
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:931:-3--55
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:305:-5--24
-/tmp/test262-Jaagr_.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5xNDOX.js:930:-1-931:-56
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:931:-3--55
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:305:-5--24
+/tmp/test262-5xNDOX.js:289:-5--35
 Uncaught exception: "#0: "\u0000" === String.fromCharCode("0")"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.4/S7.8.4_A7.3_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-HaqVAl.js:930:-1-931:-63
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:931:-3--62
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:305:-5--24
-/tmp/test262-HaqVAl.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Eg6sPd.js:930:-1-931:-63
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:931:-3--62
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:305:-5--24
+/tmp/test262-Eg6sPd.js:289:-5--35
 Uncaught exception: "#1: "\u0001F" === String.fromCharCode("1") + "F""
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A1.1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-L0WxqG.js:930:-1-931:-21
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:931:-3--20
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:305:-5--24
-/tmp/test262-L0WxqG.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Lnohit.js:930:-1-931:-21
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:931:-3--20
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:305:-5--24
+/tmp/test262-Lnohit.js:289:-5--35
 Uncaught exception: "#1: /1/"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A1.1_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-qVn9vq.js:933:-1-966:-4
-/tmp/test262-qVn9vq.js:933:-1-966:-4
-/tmp/test262-qVn9vq.js:934:-3-965:-6
-/tmp/test262-qVn9vq.js:934:-3-965:-6
-/tmp/test262-qVn9vq.js:935:-5-964:-8
-/tmp/test262-qVn9vq.js:935:-5-964:-8
-/tmp/test262-qVn9vq.js:936:-7-963:-17
-/tmp/test262-qVn9vq.js:936:-7-963:-17
-/tmp/test262-qVn9vq.js:936:-39-963:-17
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:937:-9--12
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:960:-11--33
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:305:-5--24
-/tmp/test262-qVn9vq.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-pdfBsE.js:933:-1-966:-4
+/tmp/test262-pdfBsE.js:933:-1-966:-4
+/tmp/test262-pdfBsE.js:934:-3-965:-6
+/tmp/test262-pdfBsE.js:934:-3-965:-6
+/tmp/test262-pdfBsE.js:935:-5-964:-8
+/tmp/test262-pdfBsE.js:935:-5-964:-8
+/tmp/test262-pdfBsE.js:936:-7-963:-17
+/tmp/test262-pdfBsE.js:936:-7-963:-17
+/tmp/test262-pdfBsE.js:936:-39-963:-17
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:937:-9--12
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:960:-11--33
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:305:-5--24
+/tmp/test262-pdfBsE.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A1.4_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-yXXMSA.js:930:-1-931:-23
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:931:-3--22
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:305:-5--24
-/tmp/test262-yXXMSA.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-mOVgYC.js:930:-1-931:-23
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:931:-3--22
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:305:-5--24
+/tmp/test262-mOVgYC.js:289:-5--35
 Uncaught exception: "#1: /\1/"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A1.4_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Lk1XUa.js:933:-1-966:-4
-/tmp/test262-Lk1XUa.js:933:-1-966:-4
-/tmp/test262-Lk1XUa.js:934:-3-965:-6
-/tmp/test262-Lk1XUa.js:934:-3-965:-6
-/tmp/test262-Lk1XUa.js:935:-5-964:-8
-/tmp/test262-Lk1XUa.js:935:-5-964:-8
-/tmp/test262-Lk1XUa.js:936:-7-963:-17
-/tmp/test262-Lk1XUa.js:936:-7-963:-17
-/tmp/test262-Lk1XUa.js:936:-39-963:-17
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:937:-9--12
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:960:-11--33
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:305:-5--24
-/tmp/test262-Lk1XUa.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-r4pX_U.js:933:-1-966:-4
+/tmp/test262-r4pX_U.js:933:-1-966:-4
+/tmp/test262-r4pX_U.js:934:-3-965:-6
+/tmp/test262-r4pX_U.js:934:-3-965:-6
+/tmp/test262-r4pX_U.js:935:-5-964:-8
+/tmp/test262-r4pX_U.js:935:-5-964:-8
+/tmp/test262-r4pX_U.js:936:-7-963:-17
+/tmp/test262-r4pX_U.js:936:-7-963:-17
+/tmp/test262-r4pX_U.js:936:-39-963:-17
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:937:-9--12
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:960:-11--33
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:305:-5--24
+/tmp/test262-r4pX_U.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A1.5_T5 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-njA6sO.js:930:-1--4
-/tmp/test262-njA6sO.js:930:-1--4
-/tmp/test262-njA6sO.js:930:-1--4
-/tmp/test262-njA6sO.js:935:-3-936:-119
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:936:-6--118
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:305:-5--24
-/tmp/test262-njA6sO.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-V3Ot0W.js:930:-1--4
+/tmp/test262-V3Ot0W.js:930:-1--4
+/tmp/test262-V3Ot0W.js:930:-1--4
+/tmp/test262-V3Ot0W.js:935:-3-936:-119
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:936:-6--118
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:305:-5--24
+/tmp/test262-V3Ot0W.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionFirstChar :: BackslashSequence :: \Line separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionFirstChar :: BackslashSequence :: \Line separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A1.5_T6 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-vZ6uIv.js:930:-1--4
-/tmp/test262-vZ6uIv.js:930:-1--4
-/tmp/test262-vZ6uIv.js:930:-1--4
-/tmp/test262-vZ6uIv.js:935:-3-936:-124
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:936:-6--123
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:305:-5--24
-/tmp/test262-vZ6uIv.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Mm6ySA.js:930:-1--4
+/tmp/test262-Mm6ySA.js:930:-1--4
+/tmp/test262-Mm6ySA.js:930:-1--4
+/tmp/test262-Mm6ySA.js:935:-3-936:-124
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:936:-6--123
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:305:-5--24
+/tmp/test262-Mm6ySA.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionFirstChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionFirstChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A2.1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-h_031p.js:930:-1-931:-22
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:931:-3--21
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:305:-5--24
-/tmp/test262-h_031p.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-c2P_20.js:930:-1-931:-22
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:931:-3--21
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:305:-5--24
+/tmp/test262-c2P_20.js:289:-5--35
 Uncaught exception: "#1: /1a/"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A2.1_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-SfYYDJ.js:933:-1-967:-4
-/tmp/test262-SfYYDJ.js:933:-1-967:-4
-/tmp/test262-SfYYDJ.js:934:-3-966:-6
-/tmp/test262-SfYYDJ.js:934:-3-966:-6
-/tmp/test262-SfYYDJ.js:935:-5-965:-8
-/tmp/test262-SfYYDJ.js:935:-5-965:-8
-/tmp/test262-SfYYDJ.js:936:-7-964:-17
-/tmp/test262-SfYYDJ.js:936:-7-964:-17
-/tmp/test262-SfYYDJ.js:936:-39-964:-17
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:937:-9--12
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:961:-11--33
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:305:-5--24
-/tmp/test262-SfYYDJ.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7DGij3.js:933:-1-967:-4
+/tmp/test262-7DGij3.js:933:-1-967:-4
+/tmp/test262-7DGij3.js:934:-3-966:-6
+/tmp/test262-7DGij3.js:934:-3-966:-6
+/tmp/test262-7DGij3.js:935:-5-965:-8
+/tmp/test262-7DGij3.js:935:-5-965:-8
+/tmp/test262-7DGij3.js:936:-7-964:-17
+/tmp/test262-7DGij3.js:936:-7-964:-17
+/tmp/test262-7DGij3.js:936:-39-964:-17
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:937:-9--12
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:961:-11--33
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:305:-5--24
+/tmp/test262-7DGij3.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A2.4_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-CeCT8X.js:930:-1-931:-24
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:931:-3--23
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:305:-5--24
-/tmp/test262-CeCT8X.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9OP1X8.js:930:-1-931:-24
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:931:-3--23
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:305:-5--24
+/tmp/test262-9OP1X8.js:289:-5--35
 Uncaught exception: "#1: /a\1/"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A2.4_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-0zMprs.js:933:-1-966:-4
-/tmp/test262-0zMprs.js:933:-1-966:-4
-/tmp/test262-0zMprs.js:934:-3-965:-6
-/tmp/test262-0zMprs.js:934:-3-965:-6
-/tmp/test262-0zMprs.js:935:-5-964:-8
-/tmp/test262-0zMprs.js:935:-5-964:-8
-/tmp/test262-0zMprs.js:936:-7-963:-17
-/tmp/test262-0zMprs.js:936:-7-963:-17
-/tmp/test262-0zMprs.js:936:-39-963:-17
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:937:-9--12
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:960:-11--33
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:305:-5--24
-/tmp/test262-0zMprs.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-h3Kbkn.js:933:-1-966:-4
+/tmp/test262-h3Kbkn.js:933:-1-966:-4
+/tmp/test262-h3Kbkn.js:934:-3-965:-6
+/tmp/test262-h3Kbkn.js:934:-3-965:-6
+/tmp/test262-h3Kbkn.js:935:-5-964:-8
+/tmp/test262-h3Kbkn.js:935:-5-964:-8
+/tmp/test262-h3Kbkn.js:936:-7-963:-17
+/tmp/test262-h3Kbkn.js:936:-7-963:-17
+/tmp/test262-h3Kbkn.js:936:-39-963:-17
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:937:-9--12
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:960:-11--33
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:305:-5--24
+/tmp/test262-h3Kbkn.js:289:-5--35
 Uncaught exception: "#0000 "
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A2.5_T5 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-3Vy_dA.js:930:-1--4
-/tmp/test262-3Vy_dA.js:930:-1--4
-/tmp/test262-3Vy_dA.js:930:-1--4
-/tmp/test262-3Vy_dA.js:935:-3-936:-114
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:936:-6--113
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:305:-5--24
-/tmp/test262-3Vy_dA.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-h02FV8.js:930:-1--4
+/tmp/test262-h02FV8.js:930:-1--4
+/tmp/test262-h02FV8.js:930:-1--4
+/tmp/test262-h02FV8.js:935:-3-936:-114
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:936:-6--113
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:305:-5--24
+/tmp/test262-h02FV8.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionChar :: BackslashSequence :: \Line separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionChar :: BackslashSequence :: \Line separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A2.5_T6 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-Kq0auf.js:930:-1--4
-/tmp/test262-Kq0auf.js:930:-1--4
-/tmp/test262-Kq0auf.js:930:-1--4
-/tmp/test262-Kq0auf.js:935:-3-936:-119
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:936:-6--118
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:305:-5--24
-/tmp/test262-Kq0auf.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-j1TYXa.js:930:-1--4
+/tmp/test262-j1TYXa.js:930:-1--4
+/tmp/test262-j1TYXa.js:930:-1--4
+/tmp/test262-j1TYXa.js:935:-3-936:-119
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:936:-6--118
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:305:-5--24
+/tmp/test262-j1TYXa.js:289:-5--35
 Uncaught exception: "#1.2: RegularExpressionChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: Test262 Error: #1.1: RegularExpressionChar :: BackslashSequence :: \Paragraph separator is incorrect. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T1 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-4Ozm_Y.js:931:-1-932:-90
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:932:-3--89
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:305:-5--24
-/tmp/test262-4Ozm_Y.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-FTEli9.js:931:-1-932:-90
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:932:-3--89
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:305:-5--24
+/tmp/test262-FTEli9.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T2 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-6jCWF4.js:931:-1-932:-91
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:932:-3--90
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:305:-5--24
-/tmp/test262-6jCWF4.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-IcEH62.js:931:-1-932:-91
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:932:-3--90
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:305:-5--24
+/tmp/test262-IcEH62.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === false. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T3 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-LiD6x8.js:931:-1-932:-91
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:932:-3--90
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:305:-5--24
-/tmp/test262-LiD6x8.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WIzVg_.js:931:-1-932:-91
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:932:-3--90
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:305:-5--24
+/tmp/test262-WIzVg_.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === false. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T4 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-RJ5yTe.js:931:-1-932:-90
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:932:-3--89
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:305:-5--24
-/tmp/test262-RJ5yTe.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-1xvsg8.js:931:-1-932:-90
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:932:-3--89
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:305:-5--24
+/tmp/test262-1xvsg8.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T5 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-qC8FiS.js:931:-1-932:-90
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:932:-3--89
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:305:-5--24
-/tmp/test262-qC8FiS.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-8i3fYN.js:931:-1-932:-90
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:932:-3--89
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:305:-5--24
+/tmp/test262-8i3fYN.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T6 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-gFk6pZ.js:931:-1-932:-90
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:932:-3--89
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:305:-5--24
-/tmp/test262-gFk6pZ.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-G7n2LT.js:931:-1-932:-90
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:932:-3--89
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:305:-5--24
+/tmp/test262-G7n2LT.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/g; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T7 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-ipyc5I.js:932:-1-933:-96
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:933:-3--95
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:305:-5--24
-/tmp/test262-ipyc5I.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-00zCzP.js:932:-1-933:-96
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:933:-3--95
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:305:-5--24
+/tmp/test262-00zCzP.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/\u0067; regexp.global === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T8 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-eM6ZHU.js:932:-1-933:-104
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:933:-3--103
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:305:-5--24
-/tmp/test262-eM6ZHU.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-4niZpO.js:932:-1-933:-104
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:933:-3--103
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:305:-5--24
+/tmp/test262-4niZpO.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/\u0069; regexp.ignoreCase === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")
 
 ch07/7.8/7.8.5/S7.8.5_A3.1_T9 in non-strict mode: 
 --- errors ---
-../envs/es5.env:6:0-5374:0
-/tmp/test262-DImFiu.js:932:-1-933:-102
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:933:-3--101
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:305:-5--24
-/tmp/test262-DImFiu.js:289:-5--35
+../envs/es5.env:6:0-5370:0
+/tmp/test262-kP7n0A.js:932:-1-933:-102
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:933:-3--101
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:305:-5--24
+/tmp/test262-kP7n0A.js:289:-5--35
 Uncaught exception: "#1: var regexp = /(?:)/\u006D; regexp.multiline === true. Actual: undefined"
 
 Fatal error: exception Failure("Runtime error")

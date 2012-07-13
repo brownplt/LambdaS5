@@ -1,0 +1,2364 @@
+=== ch15/15.12/15.12-0-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-OLZx4U.js:935:-1--22
+/tmp/test262-OLZx4U.js:935:-1--22
+/tmp/test262-OLZx4U.js:935:-1--22
+/tmp/test262-OLZx4U.js:935:-1--22
+/tmp/test262-OLZx4U.js:901:-5-902:-54
+/tmp/test262-OLZx4U.js:902:-9--53
+/tmp/test262-OLZx4U.js:902:-9--53
+/tmp/test262-OLZx4U.js:902:-9--53
+/tmp/test262-OLZx4U.js:902:-9--53
+/tmp/test262-OLZx4U.js:305:-5--24
+/tmp/test262-OLZx4U.js:305:-5--24
+/tmp/test262-OLZx4U.js:305:-5--24
+/tmp/test262-OLZx4U.js:305:-5--24
+/tmp/test262-OLZx4U.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.12/15.12-0-2 passed in non-strict mode
+ch15/15.12/15.12-0-3 passed in non-strict mode
+ch15/15.12/15.12-0-4 passed in non-strict mode
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Dago9x.js:938:-1--22
+/tmp/test262-Dago9x.js:938:-1--22
+/tmp/test262-Dago9x.js:938:-1--22
+/tmp/test262-Dago9x.js:938:-1--22
+/tmp/test262-Dago9x.js:901:-5-902:-54
+/tmp/test262-Dago9x.js:902:-9--53
+/tmp/test262-Dago9x.js:902:-9--53
+/tmp/test262-Dago9x.js:902:-9--53
+/tmp/test262-Dago9x.js:902:-9--53
+/tmp/test262-Dago9x.js:305:-5--24
+/tmp/test262-Dago9x.js:305:-5--24
+/tmp/test262-Dago9x.js:305:-5--24
+/tmp/test262-Dago9x.js:305:-5--24
+/tmp/test262-Dago9x.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-2 passed in non-strict mode
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-3 passed in non-strict mode
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-4 passed in non-strict mode
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-5 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Json_type.Json_error("/tmp/test262-qF9jq4.js.ast:40188:34-35:
+Unescaped control character \u000B or unterminated string")
+===
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-6 passed in non-strict mode
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-7 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Json_type.Json_error("/tmp/test262-tFY_0z.js.ast:40188:35-36:
+Unescaped control character \u000E or unterminated string")
+===
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-8 passed in non-strict mode
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-0-9 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-JIZvtj.js:938:-1--22
+/tmp/test262-JIZvtj.js:938:-1--22
+/tmp/test262-JIZvtj.js:938:-1--22
+/tmp/test262-JIZvtj.js:938:-1--22
+/tmp/test262-JIZvtj.js:901:-5-902:-54
+/tmp/test262-JIZvtj.js:901:-5-902:-54
+/tmp/test262-JIZvtj.js:901:-9--28
+/tmp/test262-JIZvtj.js:901:-9--28
+/tmp/test262-JIZvtj.js:901:-9--19
+/tmp/test262-JIZvtj.js:901:-9--19
+/tmp/test262-JIZvtj.js:901:-9--19
+/tmp/test262-JIZvtj.js:901:-9--19
+/tmp/test262-JIZvtj.js:931:-5-935:-40
+/tmp/test262-JIZvtj.js:931:-5--9
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g1-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Lpg5Pt.js:938:-1--22
+/tmp/test262-Lpg5Pt.js:938:-1--22
+/tmp/test262-Lpg5Pt.js:938:-1--22
+/tmp/test262-Lpg5Pt.js:938:-1--22
+/tmp/test262-Lpg5Pt.js:901:-5-902:-54
+/tmp/test262-Lpg5Pt.js:901:-5-902:-54
+/tmp/test262-Lpg5Pt.js:901:-9--28
+/tmp/test262-Lpg5Pt.js:901:-9--28
+/tmp/test262-Lpg5Pt.js:901:-9--19
+/tmp/test262-Lpg5Pt.js:901:-9--19
+/tmp/test262-Lpg5Pt.js:901:-9--19
+/tmp/test262-Lpg5Pt.js:901:-9--19
+/tmp/test262-Lpg5Pt.js:930:-3--48
+/tmp/test262-Lpg5Pt.js:930:-3--48
+/tmp/test262-Lpg5Pt.js:930:-7--34
+/tmp/test262-Lpg5Pt.js:930:-7--34
+/tmp/test262-Lpg5Pt.js:930:-7--27
+/tmp/test262-Lpg5Pt.js:930:-7--11
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g1-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-xzzVP4.js:938:-1--22
+/tmp/test262-xzzVP4.js:938:-1--22
+/tmp/test262-xzzVP4.js:938:-1--22
+/tmp/test262-xzzVP4.js:938:-1--22
+/tmp/test262-xzzVP4.js:901:-5-902:-54
+/tmp/test262-xzzVP4.js:901:-5-902:-54
+/tmp/test262-xzzVP4.js:901:-9--28
+/tmp/test262-xzzVP4.js:901:-9--28
+/tmp/test262-xzzVP4.js:901:-9--19
+/tmp/test262-xzzVP4.js:901:-9--19
+/tmp/test262-xzzVP4.js:901:-9--19
+/tmp/test262-xzzVP4.js:901:-9--19
+/tmp/test262-xzzVP4.js:930:-3--48
+/tmp/test262-xzzVP4.js:930:-3--48
+/tmp/test262-xzzVP4.js:930:-7--34
+/tmp/test262-xzzVP4.js:930:-7--34
+/tmp/test262-xzzVP4.js:930:-7--27
+/tmp/test262-xzzVP4.js:930:-7--11
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g1-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RCbUv3.js:938:-1--22
+/tmp/test262-RCbUv3.js:938:-1--22
+/tmp/test262-RCbUv3.js:938:-1--22
+/tmp/test262-RCbUv3.js:938:-1--22
+/tmp/test262-RCbUv3.js:901:-5-902:-54
+/tmp/test262-RCbUv3.js:901:-5-902:-54
+/tmp/test262-RCbUv3.js:901:-9--28
+/tmp/test262-RCbUv3.js:901:-9--28
+/tmp/test262-RCbUv3.js:901:-9--19
+/tmp/test262-RCbUv3.js:901:-9--19
+/tmp/test262-RCbUv3.js:901:-9--19
+/tmp/test262-RCbUv3.js:901:-9--19
+/tmp/test262-RCbUv3.js:930:-3--48
+/tmp/test262-RCbUv3.js:930:-3--48
+/tmp/test262-RCbUv3.js:930:-7--34
+/tmp/test262-RCbUv3.js:930:-7--34
+/tmp/test262-RCbUv3.js:930:-7--27
+/tmp/test262-RCbUv3.js:930:-7--11
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g1-4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-YJdsSQ.js:938:-1--22
+/tmp/test262-YJdsSQ.js:938:-1--22
+/tmp/test262-YJdsSQ.js:938:-1--22
+/tmp/test262-YJdsSQ.js:938:-1--22
+/tmp/test262-YJdsSQ.js:901:-5-902:-54
+/tmp/test262-YJdsSQ.js:901:-5-902:-54
+/tmp/test262-YJdsSQ.js:901:-9--28
+/tmp/test262-YJdsSQ.js:901:-9--28
+/tmp/test262-YJdsSQ.js:901:-9--19
+/tmp/test262-YJdsSQ.js:901:-9--19
+/tmp/test262-YJdsSQ.js:901:-9--19
+/tmp/test262-YJdsSQ.js:901:-9--19
+/tmp/test262-YJdsSQ.js:930:-2--45
+/tmp/test262-YJdsSQ.js:930:-2--45
+/tmp/test262-YJdsSQ.js:930:-6--31
+/tmp/test262-YJdsSQ.js:930:-6--31
+/tmp/test262-YJdsSQ.js:930:-6--25
+/tmp/test262-YJdsSQ.js:930:-6--10
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g2-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-HzE2BY.js:932:-1--22
+/tmp/test262-HzE2BY.js:932:-1--22
+/tmp/test262-HzE2BY.js:932:-1--22
+/tmp/test262-HzE2BY.js:932:-1--22
+/tmp/test262-HzE2BY.js:901:-5-902:-54
+/tmp/test262-HzE2BY.js:901:-5-902:-54
+/tmp/test262-HzE2BY.js:901:-9--28
+/tmp/test262-HzE2BY.js:901:-9--28
+/tmp/test262-HzE2BY.js:901:-9--19
+/tmp/test262-HzE2BY.js:901:-9--19
+/tmp/test262-HzE2BY.js:901:-9--19
+/tmp/test262-HzE2BY.js:901:-9--19
+/tmp/test262-HzE2BY.js:930:-3--37
+/tmp/test262-HzE2BY.js:930:-10--37
+/tmp/test262-HzE2BY.js:930:-10--29
+/tmp/test262-HzE2BY.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g2-2 passed in non-strict mode
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g2-3 passed in non-strict mode
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g2-4 passed in non-strict mode
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g2-5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-2SxDBt.js:932:-1--22
+/tmp/test262-2SxDBt.js:932:-1--22
+/tmp/test262-2SxDBt.js:932:-1--22
+/tmp/test262-2SxDBt.js:932:-1--22
+/tmp/test262-2SxDBt.js:901:-5-902:-54
+/tmp/test262-2SxDBt.js:901:-5-902:-54
+/tmp/test262-2SxDBt.js:901:-9--28
+/tmp/test262-2SxDBt.js:901:-9--28
+/tmp/test262-2SxDBt.js:901:-9--19
+/tmp/test262-2SxDBt.js:901:-9--19
+/tmp/test262-2SxDBt.js:901:-9--19
+/tmp/test262-2SxDBt.js:901:-9--19
+/tmp/test262-2SxDBt.js:930:-3--31
+/tmp/test262-2SxDBt.js:930:-10--31
+/tmp/test262-2SxDBt.js:930:-10--26
+/tmp/test262-2SxDBt.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g4-1 passed in non-strict mode
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g4-2 passed in non-strict mode
+ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g4-3 passed in non-strict mode
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g4-4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-NUCErC.js:937:-1--22
+/tmp/test262-NUCErC.js:937:-1--22
+/tmp/test262-NUCErC.js:937:-1--22
+/tmp/test262-NUCErC.js:937:-1--22
+/tmp/test262-NUCErC.js:901:-5-902:-54
+/tmp/test262-NUCErC.js:902:-9--53
+/tmp/test262-NUCErC.js:902:-9--53
+/tmp/test262-NUCErC.js:902:-9--53
+/tmp/test262-NUCErC.js:902:-9--53
+/tmp/test262-NUCErC.js:305:-5--24
+/tmp/test262-NUCErC.js:305:-5--24
+/tmp/test262-NUCErC.js:305:-5--24
+/tmp/test262-NUCErC.js:305:-5--24
+/tmp/test262-NUCErC.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g5-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-dOXdc1.js:932:-1--22
+/tmp/test262-dOXdc1.js:932:-1--22
+/tmp/test262-dOXdc1.js:932:-1--22
+/tmp/test262-dOXdc1.js:932:-1--22
+/tmp/test262-dOXdc1.js:901:-5-902:-54
+/tmp/test262-dOXdc1.js:901:-5-902:-54
+/tmp/test262-dOXdc1.js:901:-9--28
+/tmp/test262-dOXdc1.js:901:-9--28
+/tmp/test262-dOXdc1.js:901:-9--19
+/tmp/test262-dOXdc1.js:901:-9--19
+/tmp/test262-dOXdc1.js:901:-9--19
+/tmp/test262-dOXdc1.js:901:-9--19
+/tmp/test262-dOXdc1.js:930:-5--41
+/tmp/test262-dOXdc1.js:930:-12--41
+/tmp/test262-dOXdc1.js:930:-12--35
+/tmp/test262-dOXdc1.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g5-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-lSvdOB.js:937:-1--22
+/tmp/test262-lSvdOB.js:937:-1--22
+/tmp/test262-lSvdOB.js:937:-1--22
+/tmp/test262-lSvdOB.js:937:-1--22
+/tmp/test262-lSvdOB.js:901:-5-902:-54
+/tmp/test262-lSvdOB.js:902:-9--53
+/tmp/test262-lSvdOB.js:902:-9--53
+/tmp/test262-lSvdOB.js:902:-9--53
+/tmp/test262-lSvdOB.js:902:-9--53
+/tmp/test262-lSvdOB.js:305:-5--24
+/tmp/test262-lSvdOB.js:305:-5--24
+/tmp/test262-lSvdOB.js:305:-5--24
+/tmp/test262-lSvdOB.js:305:-5--24
+/tmp/test262-lSvdOB.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g5-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-c7ObrW.js:937:-1--22
+/tmp/test262-c7ObrW.js:937:-1--22
+/tmp/test262-c7ObrW.js:937:-1--22
+/tmp/test262-c7ObrW.js:937:-1--22
+/tmp/test262-c7ObrW.js:901:-5-902:-54
+/tmp/test262-c7ObrW.js:902:-9--53
+/tmp/test262-c7ObrW.js:902:-9--53
+/tmp/test262-c7ObrW.js:902:-9--53
+/tmp/test262-c7ObrW.js:902:-9--53
+/tmp/test262-c7ObrW.js:305:-5--24
+/tmp/test262-c7ObrW.js:305:-5--24
+/tmp/test262-c7ObrW.js:305:-5--24
+/tmp/test262-c7ObrW.js:305:-5--24
+/tmp/test262-c7ObrW.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g6-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-KnEwhH.js:932:-1--22
+/tmp/test262-KnEwhH.js:932:-1--22
+/tmp/test262-KnEwhH.js:932:-1--22
+/tmp/test262-KnEwhH.js:932:-1--22
+/tmp/test262-KnEwhH.js:901:-5-902:-54
+/tmp/test262-KnEwhH.js:901:-5-902:-54
+/tmp/test262-KnEwhH.js:901:-9--28
+/tmp/test262-KnEwhH.js:901:-9--28
+/tmp/test262-KnEwhH.js:901:-9--19
+/tmp/test262-KnEwhH.js:901:-9--19
+/tmp/test262-KnEwhH.js:901:-9--19
+/tmp/test262-KnEwhH.js:901:-9--19
+/tmp/test262-KnEwhH.js:930:-5--37
+/tmp/test262-KnEwhH.js:930:-12--37
+/tmp/test262-KnEwhH.js:930:-12--31
+/tmp/test262-KnEwhH.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g6-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-xJgjD8.js:932:-1--22
+/tmp/test262-xJgjD8.js:932:-1--22
+/tmp/test262-xJgjD8.js:932:-1--22
+/tmp/test262-xJgjD8.js:932:-1--22
+/tmp/test262-xJgjD8.js:901:-5-902:-54
+/tmp/test262-xJgjD8.js:901:-5-902:-54
+/tmp/test262-xJgjD8.js:901:-9--28
+/tmp/test262-xJgjD8.js:901:-9--28
+/tmp/test262-xJgjD8.js:901:-9--19
+/tmp/test262-xJgjD8.js:901:-9--19
+/tmp/test262-xJgjD8.js:901:-9--19
+/tmp/test262-xJgjD8.js:901:-9--19
+/tmp/test262-xJgjD8.js:930:-5--39
+/tmp/test262-xJgjD8.js:930:-12--39
+/tmp/test262-xJgjD8.js:930:-12--32
+/tmp/test262-xJgjD8.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g6-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-cbD7ZT.js:932:-1--22
+/tmp/test262-cbD7ZT.js:932:-1--22
+/tmp/test262-cbD7ZT.js:932:-1--22
+/tmp/test262-cbD7ZT.js:932:-1--22
+/tmp/test262-cbD7ZT.js:901:-5-902:-54
+/tmp/test262-cbD7ZT.js:901:-5-902:-54
+/tmp/test262-cbD7ZT.js:901:-9--28
+/tmp/test262-cbD7ZT.js:901:-9--28
+/tmp/test262-cbD7ZT.js:901:-9--19
+/tmp/test262-cbD7ZT.js:901:-9--19
+/tmp/test262-cbD7ZT.js:901:-9--19
+/tmp/test262-cbD7ZT.js:901:-9--19
+/tmp/test262-cbD7ZT.js:930:-5--38
+/tmp/test262-cbD7ZT.js:930:-12--38
+/tmp/test262-cbD7ZT.js:930:-12--31
+/tmp/test262-cbD7ZT.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g6-4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-N_z1wV.js:932:-1--22
+/tmp/test262-N_z1wV.js:932:-1--22
+/tmp/test262-N_z1wV.js:932:-1--22
+/tmp/test262-N_z1wV.js:932:-1--22
+/tmp/test262-N_z1wV.js:901:-5-902:-54
+/tmp/test262-N_z1wV.js:901:-5-902:-54
+/tmp/test262-N_z1wV.js:901:-9--28
+/tmp/test262-N_z1wV.js:901:-9--28
+/tmp/test262-N_z1wV.js:901:-9--19
+/tmp/test262-N_z1wV.js:901:-9--19
+/tmp/test262-N_z1wV.js:901:-9--19
+/tmp/test262-N_z1wV.js:901:-9--19
+/tmp/test262-N_z1wV.js:930:-5--38
+/tmp/test262-N_z1wV.js:930:-12--38
+/tmp/test262-N_z1wV.js:930:-12--31
+/tmp/test262-N_z1wV.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g6-5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5g6GQ9.js:932:-1--22
+/tmp/test262-5g6GQ9.js:932:-1--22
+/tmp/test262-5g6GQ9.js:932:-1--22
+/tmp/test262-5g6GQ9.js:932:-1--22
+/tmp/test262-5g6GQ9.js:901:-5-902:-54
+/tmp/test262-5g6GQ9.js:901:-5-902:-54
+/tmp/test262-5g6GQ9.js:901:-9--28
+/tmp/test262-5g6GQ9.js:901:-9--28
+/tmp/test262-5g6GQ9.js:901:-9--19
+/tmp/test262-5g6GQ9.js:901:-9--19
+/tmp/test262-5g6GQ9.js:901:-9--19
+/tmp/test262-5g6GQ9.js:901:-9--19
+/tmp/test262-5g6GQ9.js:930:-5--38
+/tmp/test262-5g6GQ9.js:930:-12--38
+/tmp/test262-5g6GQ9.js:930:-12--31
+/tmp/test262-5g6GQ9.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g6-6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7VPAwg.js:932:-1--22
+/tmp/test262-7VPAwg.js:932:-1--22
+/tmp/test262-7VPAwg.js:932:-1--22
+/tmp/test262-7VPAwg.js:932:-1--22
+/tmp/test262-7VPAwg.js:901:-5-902:-54
+/tmp/test262-7VPAwg.js:901:-5-902:-54
+/tmp/test262-7VPAwg.js:901:-9--28
+/tmp/test262-7VPAwg.js:901:-9--28
+/tmp/test262-7VPAwg.js:901:-9--19
+/tmp/test262-7VPAwg.js:901:-9--19
+/tmp/test262-7VPAwg.js:901:-9--19
+/tmp/test262-7VPAwg.js:901:-9--19
+/tmp/test262-7VPAwg.js:930:-5--38
+/tmp/test262-7VPAwg.js:930:-12--38
+/tmp/test262-7VPAwg.js:930:-12--31
+/tmp/test262-7VPAwg.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.1/15.12.1.1/15.12.1.1-g6-7 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-tIbSq8.js:932:-1--22
+/tmp/test262-tIbSq8.js:932:-1--22
+/tmp/test262-tIbSq8.js:932:-1--22
+/tmp/test262-tIbSq8.js:932:-1--22
+/tmp/test262-tIbSq8.js:901:-5-902:-54
+/tmp/test262-tIbSq8.js:901:-5-902:-54
+/tmp/test262-tIbSq8.js:901:-9--28
+/tmp/test262-tIbSq8.js:901:-9--28
+/tmp/test262-tIbSq8.js:901:-9--19
+/tmp/test262-tIbSq8.js:901:-9--19
+/tmp/test262-tIbSq8.js:901:-9--19
+/tmp/test262-tIbSq8.js:901:-9--19
+/tmp/test262-tIbSq8.js:930:-5--38
+/tmp/test262-tIbSq8.js:930:-12--38
+/tmp/test262-tIbSq8.js:930:-12--31
+/tmp/test262-tIbSq8.js:930:-12--16
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-0-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-4X3FGC.js:936:-1--22
+/tmp/test262-4X3FGC.js:936:-1--22
+/tmp/test262-4X3FGC.js:936:-1--22
+/tmp/test262-4X3FGC.js:936:-1--22
+/tmp/test262-4X3FGC.js:901:-5-902:-54
+/tmp/test262-4X3FGC.js:901:-5-902:-54
+/tmp/test262-4X3FGC.js:901:-9--28
+/tmp/test262-4X3FGC.js:901:-9--28
+/tmp/test262-4X3FGC.js:901:-9--19
+/tmp/test262-4X3FGC.js:901:-9--19
+/tmp/test262-4X3FGC.js:901:-9--19
+/tmp/test262-4X3FGC.js:901:-9--19
+/tmp/test262-4X3FGC.js:930:-3--21
+/tmp/test262-4X3FGC.js:930:-11--21
+/tmp/test262-4X3FGC.js:930:-11--21
+../envs/es5.env:226:35-232:1
+../envs/es5.env:227:23-229:3
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-0-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-R1JLLd.js:936:-1--22
+/tmp/test262-R1JLLd.js:936:-1--22
+/tmp/test262-R1JLLd.js:936:-1--22
+/tmp/test262-R1JLLd.js:936:-1--22
+/tmp/test262-R1JLLd.js:901:-5-902:-54
+/tmp/test262-R1JLLd.js:901:-5-902:-54
+/tmp/test262-R1JLLd.js:901:-9--28
+/tmp/test262-R1JLLd.js:901:-9--28
+/tmp/test262-R1JLLd.js:901:-9--19
+/tmp/test262-R1JLLd.js:901:-9--19
+/tmp/test262-R1JLLd.js:901:-9--19
+/tmp/test262-R1JLLd.js:901:-9--19
+/tmp/test262-R1JLLd.js:930:-3--21
+/tmp/test262-R1JLLd.js:930:-11--21
+/tmp/test262-R1JLLd.js:930:-11--21
+../envs/es5.env:226:35-232:1
+../envs/es5.env:227:23-229:3
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-0-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-FOTc91.js:934:-1--22
+/tmp/test262-FOTc91.js:934:-1--22
+/tmp/test262-FOTc91.js:934:-1--22
+/tmp/test262-FOTc91.js:934:-1--22
+/tmp/test262-FOTc91.js:901:-5-902:-54
+/tmp/test262-FOTc91.js:901:-5-902:-54
+/tmp/test262-FOTc91.js:901:-9--28
+/tmp/test262-FOTc91.js:901:-9--28
+/tmp/test262-FOTc91.js:901:-9--19
+/tmp/test262-FOTc91.js:901:-9--19
+/tmp/test262-FOTc91.js:901:-9--19
+/tmp/test262-FOTc91.js:901:-9--19
+/tmp/test262-FOTc91.js:931:-3--57
+/tmp/test262-FOTc91.js:931:-14--57
+/tmp/test262-FOTc91.js:931:-14--57
+/tmp/test262-FOTc91.js:931:-14--57
+/tmp/test262-FOTc91.js:931:-14--57
+/tmp/test262-FOTc91.js:931:-14--57
+../envs/es5.env:1146:37-1202:1
+../envs/es5.env:1147:22-1201:3
+../envs/es5.env:1148:6-25
+../envs/es5.env:86:33-93:1
+../envs/es5.env:88:2-92:17
+../envs/es5.env:89:2-92:17
+../envs/es5.env:90:2-92:17
+../envs/es5.env:90:16-92:3
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "undefined is not an object"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-vaCFyc.js:977:-1--22
+/tmp/test262-vaCFyc.js:977:-1--22
+/tmp/test262-vaCFyc.js:977:-1--22
+/tmp/test262-vaCFyc.js:977:-1--22
+/tmp/test262-vaCFyc.js:901:-5-902:-54
+/tmp/test262-vaCFyc.js:902:-9--53
+/tmp/test262-vaCFyc.js:902:-9--53
+/tmp/test262-vaCFyc.js:902:-9--53
+/tmp/test262-vaCFyc.js:902:-9--53
+/tmp/test262-vaCFyc.js:305:-5--24
+/tmp/test262-vaCFyc.js:305:-5--24
+/tmp/test262-vaCFyc.js:305:-5--24
+/tmp/test262-vaCFyc.js:305:-5--24
+/tmp/test262-vaCFyc.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-10 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uQ1OFJ.js:977:-1--22
+/tmp/test262-uQ1OFJ.js:977:-1--22
+/tmp/test262-uQ1OFJ.js:977:-1--22
+/tmp/test262-uQ1OFJ.js:977:-1--22
+/tmp/test262-uQ1OFJ.js:901:-5-902:-54
+/tmp/test262-uQ1OFJ.js:902:-9--53
+/tmp/test262-uQ1OFJ.js:902:-9--53
+/tmp/test262-uQ1OFJ.js:902:-9--53
+/tmp/test262-uQ1OFJ.js:902:-9--53
+/tmp/test262-uQ1OFJ.js:305:-5--24
+/tmp/test262-uQ1OFJ.js:305:-5--24
+/tmp/test262-uQ1OFJ.js:305:-5--24
+/tmp/test262-uQ1OFJ.js:305:-5--24
+/tmp/test262-uQ1OFJ.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WDv6_Z.js:977:-1--22
+/tmp/test262-WDv6_Z.js:977:-1--22
+/tmp/test262-WDv6_Z.js:977:-1--22
+/tmp/test262-WDv6_Z.js:977:-1--22
+/tmp/test262-WDv6_Z.js:901:-5-902:-54
+/tmp/test262-WDv6_Z.js:902:-9--53
+/tmp/test262-WDv6_Z.js:902:-9--53
+/tmp/test262-WDv6_Z.js:902:-9--53
+/tmp/test262-WDv6_Z.js:902:-9--53
+/tmp/test262-WDv6_Z.js:305:-5--24
+/tmp/test262-WDv6_Z.js:305:-5--24
+/tmp/test262-WDv6_Z.js:305:-5--24
+/tmp/test262-WDv6_Z.js:305:-5--24
+/tmp/test262-WDv6_Z.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-nLIbhx.js:977:-1--22
+/tmp/test262-nLIbhx.js:977:-1--22
+/tmp/test262-nLIbhx.js:977:-1--22
+/tmp/test262-nLIbhx.js:977:-1--22
+/tmp/test262-nLIbhx.js:901:-5-902:-54
+/tmp/test262-nLIbhx.js:902:-9--53
+/tmp/test262-nLIbhx.js:902:-9--53
+/tmp/test262-nLIbhx.js:902:-9--53
+/tmp/test262-nLIbhx.js:902:-9--53
+/tmp/test262-nLIbhx.js:305:-5--24
+/tmp/test262-nLIbhx.js:305:-5--24
+/tmp/test262-nLIbhx.js:305:-5--24
+/tmp/test262-nLIbhx.js:305:-5--24
+/tmp/test262-nLIbhx.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-PtrrQ7.js:977:-1--22
+/tmp/test262-PtrrQ7.js:977:-1--22
+/tmp/test262-PtrrQ7.js:977:-1--22
+/tmp/test262-PtrrQ7.js:977:-1--22
+/tmp/test262-PtrrQ7.js:901:-5-902:-54
+/tmp/test262-PtrrQ7.js:902:-9--53
+/tmp/test262-PtrrQ7.js:902:-9--53
+/tmp/test262-PtrrQ7.js:902:-9--53
+/tmp/test262-PtrrQ7.js:902:-9--53
+/tmp/test262-PtrrQ7.js:305:-5--24
+/tmp/test262-PtrrQ7.js:305:-5--24
+/tmp/test262-PtrrQ7.js:305:-5--24
+/tmp/test262-PtrrQ7.js:305:-5--24
+/tmp/test262-PtrrQ7.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-J8QzGy.js:977:-1--22
+/tmp/test262-J8QzGy.js:977:-1--22
+/tmp/test262-J8QzGy.js:977:-1--22
+/tmp/test262-J8QzGy.js:977:-1--22
+/tmp/test262-J8QzGy.js:901:-5-902:-54
+/tmp/test262-J8QzGy.js:902:-9--53
+/tmp/test262-J8QzGy.js:902:-9--53
+/tmp/test262-J8QzGy.js:902:-9--53
+/tmp/test262-J8QzGy.js:902:-9--53
+/tmp/test262-J8QzGy.js:305:-5--24
+/tmp/test262-J8QzGy.js:305:-5--24
+/tmp/test262-J8QzGy.js:305:-5--24
+/tmp/test262-J8QzGy.js:305:-5--24
+/tmp/test262-J8QzGy.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-K7zHgc.js:977:-1--22
+/tmp/test262-K7zHgc.js:977:-1--22
+/tmp/test262-K7zHgc.js:977:-1--22
+/tmp/test262-K7zHgc.js:977:-1--22
+/tmp/test262-K7zHgc.js:901:-5-902:-54
+/tmp/test262-K7zHgc.js:902:-9--53
+/tmp/test262-K7zHgc.js:902:-9--53
+/tmp/test262-K7zHgc.js:902:-9--53
+/tmp/test262-K7zHgc.js:902:-9--53
+/tmp/test262-K7zHgc.js:305:-5--24
+/tmp/test262-K7zHgc.js:305:-5--24
+/tmp/test262-K7zHgc.js:305:-5--24
+/tmp/test262-K7zHgc.js:305:-5--24
+/tmp/test262-K7zHgc.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-7 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-OVsDkN.js:977:-1--22
+/tmp/test262-OVsDkN.js:977:-1--22
+/tmp/test262-OVsDkN.js:977:-1--22
+/tmp/test262-OVsDkN.js:977:-1--22
+/tmp/test262-OVsDkN.js:901:-5-902:-54
+/tmp/test262-OVsDkN.js:902:-9--53
+/tmp/test262-OVsDkN.js:902:-9--53
+/tmp/test262-OVsDkN.js:902:-9--53
+/tmp/test262-OVsDkN.js:902:-9--53
+/tmp/test262-OVsDkN.js:305:-5--24
+/tmp/test262-OVsDkN.js:305:-5--24
+/tmp/test262-OVsDkN.js:305:-5--24
+/tmp/test262-OVsDkN.js:305:-5--24
+/tmp/test262-OVsDkN.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-8 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WtUZ2p.js:977:-1--22
+/tmp/test262-WtUZ2p.js:977:-1--22
+/tmp/test262-WtUZ2p.js:977:-1--22
+/tmp/test262-WtUZ2p.js:977:-1--22
+/tmp/test262-WtUZ2p.js:901:-5-902:-54
+/tmp/test262-WtUZ2p.js:902:-9--53
+/tmp/test262-WtUZ2p.js:902:-9--53
+/tmp/test262-WtUZ2p.js:902:-9--53
+/tmp/test262-WtUZ2p.js:902:-9--53
+/tmp/test262-WtUZ2p.js:305:-5--24
+/tmp/test262-WtUZ2p.js:305:-5--24
+/tmp/test262-WtUZ2p.js:305:-5--24
+/tmp/test262-WtUZ2p.js:305:-5--24
+/tmp/test262-WtUZ2p.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/15.12.2-2-9 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-NzE9HY.js:977:-1--22
+/tmp/test262-NzE9HY.js:977:-1--22
+/tmp/test262-NzE9HY.js:977:-1--22
+/tmp/test262-NzE9HY.js:977:-1--22
+/tmp/test262-NzE9HY.js:901:-5-902:-54
+/tmp/test262-NzE9HY.js:902:-9--53
+/tmp/test262-NzE9HY.js:902:-9--53
+/tmp/test262-NzE9HY.js:902:-9--53
+/tmp/test262-NzE9HY.js:902:-9--53
+/tmp/test262-NzE9HY.js:305:-5--24
+/tmp/test262-NzE9HY.js:305:-5--24
+/tmp/test262-NzE9HY.js:305:-5--24
+/tmp/test262-NzE9HY.js:305:-5--24
+/tmp/test262-NzE9HY.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.2/S15.12.2_A1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-gtGR9c.js:929:-1--39
+/tmp/test262-gtGR9c.js:929:-9--39
+/tmp/test262-gtGR9c.js:929:-9--39
+/tmp/test262-gtGR9c.js:929:-9--39
+/tmp/test262-gtGR9c.js:929:-9--39
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-0-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WY9uNW.js:936:-1--22
+/tmp/test262-WY9uNW.js:936:-1--22
+/tmp/test262-WY9uNW.js:936:-1--22
+/tmp/test262-WY9uNW.js:936:-1--22
+/tmp/test262-WY9uNW.js:901:-5-902:-54
+/tmp/test262-WY9uNW.js:901:-5-902:-54
+/tmp/test262-WY9uNW.js:901:-9--28
+/tmp/test262-WY9uNW.js:901:-9--28
+/tmp/test262-WY9uNW.js:901:-9--19
+/tmp/test262-WY9uNW.js:901:-9--19
+/tmp/test262-WY9uNW.js:901:-9--19
+/tmp/test262-WY9uNW.js:901:-9--19
+/tmp/test262-WY9uNW.js:930:-3--25
+/tmp/test262-WY9uNW.js:930:-11--25
+/tmp/test262-WY9uNW.js:930:-11--25
+../envs/es5.env:226:35-232:1
+../envs/es5.env:227:23-229:3
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-0-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-E9wj8S.js:936:-1--22
+/tmp/test262-E9wj8S.js:936:-1--22
+/tmp/test262-E9wj8S.js:936:-1--22
+/tmp/test262-E9wj8S.js:936:-1--22
+/tmp/test262-E9wj8S.js:901:-5-902:-54
+/tmp/test262-E9wj8S.js:901:-5-902:-54
+/tmp/test262-E9wj8S.js:901:-9--28
+/tmp/test262-E9wj8S.js:901:-9--28
+/tmp/test262-E9wj8S.js:901:-9--19
+/tmp/test262-E9wj8S.js:901:-9--19
+/tmp/test262-E9wj8S.js:901:-9--19
+/tmp/test262-E9wj8S.js:901:-9--19
+/tmp/test262-E9wj8S.js:930:-3--25
+/tmp/test262-E9wj8S.js:930:-11--25
+/tmp/test262-E9wj8S.js:930:-11--25
+../envs/es5.env:226:35-232:1
+../envs/es5.env:227:23-229:3
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-0-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-n9KtV5.js:936:-1--22
+/tmp/test262-n9KtV5.js:936:-1--22
+/tmp/test262-n9KtV5.js:936:-1--22
+/tmp/test262-n9KtV5.js:936:-1--22
+/tmp/test262-n9KtV5.js:901:-5-902:-54
+/tmp/test262-n9KtV5.js:901:-5-902:-54
+/tmp/test262-n9KtV5.js:901:-9--28
+/tmp/test262-n9KtV5.js:901:-9--28
+/tmp/test262-n9KtV5.js:901:-9--19
+/tmp/test262-n9KtV5.js:901:-9--19
+/tmp/test262-n9KtV5.js:901:-9--19
+/tmp/test262-n9KtV5.js:901:-9--19
+/tmp/test262-n9KtV5.js:931:-3--61
+/tmp/test262-n9KtV5.js:931:-14--61
+/tmp/test262-n9KtV5.js:931:-14--61
+/tmp/test262-n9KtV5.js:931:-14--61
+/tmp/test262-n9KtV5.js:931:-14--61
+/tmp/test262-n9KtV5.js:931:-14--61
+../envs/es5.env:1146:37-1202:1
+../envs/es5.env:1147:22-1201:3
+../envs/es5.env:1148:6-25
+../envs/es5.env:86:33-93:1
+../envs/es5.env:88:2-92:17
+../envs/es5.env:89:2-92:17
+../envs/es5.env:90:2-92:17
+../envs/es5.env:90:16-92:3
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "undefined is not an object"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-aLtL1t.js:932:-1--22
+/tmp/test262-aLtL1t.js:932:-1--22
+/tmp/test262-aLtL1t.js:932:-1--22
+/tmp/test262-aLtL1t.js:932:-1--22
+/tmp/test262-aLtL1t.js:901:-5-902:-54
+/tmp/test262-aLtL1t.js:901:-5-902:-54
+/tmp/test262-aLtL1t.js:901:-9--28
+/tmp/test262-aLtL1t.js:901:-9--28
+/tmp/test262-aLtL1t.js:901:-9--19
+/tmp/test262-aLtL1t.js:901:-9--19
+/tmp/test262-aLtL1t.js:901:-9--19
+/tmp/test262-aLtL1t.js:901:-9--19
+/tmp/test262-aLtL1t.js:930:-3--49
+/tmp/test262-aLtL1t.js:930:-10--49
+/tmp/test262-aLtL1t.js:930:-10--35
+/tmp/test262-aLtL1t.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-10 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-8k4Mq9.js:932:-1--22
+/tmp/test262-8k4Mq9.js:932:-1--22
+/tmp/test262-8k4Mq9.js:932:-1--22
+/tmp/test262-8k4Mq9.js:932:-1--22
+/tmp/test262-8k4Mq9.js:901:-5-902:-54
+/tmp/test262-8k4Mq9.js:901:-5-902:-54
+/tmp/test262-8k4Mq9.js:901:-9--28
+/tmp/test262-8k4Mq9.js:901:-9--28
+/tmp/test262-8k4Mq9.js:901:-9--19
+/tmp/test262-8k4Mq9.js:901:-9--19
+/tmp/test262-8k4Mq9.js:901:-9--19
+/tmp/test262-8k4Mq9.js:901:-9--19
+/tmp/test262-8k4Mq9.js:930:-3--79
+/tmp/test262-8k4Mq9.js:930:-10--79
+/tmp/test262-8k4Mq9.js:930:-10--65
+/tmp/test262-8k4Mq9.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-11 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-g4qINu.js:932:-1--22
+/tmp/test262-g4qINu.js:932:-1--22
+/tmp/test262-g4qINu.js:932:-1--22
+/tmp/test262-g4qINu.js:932:-1--22
+/tmp/test262-g4qINu.js:901:-5-902:-54
+/tmp/test262-g4qINu.js:901:-5-902:-54
+/tmp/test262-g4qINu.js:901:-9--28
+/tmp/test262-g4qINu.js:901:-9--28
+/tmp/test262-g4qINu.js:901:-9--19
+/tmp/test262-g4qINu.js:901:-9--19
+/tmp/test262-g4qINu.js:901:-9--19
+/tmp/test262-g4qINu.js:901:-9--19
+/tmp/test262-g4qINu.js:930:-3--85
+/tmp/test262-g4qINu.js:930:-10--85
+/tmp/test262-g4qINu.js:930:-10--71
+/tmp/test262-g4qINu.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-12 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Rq0kRN.js:932:-1--22
+/tmp/test262-Rq0kRN.js:932:-1--22
+/tmp/test262-Rq0kRN.js:932:-1--22
+/tmp/test262-Rq0kRN.js:932:-1--22
+/tmp/test262-Rq0kRN.js:901:-5-902:-54
+/tmp/test262-Rq0kRN.js:901:-5-902:-54
+/tmp/test262-Rq0kRN.js:901:-9--28
+/tmp/test262-Rq0kRN.js:901:-9--28
+/tmp/test262-Rq0kRN.js:901:-9--19
+/tmp/test262-Rq0kRN.js:901:-9--19
+/tmp/test262-Rq0kRN.js:901:-9--19
+/tmp/test262-Rq0kRN.js:901:-9--19
+/tmp/test262-Rq0kRN.js:930:-3--82
+/tmp/test262-Rq0kRN.js:930:-10--82
+/tmp/test262-Rq0kRN.js:930:-10--70
+/tmp/test262-Rq0kRN.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-13 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-SQcJKo.js:932:-1--22
+/tmp/test262-SQcJKo.js:932:-1--22
+/tmp/test262-SQcJKo.js:932:-1--22
+/tmp/test262-SQcJKo.js:932:-1--22
+/tmp/test262-SQcJKo.js:901:-5-902:-54
+/tmp/test262-SQcJKo.js:901:-5-902:-54
+/tmp/test262-SQcJKo.js:901:-9--28
+/tmp/test262-SQcJKo.js:901:-9--28
+/tmp/test262-SQcJKo.js:901:-9--19
+/tmp/test262-SQcJKo.js:901:-9--19
+/tmp/test262-SQcJKo.js:901:-9--19
+/tmp/test262-SQcJKo.js:901:-9--19
+/tmp/test262-SQcJKo.js:930:-3--93
+/tmp/test262-SQcJKo.js:930:-10--93
+/tmp/test262-SQcJKo.js:930:-10--75
+/tmp/test262-SQcJKo.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-14 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-2C6X76.js:932:-1--22
+/tmp/test262-2C6X76.js:932:-1--22
+/tmp/test262-2C6X76.js:932:-1--22
+/tmp/test262-2C6X76.js:932:-1--22
+/tmp/test262-2C6X76.js:901:-5-902:-54
+/tmp/test262-2C6X76.js:901:-5-902:-54
+/tmp/test262-2C6X76.js:901:-9--28
+/tmp/test262-2C6X76.js:901:-9--28
+/tmp/test262-2C6X76.js:901:-9--19
+/tmp/test262-2C6X76.js:901:-9--19
+/tmp/test262-2C6X76.js:901:-9--19
+/tmp/test262-2C6X76.js:901:-9--19
+/tmp/test262-2C6X76.js:930:-3--53
+/tmp/test262-2C6X76.js:930:-10--53
+/tmp/test262-2C6X76.js:930:-10--39
+/tmp/test262-2C6X76.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-15 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-IPuI5Z.js:932:-1--22
+/tmp/test262-IPuI5Z.js:932:-1--22
+/tmp/test262-IPuI5Z.js:932:-1--22
+/tmp/test262-IPuI5Z.js:932:-1--22
+/tmp/test262-IPuI5Z.js:901:-5-902:-54
+/tmp/test262-IPuI5Z.js:901:-5-902:-54
+/tmp/test262-IPuI5Z.js:901:-9--28
+/tmp/test262-IPuI5Z.js:901:-9--28
+/tmp/test262-IPuI5Z.js:901:-9--19
+/tmp/test262-IPuI5Z.js:901:-9--19
+/tmp/test262-IPuI5Z.js:901:-9--19
+/tmp/test262-IPuI5Z.js:901:-9--19
+/tmp/test262-IPuI5Z.js:930:-3--75
+/tmp/test262-IPuI5Z.js:930:-10--75
+/tmp/test262-IPuI5Z.js:930:-10--66
+/tmp/test262-IPuI5Z.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-16 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uG4kB6.js:974:-1--22
+/tmp/test262-uG4kB6.js:974:-1--22
+/tmp/test262-uG4kB6.js:974:-1--22
+/tmp/test262-uG4kB6.js:974:-1--22
+/tmp/test262-uG4kB6.js:901:-5-902:-54
+/tmp/test262-uG4kB6.js:901:-5-902:-54
+/tmp/test262-uG4kB6.js:901:-9--28
+/tmp/test262-uG4kB6.js:901:-9--28
+/tmp/test262-uG4kB6.js:901:-9--19
+/tmp/test262-uG4kB6.js:901:-9--19
+/tmp/test262-uG4kB6.js:901:-9--19
+/tmp/test262-uG4kB6.js:901:-9--19
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-9-970:-79
+/tmp/test262-uG4kB6.js:967:-46-970:-79
+/tmp/test262-uG4kB6.js:969:-13--245
+/tmp/test262-uG4kB6.js:969:-23--245
+/tmp/test262-uG4kB6.js:969:-23--245
+/tmp/test262-uG4kB6.js:969:-23--245
+/tmp/test262-uG4kB6.js:969:-23--245
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-17 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-gtX_l3.js:974:-1--22
+/tmp/test262-gtX_l3.js:974:-1--22
+/tmp/test262-gtX_l3.js:974:-1--22
+/tmp/test262-gtX_l3.js:974:-1--22
+/tmp/test262-gtX_l3.js:901:-5-902:-54
+/tmp/test262-gtX_l3.js:901:-5-902:-54
+/tmp/test262-gtX_l3.js:901:-9--28
+/tmp/test262-gtX_l3.js:901:-9--28
+/tmp/test262-gtX_l3.js:901:-9--19
+/tmp/test262-gtX_l3.js:901:-9--19
+/tmp/test262-gtX_l3.js:901:-9--19
+/tmp/test262-gtX_l3.js:901:-9--19
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-9-970:-79
+/tmp/test262-gtX_l3.js:967:-46-970:-79
+/tmp/test262-gtX_l3.js:969:-13--249
+/tmp/test262-gtX_l3.js:969:-23--249
+/tmp/test262-gtX_l3.js:969:-23--249
+/tmp/test262-gtX_l3.js:969:-23--249
+/tmp/test262-gtX_l3.js:969:-23--249
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-18 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Q2R1HE.js:974:-1--22
+/tmp/test262-Q2R1HE.js:974:-1--22
+/tmp/test262-Q2R1HE.js:974:-1--22
+/tmp/test262-Q2R1HE.js:974:-1--22
+/tmp/test262-Q2R1HE.js:901:-5-902:-54
+/tmp/test262-Q2R1HE.js:901:-5-902:-54
+/tmp/test262-Q2R1HE.js:901:-9--28
+/tmp/test262-Q2R1HE.js:901:-9--28
+/tmp/test262-Q2R1HE.js:901:-9--19
+/tmp/test262-Q2R1HE.js:901:-9--19
+/tmp/test262-Q2R1HE.js:901:-9--19
+/tmp/test262-Q2R1HE.js:901:-9--19
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-9-970:-79
+/tmp/test262-Q2R1HE.js:967:-46-970:-79
+/tmp/test262-Q2R1HE.js:969:-13--249
+/tmp/test262-Q2R1HE.js:969:-23--249
+/tmp/test262-Q2R1HE.js:969:-23--249
+/tmp/test262-Q2R1HE.js:969:-23--249
+/tmp/test262-Q2R1HE.js:969:-23--249
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-19 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ap5F3K.js:974:-1--22
+/tmp/test262-ap5F3K.js:974:-1--22
+/tmp/test262-ap5F3K.js:974:-1--22
+/tmp/test262-ap5F3K.js:974:-1--22
+/tmp/test262-ap5F3K.js:901:-5-902:-54
+/tmp/test262-ap5F3K.js:901:-5-902:-54
+/tmp/test262-ap5F3K.js:901:-9--28
+/tmp/test262-ap5F3K.js:901:-9--28
+/tmp/test262-ap5F3K.js:901:-9--19
+/tmp/test262-ap5F3K.js:901:-9--19
+/tmp/test262-ap5F3K.js:901:-9--19
+/tmp/test262-ap5F3K.js:901:-9--19
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-9-970:-127
+/tmp/test262-ap5F3K.js:967:-46-970:-127
+/tmp/test262-ap5F3K.js:969:-13--441
+/tmp/test262-ap5F3K.js:969:-23--441
+/tmp/test262-ap5F3K.js:969:-23--441
+/tmp/test262-ap5F3K.js:969:-23--441
+/tmp/test262-ap5F3K.js:969:-23--441
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-0_Rfyy.js:932:-1--22
+/tmp/test262-0_Rfyy.js:932:-1--22
+/tmp/test262-0_Rfyy.js:932:-1--22
+/tmp/test262-0_Rfyy.js:932:-1--22
+/tmp/test262-0_Rfyy.js:901:-5-902:-54
+/tmp/test262-0_Rfyy.js:901:-5-902:-54
+/tmp/test262-0_Rfyy.js:901:-9--28
+/tmp/test262-0_Rfyy.js:901:-9--28
+/tmp/test262-0_Rfyy.js:901:-9--19
+/tmp/test262-0_Rfyy.js:901:-9--19
+/tmp/test262-0_Rfyy.js:901:-9--19
+/tmp/test262-0_Rfyy.js:901:-9--19
+/tmp/test262-0_Rfyy.js:930:-3--96
+/tmp/test262-0_Rfyy.js:930:-10--96
+/tmp/test262-0_Rfyy.js:930:-10--76
+/tmp/test262-0_Rfyy.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-20 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fTCFsZ.js:974:-1--22
+/tmp/test262-fTCFsZ.js:974:-1--22
+/tmp/test262-fTCFsZ.js:974:-1--22
+/tmp/test262-fTCFsZ.js:974:-1--22
+/tmp/test262-fTCFsZ.js:901:-5-902:-54
+/tmp/test262-fTCFsZ.js:901:-5-902:-54
+/tmp/test262-fTCFsZ.js:901:-9--28
+/tmp/test262-fTCFsZ.js:901:-9--28
+/tmp/test262-fTCFsZ.js:901:-9--19
+/tmp/test262-fTCFsZ.js:901:-9--19
+/tmp/test262-fTCFsZ.js:901:-9--19
+/tmp/test262-fTCFsZ.js:901:-9--19
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-9-970:-79
+/tmp/test262-fTCFsZ.js:967:-46-970:-79
+/tmp/test262-fTCFsZ.js:969:-13--249
+/tmp/test262-fTCFsZ.js:969:-23--249
+/tmp/test262-fTCFsZ.js:969:-23--249
+/tmp/test262-fTCFsZ.js:969:-23--249
+/tmp/test262-fTCFsZ.js:969:-23--249
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-21 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-z7_9w0.js:974:-1--22
+/tmp/test262-z7_9w0.js:974:-1--22
+/tmp/test262-z7_9w0.js:974:-1--22
+/tmp/test262-z7_9w0.js:974:-1--22
+/tmp/test262-z7_9w0.js:901:-5-902:-54
+/tmp/test262-z7_9w0.js:901:-5-902:-54
+/tmp/test262-z7_9w0.js:901:-9--28
+/tmp/test262-z7_9w0.js:901:-9--28
+/tmp/test262-z7_9w0.js:901:-9--19
+/tmp/test262-z7_9w0.js:901:-9--19
+/tmp/test262-z7_9w0.js:901:-9--19
+/tmp/test262-z7_9w0.js:901:-9--19
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-9-970:-79
+/tmp/test262-z7_9w0.js:967:-46-970:-79
+/tmp/test262-z7_9w0.js:969:-13--245
+/tmp/test262-z7_9w0.js:969:-23--245
+/tmp/test262-z7_9w0.js:969:-23--245
+/tmp/test262-z7_9w0.js:969:-23--245
+/tmp/test262-z7_9w0.js:969:-23--245
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-22 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-r2otjw.js:974:-1--22
+/tmp/test262-r2otjw.js:974:-1--22
+/tmp/test262-r2otjw.js:974:-1--22
+/tmp/test262-r2otjw.js:974:-1--22
+/tmp/test262-r2otjw.js:901:-5-902:-54
+/tmp/test262-r2otjw.js:901:-5-902:-54
+/tmp/test262-r2otjw.js:901:-9--28
+/tmp/test262-r2otjw.js:901:-9--28
+/tmp/test262-r2otjw.js:901:-9--19
+/tmp/test262-r2otjw.js:901:-9--19
+/tmp/test262-r2otjw.js:901:-9--19
+/tmp/test262-r2otjw.js:901:-9--19
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-9-970:-79
+/tmp/test262-r2otjw.js:967:-46-970:-79
+/tmp/test262-r2otjw.js:969:-13--249
+/tmp/test262-r2otjw.js:969:-23--249
+/tmp/test262-r2otjw.js:969:-23--249
+/tmp/test262-r2otjw.js:969:-23--249
+/tmp/test262-r2otjw.js:969:-23--249
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-23 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fGqRKl.js:974:-1--22
+/tmp/test262-fGqRKl.js:974:-1--22
+/tmp/test262-fGqRKl.js:974:-1--22
+/tmp/test262-fGqRKl.js:974:-1--22
+/tmp/test262-fGqRKl.js:901:-5-902:-54
+/tmp/test262-fGqRKl.js:901:-5-902:-54
+/tmp/test262-fGqRKl.js:901:-9--28
+/tmp/test262-fGqRKl.js:901:-9--28
+/tmp/test262-fGqRKl.js:901:-9--19
+/tmp/test262-fGqRKl.js:901:-9--19
+/tmp/test262-fGqRKl.js:901:-9--19
+/tmp/test262-fGqRKl.js:901:-9--19
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-9-970:-79
+/tmp/test262-fGqRKl.js:967:-46-970:-79
+/tmp/test262-fGqRKl.js:969:-13--249
+/tmp/test262-fGqRKl.js:969:-23--249
+/tmp/test262-fGqRKl.js:969:-23--249
+/tmp/test262-fGqRKl.js:969:-23--249
+/tmp/test262-fGqRKl.js:969:-23--249
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-24 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-c4QE0Z.js:974:-1--22
+/tmp/test262-c4QE0Z.js:974:-1--22
+/tmp/test262-c4QE0Z.js:974:-1--22
+/tmp/test262-c4QE0Z.js:974:-1--22
+/tmp/test262-c4QE0Z.js:901:-5-902:-54
+/tmp/test262-c4QE0Z.js:901:-5-902:-54
+/tmp/test262-c4QE0Z.js:901:-9--28
+/tmp/test262-c4QE0Z.js:901:-9--28
+/tmp/test262-c4QE0Z.js:901:-9--19
+/tmp/test262-c4QE0Z.js:901:-9--19
+/tmp/test262-c4QE0Z.js:901:-9--19
+/tmp/test262-c4QE0Z.js:901:-9--19
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-9-970:-127
+/tmp/test262-c4QE0Z.js:967:-46-970:-127
+/tmp/test262-c4QE0Z.js:969:-13--441
+/tmp/test262-c4QE0Z.js:969:-23--441
+/tmp/test262-c4QE0Z.js:969:-23--441
+/tmp/test262-c4QE0Z.js:969:-23--441
+/tmp/test262-c4QE0Z.js:969:-23--441
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-25 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-_6xMJQ.js:974:-1--22
+/tmp/test262-_6xMJQ.js:974:-1--22
+/tmp/test262-_6xMJQ.js:974:-1--22
+/tmp/test262-_6xMJQ.js:974:-1--22
+/tmp/test262-_6xMJQ.js:901:-5-902:-54
+/tmp/test262-_6xMJQ.js:901:-5-902:-54
+/tmp/test262-_6xMJQ.js:901:-9--28
+/tmp/test262-_6xMJQ.js:901:-9--28
+/tmp/test262-_6xMJQ.js:901:-9--19
+/tmp/test262-_6xMJQ.js:901:-9--19
+/tmp/test262-_6xMJQ.js:901:-9--19
+/tmp/test262-_6xMJQ.js:901:-9--19
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-9-970:-127
+/tmp/test262-_6xMJQ.js:967:-46-970:-127
+/tmp/test262-_6xMJQ.js:969:-13--249
+/tmp/test262-_6xMJQ.js:969:-23--249
+/tmp/test262-_6xMJQ.js:969:-23--249
+/tmp/test262-_6xMJQ.js:969:-23--249
+/tmp/test262-_6xMJQ.js:969:-23--249
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-26 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-D6k1yL.js:938:-1--22
+/tmp/test262-D6k1yL.js:938:-1--22
+/tmp/test262-D6k1yL.js:938:-1--22
+/tmp/test262-D6k1yL.js:938:-1--22
+/tmp/test262-D6k1yL.js:901:-5-902:-54
+/tmp/test262-D6k1yL.js:901:-5-902:-54
+/tmp/test262-D6k1yL.js:901:-9--28
+/tmp/test262-D6k1yL.js:901:-9--28
+/tmp/test262-D6k1yL.js:901:-9--19
+/tmp/test262-D6k1yL.js:901:-9--19
+/tmp/test262-D6k1yL.js:901:-9--19
+/tmp/test262-D6k1yL.js:901:-9--19
+/tmp/test262-D6k1yL.js:935:-9--72
+/tmp/test262-D6k1yL.js:935:-24--72
+/tmp/test262-D6k1yL.js:935:-24--61
+/tmp/test262-D6k1yL.js:935:-24--61
+/tmp/test262-D6k1yL.js:935:-24--61
+/tmp/test262-D6k1yL.js:935:-24--61
+../envs/es5.env:171:27-221:1
+../envs/es5.env:174:11-220:5
+../envs/es5.env:175:20-219:2
+../envs/es5.env:176:40-218:6
+../envs/es5.env:181:2-217:55
+../envs/es5.env:193:2-217:55
+../envs/es5.env:201:2-217:55
+../envs/es5.env:209:2-217:55
+../envs/es5.env:217:2-55
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "%ToObject received undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-QFEMVQ.js:932:-1--22
+/tmp/test262-QFEMVQ.js:932:-1--22
+/tmp/test262-QFEMVQ.js:932:-1--22
+/tmp/test262-QFEMVQ.js:932:-1--22
+/tmp/test262-QFEMVQ.js:901:-5-902:-54
+/tmp/test262-QFEMVQ.js:901:-5-902:-54
+/tmp/test262-QFEMVQ.js:901:-9--28
+/tmp/test262-QFEMVQ.js:901:-9--28
+/tmp/test262-QFEMVQ.js:901:-9--19
+/tmp/test262-QFEMVQ.js:901:-9--19
+/tmp/test262-QFEMVQ.js:901:-9--19
+/tmp/test262-QFEMVQ.js:901:-9--19
+/tmp/test262-QFEMVQ.js:930:-3--53
+/tmp/test262-QFEMVQ.js:930:-10--53
+/tmp/test262-QFEMVQ.js:930:-10--36
+/tmp/test262-QFEMVQ.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-U8AUeX.js:932:-1--22
+/tmp/test262-U8AUeX.js:932:-1--22
+/tmp/test262-U8AUeX.js:932:-1--22
+/tmp/test262-U8AUeX.js:932:-1--22
+/tmp/test262-U8AUeX.js:901:-5-902:-54
+/tmp/test262-U8AUeX.js:901:-5-902:-54
+/tmp/test262-U8AUeX.js:901:-9--28
+/tmp/test262-U8AUeX.js:901:-9--28
+/tmp/test262-U8AUeX.js:901:-9--19
+/tmp/test262-U8AUeX.js:901:-9--19
+/tmp/test262-U8AUeX.js:901:-9--19
+/tmp/test262-U8AUeX.js:901:-9--19
+/tmp/test262-U8AUeX.js:930:-3--39
+/tmp/test262-U8AUeX.js:930:-10--39
+/tmp/test262-U8AUeX.js:930:-10--29
+/tmp/test262-U8AUeX.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ODuyda.js:932:-1--22
+/tmp/test262-ODuyda.js:932:-1--22
+/tmp/test262-ODuyda.js:932:-1--22
+/tmp/test262-ODuyda.js:932:-1--22
+/tmp/test262-ODuyda.js:901:-5-902:-54
+/tmp/test262-ODuyda.js:901:-5-902:-54
+/tmp/test262-ODuyda.js:901:-9--28
+/tmp/test262-ODuyda.js:901:-9--28
+/tmp/test262-ODuyda.js:901:-9--19
+/tmp/test262-ODuyda.js:901:-9--19
+/tmp/test262-ODuyda.js:901:-9--19
+/tmp/test262-ODuyda.js:901:-9--19
+/tmp/test262-ODuyda.js:930:-3--41
+/tmp/test262-ODuyda.js:930:-10--41
+/tmp/test262-ODuyda.js:930:-10--30
+/tmp/test262-ODuyda.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WlAz3k.js:932:-1--22
+/tmp/test262-WlAz3k.js:932:-1--22
+/tmp/test262-WlAz3k.js:932:-1--22
+/tmp/test262-WlAz3k.js:932:-1--22
+/tmp/test262-WlAz3k.js:901:-5-902:-54
+/tmp/test262-WlAz3k.js:901:-5-902:-54
+/tmp/test262-WlAz3k.js:901:-9--28
+/tmp/test262-WlAz3k.js:901:-9--28
+/tmp/test262-WlAz3k.js:901:-9--19
+/tmp/test262-WlAz3k.js:901:-9--19
+/tmp/test262-WlAz3k.js:901:-9--19
+/tmp/test262-WlAz3k.js:901:-9--19
+/tmp/test262-WlAz3k.js:930:-3--41
+/tmp/test262-WlAz3k.js:930:-10--41
+/tmp/test262-WlAz3k.js:930:-10--30
+/tmp/test262-WlAz3k.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-7 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-hWCeTz.js:932:-1--22
+/tmp/test262-hWCeTz.js:932:-1--22
+/tmp/test262-hWCeTz.js:932:-1--22
+/tmp/test262-hWCeTz.js:932:-1--22
+/tmp/test262-hWCeTz.js:901:-5-902:-54
+/tmp/test262-hWCeTz.js:901:-5-902:-54
+/tmp/test262-hWCeTz.js:901:-9--28
+/tmp/test262-hWCeTz.js:901:-9--28
+/tmp/test262-hWCeTz.js:901:-9--19
+/tmp/test262-hWCeTz.js:901:-9--19
+/tmp/test262-hWCeTz.js:901:-9--19
+/tmp/test262-hWCeTz.js:901:-9--19
+/tmp/test262-hWCeTz.js:930:-3--49
+/tmp/test262-hWCeTz.js:930:-10--49
+/tmp/test262-hWCeTz.js:930:-10--40
+/tmp/test262-hWCeTz.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-8 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Mk2h6v.js:932:-1--22
+/tmp/test262-Mk2h6v.js:932:-1--22
+/tmp/test262-Mk2h6v.js:932:-1--22
+/tmp/test262-Mk2h6v.js:932:-1--22
+/tmp/test262-Mk2h6v.js:901:-5-902:-54
+/tmp/test262-Mk2h6v.js:901:-5-902:-54
+/tmp/test262-Mk2h6v.js:901:-9--28
+/tmp/test262-Mk2h6v.js:901:-9--28
+/tmp/test262-Mk2h6v.js:901:-9--19
+/tmp/test262-Mk2h6v.js:901:-9--19
+/tmp/test262-Mk2h6v.js:901:-9--19
+/tmp/test262-Mk2h6v.js:901:-9--19
+/tmp/test262-Mk2h6v.js:930:-3--67
+/tmp/test262-Mk2h6v.js:930:-10--67
+/tmp/test262-Mk2h6v.js:930:-10--49
+/tmp/test262-Mk2h6v.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-11-9 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7akWkh.js:932:-1--22
+/tmp/test262-7akWkh.js:932:-1--22
+/tmp/test262-7akWkh.js:932:-1--22
+/tmp/test262-7akWkh.js:932:-1--22
+/tmp/test262-7akWkh.js:901:-5-902:-54
+/tmp/test262-7akWkh.js:901:-5-902:-54
+/tmp/test262-7akWkh.js:901:-9--28
+/tmp/test262-7akWkh.js:901:-9--28
+/tmp/test262-7akWkh.js:901:-9--19
+/tmp/test262-7akWkh.js:901:-9--19
+/tmp/test262-7akWkh.js:901:-9--19
+/tmp/test262-7akWkh.js:901:-9--19
+/tmp/test262-7akWkh.js:930:-3--56
+/tmp/test262-7akWkh.js:930:-10--56
+/tmp/test262-7akWkh.js:930:-10--44
+/tmp/test262-7akWkh.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-4-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uxik1d.js:935:-1--22
+/tmp/test262-uxik1d.js:935:-1--22
+/tmp/test262-uxik1d.js:935:-1--22
+/tmp/test262-uxik1d.js:935:-1--22
+/tmp/test262-uxik1d.js:901:-5-902:-54
+/tmp/test262-uxik1d.js:902:-9--53
+/tmp/test262-uxik1d.js:902:-9--53
+/tmp/test262-uxik1d.js:902:-9--53
+/tmp/test262-uxik1d.js:902:-9--53
+/tmp/test262-uxik1d.js:305:-5--24
+/tmp/test262-uxik1d.js:305:-5--24
+/tmp/test262-uxik1d.js:305:-5--24
+/tmp/test262-uxik1d.js:305:-5--24
+/tmp/test262-uxik1d.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-5-a-i-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5bQPcV.js:933:-1--22
+/tmp/test262-5bQPcV.js:933:-1--22
+/tmp/test262-5bQPcV.js:933:-1--22
+/tmp/test262-5bQPcV.js:933:-1--22
+/tmp/test262-5bQPcV.js:901:-5-902:-54
+/tmp/test262-5bQPcV.js:901:-5-902:-54
+/tmp/test262-5bQPcV.js:901:-9--28
+/tmp/test262-5bQPcV.js:901:-9--28
+/tmp/test262-5bQPcV.js:901:-9--19
+/tmp/test262-5bQPcV.js:901:-9--19
+/tmp/test262-5bQPcV.js:901:-9--19
+/tmp/test262-5bQPcV.js:901:-9--19
+/tmp/test262-5bQPcV.js:931:-3--80
+/tmp/test262-5bQPcV.js:931:-10--80
+/tmp/test262-5bQPcV.js:931:-10--49
+/tmp/test262-5bQPcV.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-5-b-i-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-M7Zhgz.js:933:-1--22
+/tmp/test262-M7Zhgz.js:933:-1--22
+/tmp/test262-M7Zhgz.js:933:-1--22
+/tmp/test262-M7Zhgz.js:933:-1--22
+/tmp/test262-M7Zhgz.js:901:-5-902:-54
+/tmp/test262-M7Zhgz.js:901:-5-902:-54
+/tmp/test262-M7Zhgz.js:901:-9--28
+/tmp/test262-M7Zhgz.js:901:-9--28
+/tmp/test262-M7Zhgz.js:901:-9--19
+/tmp/test262-M7Zhgz.js:901:-9--19
+/tmp/test262-M7Zhgz.js:901:-9--19
+/tmp/test262-M7Zhgz.js:901:-9--19
+/tmp/test262-M7Zhgz.js:931:-3--88
+/tmp/test262-M7Zhgz.js:931:-10--88
+/tmp/test262-M7Zhgz.js:931:-10--53
+/tmp/test262-M7Zhgz.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-6-a-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-dF1h3v.js:933:-1--22
+/tmp/test262-dF1h3v.js:933:-1--22
+/tmp/test262-dF1h3v.js:933:-1--22
+/tmp/test262-dF1h3v.js:933:-1--22
+/tmp/test262-dF1h3v.js:901:-5-902:-54
+/tmp/test262-dF1h3v.js:901:-5-902:-54
+/tmp/test262-dF1h3v.js:901:-9--28
+/tmp/test262-dF1h3v.js:901:-9--28
+/tmp/test262-dF1h3v.js:901:-9--19
+/tmp/test262-dF1h3v.js:901:-9--19
+/tmp/test262-dF1h3v.js:901:-9--19
+/tmp/test262-dF1h3v.js:901:-9--19
+/tmp/test262-dF1h3v.js:931:-3--71
+/tmp/test262-dF1h3v.js:931:-10--71
+/tmp/test262-dF1h3v.js:931:-10--38
+/tmp/test262-dF1h3v.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-6-a-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Db2vHn.js:933:-1--22
+/tmp/test262-Db2vHn.js:933:-1--22
+/tmp/test262-Db2vHn.js:933:-1--22
+/tmp/test262-Db2vHn.js:933:-1--22
+/tmp/test262-Db2vHn.js:901:-5-902:-54
+/tmp/test262-Db2vHn.js:901:-5-902:-54
+/tmp/test262-Db2vHn.js:901:-9--28
+/tmp/test262-Db2vHn.js:901:-9--28
+/tmp/test262-Db2vHn.js:901:-9--19
+/tmp/test262-Db2vHn.js:901:-9--19
+/tmp/test262-Db2vHn.js:901:-9--19
+/tmp/test262-Db2vHn.js:901:-9--19
+/tmp/test262-Db2vHn.js:931:-3--74
+/tmp/test262-Db2vHn.js:931:-10--74
+/tmp/test262-Db2vHn.js:931:-10--43
+/tmp/test262-Db2vHn.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-6-b-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-eX1z_b.js:933:-1--22
+/tmp/test262-eX1z_b.js:933:-1--22
+/tmp/test262-eX1z_b.js:933:-1--22
+/tmp/test262-eX1z_b.js:933:-1--22
+/tmp/test262-eX1z_b.js:901:-5-902:-54
+/tmp/test262-eX1z_b.js:901:-5-902:-54
+/tmp/test262-eX1z_b.js:901:-9--28
+/tmp/test262-eX1z_b.js:901:-9--28
+/tmp/test262-eX1z_b.js:901:-9--19
+/tmp/test262-eX1z_b.js:901:-9--19
+/tmp/test262-eX1z_b.js:901:-9--19
+/tmp/test262-eX1z_b.js:901:-9--19
+/tmp/test262-eX1z_b.js:931:-3--67
+/tmp/test262-eX1z_b.js:931:-10--67
+/tmp/test262-eX1z_b.js:931:-10--44
+/tmp/test262-eX1z_b.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-6-b-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-_0zPqQ.js:933:-1--22
+/tmp/test262-_0zPqQ.js:933:-1--22
+/tmp/test262-_0zPqQ.js:933:-1--22
+/tmp/test262-_0zPqQ.js:933:-1--22
+/tmp/test262-_0zPqQ.js:901:-5-902:-54
+/tmp/test262-_0zPqQ.js:901:-5-902:-54
+/tmp/test262-_0zPqQ.js:901:-9--28
+/tmp/test262-_0zPqQ.js:901:-9--28
+/tmp/test262-_0zPqQ.js:901:-9--19
+/tmp/test262-_0zPqQ.js:901:-9--19
+/tmp/test262-_0zPqQ.js:901:-9--19
+/tmp/test262-_0zPqQ.js:901:-9--19
+/tmp/test262-_0zPqQ.js:931:-3--60
+/tmp/test262-_0zPqQ.js:931:-10--60
+/tmp/test262-_0zPqQ.js:931:-10--37
+/tmp/test262-_0zPqQ.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-6-b-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Z91xpa.js:933:-1--22
+/tmp/test262-Z91xpa.js:933:-1--22
+/tmp/test262-Z91xpa.js:933:-1--22
+/tmp/test262-Z91xpa.js:933:-1--22
+/tmp/test262-Z91xpa.js:901:-5-902:-54
+/tmp/test262-Z91xpa.js:901:-5-902:-54
+/tmp/test262-Z91xpa.js:901:-9--28
+/tmp/test262-Z91xpa.js:901:-9--28
+/tmp/test262-Z91xpa.js:901:-9--19
+/tmp/test262-Z91xpa.js:901:-9--19
+/tmp/test262-Z91xpa.js:901:-9--19
+/tmp/test262-Z91xpa.js:901:-9--19
+/tmp/test262-Z91xpa.js:931:-3--61
+/tmp/test262-Z91xpa.js:931:-10--61
+/tmp/test262-Z91xpa.js:931:-10--38
+/tmp/test262-Z91xpa.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-6-b-4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-3nQWvu.js:935:-1--22
+/tmp/test262-3nQWvu.js:935:-1--22
+/tmp/test262-3nQWvu.js:935:-1--22
+/tmp/test262-3nQWvu.js:935:-1--22
+/tmp/test262-3nQWvu.js:901:-5-902:-54
+/tmp/test262-3nQWvu.js:901:-5-902:-54
+/tmp/test262-3nQWvu.js:901:-9--28
+/tmp/test262-3nQWvu.js:901:-9--28
+/tmp/test262-3nQWvu.js:901:-9--19
+/tmp/test262-3nQWvu.js:901:-9--19
+/tmp/test262-3nQWvu.js:901:-9--19
+/tmp/test262-3nQWvu.js:901:-9--19
+/tmp/test262-3nQWvu.js:933:-3--78
+/tmp/test262-3nQWvu.js:933:-10--78
+/tmp/test262-3nQWvu.js:933:-10--37
+/tmp/test262-3nQWvu.js:933:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-7-a-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-03yuC5.js:933:-1--22
+/tmp/test262-03yuC5.js:933:-1--22
+/tmp/test262-03yuC5.js:933:-1--22
+/tmp/test262-03yuC5.js:933:-1--22
+/tmp/test262-03yuC5.js:901:-5-902:-54
+/tmp/test262-03yuC5.js:901:-5-902:-54
+/tmp/test262-03yuC5.js:901:-9--28
+/tmp/test262-03yuC5.js:901:-9--28
+/tmp/test262-03yuC5.js:901:-9--19
+/tmp/test262-03yuC5.js:901:-9--19
+/tmp/test262-03yuC5.js:901:-9--19
+/tmp/test262-03yuC5.js:901:-9--19
+/tmp/test262-03yuC5.js:931:-3--99
+/tmp/test262-03yuC5.js:931:-10--99
+/tmp/test262-03yuC5.js:931:-10--57
+/tmp/test262-03yuC5.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-8-a-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-577Nqh.js:933:-1--22
+/tmp/test262-577Nqh.js:933:-1--22
+/tmp/test262-577Nqh.js:933:-1--22
+/tmp/test262-577Nqh.js:933:-1--22
+/tmp/test262-577Nqh.js:901:-5-902:-54
+/tmp/test262-577Nqh.js:901:-5-902:-54
+/tmp/test262-577Nqh.js:901:-9--28
+/tmp/test262-577Nqh.js:901:-9--28
+/tmp/test262-577Nqh.js:901:-9--19
+/tmp/test262-577Nqh.js:901:-9--19
+/tmp/test262-577Nqh.js:901:-9--19
+/tmp/test262-577Nqh.js:901:-9--19
+/tmp/test262-577Nqh.js:931:-3--61
+/tmp/test262-577Nqh.js:931:-10--61
+/tmp/test262-577Nqh.js:931:-10--29
+/tmp/test262-577Nqh.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-8-a-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Tdpfpq.js:933:-1--22
+/tmp/test262-Tdpfpq.js:933:-1--22
+/tmp/test262-Tdpfpq.js:933:-1--22
+/tmp/test262-Tdpfpq.js:933:-1--22
+/tmp/test262-Tdpfpq.js:901:-5-902:-54
+/tmp/test262-Tdpfpq.js:901:-5-902:-54
+/tmp/test262-Tdpfpq.js:901:-9--28
+/tmp/test262-Tdpfpq.js:901:-9--28
+/tmp/test262-Tdpfpq.js:901:-9--19
+/tmp/test262-Tdpfpq.js:901:-9--19
+/tmp/test262-Tdpfpq.js:901:-9--19
+/tmp/test262-Tdpfpq.js:901:-9--19
+/tmp/test262-Tdpfpq.js:931:-3--63
+/tmp/test262-Tdpfpq.js:931:-10--63
+/tmp/test262-Tdpfpq.js:931:-10--29
+/tmp/test262-Tdpfpq.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-8-a-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-I7bDkA.js:933:-1--22
+/tmp/test262-I7bDkA.js:933:-1--22
+/tmp/test262-I7bDkA.js:933:-1--22
+/tmp/test262-I7bDkA.js:933:-1--22
+/tmp/test262-I7bDkA.js:901:-5-902:-54
+/tmp/test262-I7bDkA.js:901:-5-902:-54
+/tmp/test262-I7bDkA.js:901:-9--28
+/tmp/test262-I7bDkA.js:901:-9--28
+/tmp/test262-I7bDkA.js:901:-9--19
+/tmp/test262-I7bDkA.js:901:-9--19
+/tmp/test262-I7bDkA.js:901:-9--19
+/tmp/test262-I7bDkA.js:901:-9--19
+/tmp/test262-I7bDkA.js:931:-3--63
+/tmp/test262-I7bDkA.js:931:-10--63
+/tmp/test262-I7bDkA.js:931:-10--29
+/tmp/test262-I7bDkA.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-8-a-4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-H0HI9_.js:933:-1--22
+/tmp/test262-H0HI9_.js:933:-1--22
+/tmp/test262-H0HI9_.js:933:-1--22
+/tmp/test262-H0HI9_.js:933:-1--22
+/tmp/test262-H0HI9_.js:901:-5-902:-54
+/tmp/test262-H0HI9_.js:901:-5-902:-54
+/tmp/test262-H0HI9_.js:901:-9--28
+/tmp/test262-H0HI9_.js:901:-9--28
+/tmp/test262-H0HI9_.js:901:-9--19
+/tmp/test262-H0HI9_.js:901:-9--19
+/tmp/test262-H0HI9_.js:901:-9--19
+/tmp/test262-H0HI9_.js:901:-9--19
+/tmp/test262-H0HI9_.js:931:-3--76
+/tmp/test262-H0HI9_.js:931:-10--76
+/tmp/test262-H0HI9_.js:931:-10--29
+/tmp/test262-H0HI9_.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3-8-a-5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-tLFpVo.js:933:-1--22
+/tmp/test262-tLFpVo.js:933:-1--22
+/tmp/test262-tLFpVo.js:933:-1--22
+/tmp/test262-tLFpVo.js:933:-1--22
+/tmp/test262-tLFpVo.js:901:-5-902:-54
+/tmp/test262-tLFpVo.js:901:-5-902:-54
+/tmp/test262-tLFpVo.js:901:-9--28
+/tmp/test262-tLFpVo.js:901:-9--28
+/tmp/test262-tLFpVo.js:901:-9--19
+/tmp/test262-tLFpVo.js:901:-9--19
+/tmp/test262-tLFpVo.js:901:-9--19
+/tmp/test262-tLFpVo.js:901:-9--19
+/tmp/test262-tLFpVo.js:931:-3--62
+/tmp/test262-tLFpVo.js:931:-10--62
+/tmp/test262-tLFpVo.js:931:-10--29
+/tmp/test262-tLFpVo.js:931:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3_2-2-b-i-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6DyfC0.js:936:-1--22
+/tmp/test262-6DyfC0.js:936:-1--22
+/tmp/test262-6DyfC0.js:936:-1--22
+/tmp/test262-6DyfC0.js:936:-1--22
+/tmp/test262-6DyfC0.js:901:-5-902:-54
+/tmp/test262-6DyfC0.js:901:-5-902:-54
+/tmp/test262-6DyfC0.js:901:-9--28
+/tmp/test262-6DyfC0.js:901:-9--28
+/tmp/test262-6DyfC0.js:901:-9--19
+/tmp/test262-6DyfC0.js:901:-9--19
+/tmp/test262-6DyfC0.js:901:-9--19
+/tmp/test262-6DyfC0.js:901:-9--19
+/tmp/test262-6DyfC0.js:934:-3--58
+/tmp/test262-6DyfC0.js:934:-10--58
+/tmp/test262-6DyfC0.js:934:-10--31
+/tmp/test262-6DyfC0.js:934:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3_2-2-b-i-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qtac63.js:936:-1--22
+/tmp/test262-qtac63.js:936:-1--22
+/tmp/test262-qtac63.js:936:-1--22
+/tmp/test262-qtac63.js:936:-1--22
+/tmp/test262-qtac63.js:901:-5-902:-54
+/tmp/test262-qtac63.js:901:-5-902:-54
+/tmp/test262-qtac63.js:901:-9--28
+/tmp/test262-qtac63.js:901:-9--28
+/tmp/test262-qtac63.js:901:-9--19
+/tmp/test262-qtac63.js:901:-9--19
+/tmp/test262-qtac63.js:901:-9--19
+/tmp/test262-qtac63.js:901:-9--19
+/tmp/test262-qtac63.js:934:-3--42
+/tmp/test262-qtac63.js:934:-10--42
+/tmp/test262-qtac63.js:934:-10--31
+/tmp/test262-qtac63.js:934:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3_2-2-b-i-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Vbn7J4.js:936:-1--22
+/tmp/test262-Vbn7J4.js:936:-1--22
+/tmp/test262-Vbn7J4.js:936:-1--22
+/tmp/test262-Vbn7J4.js:936:-1--22
+/tmp/test262-Vbn7J4.js:901:-5-902:-54
+/tmp/test262-Vbn7J4.js:901:-5-902:-54
+/tmp/test262-Vbn7J4.js:901:-9--28
+/tmp/test262-Vbn7J4.js:901:-9--28
+/tmp/test262-Vbn7J4.js:901:-9--19
+/tmp/test262-Vbn7J4.js:901:-9--19
+/tmp/test262-Vbn7J4.js:901:-9--19
+/tmp/test262-Vbn7J4.js:901:-9--19
+/tmp/test262-Vbn7J4.js:934:-3--44
+/tmp/test262-Vbn7J4.js:934:-10--44
+/tmp/test262-Vbn7J4.js:934:-10--31
+/tmp/test262-Vbn7J4.js:934:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3_2-3-a-1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Xk4s0z.js:932:-1--22
+/tmp/test262-Xk4s0z.js:932:-1--22
+/tmp/test262-Xk4s0z.js:932:-1--22
+/tmp/test262-Xk4s0z.js:932:-1--22
+/tmp/test262-Xk4s0z.js:901:-5-902:-54
+/tmp/test262-Xk4s0z.js:901:-5-902:-54
+/tmp/test262-Xk4s0z.js:901:-9--28
+/tmp/test262-Xk4s0z.js:901:-9--28
+/tmp/test262-Xk4s0z.js:901:-9--19
+/tmp/test262-Xk4s0z.js:901:-9--19
+/tmp/test262-Xk4s0z.js:901:-9--19
+/tmp/test262-Xk4s0z.js:901:-9--19
+/tmp/test262-Xk4s0z.js:930:-3--106
+/tmp/test262-Xk4s0z.js:930:-10--106
+/tmp/test262-Xk4s0z.js:930:-10--87
+/tmp/test262-Xk4s0z.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3_2-3-a-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qYAHtW.js:932:-1--22
+/tmp/test262-qYAHtW.js:932:-1--22
+/tmp/test262-qYAHtW.js:932:-1--22
+/tmp/test262-qYAHtW.js:932:-1--22
+/tmp/test262-qYAHtW.js:901:-5-902:-54
+/tmp/test262-qYAHtW.js:901:-5-902:-54
+/tmp/test262-qYAHtW.js:901:-9--28
+/tmp/test262-qYAHtW.js:901:-9--28
+/tmp/test262-qYAHtW.js:901:-9--19
+/tmp/test262-qYAHtW.js:901:-9--19
+/tmp/test262-qYAHtW.js:901:-9--19
+/tmp/test262-qYAHtW.js:901:-9--19
+/tmp/test262-qYAHtW.js:930:-3--90
+/tmp/test262-qYAHtW.js:930:-10--90
+/tmp/test262-qYAHtW.js:930:-10--79
+/tmp/test262-qYAHtW.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.12/15.12.3/15.12.3_2-3-a-3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Ee2gQZ.js:932:-1--22
+/tmp/test262-Ee2gQZ.js:932:-1--22
+/tmp/test262-Ee2gQZ.js:932:-1--22
+/tmp/test262-Ee2gQZ.js:932:-1--22
+/tmp/test262-Ee2gQZ.js:901:-5-902:-54
+/tmp/test262-Ee2gQZ.js:901:-5-902:-54
+/tmp/test262-Ee2gQZ.js:901:-9--28
+/tmp/test262-Ee2gQZ.js:901:-9--28
+/tmp/test262-Ee2gQZ.js:901:-9--19
+/tmp/test262-Ee2gQZ.js:901:-9--19
+/tmp/test262-Ee2gQZ.js:901:-9--19
+/tmp/test262-Ee2gQZ.js:901:-9--19
+/tmp/test262-Ee2gQZ.js:930:-3--97
+/tmp/test262-Ee2gQZ.js:930:-10--97
+/tmp/test262-Ee2gQZ.js:930:-10--83
+/tmp/test262-Ee2gQZ.js:930:-10--14
+../envs/es5.env:913:28-919:3
+../envs/es5.env:916:11-918:5
+../envs/es5.env:235:28-239:1
+Uncaught exception: "Unbound identifier: JSON"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.12/15.12.3/15.12.3_4-1-1 passed in non-strict mode
+=== ch15/15.12/15.12.3/15.12.3_4-1-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ZCVAzk.js:938:-1--22
+/tmp/test262-ZCVAzk.js:938:-1--22
+/tmp/test262-ZCVAzk.js:938:-1--22
+/tmp/test262-ZCVAzk.js:938:-1--22
+/tmp/test262-ZCVAzk.js:901:-5-902:-54
+/tmp/test262-ZCVAzk.js:902:-9--53
+/tmp/test262-ZCVAzk.js:902:-9--53
+/tmp/test262-ZCVAzk.js:902:-9--53
+/tmp/test262-ZCVAzk.js:902:-9--53
+/tmp/test262-ZCVAzk.js:305:-5--24
+/tmp/test262-ZCVAzk.js:305:-5--24
+/tmp/test262-ZCVAzk.js:305:-5--24
+/tmp/test262-ZCVAzk.js:305:-5--24
+/tmp/test262-ZCVAzk.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.12/15.12.3/15.12.3_4-1-3 passed in non-strict mode

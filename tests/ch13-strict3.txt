@@ -1,0 +1,109 @@
+ch13/13.0/13.0-10-s passed in strict mode
+ch13/13.0/13.0-11-s passed in strict mode
+ch13/13.0/13.0-12-s passed in strict mode
+ch13/13.0/13.0-13-s passed in strict mode
+ch13/13.0/13.0-14-s passed in strict mode
+ch13/13.0/13.0-15-s passed in strict mode
+ch13/13.0/13.0-16-s passed in strict mode
+ch13/13.0/13.0-17-s passed in strict mode
+ch13/13.0/13.0-7-s passed in strict mode
+ch13/13.0/13.0-8-s passed in strict mode
+ch13/13.0/13.0-9-s passed in strict mode
+ch13/13.0/13.0_4-17gs failed in strict mode as expected
+ch13/13.0/13.0_4-5gs failed in strict mode as expected
+ch13/13.1/13.1-1-s passed in strict mode
+ch13/13.1/13.1-10-s passed in strict mode
+ch13/13.1/13.1-11-s passed in strict mode
+ch13/13.1/13.1-12-s passed in strict mode
+ch13/13.1/13.1-13-s passed in strict mode
+ch13/13.1/13.1-13gs failed in strict mode as expected
+ch13/13.1/13.1-14-s passed in strict mode
+ch13/13.1/13.1-15-s passed in strict mode
+ch13/13.1/13.1-16-s passed in strict mode
+ch13/13.1/13.1-17-s passed in strict mode
+ch13/13.1/13.1-18-s passed in strict mode
+ch13/13.1/13.1-19-s passed in strict mode
+ch13/13.1/13.1-1gs failed in strict mode as expected
+ch13/13.1/13.1-2-s passed in strict mode
+ch13/13.1/13.1-20-s passed in strict mode
+ch13/13.1/13.1-21-s passed in strict mode
+ch13/13.1/13.1-22-s passed in strict mode
+ch13/13.1/13.1-23-s passed in strict mode
+ch13/13.1/13.1-24-s passed in strict mode
+ch13/13.1/13.1-25-s passed in strict mode
+ch13/13.1/13.1-26-s passed in strict mode
+ch13/13.1/13.1-27-s passed in strict mode
+ch13/13.1/13.1-28-s passed in strict mode
+ch13/13.1/13.1-29-s passed in strict mode
+ch13/13.1/13.1-3-s passed in strict mode
+ch13/13.1/13.1-30-s passed in strict mode
+ch13/13.1/13.1-31-s passed in strict mode
+ch13/13.1/13.1-32-s passed in strict mode
+ch13/13.1/13.1-33-s passed in strict mode
+ch13/13.1/13.1-34-s passed in strict mode
+ch13/13.1/13.1-35-s passed in strict mode
+ch13/13.1/13.1-36-s passed in strict mode
+ch13/13.1/13.1-37-s passed in strict mode
+ch13/13.1/13.1-38-s passed in strict mode
+ch13/13.1/13.1-39-s passed in strict mode
+ch13/13.1/13.1-4-s passed in strict mode
+ch13/13.1/13.1-40-s passed in strict mode
+ch13/13.1/13.1-41-s passed in strict mode
+ch13/13.1/13.1-42-s passed in strict mode
+ch13/13.1/13.1-4gs failed in strict mode as expected
+ch13/13.1/13.1-5-s passed in strict mode
+ch13/13.1/13.1-5gs failed in strict mode as expected
+ch13/13.1/13.1-6-s passed in strict mode
+ch13/13.1/13.1-7-s passed in strict mode
+ch13/13.1/13.1-8-s passed in strict mode
+ch13/13.1/13.1-8gs failed in strict mode as expected
+ch13/13.1/13.1-9-s passed in strict mode
+ch13/13.2/13.2-1-s passed in strict mode
+ch13/13.2/13.2-10-s passed in strict mode
+ch13/13.2/13.2-11-s passed in strict mode
+ch13/13.2/13.2-12-s passed in strict mode
+ch13/13.2/13.2-13-s passed in strict mode
+ch13/13.2/13.2-14-s passed in strict mode
+ch13/13.2/13.2-15-s passed in strict mode
+ch13/13.2/13.2-16-s passed in strict mode
+ch13/13.2/13.2-17-s passed in strict mode
+ch13/13.2/13.2-18-s passed in strict mode
+ch13/13.2/13.2-19-b-3gs failed in strict mode as expected
+ch13/13.2/13.2-19-s passed in strict mode
+ch13/13.2/13.2-2-s passed in strict mode
+ch13/13.2/13.2-20-s passed in strict mode
+ch13/13.2/13.2-21-s passed in strict mode
+ch13/13.2/13.2-22-s passed in strict mode
+ch13/13.2/13.2-23-s passed in strict mode
+ch13/13.2/13.2-24-s passed in strict mode
+ch13/13.2/13.2-25-s passed in strict mode
+ch13/13.2/13.2-26-s passed in strict mode
+ch13/13.2/13.2-27-s passed in strict mode
+ch13/13.2/13.2-28-s passed in strict mode
+ch13/13.2/13.2-29-s passed in strict mode
+ch13/13.2/13.2-3-s passed in strict mode
+ch13/13.2/13.2-30-s passed in strict mode
+ch13/13.2/13.2-31-s passed in strict mode
+ch13/13.2/13.2-32-s passed in strict mode
+ch13/13.2/13.2-33-s passed in strict mode
+ch13/13.2/13.2-34-s passed in strict mode
+ch13/13.2/13.2-35-s passed in strict mode
+ch13/13.2/13.2-36-s passed in strict mode
+ch13/13.2/13.2-4-s passed in strict mode
+ch13/13.2/13.2-5-s passed in strict mode
+ch13/13.2/13.2-6-s passed in strict mode
+ch13/13.2/13.2-7-s passed in strict mode
+ch13/13.2/13.2-8-s passed in strict mode
+ch13/13.2/13.2-9-s passed in strict mode
+ch13/13.2/S13.2.3_A1 passed in strict mode
+ch13/13.2/S13.2_A6_T1 passed in strict mode
+ch13/13.2/S13.2_A6_T2 passed in strict mode
+ch13/13.2/S13.2_A7_T1 passed in strict mode
+ch13/13.2/S13.2_A7_T2 passed in strict mode
+ch13/13.2/S13.2_A8_T1 passed in strict mode
+ch13/13.2/S13.2_A8_T2 passed in strict mode
+
+=== Summary ===
+ - Ran 104 tests
+ - All tests succeeded
+

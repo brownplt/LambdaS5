@@ -1,0 +1,283 @@
+ch15/15.11/15.11-1 passed in non-strict mode
+ch15/15.11/15.11-2 passed in non-strict mode
+=== ch15/15.11/15.11.1/S15.11.1.1_A1_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-pa7FGu.js:955:-1-956:-139
+/tmp/test262-pa7FGu.js:956:-3--138
+/tmp/test262-pa7FGu.js:956:-3--138
+/tmp/test262-pa7FGu.js:956:-3--138
+/tmp/test262-pa7FGu.js:956:-3--138
+/tmp/test262-pa7FGu.js:305:-5--24
+/tmp/test262-pa7FGu.js:305:-5--24
+/tmp/test262-pa7FGu.js:305:-5--24
+/tmp/test262-pa7FGu.js:305:-5--24
+/tmp/test262-pa7FGu.js:289:-5--35
+Uncaught exception: "#3: function otherScope(msg){return Error(msg);} var err3=otherScope(); err3.hasOwnProperty("message"). Actual: undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.1/S15.11.1.1_A2_T1 passed in non-strict mode
+=== ch15/15.11/15.11.1/S15.11.1.1_A3_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-cOerWx.js:931:-1--51
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.11/15.11.1/S15.11.1_A1_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-f8WMfj.js:931:-1--51
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.11/15.11.2/S15.11.2.1_A1_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-yC3Guu.js:955:-1-956:-143
+/tmp/test262-yC3Guu.js:956:-3--142
+/tmp/test262-yC3Guu.js:956:-3--142
+/tmp/test262-yC3Guu.js:956:-3--142
+/tmp/test262-yC3Guu.js:956:-3--142
+/tmp/test262-yC3Guu.js:305:-5--24
+/tmp/test262-yC3Guu.js:305:-5--24
+/tmp/test262-yC3Guu.js:305:-5--24
+/tmp/test262-yC3Guu.js:305:-5--24
+/tmp/test262-yC3Guu.js:289:-5--35
+Uncaught exception: "#3: function otherScope(msg){return new Error(msg);} var err3=otherScope(); err3.hasOwnProperty("message"). Actual: undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.2/S15.11.2.1_A2_T1 passed in non-strict mode
+=== ch15/15.11/15.11.2/S15.11.2.1_A3_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-8gp0kd.js:931:-1--51
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.11/15.11.3/S15.11.3.1_A1_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-tk0WsW.js:932:-1-933:-53
+/tmp/test262-tk0WsW.js:932:-1-933:-53
+/tmp/test262-tk0WsW.js:932:-4--26
+/tmp/test262-tk0WsW.js:932:-4--26
+/tmp/test262-tk0WsW.js:932:-4--26
+/tmp/test262-tk0WsW.js:932:-4--26
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.3/S15.11.3.1_A2_T1 passed in non-strict mode
+=== ch15/15.11/15.11.3/S15.11.3.1_A3_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-3kfdcZ.js:939:-1--48
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.3/S15.11.3.1_A4_T1 passed in non-strict mode
+ch15/15.11/15.11.3/S15.11.3_A1_T1 passed in non-strict mode
+=== ch15/15.11/15.11.3/S15.11.3_A2_T1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ubx8uU.js:932:-1-933:-102
+/tmp/test262-ubx8uU.js:933:-3--101
+/tmp/test262-ubx8uU.js:933:-3--101
+/tmp/test262-ubx8uU.js:933:-3--101
+/tmp/test262-ubx8uU.js:933:-3--101
+/tmp/test262-ubx8uU.js:305:-5--24
+/tmp/test262-ubx8uU.js:305:-5--24
+/tmp/test262-ubx8uU.js:305:-5--24
+/tmp/test262-ubx8uU.js:305:-5--24
+/tmp/test262-ubx8uU.js:289:-5--35
+Uncaught exception: "#1: var err1=Error("err"); err1.constructor.length===1. Actual: 0"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.4/S15.11.4.1_A1_T1 passed in non-strict mode
+=== ch15/15.11/15.11.4/S15.11.4.1_A1_T2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6KEvZH.js:959:-1--51
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.11/15.11.4/S15.11.4.2_A1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-y9CFne.js:931:-1-932:-118
+/tmp/test262-y9CFne.js:932:-2--117
+/tmp/test262-y9CFne.js:932:-2--117
+/tmp/test262-y9CFne.js:932:-2--117
+/tmp/test262-y9CFne.js:932:-2--117
+/tmp/test262-y9CFne.js:305:-5--24
+/tmp/test262-y9CFne.js:305:-5--24
+/tmp/test262-y9CFne.js:305:-5--24
+/tmp/test262-y9CFne.js:305:-5--24
+/tmp/test262-y9CFne.js:289:-5--35
+Uncaught exception: "#1: Error.prototype.hasOwnProperty('name') return true. Actual: false"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.11/15.11.4/S15.11.4.2_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-lwuTnv.js:931:-1-932:-78
+/tmp/test262-lwuTnv.js:932:-2--77
+/tmp/test262-lwuTnv.js:932:-2--77
+/tmp/test262-lwuTnv.js:932:-2--77
+/tmp/test262-lwuTnv.js:932:-2--77
+/tmp/test262-lwuTnv.js:305:-5--24
+/tmp/test262-lwuTnv.js:305:-5--24
+/tmp/test262-lwuTnv.js:305:-5--24
+/tmp/test262-lwuTnv.js:305:-5--24
+/tmp/test262-lwuTnv.js:289:-5--35
+Uncaught exception: "#1: Error.prototype.name==="Error". Actual: undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.11/15.11.4/S15.11.4.3_A1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-OHemJd.js:931:-1-932:-123
+/tmp/test262-OHemJd.js:932:-2--122
+/tmp/test262-OHemJd.js:932:-2--122
+/tmp/test262-OHemJd.js:932:-2--122
+/tmp/test262-OHemJd.js:932:-2--122
+/tmp/test262-OHemJd.js:305:-5--24
+/tmp/test262-OHemJd.js:305:-5--24
+/tmp/test262-OHemJd.js:305:-5--24
+/tmp/test262-OHemJd.js:305:-5--24
+/tmp/test262-OHemJd.js:289:-5--35
+Uncaught exception: "#1: Error.prototype.hasOwnProperty('message') reurn true. Actual: false"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.11/15.11.4/S15.11.4.3_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-78hpZy.js:931:-1-932:-97
+/tmp/test262-78hpZy.js:932:-3--96
+/tmp/test262-78hpZy.js:932:-3--96
+/tmp/test262-78hpZy.js:932:-3--96
+/tmp/test262-78hpZy.js:932:-3--96
+/tmp/test262-78hpZy.js:305:-5--24
+/tmp/test262-78hpZy.js:305:-5--24
+/tmp/test262-78hpZy.js:305:-5--24
+/tmp/test262-78hpZy.js:305:-5--24
+/tmp/test262-78hpZy.js:289:-5--35
+Uncaught exception: "#1: typeof Error.prototype.message === "string". Actual: undefined"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.4/S15.11.4.4_A1 passed in non-strict mode
+ch15/15.11/15.11.4/S15.11.4.4_A2 passed in non-strict mode
+ch15/15.11/15.11.4/S15.11.4_A1 passed in non-strict mode
+=== ch15/15.11/15.11.4/S15.11.4_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-1LdSuE.js:929:-1--51
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.4/S15.11.4_A3 passed in non-strict mode
+ch15/15.11/15.11.4/S15.11.4_A4 passed in non-strict mode
+ch15/15.11/15.11.4/15.11.4.2/15.11.4.2-1 passed in non-strict mode
+ch15/15.11/15.11.4/15.11.4.3/15.11.4.3-1 passed in non-strict mode
+ch15/15.11/15.11.4/15.11.4.4/15.11.4.4-10-1 passed in non-strict mode
+ch15/15.11/15.11.4/15.11.4.4/15.11.4.4-6-1 passed in non-strict mode
+ch15/15.11/15.11.4/15.11.4.4/15.11.4.4-6-2 passed in non-strict mode
+ch15/15.11/15.11.4/15.11.4.4/15.11.4.4-8-1 passed in non-strict mode
+=== ch15/15.11/15.11.4/15.11.4.4/15.11.4.4-8-2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-F8B9K8.js:934:-1--22
+/tmp/test262-F8B9K8.js:934:-1--22
+/tmp/test262-F8B9K8.js:934:-1--22
+/tmp/test262-F8B9K8.js:934:-1--22
+/tmp/test262-F8B9K8.js:901:-5-902:-54
+/tmp/test262-F8B9K8.js:902:-9--53
+/tmp/test262-F8B9K8.js:902:-9--53
+/tmp/test262-F8B9K8.js:902:-9--53
+/tmp/test262-F8B9K8.js:902:-9--53
+/tmp/test262-F8B9K8.js:305:-5--24
+/tmp/test262-F8B9K8.js:305:-5--24
+/tmp/test262-F8B9K8.js:305:-5--24
+/tmp/test262-F8B9K8.js:305:-5--24
+/tmp/test262-F8B9K8.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.11/15.11.4/15.11.4.4/15.11.4.4-9-1 passed in non-strict mode

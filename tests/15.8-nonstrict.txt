@@ -1,0 +1,2954 @@
+=== ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-0ZnKgK.js:930:-1-931:-105
+/tmp/test262-0ZnKgK.js:930:-1-931:-105
+/tmp/test262-0ZnKgK.js:930:-5--27
+/tmp/test262-0ZnKgK.js:930:-5--18
+/tmp/test262-0ZnKgK.js:930:-5--18
+/tmp/test262-0ZnKgK.js:930:-5--18
+/tmp/test262-0ZnKgK.js:930:-5--18
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-o8hqrA.js:931:-1--11
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-KxPHW2.js:930:-1-931:-109
+/tmp/test262-KxPHW2.js:930:-1-931:-109
+/tmp/test262-KxPHW2.js:930:-5--30
+/tmp/test262-KxPHW2.js:930:-5--21
+/tmp/test262-KxPHW2.js:930:-5--21
+/tmp/test262-KxPHW2.js:930:-5--21
+/tmp/test262-KxPHW2.js:930:-5--21
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-hj4gkw.js:931:-1--14
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-cmJqrb.js:930:-1-931:-109
+/tmp/test262-cmJqrb.js:930:-1-931:-109
+/tmp/test262-cmJqrb.js:930:-5--29
+/tmp/test262-cmJqrb.js:930:-5--20
+/tmp/test262-cmJqrb.js:930:-5--20
+/tmp/test262-cmJqrb.js:930:-5--20
+/tmp/test262-cmJqrb.js:930:-5--20
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qABsH4.js:931:-1--13
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5hoU5E.js:930:-1-931:-113
+/tmp/test262-5hoU5E.js:930:-1-931:-113
+/tmp/test262-5hoU5E.js:930:-5--31
+/tmp/test262-5hoU5E.js:930:-5--22
+/tmp/test262-5hoU5E.js:930:-5--22
+/tmp/test262-5hoU5E.js:930:-5--22
+/tmp/test262-5hoU5E.js:930:-5--22
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-UXTY46.js:931:-1--15
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-PGPXOy.js:930:-1-931:-115
+/tmp/test262-PGPXOy.js:930:-1-931:-115
+/tmp/test262-PGPXOy.js:930:-5--32
+/tmp/test262-PGPXOy.js:930:-5--23
+/tmp/test262-PGPXOy.js:930:-5--23
+/tmp/test262-PGPXOy.js:930:-5--23
+/tmp/test262-PGPXOy.js:930:-5--23
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6jVLKE.js:931:-1--16
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ABW5c8.js:930:-1-931:-107
+/tmp/test262-ABW5c8.js:930:-1-931:-107
+/tmp/test262-ABW5c8.js:930:-5--28
+/tmp/test262-ABW5c8.js:930:-5--19
+/tmp/test262-ABW5c8.js:930:-5--19
+/tmp/test262-ABW5c8.js:930:-5--19
+/tmp/test262-ABW5c8.js:930:-5--19
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-MGuFs9.js:931:-1--12
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-k1IvYI.js:930:-1-931:-112
+/tmp/test262-k1IvYI.js:930:-1-931:-112
+/tmp/test262-k1IvYI.js:930:-5--33
+/tmp/test262-k1IvYI.js:930:-5--24
+/tmp/test262-k1IvYI.js:930:-5--24
+/tmp/test262-k1IvYI.js:930:-5--24
+/tmp/test262-k1IvYI.js:930:-5--24
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WV2EGa.js:931:-1--17
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A1 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A2 passed in non-strict mode
+=== ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-il2arp.js:930:-1-931:-113
+/tmp/test262-il2arp.js:930:-1-931:-113
+/tmp/test262-il2arp.js:930:-5--31
+/tmp/test262-il2arp.js:930:-5--22
+/tmp/test262-il2arp.js:930:-5--22
+/tmp/test262-il2arp.js:930:-5--22
+/tmp/test262-il2arp.js:930:-5--22
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WVZIsf.js:931:-1--15
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.1/S15.8.2.1_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.1/S15.8.2.1_A2 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.1/S15.8.2.1_A3 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A2 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A3 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A5 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A6 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.2/15.8.2.11/15.8.2.11-1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A1 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A2 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+=== ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A3 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.12/15.8.2.12-1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A1 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A2 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+=== ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A3 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A10 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A11 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A12 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A13 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A14 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A15 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A16 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A17 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A18 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A19 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A2 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A20 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A21 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RoUe5j.js:938:-1-943:-3
+/tmp/test262-RoUe5j.js:938:-1-943:-3
+/tmp/test262-RoUe5j.js:940:-2-942:-65
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:289:-5--35
+Uncaught exception: "#1: Math.pow(0, -111111) !== -Infinity"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A22 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A23 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A24 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A3 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A5 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A6 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A7 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A8 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A9 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.14/S15.8.2.14_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A1 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-HTj6hh.js:931:-1-933:-49
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:289:-5--35
+Uncaught exception: "#1: 'var x=+0; Math.round(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-M0Wpma.js:931:-1-933:-49
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:289:-5--35
+Uncaught exception: "#1: 'var x=-0; Math.round(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WI3MFH.js:931:-1-933:-63
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:289:-5--35
+Uncaught exception: "#1: 'var x=+Infinity; Math.round(x) !== +Infinity'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qsc9AR.js:931:-1-933:-63
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:289:-5--35
+Uncaught exception: "#1: 'var x=-Infinity; Math.round(x) !== -Infinity'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-UBZxvc.js:930:-1-936:-3
+/tmp/test262-UBZxvc.js:930:-1-936:-3
+/tmp/test262-UBZxvc.js:931:-1-936:-3
+/tmp/test262-UBZxvc.js:933:-2-935:-71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:289:-5--35
+Uncaught exception: "#1: 'x = 0; Math.round(x) !== Math.floor(x + 0.5)'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A7 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-sSiJuF.js:930:-1-932:-40
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:289:-5--35
+Uncaught exception: "#1: 'Math.round(-0) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A3 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A4 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: nan in identifier lookup at ../envs/es5.env:4447:18-21")
+===
+=== ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A5 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: nan in identifier lookup at ../envs/es5.env:4451:18-21")
+===
+ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A6 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A7 failed in non-strict mode ===
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+===
+ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A2 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-u267oU.js:931:-1-933:-48
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:289:-5--35
+Uncaught exception: "#1: 'var x=+0; Math.sqrt(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-E1vcKe.js:931:-1-933:-48
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:289:-5--35
+Uncaught exception: "#1: 'var x=-0; Math.sqrt(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qs5B85.js:931:-1-933:-62
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:289:-5--35
+Uncaught exception: "#1: 'var x=+Infinity; Math.sqrt(x) !== +Infinity'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fNnTl9.js:1070:-1-1076:-3
+/tmp/test262-fNnTl9.js:1070:-1-1076:-3
+/tmp/test262-fNnTl9.js:1071:-1-1076:-3
+/tmp/test262-fNnTl9.js:1073:-2-1075:-159
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:289:-5--35
+Uncaught exception: "
+x = 0
+libc.sqrt(x) = 0
+Math.sqrt(x) = sqrt NYI
+Math.abs(libc.sqrt(x) - Math.sqrt(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A1 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-YaHEqI.js:931:-1-933:-47
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:289:-5--35
+Uncaught exception: "#1: 'var x=+0; Math.tan(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-MN06Lo.js:931:-1-933:-47
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:289:-5--35
+Uncaught exception: "#1: 'var x=-0; Math.tan(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A5 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A6 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A7 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-108LFp.js:1070:-1-1076:-3
+/tmp/test262-108LFp.js:1070:-1-1076:-3
+/tmp/test262-108LFp.js:1071:-1-1076:-3
+/tmp/test262-108LFp.js:1073:-2-1075:-154
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:289:-5--35
+Uncaught exception: "
+x = -1.57079632679
+libc.tan(x) = -1.63312393532e+16
+Math.tan(x) = tan NYI
+Math.abs(libc.tan(x) - Math.tan(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A2 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A3 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RHDjGN.js:931:-1-933:-49
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:289:-5--35
+Uncaught exception: "#1: 'var x = 1; Math.acos(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-e_OyRX.js:1073:-1-1079:-3
+/tmp/test262-e_OyRX.js:1073:-1-1079:-3
+/tmp/test262-e_OyRX.js:1074:-1-1079:-3
+/tmp/test262-e_OyRX.js:1076:-2-1078:-159
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:289:-5--35
+Uncaught exception: "
+x = -1
+libc.acos(x) = 3.14159265359
+Math.acos(x) = acos NYI
+Math.abs(libc.acos(x) - Math.acos(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A2 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A3 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-c41Kxx.js:931:-1-933:-50
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:289:-5--35
+Uncaught exception: "#1: 'var x = +0; Math.asin(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-pREUKt.js:931:-1-933:-50
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:289:-5--35
+Uncaught exception: "#1: 'var x = -0; Math.asin(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-jUC3i7.js:1072:-1-1078:-3
+/tmp/test262-jUC3i7.js:1072:-1-1078:-3
+/tmp/test262-jUC3i7.js:1073:-1-1078:-3
+/tmp/test262-jUC3i7.js:1075:-2-1077:-159
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:289:-5--35
+Uncaught exception: "
+x = -1
+libc.asin(x) = -1.57079632679
+Math.asin(x) = asin NYI
+Math.abs(libc.asin(x) - Math.asin(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A1 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uxScUm.js:931:-1-933:-50
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:289:-5--35
+Uncaught exception: "#1: 'var x = +0; Math.atan(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-_lOvwP.js:931:-1-933:-50
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:289:-5--35
+Uncaught exception: "#1: 'var x = -0; Math.atan(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-mfIwIW.js:935:-1-937:-60
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:289:-5--35
+Uncaught exception: "#1: '!isEqual(Math.atan(+Infinity), Math.PI/2)'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-_4qWpJ.js:935:-1-937:-61
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:289:-5--35
+Uncaught exception: "#1: '!isEqual(Math.atan(-Infinity), -Math.PI/2)'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-GAK5yF.js:1072:-1-1078:-3
+/tmp/test262-GAK5yF.js:1072:-1-1078:-3
+/tmp/test262-GAK5yF.js:1073:-1-1078:-3
+/tmp/test262-GAK5yF.js:1075:-2-1077:-159
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:289:-5--35
+Uncaught exception: "
+x = -16
+libc.atan(x) = -1.5083775168
+Math.atan(x) = atan NYI
+Math.abs(libc.atan(x) - Math.atan(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A1 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A10 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-2S7mQ0.js:936:-1-937:-53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:289:-5--35
+Uncaught exception: "#1: !isEqual(Math.atan2(-0,-0), -Math.PI)"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A11 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-njy6aK.js:941:-1-944:-83
+/tmp/test262-njy6aK.js:941:-1-944:-83
+/tmp/test262-njy6aK.js:943:-2-944:-82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(0, -1e-15) + Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A12 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-nl9YId.js:941:-1-944:-89
+/tmp/test262-nl9YId.js:941:-1-944:-89
+/tmp/test262-nl9YId.js:943:-2-944:-88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-1e-15, 0) + ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A13 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-GRb3Gj.js:941:-1-944:-82
+/tmp/test262-GRb3Gj.js:941:-1-944:-82
+/tmp/test262-GRb3Gj.js:943:-2-944:-81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-1e-15, -0) + ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A14 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-KRItCY.js:937:-1-940:-59
+/tmp/test262-KRItCY.js:937:-1-940:-59
+/tmp/test262-KRItCY.js:939:-2-940:-58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(1e-15, Infinity) !== +0"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A15 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-EST_jm.js:940:-1-943:-83
+/tmp/test262-EST_jm.js:940:-1-943:-83
+/tmp/test262-EST_jm.js:942:-2-943:-82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(1e-15, -inf) - Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A16 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-VwNvD9.js:937:-1-940:-59
+/tmp/test262-VwNvD9.js:937:-1-940:-59
+/tmp/test262-VwNvD9.js:939:-2-940:-58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(-1e-15, Infinity) !== -0"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A17 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7cMgqJ.js:940:-1-943:-83
+/tmp/test262-7cMgqJ.js:940:-1-943:-83
+/tmp/test262-7cMgqJ.js:942:-2-943:-82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-1e-15, -inf) + Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A18 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-z0vKT6.js:944:-1-947:-87
+/tmp/test262-z0vKT6.js:944:-1-947:-87
+/tmp/test262-z0vKT6.js:946:-2-947:-86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(Infinity, 1e-15) - (Math.PI/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A19 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-NlOCy6.js:945:-1-948:-87
+/tmp/test262-NlOCy6.js:945:-1-948:-87
+/tmp/test262-NlOCy6.js:947:-2-948:-86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-inf, 1e-15) + (Math.PI/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6y5rMi.js:941:-1-944:-89
+/tmp/test262-6y5rMi.js:941:-1-944:-89
+/tmp/test262-6y5rMi.js:943:-2-944:-88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(1e-15, 0) - ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A20 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-R9OGOZ.js:937:-1-938:-83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(Infinity, Infinity) - (Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A21 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-0Z3Ykb.js:937:-1-938:-85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(Infinity, -inf) - (3*Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A22 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-FdAOx8.js:937:-1-938:-83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-inf, Infinity) + (Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A23 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fGx8b8.js:937:-1-938:-85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-inf, -inf) + (3*Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A24 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-nYA37y.js:1137:-1-1143:-3
+/tmp/test262-nYA37y.js:1137:-1-1143:-3
+/tmp/test262-nYA37y.js:1138:-1-1143:-3
+/tmp/test262-nYA37y.js:1140:-2-1142:-209
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:289:-5--35
+Uncaught exception: "
+x1 = -16
+x2 = -8
+libc.atan2(x1,x2) = -2.0344439358
+Math.atan2(x1,x2) = atan2 NYI
+Math.abs(libc.atan2(x1,x2) - Math.atan2(x1,x2)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-xmzfTT.js:941:-1-944:-89
+/tmp/test262-xmzfTT.js:941:-1-944:-89
+/tmp/test262-xmzfTT.js:943:-2-944:-88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(1e-15, 0) - ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Ojjf0B.js:937:-1-940:-59
+/tmp/test262-Ojjf0B.js:937:-1-940:-59
+/tmp/test262-Ojjf0B.js:939:-2-940:-58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 1e-15) !== +0"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-QrdN5y.js:932:-1-933:-55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 0) !== +0"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ruRLyo.js:936:-1-937:-72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(0, -0) - Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A7 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-EnrSlv.js:941:-1-944:-83
+/tmp/test262-EnrSlv.js:941:-1-944:-83
+/tmp/test262-EnrSlv.js:943:-2-944:-82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(0, -1e-15) - Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A8 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-sMA97O.js:937:-1-940:-59
+/tmp/test262-sMA97O.js:937:-1-940:-59
+/tmp/test262-sMA97O.js:939:-2-940:-58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 1e-15) !== -0"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A9 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9ncowT.js:932:-1-933:-55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 0) !== -0"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.6/S15.8.2.6_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.6/S15.8.2.6_A2 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.6/S15.8.2.6_A3 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.6/S15.8.2.6_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.6/S15.8.2.6_A5 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.6/S15.8.2.6_A6 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.6/S15.8.2.6_A7 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A1 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-C7ESKE.js:931:-1-933:-48
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:289:-5--35
+Uncaught exception: "#1: 'var x = +0; Math.cos(x) !== 1'"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6KjORN.js:931:-1-933:-48
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:289:-5--35
+Uncaught exception: "#1: 'var x = -0; Math.cos(x) !== 1'"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A5 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A6 passed in non-strict mode
+=== ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A7 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9F2BGf.js:1069:-1-1075:-3
+/tmp/test262-9F2BGf.js:1069:-1-1075:-3
+/tmp/test262-9F2BGf.js:1070:-1-1075:-3
+/tmp/test262-9F2BGf.js:1072:-2-1074:-154
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:289:-5--35
+Uncaught exception: "
+x = -3.14159265359
+libc.cos(x) = -1
+Math.cos(x) = cos NYI
+Math.abs(libc.cos(x) - Math.cos(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A1 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-arZ497.js:931:-1-933:-58
+/tmp/test262-arZ497.js:931:-1-933:-58
+/tmp/test262-arZ497.js:931:-5--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+Uncaught error: "[interp] (/tmp/test262-arZ497.js:931:-12--23) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A2 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-TmurmV.js:931:-1-933:-48
+/tmp/test262-TmurmV.js:931:-1-933:-48
+/tmp/test262-TmurmV.js:931:-5--22
+/tmp/test262-TmurmV.js:931:-5--22
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-TmurmV.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A3 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RPjBXj.js:931:-1-933:-48
+/tmp/test262-RPjBXj.js:931:-1-933:-48
+/tmp/test262-RPjBXj.js:931:-5--22
+/tmp/test262-RPjBXj.js:931:-5--22
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-RPjBXj.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A4 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-R4CZtg.js:931:-1-933:-63
+/tmp/test262-R4CZtg.js:931:-1-933:-63
+/tmp/test262-R4CZtg.js:931:-5--30
+/tmp/test262-R4CZtg.js:931:-5--30
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-R4CZtg.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A5 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-PKyyxD.js:931:-1-933:-56
+/tmp/test262-PKyyxD.js:931:-1-933:-56
+/tmp/test262-PKyyxD.js:931:-5--23
+/tmp/test262-PKyyxD.js:931:-5--23
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-PKyyxD.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+===
+=== ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A6 failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-i49n2C.js:1071:-1-1077:-3
+/tmp/test262-i49n2C.js:1071:-1-1077:-3
+/tmp/test262-i49n2C.js:1072:-1-1077:-3
+/tmp/test262-i49n2C.js:1073:-2--5
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+Uncaught error: "[interp] (/tmp/test262-i49n2C.js:1073:-8--22) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+===
+ch15/15.8/15.8.2/15.8.2.9/S15.8.2.9_A1 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.9/S15.8.2.9_A2 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.9/S15.8.2.9_A3 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.9/S15.8.2.9_A4 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.9/S15.8.2.9_A5 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.9/S15.8.2.9_A6 passed in non-strict mode
+ch15/15.8/15.8.2/15.8.2.9/S15.8.2.9_A7 passed in non-strict mode
+
+=== Summary ===
+ - Ran 170 tests
+ - Passed 81 tests (47.6%)
+ - Failed 89 tests (52.4%)
+
+Failed tests
+  ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A4 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A4 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A4 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A4 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A4 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A4 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A4 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A1 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A3 in non-strict mode
+  ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A6 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A21 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A24 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A6 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A7 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A7 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A6 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A7 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A6 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A6 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A10 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A11 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A12 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A13 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A14 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A15 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A16 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A17 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A18 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A19 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A20 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A21 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A22 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A23 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A24 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A6 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A7 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A8 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A9 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A7 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A1 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A2 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A3 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A4 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A5 in non-strict mode
+  ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A6 in non-strict mode
+
+ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-0ZnKgK.js:930:-1-931:-105
+/tmp/test262-0ZnKgK.js:930:-1-931:-105
+/tmp/test262-0ZnKgK.js:930:-5--27
+/tmp/test262-0ZnKgK.js:930:-5--18
+/tmp/test262-0ZnKgK.js:930:-5--18
+/tmp/test262-0ZnKgK.js:930:-5--18
+/tmp/test262-0ZnKgK.js:930:-5--18
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.1/S15.8.1.1_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-o8hqrA.js:931:-1--11
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-KxPHW2.js:930:-1-931:-109
+/tmp/test262-KxPHW2.js:930:-1-931:-109
+/tmp/test262-KxPHW2.js:930:-5--30
+/tmp/test262-KxPHW2.js:930:-5--21
+/tmp/test262-KxPHW2.js:930:-5--21
+/tmp/test262-KxPHW2.js:930:-5--21
+/tmp/test262-KxPHW2.js:930:-5--21
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.2/S15.8.1.2_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-hj4gkw.js:931:-1--14
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-cmJqrb.js:930:-1-931:-109
+/tmp/test262-cmJqrb.js:930:-1-931:-109
+/tmp/test262-cmJqrb.js:930:-5--29
+/tmp/test262-cmJqrb.js:930:-5--20
+/tmp/test262-cmJqrb.js:930:-5--20
+/tmp/test262-cmJqrb.js:930:-5--20
+/tmp/test262-cmJqrb.js:930:-5--20
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.3/S15.8.1.3_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qABsH4.js:931:-1--13
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-5hoU5E.js:930:-1-931:-113
+/tmp/test262-5hoU5E.js:930:-1-931:-113
+/tmp/test262-5hoU5E.js:930:-5--31
+/tmp/test262-5hoU5E.js:930:-5--22
+/tmp/test262-5hoU5E.js:930:-5--22
+/tmp/test262-5hoU5E.js:930:-5--22
+/tmp/test262-5hoU5E.js:930:-5--22
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.4/S15.8.1.4_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-UXTY46.js:931:-1--15
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-PGPXOy.js:930:-1-931:-115
+/tmp/test262-PGPXOy.js:930:-1-931:-115
+/tmp/test262-PGPXOy.js:930:-5--32
+/tmp/test262-PGPXOy.js:930:-5--23
+/tmp/test262-PGPXOy.js:930:-5--23
+/tmp/test262-PGPXOy.js:930:-5--23
+/tmp/test262-PGPXOy.js:930:-5--23
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.5/S15.8.1.5_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6jVLKE.js:931:-1--16
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ABW5c8.js:930:-1-931:-107
+/tmp/test262-ABW5c8.js:930:-1-931:-107
+/tmp/test262-ABW5c8.js:930:-5--28
+/tmp/test262-ABW5c8.js:930:-5--19
+/tmp/test262-ABW5c8.js:930:-5--19
+/tmp/test262-ABW5c8.js:930:-5--19
+/tmp/test262-ABW5c8.js:930:-5--19
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.6/S15.8.1.6_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-MGuFs9.js:931:-1--12
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-k1IvYI.js:930:-1-931:-112
+/tmp/test262-k1IvYI.js:930:-1-931:-112
+/tmp/test262-k1IvYI.js:930:-5--33
+/tmp/test262-k1IvYI.js:930:-5--24
+/tmp/test262-k1IvYI.js:930:-5--24
+/tmp/test262-k1IvYI.js:930:-5--24
+/tmp/test262-k1IvYI.js:930:-5--24
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.7/S15.8.1.7_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WV2EGa.js:931:-1--17
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A1 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-il2arp.js:930:-1-931:-113
+/tmp/test262-il2arp.js:930:-1-931:-113
+/tmp/test262-il2arp.js:930:-5--31
+/tmp/test262-il2arp.js:930:-5--22
+/tmp/test262-il2arp.js:930:-5--22
+/tmp/test262-il2arp.js:930:-5--22
+/tmp/test262-il2arp.js:930:-5--22
+../envs/es5.env:47:43-52:1
+../envs/es5.env:50:2-51:50
+Uncaught exception: "Deleting non-configurable field"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.1/15.8.1.8/S15.8.1.8_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WVZIsf.js:931:-1--15
+../envs/es5.env:4950:42-5009:7
+../envs/es5.env:4952:2-5009:5
+../envs/es5.env:4954:2-5009:5
+../envs/es5.env:4960:2-5009:5
+../envs/es5.env:4960:42-5009:5
+../envs/es5.env:4963:2-5008:2
+../envs/es5.env:4963:43-5008:2
+../envs/es5.env:4964:2-11
+../envs/es5.env:4954:26-4958:3
+../envs/es5.env:4955:14-4957:5
+Uncaught exception: {[#proto: object, #class: "Object", #extensible: true,]}
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.10/S15.8.2.10_A6 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A2 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.2/15.8.2.11/S15.8.2.11_A3 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A2 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.2/15.8.2.12/S15.8.2.12_A3 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A21 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RoUe5j.js:938:-1-943:-3
+/tmp/test262-RoUe5j.js:938:-1-943:-3
+/tmp/test262-RoUe5j.js:940:-2-942:-65
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:942:-3--64
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:305:-5--24
+/tmp/test262-RoUe5j.js:289:-5--35
+Uncaught exception: "#1: Math.pow(0, -111111) !== -Infinity"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.13/S15.8.2.13_A24 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-HTj6hh.js:931:-1-933:-49
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:933:-2--48
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:305:-5--24
+/tmp/test262-HTj6hh.js:289:-5--35
+Uncaught exception: "#1: 'var x=+0; Math.round(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-M0Wpma.js:931:-1-933:-49
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:933:-2--48
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:305:-5--24
+/tmp/test262-M0Wpma.js:289:-5--35
+Uncaught exception: "#1: 'var x=-0; Math.round(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-WI3MFH.js:931:-1-933:-63
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:933:-2--62
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:305:-5--24
+/tmp/test262-WI3MFH.js:289:-5--35
+Uncaught exception: "#1: 'var x=+Infinity; Math.round(x) !== +Infinity'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A5 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qsc9AR.js:931:-1-933:-63
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:933:-2--62
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:305:-5--24
+/tmp/test262-qsc9AR.js:289:-5--35
+Uncaught exception: "#1: 'var x=-Infinity; Math.round(x) !== -Infinity'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A6 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-UBZxvc.js:930:-1-936:-3
+/tmp/test262-UBZxvc.js:930:-1-936:-3
+/tmp/test262-UBZxvc.js:931:-1-936:-3
+/tmp/test262-UBZxvc.js:933:-2-935:-71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:935:-3--71
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:305:-5--24
+/tmp/test262-UBZxvc.js:289:-5--35
+Uncaught exception: "#1: 'x = 0; Math.round(x) !== Math.floor(x + 0.5)'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.15/S15.8.2.15_A7 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-sSiJuF.js:930:-1-932:-40
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:932:-2--39
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:305:-5--24
+/tmp/test262-sSiJuF.js:289:-5--35
+Uncaught exception: "#1: 'Math.round(-0) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A4 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: nan in identifier lookup at ../envs/es5.env:4447:18-21")
+
+ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A5 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: nan in identifier lookup at ../envs/es5.env:4451:18-21")
+
+ch15/15.8/15.8.2/15.8.2.16/S15.8.2.16_A7 in non-strict mode: 
+--- errors ---
+Fatal error: exception Failure("[interp] Unbound identifier: curr in identifier lookup at ../envs/es5.env:4301:16-20")
+
+ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-u267oU.js:931:-1-933:-48
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:933:-2--47
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:305:-5--24
+/tmp/test262-u267oU.js:289:-5--35
+Uncaught exception: "#1: 'var x=+0; Math.sqrt(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-E1vcKe.js:931:-1-933:-48
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:933:-2--47
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:305:-5--24
+/tmp/test262-E1vcKe.js:289:-5--35
+Uncaught exception: "#1: 'var x=-0; Math.sqrt(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A5 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-qs5B85.js:931:-1-933:-62
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:933:-2--61
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:305:-5--24
+/tmp/test262-qs5B85.js:289:-5--35
+Uncaught exception: "#1: 'var x=+Infinity; Math.sqrt(x) !== +Infinity'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.17/S15.8.2.17_A6 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fNnTl9.js:1070:-1-1076:-3
+/tmp/test262-fNnTl9.js:1070:-1-1076:-3
+/tmp/test262-fNnTl9.js:1071:-1-1076:-3
+/tmp/test262-fNnTl9.js:1073:-2-1075:-159
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:1075:-3--158
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:305:-5--24
+/tmp/test262-fNnTl9.js:289:-5--35
+Uncaught exception: "
+x = 0
+libc.sqrt(x) = 0
+Math.sqrt(x) = sqrt NYI
+Math.abs(libc.sqrt(x) - Math.sqrt(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-YaHEqI.js:931:-1-933:-47
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:933:-2--46
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:305:-5--24
+/tmp/test262-YaHEqI.js:289:-5--35
+Uncaught exception: "#1: 'var x=+0; Math.tan(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-MN06Lo.js:931:-1-933:-47
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:933:-2--46
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:305:-5--24
+/tmp/test262-MN06Lo.js:289:-5--35
+Uncaught exception: "#1: 'var x=-0; Math.tan(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.18/S15.8.2.18_A7 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-108LFp.js:1070:-1-1076:-3
+/tmp/test262-108LFp.js:1070:-1-1076:-3
+/tmp/test262-108LFp.js:1071:-1-1076:-3
+/tmp/test262-108LFp.js:1073:-2-1075:-154
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:1075:-3--153
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:305:-5--24
+/tmp/test262-108LFp.js:289:-5--35
+Uncaught exception: "
+x = -1.57079632679
+libc.tan(x) = -1.63312393532e+16
+Math.tan(x) = tan NYI
+Math.abs(libc.tan(x) - Math.tan(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RHDjGN.js:931:-1-933:-49
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:933:-2--48
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:305:-5--24
+/tmp/test262-RHDjGN.js:289:-5--35
+Uncaught exception: "#1: 'var x = 1; Math.acos(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.2/S15.8.2.2_A5 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-e_OyRX.js:1073:-1-1079:-3
+/tmp/test262-e_OyRX.js:1073:-1-1079:-3
+/tmp/test262-e_OyRX.js:1074:-1-1079:-3
+/tmp/test262-e_OyRX.js:1076:-2-1078:-159
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:1078:-3--158
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:305:-5--24
+/tmp/test262-e_OyRX.js:289:-5--35
+Uncaught exception: "
+x = -1
+libc.acos(x) = 3.14159265359
+Math.acos(x) = acos NYI
+Math.abs(libc.acos(x) - Math.acos(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-c41Kxx.js:931:-1-933:-50
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:933:-2--49
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:305:-5--24
+/tmp/test262-c41Kxx.js:289:-5--35
+Uncaught exception: "#1: 'var x = +0; Math.asin(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A5 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-pREUKt.js:931:-1-933:-50
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:933:-2--49
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:305:-5--24
+/tmp/test262-pREUKt.js:289:-5--35
+Uncaught exception: "#1: 'var x = -0; Math.asin(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.3/S15.8.2.3_A6 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-jUC3i7.js:1072:-1-1078:-3
+/tmp/test262-jUC3i7.js:1072:-1-1078:-3
+/tmp/test262-jUC3i7.js:1073:-1-1078:-3
+/tmp/test262-jUC3i7.js:1075:-2-1077:-159
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:1077:-3--158
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:305:-5--24
+/tmp/test262-jUC3i7.js:289:-5--35
+Uncaught exception: "
+x = -1
+libc.asin(x) = -1.57079632679
+Math.asin(x) = asin NYI
+Math.abs(libc.asin(x) - Math.asin(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-uxScUm.js:931:-1-933:-50
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:933:-2--49
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:305:-5--24
+/tmp/test262-uxScUm.js:289:-5--35
+Uncaught exception: "#1: 'var x = +0; Math.atan(x) !== +0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-_lOvwP.js:931:-1-933:-50
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:933:-2--49
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:305:-5--24
+/tmp/test262-_lOvwP.js:289:-5--35
+Uncaught exception: "#1: 'var x = -0; Math.atan(x) !== -0'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-mfIwIW.js:935:-1-937:-60
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:937:-2--59
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:305:-5--24
+/tmp/test262-mfIwIW.js:289:-5--35
+Uncaught exception: "#1: '!isEqual(Math.atan(+Infinity), Math.PI/2)'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A5 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-_4qWpJ.js:935:-1-937:-61
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:937:-2--60
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:305:-5--24
+/tmp/test262-_4qWpJ.js:289:-5--35
+Uncaught exception: "#1: '!isEqual(Math.atan(-Infinity), -Math.PI/2)'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.4/S15.8.2.4_A6 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-GAK5yF.js:1072:-1-1078:-3
+/tmp/test262-GAK5yF.js:1072:-1-1078:-3
+/tmp/test262-GAK5yF.js:1073:-1-1078:-3
+/tmp/test262-GAK5yF.js:1075:-2-1077:-159
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:1077:-3--158
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:305:-5--24
+/tmp/test262-GAK5yF.js:289:-5--35
+Uncaught exception: "
+x = -16
+libc.atan(x) = -1.5083775168
+Math.atan(x) = atan NYI
+Math.abs(libc.atan(x) - Math.atan(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A10 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-2S7mQ0.js:936:-1-937:-53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:937:-2--53
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:305:-5--24
+/tmp/test262-2S7mQ0.js:289:-5--35
+Uncaught exception: "#1: !isEqual(Math.atan2(-0,-0), -Math.PI)"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A11 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-njy6aK.js:941:-1-944:-83
+/tmp/test262-njy6aK.js:941:-1-944:-83
+/tmp/test262-njy6aK.js:943:-2-944:-82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:944:-3--82
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:309:-5--24
+/tmp/test262-njy6aK.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(0, -1e-15) + Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A12 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-nl9YId.js:941:-1-944:-89
+/tmp/test262-nl9YId.js:941:-1-944:-89
+/tmp/test262-nl9YId.js:943:-2-944:-88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:944:-3--88
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:309:-5--24
+/tmp/test262-nl9YId.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-1e-15, 0) + ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A13 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-GRb3Gj.js:941:-1-944:-82
+/tmp/test262-GRb3Gj.js:941:-1-944:-82
+/tmp/test262-GRb3Gj.js:943:-2-944:-81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:944:-3--81
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:309:-5--24
+/tmp/test262-GRb3Gj.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-1e-15, -0) + ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A14 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-KRItCY.js:937:-1-940:-59
+/tmp/test262-KRItCY.js:937:-1-940:-59
+/tmp/test262-KRItCY.js:939:-2-940:-58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:940:-3--58
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:309:-5--24
+/tmp/test262-KRItCY.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(1e-15, Infinity) !== +0"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A15 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-EST_jm.js:940:-1-943:-83
+/tmp/test262-EST_jm.js:940:-1-943:-83
+/tmp/test262-EST_jm.js:942:-2-943:-82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:943:-3--82
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:309:-5--24
+/tmp/test262-EST_jm.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(1e-15, -inf) - Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A16 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-VwNvD9.js:937:-1-940:-59
+/tmp/test262-VwNvD9.js:937:-1-940:-59
+/tmp/test262-VwNvD9.js:939:-2-940:-58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:940:-3--58
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:309:-5--24
+/tmp/test262-VwNvD9.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(-1e-15, Infinity) !== -0"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A17 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-7cMgqJ.js:940:-1-943:-83
+/tmp/test262-7cMgqJ.js:940:-1-943:-83
+/tmp/test262-7cMgqJ.js:942:-2-943:-82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:943:-3--82
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:309:-5--24
+/tmp/test262-7cMgqJ.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-1e-15, -inf) + Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A18 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-z0vKT6.js:944:-1-947:-87
+/tmp/test262-z0vKT6.js:944:-1-947:-87
+/tmp/test262-z0vKT6.js:946:-2-947:-86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:947:-3--86
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:309:-5--24
+/tmp/test262-z0vKT6.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(Infinity, 1e-15) - (Math.PI/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A19 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-NlOCy6.js:945:-1-948:-87
+/tmp/test262-NlOCy6.js:945:-1-948:-87
+/tmp/test262-NlOCy6.js:947:-2-948:-86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:948:-3--86
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:309:-5--24
+/tmp/test262-NlOCy6.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-inf, 1e-15) + (Math.PI/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6y5rMi.js:941:-1-944:-89
+/tmp/test262-6y5rMi.js:941:-1-944:-89
+/tmp/test262-6y5rMi.js:943:-2-944:-88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:944:-3--88
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:309:-5--24
+/tmp/test262-6y5rMi.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(1e-15, 0) - ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A20 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-R9OGOZ.js:937:-1-938:-83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:938:-2--83
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:305:-5--24
+/tmp/test262-R9OGOZ.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(Infinity, Infinity) - (Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A21 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-0Z3Ykb.js:937:-1-938:-85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:938:-2--85
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:305:-5--24
+/tmp/test262-0Z3Ykb.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(Infinity, -inf) - (3*Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A22 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-FdAOx8.js:937:-1-938:-83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:938:-2--83
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:305:-5--24
+/tmp/test262-FdAOx8.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-inf, Infinity) + (Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A23 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-fGx8b8.js:937:-1-938:-85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:938:-2--85
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:305:-5--24
+/tmp/test262-fGx8b8.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(-inf, -inf) + (3*Math.PI/4)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A24 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-nYA37y.js:1137:-1-1143:-3
+/tmp/test262-nYA37y.js:1137:-1-1143:-3
+/tmp/test262-nYA37y.js:1138:-1-1143:-3
+/tmp/test262-nYA37y.js:1140:-2-1142:-209
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:1142:-3--208
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:305:-5--24
+/tmp/test262-nYA37y.js:289:-5--35
+Uncaught exception: "
+x1 = -16
+x2 = -8
+libc.atan2(x1,x2) = -2.0344439358
+Math.atan2(x1,x2) = atan2 NYI
+Math.abs(libc.atan2(x1,x2) - Math.atan2(x1,x2)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-xmzfTT.js:941:-1-944:-89
+/tmp/test262-xmzfTT.js:941:-1-944:-89
+/tmp/test262-xmzfTT.js:943:-2-944:-88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:944:-3--88
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:309:-5--24
+/tmp/test262-xmzfTT.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(1e-15, 0) - ((Math.PI)/2)) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Ojjf0B.js:937:-1-940:-59
+/tmp/test262-Ojjf0B.js:937:-1-940:-59
+/tmp/test262-Ojjf0B.js:939:-2-940:-58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:940:-3--58
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:309:-5--24
+/tmp/test262-Ojjf0B.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 1e-15) !== +0"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A5 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-QrdN5y.js:932:-1-933:-55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:933:-2--55
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:305:-5--24
+/tmp/test262-QrdN5y.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 0) !== +0"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A6 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-ruRLyo.js:936:-1-937:-72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:937:-2--72
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:305:-5--24
+/tmp/test262-ruRLyo.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(0, -0) - Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A7 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-EnrSlv.js:941:-1-944:-83
+/tmp/test262-EnrSlv.js:941:-1-944:-83
+/tmp/test262-EnrSlv.js:943:-2-944:-82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:944:-3--82
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:309:-5--24
+/tmp/test262-EnrSlv.js:289:-5--35
+Uncaught exception: "#1: Math.abs(Math.atan2(0, -1e-15) - Math.PI) >= NaN"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A8 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-sMA97O.js:937:-1-940:-59
+/tmp/test262-sMA97O.js:937:-1-940:-59
+/tmp/test262-sMA97O.js:939:-2-940:-58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:940:-3--58
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:309:-5--24
+/tmp/test262-sMA97O.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 1e-15) !== -0"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.5/S15.8.2.5_A9 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9ncowT.js:932:-1-933:-55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:933:-2--55
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:305:-5--24
+/tmp/test262-9ncowT.js:289:-5--35
+Uncaught exception: "#1: Math.atan2(0, 0) !== -0"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-C7ESKE.js:931:-1-933:-48
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:933:-2--47
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:305:-5--24
+/tmp/test262-C7ESKE.js:289:-5--35
+Uncaught exception: "#1: 'var x = +0; Math.cos(x) !== 1'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-6KjORN.js:931:-1-933:-48
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:933:-2--47
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:305:-5--24
+/tmp/test262-6KjORN.js:289:-5--35
+Uncaught exception: "#1: 'var x = -0; Math.cos(x) !== 1'"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.7/S15.8.2.7_A7 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-9F2BGf.js:1069:-1-1075:-3
+/tmp/test262-9F2BGf.js:1069:-1-1075:-3
+/tmp/test262-9F2BGf.js:1070:-1-1075:-3
+/tmp/test262-9F2BGf.js:1072:-2-1074:-154
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:1074:-3--153
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:305:-5--24
+/tmp/test262-9F2BGf.js:289:-5--35
+Uncaught exception: "
+x = -3.14159265359
+libc.cos(x) = -1
+Math.cos(x) = cos NYI
+Math.abs(libc.cos(x) - Math.cos(x)) > NaN
+
+"
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A1 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-arZ497.js:931:-1-933:-58
+/tmp/test262-arZ497.js:931:-1-933:-58
+/tmp/test262-arZ497.js:931:-5--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-6--24
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+/tmp/test262-arZ497.js:931:-12--23
+Uncaught error: "[interp] (/tmp/test262-arZ497.js:931:-12--23) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A2 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-TmurmV.js:931:-1-933:-48
+/tmp/test262-TmurmV.js:931:-1-933:-48
+/tmp/test262-TmurmV.js:931:-5--22
+/tmp/test262-TmurmV.js:931:-5--22
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+/tmp/test262-TmurmV.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-TmurmV.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A3 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-RPjBXj.js:931:-1-933:-48
+/tmp/test262-RPjBXj.js:931:-1-933:-48
+/tmp/test262-RPjBXj.js:931:-5--22
+/tmp/test262-RPjBXj.js:931:-5--22
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+/tmp/test262-RPjBXj.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-RPjBXj.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A4 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-R4CZtg.js:931:-1-933:-63
+/tmp/test262-R4CZtg.js:931:-1-933:-63
+/tmp/test262-R4CZtg.js:931:-5--30
+/tmp/test262-R4CZtg.js:931:-5--30
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+/tmp/test262-R4CZtg.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-R4CZtg.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A5 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-PKyyxD.js:931:-1-933:-56
+/tmp/test262-PKyyxD.js:931:-1-933:-56
+/tmp/test262-PKyyxD.js:931:-5--23
+/tmp/test262-PKyyxD.js:931:-5--23
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+/tmp/test262-PKyyxD.js:931:-5--16
+Uncaught error: "[interp] (/tmp/test262-PKyyxD.js:931:-5--16) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+
+ch15/15.8/15.8.2/15.8.2.8/S15.8.2.8_A6 in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-i49n2C.js:1071:-1-1077:-3
+/tmp/test262-i49n2C.js:1071:-1-1077:-3
+/tmp/test262-i49n2C.js:1072:-1-1077:-3
+/tmp/test262-i49n2C.js:1073:-2--5
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+/tmp/test262-i49n2C.js:1073:-8--22
+Uncaught error: "[interp] (/tmp/test262-i49n2C.js:1073:-8--22) Arity mismatch, supplied 2 arguments and expected 0. Arg names were: . Values were:  object  object "
+
+Fatal error: exception Failure("Runtime error")
+
