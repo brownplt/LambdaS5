@@ -1,7 +1,0 @@
-ch14/14.1/14.1-4gs failed in strict mode as expected
-ch14/14.1/14.1-5gs failed in strict mode as expected
-
-=== Summary ===
- - Ran 2 tests
- - All tests succeeded
-
