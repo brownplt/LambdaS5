@@ -1,0 +1,65 @@
+ch12/12.10/12.10.1/12.10.1-1-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-10-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-11-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-11gs failed in strict mode as expected
+ch12/12.10/12.10.1/12.10.1-12-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-14-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-15-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-16-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-2-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-3-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-4-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-5-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-7-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-8-s passed in strict mode
+ch12/12.10/12.10.1/12.10.1-9-s passed in strict mode
+ch12/12.14/12.14.1/12.14.1-1-s passed in strict mode
+ch12/12.14/12.14.1/12.14.1-1gs failed in strict mode as expected
+ch12/12.14/12.14.1/12.14.1-2-s passed in strict mode
+ch12/12.14/12.14.1/12.14.1-3-s passed in strict mode
+ch12/12.14/12.14.1/12.14.1-4-s passed in strict mode
+ch12/12.14/12.14.1/12.14.1-5-s passed in strict mode
+ch12/12.14/12.14.1/12.14.1-6-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-1-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-10-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-12-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-13-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-14-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-15-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-16-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-17-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-18-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-19-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-1gs failed in strict mode as expected
+ch12/12.2/12.2.1/12.2.1-2-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-20-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-21-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-22-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-23-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-24-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-25-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-26-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-27-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-28-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-29-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-3-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-30-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-31-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-32-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-33-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-34-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-35-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-36-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-37-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-4-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-4gs failed in strict mode as expected
+ch12/12.2/12.2.1/12.2.1-5-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-6-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-7-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-8-s passed in strict mode
+ch12/12.2/12.2.1/12.2.1-9-s passed in strict mode
+
+=== Summary ===
+ - Ran 60 tests
+ - All tests succeeded
+

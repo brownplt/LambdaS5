@@ -1,0 +1,116 @@
+ch14/14.0/S14_A1 passed in non-strict mode
+ch14/14.0/S14_A2 passed in non-strict mode
+ch14/14.0/S14_A3 passed in non-strict mode
+ch14/14.0/S14_A5_T1 passed in non-strict mode
+ch14/14.0/S14_A5_T2 passed in non-strict mode
+ch14/14.1/14.1-1-s passed in non-strict mode
+ch14/14.1/14.1-10-s passed in non-strict mode
+ch14/14.1/14.1-11-s passed in non-strict mode
+ch14/14.1/14.1-12-s passed in non-strict mode
+ch14/14.1/14.1-13-s passed in non-strict mode
+ch14/14.1/14.1-14-s passed in non-strict mode
+ch14/14.1/14.1-15-s passed in non-strict mode
+ch14/14.1/14.1-16-s passed in non-strict mode
+ch14/14.1/14.1-17-s passed in non-strict mode
+ch14/14.1/14.1-2-s passed in non-strict mode
+ch14/14.1/14.1-3-s passed in non-strict mode
+=== ch14/14.1/14.1-4-s failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:901:-5-902:-54
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch14/14.1/14.1-4gs failed in strict mode as expected
+=== ch14/14.1/14.1-5-s failed in non-strict mode ===
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:901:-5-902:-54
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+===
+ch14/14.1/14.1-5gs failed in strict mode as expected
+ch14/14.1/14.1-6-s passed in non-strict mode
+ch14/14.1/14.1-7-s passed in non-strict mode
+ch14/14.1/14.1-8-s passed in non-strict mode
+ch14/14.1/14.1-9-s passed in non-strict mode
+
+=== Summary ===
+ - Ran 24 tests
+ - Passed 22 tests (91.7%)
+ - Failed 2 tests (8.3%)
+
+Failed tests
+  ch14/14.1/14.1-4-s in non-strict mode
+  ch14/14.1/14.1-5-s in non-strict mode
+
+ch14/14.1/14.1-4-s in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:940:-1--22
+/tmp/test262-Dg7jkx.js:901:-5-902:-54
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:902:-9--53
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:305:-5--24
+/tmp/test262-Dg7jkx.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+
+ch14/14.1/14.1-5-s in non-strict mode: 
+--- errors ---
+../envs/es5.env:6:0-5370:0
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:939:-1--22
+/tmp/test262-sOXEUs.js:901:-5-902:-54
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:902:-9--53
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:305:-5--24
+/tmp/test262-sOXEUs.js:289:-5--35
+Uncaught exception: "Test case returned non-true value!"
+
+Fatal error: exception Failure("Runtime error")
+
