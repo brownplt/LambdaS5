@@ -42,11 +42,6 @@ let prop_accessor_check p v =
     | S.Id (p, "%context") -> v
     | _ -> S.App (p, S.Id (p, "%PropAccessorCheck"), [v])
 
-let rec is_strict_mode exp = match exp with
-  | S.Seq (_, S.String (_, "use strict"), _) -> true
-  | S.Seq (_, S.String _, exp) -> is_strict_mode exp
-  | _ -> false
-
 let ljs_bool b = if b then S.True (Pos.dummy) else S.False (Pos.dummy)
 
 (* 15.4: A property name P (in the form of a String value) is an array index if and
@@ -378,11 +373,13 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
                                        ejs_to_ljs catch))))
   | E.FuncStmtExpr (p, nm, args, body) -> 
     let fobj = get_fobj p args body (S.Id (p, "%context")) in
-    let arcrd = { S.value = fobj; S.writable = true; } in
+    let f_id = mk_id "fobj" in
+    let arcrd = { S.value = S.Id (p, f_id); S.writable = true; } in
     let aprop = S.Data (arcrd, true, true) in
     let aprops = [("0", aprop)] in
     let argsobj = S.Object (p, S.d_attrs, aprops) in
-    S.SetField (p, S.Id (p, "%context"), S.String (p, nm), fobj, argsobj)
+    S.Let (p, f_id, fobj,
+      S.SetField (p, S.Id (p, "%context"), S.String (p, nm), S.Id (p, f_id), argsobj))
   | E.TryFinallyExpr (p, body, finally) -> 
     S.TryFinally (p, ejs_to_ljs body, ejs_to_ljs finally)
   | E.ThrowExpr (p, e) -> S.Throw (p, ejs_to_ljs e)
@@ -517,6 +514,10 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     S.Let (p, "%context", S.App (p, S.Id (p, "%makeWithContext"),
                                     [S.Id (p, "%context"); ejs_to_ljs obj]),
            ejs_to_ljs body)
+  | E.StrictExpr (p, body) ->
+    S.Let (p, "#strict", S.True p, ejs_to_ljs body)
+  | E.NonstrictExpr (p, body) ->
+    S.Let (p, "#strict", S.False p, ejs_to_ljs body)
   | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
 
 and a_attrs pos = {
@@ -572,6 +573,12 @@ and get_fobj p args body context =
                              S.Id (p, func_id)))))
            
 and strip_lets e nms = match e with
+  | E.StrictExpr (p, body) ->
+    let (names, inner) = strip_lets body nms in
+    (names, E.StrictExpr (p, inner))
+  | E.NonstrictExpr (p, body) ->
+    let (names, inner) = strip_lets body nms in
+    (names, E.NonstrictExpr (p, inner))
   | E.LetExpr (p, nm, vl, rst) ->
     let prefix = if (String.length nm) >= 2 then String.sub nm 0 2 else "" in
     if prefix = "%%" then
@@ -635,15 +642,10 @@ and create_context p args body parent =
 and get_lambda p args body = 
   let (uids, real_body, ncontext) = create_context p args body (Some (S.Id (p, "%parent"))) in
   let desugared = ejs_to_ljs real_body in
-  (* A function is strict if it says so, or if its enclosing context is.
-     The default is false (see create_context). *)
-  let strict = if is_strict_mode desugared then S.True (p)
-               else S.Id (p, "#strict") in
-  let desugared' = S.Let (p, "#strict", strict, desugared) in
   S.Lambda (p, ["%this"; "%args"],
-    S.Let (p, "%this", S.App (p, S.Id (p, "%resolveThis"), [strict; S.Id (p, "%this")]),
-      S.Label (p, "%ret",
-        S.Let (p, "%context", ncontext, S.Seq (p, desugared', S.Undefined (p))))))
+    S.Label (p, "%ret",
+      S.Let (p, "%this", S.App (p, S.Id (p, "%resolveThis"), [S.Id (p, "#strict"); S.Id (p, "%this")]),
+        S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p))))))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with
@@ -781,10 +783,12 @@ let add_preamble p used_ids var_ids final =
 let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
   let (names, inner) = strip_lets e [] in
   let desugared = ejs_to_ljs inner in
-  let strict = ljs_bool (is_strict_mode desugared) in
+  let is_strict = match inner with
+    | E.StrictExpr _ -> true
+    | E.NonstrictExpr _ -> false
+    | _ -> failwith "exprjs_to_ljs: expected expression to be marked as strict or nonstrict" in
   let binder =
-    if is_strict_mode desugared then "%strictContext" else "%nonstrictContext" in
-  S.Let (p, "%context", S.Id (p, binder),
-    S.Let (p, "#strict", strict,
-      add_preamble p (IdSet.elements used_ids) names desugared))
+    S.Id (p, if is_strict then "%strictContext" else "%nonstrictContext") in
+  S.Let (p, "%context", binder,
+    add_preamble p (IdSet.elements used_ids) names desugared)
 

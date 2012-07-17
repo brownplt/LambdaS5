@@ -47,6 +47,8 @@ type expr =
       (** We leave function statements in place, so that they can be lifted
           for JavaScript to turned into letrecs for Typed JavaScript. *)
   | WithExpr of Pos.t * expr * expr
+  | StrictExpr of Pos.t * expr
+  | NonstrictExpr of Pos.t * expr
   | HintExpr of Pos.t * string * expr
 and prop =
   | Data of expr

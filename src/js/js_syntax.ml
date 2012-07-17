@@ -319,3 +319,10 @@ and start_strings sel acc = match sel with
 and reorder_sel sel =
   let directives, stmts = start_strings sel [] in
     List.concat [directives; (getfd_lst stmts); (removefd_lst stmts)]
+
+and is_strict_mode (sel : srcElt list) = match sel with
+  | Stmt (Expr (_, (Lit (_, Str "use strict")))) :: rest ->
+    true
+  | Stmt (Expr (_, (Lit (_, Str _)))) :: rest ->
+    is_strict_mode rest
+  | _ -> false
