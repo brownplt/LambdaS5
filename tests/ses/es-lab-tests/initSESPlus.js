@@ -231,7 +231,14 @@ if (!ses) { ses = {}; }
   /**
    * By default is silent
    */
-  function defaultReportRepairs(reports) {}
+  function defaultReportRepairs(reports) {
+    reports.forEach(function(report) {
+      if (report && report.status !== "All fine") {
+        console.log(report.description);
+        console.log(report.status);
+      }
+    });
+  }
 
   if (!logger.reportRepairs) {
     logger.reportRepairs = defaultReportRepairs;
