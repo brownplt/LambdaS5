@@ -10,11 +10,19 @@ fi
 RETMP=`mktemp -t js.XXXXXX`
 ../bin/js json_print.js ../lib/js-regexp/regexp.js > $RETMP
 
+JSONLIB=`mktemp -t js.XXXXXX`
+cat ../lib/json/json2.js ../lib/json/json_parse.js > $JSONLIB
+
+JSONTMP=`mktemp -t js.XXXXXX`
+../bin/js json_print.js $JSONLIB > $JSONTMP
+
 ../bin/js json_print.js $TMP > $TMP.ast
 ocamlrun ../obj/s5.d.byte -set-json ../tests/desugar.sh \
   -js $TMP.ast -js-to-s5 \
   -env ../envs/regexp.env -apply \
   -js $RETMP -js-to-s5 -to-env -apply \
+  -env ../envs/json.env -apply \
+  -js $JSONTMP -js-to-s5 -to-env -apply \
   -env ../envs/es5.env -apply \
   -eval
 EX=$?
