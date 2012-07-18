@@ -21,7 +21,7 @@ let type_test p v typ =
 let is_object_type p o = S.App (p, S.Id (p, "%IsObject"), [o])
 
 let throw_typ_error p msg =
-  S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.String (p, msg)])
+  S.App (p, S.Id (p, "%TypeError"), [S.String (p, msg)])
 
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
@@ -566,7 +566,6 @@ and get_fobj p args body context =
                         ("prototype", proto_prop);
                         ("length", length_prop);
                         ("caller", errorer_prop);
-                        ("callee", errorer_prop);
                         ("arguments", errorer_prop)
                       ]),
                       S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
