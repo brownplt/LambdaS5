@@ -4,18 +4,19 @@ function test_BIND_CANT_CURRY_NEW() {
     return new bound();
   }
   var d;
-    d = construct(Date, [1957, 4, 27]);
-/*  try {
+  try {
     d = construct(Date, [1957, 4, 27]);
   } catch (err) {
     if (err instanceof TypeError) { return true; }
     return 'Curries construction failed with: ' + err;
-  }*/
-  return d;
-/*  if (typeof d === 'string') { return true; } // Opera
-  var str = objToString.call(d);
+  }
+  if (typeof d === 'string') { return true; } // Opera
+  console.log(d);
+  var str = Object.prototype.toString.call(d);
   if (str === '[object Date]') { return false; }
-  return 'Unexpected ' + str + ': ' + d;*/
+  return 'Unexpected ' + str + ': ' + d;
 }
 
-test_BIND_CANT_CURRY_NEW();
+if (test_BIND_CANT_CURRY_NEW() === false) {
+  console.log("Passed");
+}
