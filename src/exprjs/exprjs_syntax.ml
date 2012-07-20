@@ -8,7 +8,6 @@ type expr =
   | Null of Pos.t
   | String of Pos.t * string
   | ArrayExpr of Pos.t * expr list
-  | RegExpr of Pos.t * string
   | ObjectExpr of Pos.t * (Pos.t * string * prop) list
   | ThisExpr of Pos.t
   | IdExpr of Pos.t * id
@@ -53,7 +52,6 @@ let pos_of_expr expr = match expr with
   | Null (pos) -> pos
   | String (pos, _) -> pos
   | ArrayExpr (pos, _) -> pos
-  | RegExpr (pos, _) -> pos
   | ObjectExpr (pos, _) -> pos
   | ThisExpr (pos) -> pos
   | IdExpr (pos, _) -> pos
