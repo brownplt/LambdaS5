@@ -127,8 +127,12 @@ prop_attrs :
  | VALUE exp COMMA WRITABLE BOOL
      { Data ({ value = $2; writable = $5 }, false, false) }
  | VALUE exp COMMA WRITABLE BOOL COMMA CONFIG BOOL
-     { Data ({ value = $2; writable = $5 }, $8, false) }
- | GETTER exp COMMA SETTER exp 
+     { Data ({ value = $2; writable = $5 }, false, $8) }
+ | VALUE exp COMMA WRITABLE BOOL COMMA CONFIG BOOL COMMA ENUM BOOL
+     { Data ({ value = $2; writable = $5 }, $11, $8) }
+ | VALUE exp COMMA WRITABLE BOOL COMMA ENUM BOOL COMMA CONFIG BOOL
+     { Data ({ value = $2; writable = $5 }, $8, $11) }
+ | GETTER exp COMMA SETTER exp
      { Accessor ({ getter = $2; setter = $5 }, false, true) }
 
 prop :

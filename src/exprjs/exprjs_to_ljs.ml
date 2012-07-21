@@ -21,7 +21,7 @@ let type_test p v typ =
 let is_object_type p o = S.App (p, S.Id (p, "%IsObject"), [o])
 
 let throw_typ_error p msg =
-  S.App (p, S.Id (p, "%ThrowTypeError"), [S.Null (p); S.String (p, msg)])
+  S.App (p, S.Id (p, "%TypeError"), [S.String (p, msg)])
 
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
@@ -53,7 +53,7 @@ let make_set_field p obj fld value =
     S.App (p, S.Id (p, "%EnvCheckAssign"), [obj; fld; value; S.Id (p, "#strict")])
   | _ -> S.App (p, S.Id (p, "%set-property"), [obj; fld; value])
 
-let make_args_obj p args =
+let make_args_obj p is_new args =
     let n_args = List.length args in
     let indices = Prelude.iota n_args in
     let combined = List.combine indices args in
@@ -62,7 +62,8 @@ let make_args_obj p args =
     let props = 
       List.map 
         (fun (n, rcrd) -> (string_of_int n, S.Data (rcrd, true, true))) records in
-    S.App (p, S.Id (p, "%mkArgsObj"), [S.Object (p, S.d_attrs, props)])
+    let arg_constructor = if is_new then "%mkNewArgsObj" else "%mkArgsObj" in
+    S.App (p, S.Id (p, arg_constructor), [S.Object (p, S.d_attrs, props)])
 
 let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
   | E.True (p) -> S.True (p)
@@ -171,14 +172,15 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let newobj = mk_id "newobj" in
     let constr_result = mk_id "constr_ret" in
     let getterargs = S.Object (p, S.d_attrs, []) in
-    let constrargs = make_args_obj p (map ejs_to_ljs eargs) in
+    let constrargs = make_args_obj p true (map ejs_to_ljs eargs) in
     S.Let (p, constr_id, ejs_to_ljs econstr,
       S.If (p, S.Op1 (p, "!", type_test p (S.Id (p, constr_id)) "function"),
         throw_typ_error p "Constructor was not a function", 
         S.Let (p, pr_id, S.GetField (p, S.Id (p, constr_id), 
                            S.String (p, "prototype"), getterargs),
-          S.If (p, undef_test p (S.Id (p, pr_id)),
-            throw_typ_error p "prototype was not defined in new expression",
+          S.Let (p, pr_id, S.If (p, is_object_type p (S.Id (p, pr_id)),
+                                    S.Id (p, pr_id),
+                                    S.Id (p, "%ObjectProto")),
             S.Seq (p,
               S.If (p, S.Op1 (p, "!", is_object_type p (S.Id (p, pr_id))),
                 S.SetBang (p, pr_id, S.Id (p, "%ObjectProto")), S.Undefined p),
@@ -298,7 +300,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     make_set_field p sobj spr svl
   | E.AppExpr (p, e, el) -> 
     let sl = List.map ejs_to_ljs el in
-    let args_obj = make_args_obj p sl in
+    let args_obj = make_args_obj p false sl in
     let obj_id = mk_id "obj" in
     let fun_id = mk_id "fun" in
     begin match e with
@@ -558,7 +560,6 @@ and get_fobj p args body context =
                         ("prototype", proto_prop);
                         ("length", length_prop);
                         ("caller", errorer_prop);
-                        ("callee", errorer_prop);
                         ("arguments", errorer_prop)
                       ]),
                       S.Seq (p, S.SetField (p, S.Id (p, proto_id), S.String (p, "constructor"), S.Id (p, func_id), S.Null p),
@@ -635,9 +636,11 @@ and get_lambda p args body =
   let (uids, real_body, ncontext) = create_context p args body (Some (S.Id (p, "%parent"))) in
   let desugared = ejs_to_ljs real_body in
   S.Lambda (p, ["%this"; "%args"],
-    S.Label (p, "%ret",
-      S.Let (p, "%this", S.App (p, S.Id (p, "%resolveThis"), [S.Id (p, "#strict"); S.Id (p, "%this")]),
-        S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p))))))
+    S.Seq (p,
+      S.DeleteField (p, S.Id (p, "%args"), S.String (p, "%new")),
+      S.Label (p, "%ret",
+        S.Let (p, "%this", S.App (p, S.Id (p, "%resolveThis"), [S.Id (p, "#strict"); S.Id (p, "%this")]),
+          S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p)))))))
 
 and remove_dupes lst =
   let rec helper l seen result = match l with

@@ -287,6 +287,17 @@ let abs_eq store v1 v2 = bool begin
 (* TODO: are these all the cases? *)
 end
 
+(* Algorithm 9.12, the SameValue algorithm.
+   This gives "nan = nan" and "+0 != -0". *)
+let same_value store v1 v2 = bool begin
+  match v1, v2 with
+  | Num x, Num y ->
+    if x = 0. && y = 0.
+    then 1. /. x = 1. /. y
+    else compare x y = 0
+  | _ -> compare v1 v2 = 0
+end
+
 let rec has_property store obj field = match obj, field with
   | ObjLoc loc, String s -> begin match get_obj store loc, s with
       ({ proto = pvalue; }, props), s ->
@@ -398,6 +409,7 @@ let op2 store op = match op with
   | ">=" -> arith_ge store
   | "stx=" -> stx_eq store
   | "abs=" -> abs_eq store
+  | "sameValue" -> same_value store
   | "hasProperty" -> has_property store
   | "hasOwnProperty" -> has_own_property store
   | "string+" -> string_plus store

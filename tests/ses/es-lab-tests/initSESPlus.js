@@ -233,7 +233,7 @@ if (!ses) { ses = {}; }
    */
   function defaultReportRepairs(reports) {
     reports.forEach(function(report) {
-      if (report && report.status !== "All fine") {
+      if (report !== undefined && report.status !== "All fine") {
         console.log(report.description);
         console.log(report.status);
       }
@@ -263,6 +263,12 @@ if (!ses) { ses = {}; }
     var classification = ses.logger.classify(severity);
     ses.logger[classification.consoleLevel](
       problemList.length + ' ' + status);
+    if(status !== "Apparently fine") {
+      problemList.forEach(function(p) {
+        console.log("Reporting diagnosis for " + status);
+        console.log(p);
+      });
+    }
   }
 
   if (!logger.reportDiagnosis) {
@@ -2176,8 +2182,6 @@ var ses;
   function makeMutableProtoPatcher(constr, classString) {
     var proto = constr.prototype;
     var baseToString = objToString.call(proto);
-    console.log(constr);
-    console.log(classString);
     if (baseToString !== '[object ' + classString + ']') {
       throw new TypeError('unexpected: ' + baseToString);
     }
@@ -3302,18 +3306,19 @@ var ses;
     });
   }
 
-//  try {
+  try {
     var reports = testRepairReport(baseKludges);
     if (ses.ok()) {
+//      console.log("We're ok");
       reports.push.apply(reports, testRepairReport(supportedKludges));
     }
     logger.reportRepairs(reports);
-/*  } catch (err) {
+  } catch (err) {
     ses.updateMaxSeverity(ses.severities.NOT_SUPPORTED);
     var during = aboutTo ? '(' + aboutTo.join('') + ') ' : '';
-    throw ('ES5 Repair ' + during + 'failed with: ', err);
-//    logger.error('ES5 Repair ' + during + 'failed with: ', err);
-  }*/
+//    throw ('ES5 Repair ' + during + 'failed with: ', err);
+    logger.error('ES5 Repair ' + during + 'failed with: ', err);
+  }
 
   logger.reportMax();
 
@@ -5853,6 +5858,7 @@ ses.startSES = function(global,
           configurable: false
         });
       } catch (cantFreezeHarmless) {
+        console.log("Failing to poison in cleanProperty", base, name);
         reportProperty(ses.severities.NOT_ISOLATED,
                        'Cannot be poisoned', path);
         return false;
@@ -5878,7 +5884,7 @@ ses.startSES = function(global,
                      'Frozen harmless', path);
       return false;
     }
-    reportProperty(ses.severities.NEW_SYMTOM,
+    reportProperty(ses.severities.NEW_SYMPTOM,
                    'Failed to be poisoned', path);
     return false;
   }
