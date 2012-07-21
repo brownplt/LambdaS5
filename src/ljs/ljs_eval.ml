@@ -5,12 +5,7 @@ open Ljs
 open Ljs_values
 open Ljs_delta
 open Ljs_pretty
-open Unix
-open Filename
-open SpiderMonkey
-open Exprjs_to_ljs
-open Js_to_exprjs
-open Str
+open Ljs_desugar
 
 let bool b = match b with
   | true -> True
@@ -483,107 +478,24 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
     Closure (env, xs, e), store
   | S.Eval (p, e) ->
     begin match eval e env store with
-      | String s, store -> eval_op s env store jsonPath
+      | String s, store ->
+        (* Try to desugar, listening for errors about desugaring,
+           represented as PrimErrs, which we pass on as real
+           Throws.  Other exceptions pass through unchanged. *)
+        (* TODO(joe): Better signalling between interpreter and env?
+           Eval code can confuse the env by throwing "EvalError" *)
+        let desugared = try desugar s jsonPath
+        with
+          | PrimErr (_, String "EvalError") ->
+            raise (Throw ([], String "EvalError", store))
+          | e -> raise e in
+        eval desugared env store
       | v, store -> v, store
     end
 
 
 
 and arity_mismatch_err p xs args = interp_error p ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
-
-(* This function is exactly as ridiculous as you think it is.  We read,
-   parse, desugar, and evaluate the string, storing it to temp files along
-   the way.  We make no claims about encoding issues that may arise from
-   the filesystem.  Thankfully, JavaScript is single-threaded, so using
-   only a single file works out. 
-
-   TODO(joe): I have no idea what happens on windows. *)
-and eval_op str env store jsonPath = 
-  let jsfilename = temp_file "evaljs" ".js" in
-  let jsfile = open_out jsfilename in
-  (* This puts the appropriate *javascript* in a temp file; the argument
-     to eval is a string that we'll try to interpret as javascript *)
-  output_string jsfile str;
-  close_out jsfile;
-  (* We create two files for output; one that will contain
-     Spidermonkey's desugared json, and one that will contain stderr
-     for reporting parser errors *)
-  let jsonfilename = temp_file "evaljson" ".json" in
-  let jsonfile = openfile jsonfilename [O_RDWR] 0o600 in
-  let errfilename = temp_file "evalerr" ".err" in
-  let errfile = openfile errfilename [O_RDWR] 0o600 in
-  let (null_stdin, nothing) = pipe () in
-  let cleanup () =
-    close jsonfile;
-    close errfile;
-    close null_stdin;
-    close nothing;
-    unlink jsfilename;
-    unlink jsonfilename;
-    unlink errfilename; in
-  (* This checks for parser errors from Spidermonkey's spew to stderr.
-     The environment checks for the thrown string "EvalError" to
-     construct the appropriate exception object. *)
-  (* TODO(joe): Better signalling between interpreter and env?
-     Eval code can confuse the interpreter by throwing "EvalError" *)
-  let do_err_check st i =
-    let inchan = open_in errfilename in
-    let buf = String.create (in_channel_length inchan) in
-    really_input inchan buf 0 (in_channel_length inchan);
-    (* We're done with all the files here, so just clean them up *)
-    ignore (cleanup ());
-    let json_err = regexp (quote "SyntaxError") in
-    begin try
-      ignore (search_forward json_err buf 0);
-      raise (Throw ([], String "EvalError", store))
-    with Not_found ->
-      raise (PrimErr ([], String
-        (sprintf "Fatal eval error, exit code of desugar was: %s %d" st i)))
-    end;
-  in
-  (* If we didn't find an error there, we parse the stdout file as a
-     JSON representation of the JS AST (e.g. the string passed to eval()
-     was in fact well-formed JavaScript).  Then we desugar it and eval
-     it in the same environment and store as the current one. *)
-  let do_eval () =
-    try
-      let ast = parse_spidermonkey (open_in jsonfilename) jsonfilename in
-      (* We're done with all the files here, so just clean them up *)
-(*      ignore (cleanup ()); *)
-      let (used_ids, exprjsd) = 
-        try
-          js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
-        with ParseError _ -> raise (Throw ([], String "EvalError", store))
-        in
-      let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
-      eval jsonPath desugard env store
-    (* SpiderMonkey parse had some terrible error *)
-    with
-      (* parse_spidermonkey throws Failures for all errors it can have *)
-      | Failure s ->
-        cleanup ();
-        raise (PrimErr ([], String ("SpiderMonkey parse error: " ^ s)) )
-      (* Other exceptions need to flow through from the underlying eval *)
-      | e ->
-        cleanup ();
-        raise e
-  in
-  (* Now we run the provided json executable with the name of the file
-     we wrote the eval JS argument to (TODO(joe): maybe it should read
-     this from stdin).
-     Then, we send its stdout and stderr to the jsonfile and errfile,
-     respectively.  Note that we need to pass two arguments in args to
-     please Ocaml create_process, the JS filename being second makes
-     it be the $1 argument in the script. *)
-  let args = Array.of_list [jsonPath; jsfilename] in
-  let pid = create_process jsonPath args null_stdin jsonfile errfile in
-  let (_, status) = waitpid [] pid in
-  begin match status with
-    | WEXITED 0 -> do_eval ()
-    | WEXITED i -> do_err_check "WEXITED" i
-    | WSIGNALED i -> do_err_check "WSIGNALED" i
-    | WSTOPPED i -> do_err_check "WSTOPPED" i
-  end
 
 let err show_stack trace message = 
   if show_stack then begin

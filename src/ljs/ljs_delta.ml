@@ -2,8 +2,6 @@ open Prelude
 open Ljs_syntax
 open Ljs_values
 
-exception PrimErr of exp list * value
-
 let undef = Undefined
 let null = Null
 let str s = String s
