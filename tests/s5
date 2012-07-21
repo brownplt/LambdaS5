@@ -17,7 +17,7 @@ JSONTMP=`mktemp -t js.XXXXXX`
 ../bin/js json_print.js $JSONLIB > $JSONTMP
 
 ../bin/js json_print.js $TMP > $TMP.ast
-ocamlrun ../obj/s5.d.byte -set-json ../tests/desugar.sh \
+ocamlrun ../obj/s5.d.byte \
   -js $TMP.ast -js-to-s5 \
   -env ../envs/regexp.env -apply \
   -js $RETMP -js-to-s5 -to-env -apply \

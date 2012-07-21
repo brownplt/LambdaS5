@@ -47,7 +47,7 @@ module S5 = struct
 
   (* Global Options *)
 
-  let jsonPath = ref ""
+  let jsonPath = ref "../tests/desugar.sh"
   let stack_trace = ref true
 
   let set_stack_trace (cmdName : string) (on : bool) : unit =
