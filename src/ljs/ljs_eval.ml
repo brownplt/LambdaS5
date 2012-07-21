@@ -478,18 +478,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
     Closure (env, xs, e), store
   | S.Eval (p, e) ->
     begin match eval e env store with
-      | String s, store ->
-        (* Try to desugar, listening for errors about desugaring,
-           represented as PrimErrs, which we pass on as real
-           Throws.  Other exceptions pass through unchanged. *)
-        (* TODO(joe): Better signalling between interpreter and env?
-           Eval code can confuse the env by throwing "EvalError" *)
-        let desugared = try desugar s jsonPath
-        with
-          | PrimErr (_, String "EvalError") ->
-            raise (Throw ([], String "EvalError", store))
-          | e -> raise e in
-        eval desugared env store
+      | String s, store -> eval (desugar s jsonPath) env store
       | v, store -> v, store
     end
 

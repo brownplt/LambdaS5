@@ -1,5 +1,6 @@
 open Prelude
 open SpiderMonkey
+module S = Ljs_syntax
 open Ljs_values
 open Exprjs_to_ljs
 open Js_to_exprjs
@@ -48,7 +49,9 @@ let desugar str jsonPath =
     let json_err = regexp (quote "SyntaxError") in
     begin try
       ignore (search_forward json_err buf 0);
-      raise (PrimErr ([], String "EvalError"))
+        (* TODO(joe): Better signalling between interpreter and env?
+           Eval code can confuse the env by throwing "EvalError" *)
+      S.Throw (Pos.dummy, S.String (Pos.dummy, "EvalError"))
     with Not_found ->
       raise (PrimErr ([], String
         (sprintf "Fatal eval error, exit code of desugar was: %s %d" st i)))
@@ -64,10 +67,8 @@ let desugar str jsonPath =
       (* We're done with all the files here, so just clean them up *)
       ignore (cleanup ());
       let (used_ids, exprjsd) = 
-        try
-          js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
-        with ParseError _ -> raise (PrimErr ([], String "EvalError"))
-        in
+        js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
+      in
       exprjs_to_ljs Pos.dummy used_ids exprjsd
     (* SpiderMonkey parse had some terrible error *)
     with
