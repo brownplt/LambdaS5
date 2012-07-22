@@ -41,6 +41,7 @@ module S5 = struct
   open Exprjs_to_ljs
   open Exprjs_syntax
   open Js_syntax
+  open Ljs_desugar
   open Format
   open FormatExt
 
@@ -243,7 +244,7 @@ module S5 = struct
 
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
-    let (v, _) = Ljs_eval.eval_expr ljs !jsonPath !stack_trace in
+    let (v, _) = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
     printf "%s" (pretty_value v);
     print_newline ()
 

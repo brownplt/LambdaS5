@@ -14,7 +14,7 @@ open Str
    the filesystem. 
 
    TODO(joe): I have no idea what happens on windows. *)
-let desugar str jsonPath = 
+let desugar jsonPath str = 
   let jsfilename = temp_file "evaljs" ".js" in
   let jsfile = open_out jsfilename in
   (* This puts the appropriate *javascript* in a temp file; the argument
@@ -30,13 +30,8 @@ let desugar str jsonPath =
   let errfile = openfile errfilename [O_RDWR] 0o600 in
   let (null_stdin, nothing) = pipe () in
   let cleanup () =
-    close jsonfile;
-    close errfile;
-    close null_stdin;
-    close nothing;
-    unlink jsfilename;
-    unlink jsonfilename;
-    unlink errfilename; in
+    List.iter close [jsonfile; errfile; null_stdin; nothing];
+    List.iter unlink [jsfilename; jsonfilename; errfilename] in
   (* This checks for parser errors from Spidermonkey's spew to stderr.
      The environment checks for the thrown string "EvalError" to
      construct the appropriate exception object. *)
@@ -45,7 +40,7 @@ let desugar str jsonPath =
     let buf = String.create (in_channel_length inchan) in
     really_input inchan buf 0 (in_channel_length inchan);
     (* We're done with all the files here, so just clean them up *)
-    ignore (cleanup ());
+    cleanup ();
     let json_err = regexp (quote "SyntaxError") in
     begin try
       ignore (search_forward json_err buf 0);
@@ -65,7 +60,7 @@ let desugar str jsonPath =
     try
       let ast = parse_spidermonkey (open_in jsonfilename) jsonfilename in
       (* We're done with all the files here, so just clean them up *)
-      ignore (cleanup ());
+      cleanup ();
       let (used_ids, exprjsd) = 
         js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
       in

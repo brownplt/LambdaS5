@@ -5,7 +5,6 @@ open Ljs
 open Ljs_values
 open Ljs_delta
 open Ljs_pretty
-open Ljs_desugar
 
 let bool b = match b with
   | true -> True
@@ -155,9 +154,9 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
-let rec eval jsonPath exp env (store : store) : (value * store) =
+let rec eval desugar exp env (store : store) : (value * store) =
   let eval exp env store =
-    begin try eval jsonPath exp env store
+    begin try eval desugar exp env store
       with 
       | Break (exprs, l, v, s) ->
         raise (Break (exp::exprs, l, v, s))
@@ -478,7 +477,7 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
     Closure (env, xs, e), store
   | S.Eval (p, e) ->
     begin match eval e env store with
-      | String s, store -> eval (desugar s jsonPath) env store
+      | String s, store -> eval (desugar s) env store
       | v, store -> v, store
     end
 
@@ -496,9 +495,9 @@ let err show_stack trace message =
     eprintf "%s\n" message;
     failwith "Runtime error"
 
-let rec eval_expr expr jsonPath print_trace = try
+let rec eval_expr expr desugar print_trace = try
   Sys.catch_break true;
-  eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
+  eval desugar expr IdMap.empty (Store.empty, Store.empty)
 with
   | Throw (t, v, store) ->
       let err_msg = 
