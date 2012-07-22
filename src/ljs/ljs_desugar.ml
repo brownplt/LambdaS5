@@ -44,9 +44,9 @@ let desugar jsonPath str =
     let json_err = regexp (quote "SyntaxError") in
     begin try
       ignore (search_forward json_err buf 0);
-        (* TODO(joe): Better signalling between interpreter and env?
-           Eval code can confuse the env by throwing "EvalError" *)
-      S.Throw (Pos.dummy, S.String (Pos.dummy, "EvalError"))
+      S.Throw (Pos.dummy,
+        S.App (Pos.dummy, S.Id (Pos.dummy, "%SyntaxError"),
+               [S.String (Pos.dummy, "Syntax error in eval()")]))
     with Not_found ->
       raise (PrimErr ([], String
         (sprintf "Fatal eval error, exit code of desugar was: %s %d" st i)))
