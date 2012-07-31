@@ -475,13 +475,25 @@ let rec eval desugar exp env (store : store) : (value * store) =
     raise (Throw ([], v, s))
   | S.Lambda (p, xs, e) -> 
     Closure (env, xs, e), store
-  | S.Eval (p, e) ->
-    begin match eval e env store with
-      | String s, store -> eval (desugar s) env store
-      | v, store -> v, store
+  | S.Eval (p, e, bindings) ->
+    let evalstr, store = eval e env store in
+    let bindobj, store = eval bindings env store in
+    begin match evalstr, bindobj with
+      | String s, ObjLoc o ->
+        let expr = desugar s in
+        let env, store = envstore_of_obj p (get_obj store o) store in
+        eval expr env store
+      | v, _ -> v, store
     end
 
-
+and envstore_of_obj p (_, props) store =
+  IdMap.fold (fun id prop (env, store) -> match prop with
+    | Data ({value=v}, _, _) ->
+      let new_loc, store = add_var store v in
+      let env = IdMap.add id new_loc env in
+      env, store
+    | _ -> interp_error p "Non-data value in env_of_obj")
+  props (IdMap.empty, store)
 
 and arity_mismatch_err p xs args = interp_error p ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
 

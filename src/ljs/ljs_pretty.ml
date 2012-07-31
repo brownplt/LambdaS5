@@ -80,8 +80,8 @@ let rec exp e = match e with
   | Lambda (p, xs, e) ->
     vert [squish [text "func"; parens (horz (intersperse (text ",") (map text xs)))];
           braces (exp e)]
-  | Eval (p, s) -> 
-      squish [text "@eval"; parens (exp s)]
+  | Eval (p, s, obj) -> 
+      squish [text "@eval"; parens (horz [exp s; text ","; exp obj])]
   | Hint (p, hint, e) ->
       parens (vert [squish [text "/*: "; text hint; text "*/"];
 	                 exp e])

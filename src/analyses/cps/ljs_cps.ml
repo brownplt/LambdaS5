@@ -571,7 +571,7 @@ let rec cps (exp : E.exp)
                  var, String(pos,Label.newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
-    | E.Eval (pos, broken) -> 
+    | E.Eval (pos, broken, _) -> 
       let var = newVar "dummy" in 
       LetValue (Pos.synth pos, Label.newLabel(), var, Null (Pos.synth pos, Label.newLabel()), ret (Id(pos,Label.newLabel(),var))) 
 
@@ -800,7 +800,7 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
 | E.Throw (pos, value) -> cps value exnName (fun var -> AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), var, String(pos,Label.newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
-    | E.Eval (pos, broken) -> 
+    | E.Eval (pos, broken, _) -> 
       let var = newVar "dummy" in 
       LetValue (Pos.synth pos, Label.newLabel(), var, Null (Pos.synth pos, Label.newLabel()), 
                 AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),var))) 
@@ -828,7 +828,7 @@ let rec de_cps (exp : cps_exp) : E.exp =
   | AppRetCont (pos, _, ret, argName) -> E.App(pos, de_ret ret, [de_cps_val argName])
   | AppExnCont (pos, _, exn, argName, labelName) -> E.App(pos, de_exn exn,
                                                      [de_cps_val argName; de_cps_val labelName])
-  | Eval (pos, _, body) -> E.Eval(pos, de_cps body)
+  | Eval (pos, _, body) -> E.Eval(pos, de_cps body, E.Undefined pos)
 and de_ret (ret : cps_ret) : E.exp =
   match ret with
   | RetId(pos, _, id) -> E.Id(pos, id)
