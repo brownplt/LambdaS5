@@ -64,7 +64,7 @@ type exp =
   | TryFinally of Pos.t * exp * exp
   | Throw of Pos.t * exp
   | Lambda of Pos.t * id list * exp
-  | Eval of Pos.t * exp
+  | Eval of Pos.t * exp * exp
   | Hint of Pos.t * string * exp
 and data =       
     {value : exp;
@@ -129,7 +129,7 @@ let pos_of exp = match exp with
   | TryFinally (pos, _, _) -> pos
   | Throw (pos, _) -> pos
   | Lambda (pos, _, _) -> pos
-  | Eval (pos, _) -> pos
+  | Eval (pos, _, _) -> pos
   | Hint (pos, _, _) -> pos
 
 let child_exps (exp : exp) : exp list =

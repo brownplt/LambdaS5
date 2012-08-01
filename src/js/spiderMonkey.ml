@@ -270,14 +270,15 @@ let parse_spidermonkey (cin : in_channel) (name : string) : Js_syntax.program =
       (Json_parser.main (Json_lexer.token (Json_lexer.make_param ())) lexbuf)
     with
       |  Failure "lexing: empty token" ->
-           failwith (sprintf "lexical error at %s"
+          raise (Failure (sprintf "lexical error at %s"
                        (Pos.string_of_pos (Pos.real
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p))))
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))))
       | Failure "utf8_of_point not implemented" ->
-        failwith "Parser doesn't do some UTF8 encoding crap"
+          raise (Failure "Parser doesn't do some UTF8 encoding crap")
       | Parsing.Parse_error ->
-           failwith (sprintf "parse error at %s; unexpected token %s"
-                       (Pos.string_of_pos (Pos.real
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
-                       (Lexing.lexeme lexbuf))
+          raise (Failure (sprintf "parse error at %s; unexpected token %s"
+                      (Pos.string_of_pos (Pos.real
+                         (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+                      (Lexing.lexeme lexbuf)))
+      | _ -> raise (Failure "Unexpected error in parse_spidermonkey")
 

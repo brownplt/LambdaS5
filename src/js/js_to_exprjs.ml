@@ -6,8 +6,6 @@ open Js_pretty
 
 open String
 
-exception ParseError of string
-
 let idx = ref 0
 
 let mk_id str = 

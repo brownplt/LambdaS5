@@ -1052,6 +1052,7 @@ let rec eval jsonPath maxDepth depth
       bind
         (eval e envs pc)
         (fun (v, pc') -> throw (Throw v) pc')
+    (* TODO(joe): this should use ljs_desugar and not eval_op *)
     (*
       | S.Eval (p, e) ->
       match eval e envs with
@@ -1083,10 +1084,9 @@ and eval_op str envs jsonPath maxDepth pc =
   try
     ignore (search_forward json_err buf 0);
     throw_str "EvalError" pc
-  with Not_found -> begin
+  with Not_found ->
     let ast =
       parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
-    try
       let (used_ids, exprjsd) = 
         js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global")) in
       let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
@@ -1095,8 +1095,6 @@ and eval_op str envs jsonPath maxDepth pc =
          eval jsonPath maxDepth 0 desugard envs pc (* TODO: which envs? *))
       else
         (failwith "no global")
-    with ParseError _ -> throw_str "EvalError" pc
-  end
 
 let rec eval_expr expr jsonPath maxDepth pc = 
   let results =

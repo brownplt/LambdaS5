@@ -19,7 +19,6 @@ type expr =
   | Null of Pos.t
   | String of Pos.t * string
   | ArrayExpr of Pos.t * expr list
-  | RegExpr of Pos.t * string
   | ObjectExpr of Pos.t * (Pos.t * string * prop) list
       (** Object properties are transformed into string literals *)
   | ThisExpr of Pos.t

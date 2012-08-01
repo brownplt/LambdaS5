@@ -3,6 +3,8 @@ es5conform
 src/es5.b.byte
 src/s5.d.byte
 
+bin/js
+
 *.swp
 tests/*.swp
 tests/unit-tests/*.swp

@@ -160,9 +160,9 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
-let rec eval jsonPath exp env (store : store) : (value * store) =
+let rec eval desugar exp env (store : store) : (value * store) =
   let eval exp env store =
-    begin try eval jsonPath exp env store
+    begin try eval desugar exp env store
       with 
       | Break (exprs, l, v, s) ->
         raise (Break (exp::exprs, l, v, s))
@@ -487,51 +487,28 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       then env
       else IdMap.filter (fun var _ -> IdSet.mem var var_set) env in
     Closure (filtered_env, xs, e), store
-  | S.Eval (p, e) ->
-    begin match eval e env store with
-      | String s, store -> eval_op s env store jsonPath
-      | v, store -> v, store
+  | S.Eval (p, e, bindings) ->
+    let evalstr, store = eval e env store in
+    let bindobj, store = eval bindings env store in
+    begin match evalstr, bindobj with
+      | String s, ObjLoc o ->
+        let expr = desugar s in
+        let env, store = envstore_of_obj p (get_obj store o) store in
+        eval expr env store
+      | String s, _ -> interp_error p "Non-object given to eval() for env"
+      | v, _ -> v, store
     end
 
-
+and envstore_of_obj p (_, props) store =
+  IdMap.fold (fun id prop (env, store) -> match prop with
+    | Data ({value=v}, _, _) ->
+      let new_loc, store = add_var store v in
+      let env = IdMap.add id new_loc env in
+      env, store
+    | _ -> interp_error p "Non-data value in env_of_obj")
+  props (IdMap.empty, store)
 
 and arity_mismatch_err p xs args = interp_error p ("Arity mismatch, supplied " ^ string_of_int (List.length args) ^ " arguments and expected " ^ string_of_int (List.length xs) ^ ". Arg names were: " ^ (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ ". Values were: " ^ (List.fold_right (^) (map (fun v -> " " ^ pretty_value v ^ " ") args) ""))
-
-(* This function is exactly as ridiculous as you think it is.  We read,
-   parse, desugar, and evaluate the string, storing it to temp files along
-   the way.  We make no claims about encoding issues that may arise from
-   the filesystem.  Thankfully, JavaScript is single-threaded, so using
-   only a single file works out. 
-
-   TODO(joe): I have no idea what happens on windows. *)
-and eval_op str env store jsonPath = 
-  let outchan = open_out "/tmp/curr_eval.js" in
-  output_string outchan str;
-  close_out outchan;
-  let cmdstring = 
-    (sprintf "%s /tmp/curr_eval.js 1> /tmp/curr_eval.json 2> /tmp/curr_evalerr.json" jsonPath) in
-  ignore (system cmdstring);
-  let inchan = open_in "/tmp/curr_evalerr.json" in
-  let buf = String.create (in_channel_length inchan) in
-  really_input inchan buf 0 (in_channel_length inchan);
-  let json_err = regexp (quote "SyntaxError") in
-  begin try
-    ignore (search_forward json_err buf 0);
-    raise (Throw ([], String "EvalError", store))
-    with Not_found -> ()
-  end;
-  let ast =
-    parse_spidermonkey (open_in "/tmp/curr_eval.json") "/tmp/curr_eval.json" in
-  let (used_ids, exprjsd) = 
-    try
-      js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
-    with ParseError _ -> raise (Throw ([], String "EvalError", store))
-    in
-  let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
-  if (IdMap.mem "%global" env) then
-     eval jsonPath desugard env store (* TODO: which env? *)
-  else
-    (failwith "no global")
 
 let err show_stack trace message = 
   if show_stack then begin
@@ -543,9 +520,9 @@ let err show_stack trace message =
     eprintf "%s\n" message;
     failwith "Runtime error"
 
-let rec eval_expr expr jsonPath print_trace = try
+let rec eval_expr expr desugar print_trace = try
   Sys.catch_break true;
-  eval jsonPath expr IdMap.empty (Store.empty, Store.empty)
+  eval desugar expr IdMap.empty (Store.empty, Store.empty)
 with
   | Throw (t, v, store) ->
       let err_msg = 

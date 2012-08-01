@@ -52,7 +52,7 @@ let with_pos exp pos = match exp with
   | TryFinally (_, tryBlock, finallyBlock) -> TryFinally (pos, tryBlock, finallyBlock)
   | Throw (_, value) -> Throw (pos, value)
   | Lambda (_, ids, body) -> Lambda (pos, ids, body)
-  | Eval (_, exp) -> Eval (pos, exp)
+  | Eval (_, exp, obj) -> Eval (pos, exp, obj)
   | Hint (_, label, exp) -> Hint (pos, label, exp)
 
 %}
@@ -176,8 +176,8 @@ exp :
    { App (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $1, $3) }
  | GETFIELDS LPAREN exp RPAREN
    { OwnFieldNames (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
- | EVAL LPAREN exp RPAREN
-     { Eval (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3) }
+ | EVAL LPAREN exp COMMA exp RPAREN
+     { Eval (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 4), $3, $5) }
  | PRIM LPAREN STRING COMMA unbraced_seq_exp COMMA unbraced_seq_exp RPAREN
    { Op2 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $5, $7) }
  | PRIM LPAREN STRING COMMA unbraced_seq_exp RPAREN

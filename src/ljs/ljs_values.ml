@@ -68,6 +68,8 @@ let add_var (objs, vars) new_val =
 
 exception Break of exp list * label * value * store
 exception Throw of exp list * value * store
+exception PrimErr of exp list * value
+
 
 let pretty_value v = match v with
   | Num d -> string_of_float d
