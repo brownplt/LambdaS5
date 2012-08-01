@@ -28,9 +28,6 @@ let locs_of_obj (attrs, prop_map) =
       [getter; setter] in
   let vals_of_props prop_map =
     List.concat (map vals_of_prop (map snd (IdMap.bindings prop_map))) in
-  let locs_of_value value = match value with
-    | ObjLoc loc -> LocSet.singleton loc
-    | _ -> LocSet.empty in
   unions (map locs_of_value (vals_of_attrs attrs @ vals_of_props prop_map))
 
 let collect_garbage store root_set =
