@@ -10,9 +10,9 @@ type node =
   | Ljs of Ljs_syntax.exp
   | Cps of Ljs_cps.cps_exp
   | Env of (Ljs_syntax.exp -> Ljs_syntax.exp)
-  | Store of Ljs_values.store
+  | Answer of answer
 
-type nodeType = JsT | EjsT | LjsT | CpsT | EnvT | StoreT
+type nodeType = JsT | EjsT | LjsT | CpsT | EnvT | AnswerT
 
 let nodeType (node : node) : nodeType =
   match node with
@@ -21,7 +21,7 @@ let nodeType (node : node) : nodeType =
   | Ljs _ -> LjsT
   | Cps _ -> CpsT
   | Env _ -> EnvT
-  | Store _ -> StoreT
+  | Answer _ -> AnswerT
 
 
 let showNodeType (nodeType : nodeType) : string =
@@ -31,7 +31,7 @@ let showNodeType (nodeType : nodeType) : string =
   | LjsT -> "S5"
   | CpsT -> "S5-cps"
   | EnvT -> "S5-env"
-  | StoreT -> "Heap"
+  | AnswerT -> "Snapshot"
 
 
 module S5 = struct
@@ -44,6 +44,7 @@ module S5 = struct
   open Ljs_desugar
   open Format
   open FormatExt
+  open Ljs_gc
 
 
   (* Global Options *)
@@ -108,17 +109,17 @@ module S5 = struct
     | Env src -> src 
     | node -> type_error cmd EnvT node
 
-  let pop_store cmd : Ljs_values.store =
+  let pop_answer cmd : Ljs_eval.answer =
     match pop cmd with
-    | Store store -> store
-    | node -> type_error cmd StoreT node
+    | Answer answer -> answer
+    | node -> type_error cmd AnswerT node
 
   let push_js js = push (Js js)
   let push_ejs (used_ids, ejs) = push (Ejs (used_ids, ejs))
   let push_ljs ljs = push (Ljs ljs)
   let push_cps cps = push (Cps cps)
   let push_env env = push (Env env)
-  let push_store store = push (Store store)
+  let push_answer answer = push (Answer answer)
 
 
   (* Pushing Commands *)
@@ -165,6 +166,14 @@ module S5 = struct
     let alph cps = fst (Ljs_cps_util.alphatize true (cps, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) in
     push_cps (alph (pop_cps cmd))
 
+  let collect_garbage cmd () =
+    let answer = pop_answer cmd in
+    match answer with
+      Ljs_eval.Answer (exps, v, envs, store) ->
+        let root_set = Ljs_gc.unions (map Ljs_gc.locs_of_env envs) in
+        let store' = Ljs_gc.collect_garbage store root_set in
+        push_answer (Ljs_eval.Answer (exps, v, envs, store'))
+
 
   (* Composition Commands *)
 
@@ -202,9 +211,13 @@ module S5 = struct
                       (IdSet.elements fvs))
 
   let print_store cmd () =
-    let store = pop_store cmd in
-    Ljs_pretty_value.print_store store
-
+    let answer = pop_answer cmd in
+    begin match answer with
+    | Ljs_eval.Answer (_, _, _, store) ->
+      Ljs_pretty_value.print_store store
+    end;
+    push_answer answer
+      
 
   (* Evaluation Commands *)
 
@@ -229,10 +242,11 @@ module S5 = struct
 
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
-    let (v, store) = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
-    push_store store;
-    printf "%s" (Ljs_values.pretty_value v);
-    print_newline ()
+    let answer = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
+    match answer with Ljs_eval.Answer (exprs, v, envs, store) ->
+      push_answer answer;
+      printf "%s" (Ljs_values.pretty_value v);
+      print_newline ()
 
   let do_sym_eval cmd =
     let ljs = pop_ljs cmd in
@@ -291,6 +305,7 @@ module S5 = struct
         unitCmd "-cps" ljs_to_cps (showType [LjsT] [CpsT]);
         unitCmd "-un-cps" cps_to_ljs (showType [CpsT] [LjsT]);
         unitCmd "-to-env" ljs_to_env (showType [LjsT] [EnvT]);
+        unitCmd "-gc" collect_garbage (showType [AnswerT] [AnswerT]);
         (* Composition Operations *)
         unitCmd "-apply" applyR (showType [LjsT; EnvT] [LjsT]);
         (* Printing *)
