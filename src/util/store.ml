@@ -9,6 +9,7 @@ module Loc = struct
   let compare = Pervasives.compare
 end
 module LocMap = Map.Make (Loc)
+module LocSet = Set.Make (Loc)
 type loc = int
 let newLoc () : Loc.t =
   loc := !loc + 1;

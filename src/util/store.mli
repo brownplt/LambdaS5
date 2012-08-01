@@ -22,3 +22,6 @@ val cardinal : 'a t -> int
 val bindings : 'a t -> (loc * 'a) list
 val map : ('a -> 'b) -> 'a t -> 'b t
 val mapi : (loc -> 'a -> 'b) -> 'a t -> 'b t
+
+module LocSet : Set.S with type elt = loc
+module LocMap : Map.S with type key = loc
