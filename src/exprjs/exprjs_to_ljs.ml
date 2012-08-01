@@ -525,7 +525,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     S.Let (p, "#strict", S.True p, ejs_to_ljs body)
   | E.NonstrictExpr (p, body) ->
     S.Let (p, "#strict", S.False p, ejs_to_ljs body)
-  | E.HintExpr _ -> failwith "Bizarre error: Hint found somehow"
+  | E.HintExpr (p, s, e) ->
+    S.Hint (p, s, ejs_to_ljs e)
 
 and a_attrs pos = {
   S.primval = None;

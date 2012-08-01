@@ -12,6 +12,8 @@ open Exprjs_to_ljs
 open Js_to_exprjs
 open Str
 
+type answer = Answer of S.exp list * value * env list * store
+
 let bool b = match b with
   | true -> True
   | false -> False
@@ -170,6 +172,8 @@ let rec eval desugar exp env (store : store) : (value * store) =
         raise (Throw (exp::exprs, v, s))
       | PrimErr (exprs, v) ->
         raise (PrimErr (exp::exprs, v))
+      | Snapshot (exps, v, envs, s) ->
+        raise (Snapshot (exp :: exps, v, env :: envs, s))
       | Sys.Break ->
         raise (PrimErr ([exp], String "s5_eval stopped by user interrupt"))
       | Stack_overflow ->
@@ -194,6 +198,9 @@ let rec eval desugar exp env (store : store) : (value * store) =
                        ("Applied non-function, was actually " ^ 
                          pretty_value func)) in
   match exp with
+  | S.Hint (_, "___takeS5Snapshot", e) ->
+    let (v, store) = eval e env store in
+    raise (Snapshot ([], v, [], store))
   | S.Hint (_, _, e) -> eval e env store
   | S.Undefined _ -> Undefined, store
   | S.Null _ -> Null, store
@@ -520,8 +527,11 @@ let err show_stack trace message =
 
 let rec eval_expr expr desugar print_trace = try
   Sys.catch_break true;
-  eval desugar expr IdMap.empty (Store.empty, Store.empty)
+  let (v, store) = eval desugar expr IdMap.empty (Store.empty, Store.empty) in
+  Answer ([], v, [], store)
 with
+  | Snapshot (exprs, v, envs, store) ->
+    Answer (exprs, v, envs, store)
   | Throw (t, v, store) ->
       let err_msg = 
         match v with

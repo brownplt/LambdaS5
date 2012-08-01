@@ -67,6 +67,7 @@ let add_var (objs, vars) new_val =
 exception Break of exp list * label * value * store
 exception Throw of exp list * value * store
 exception PrimErr of exp list * value
+exception Snapshot of exp list * value * env list * store
 
 
 let pretty_value v = match v with
