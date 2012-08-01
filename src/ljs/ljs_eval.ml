@@ -483,6 +483,7 @@ let rec eval desugar exp env (store : store) : (value * store) =
         let expr = desugar s in
         let env, store = envstore_of_obj p (get_obj store o) store in
         eval expr env store
+      | String s, _ -> interp_error p "Non-object given to eval() for env"
       | v, _ -> v, store
     end
 
