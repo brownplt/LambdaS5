@@ -5,6 +5,7 @@ open Ljs
 open Ljs_values
 open Ljs_delta
 open Ljs_pretty
+open Ljs_pretty_value
 open Unix
 open SpiderMonkey
 open Exprjs_to_ljs
@@ -478,8 +479,14 @@ let rec eval jsonPath exp env (store : store) : (value * store) =
       end
   | S.Throw (p, e) -> let (v, s) = eval e env store in
     raise (Throw ([], v, s))
-  | S.Lambda (p, xs, e) -> 
-    Closure (env, xs, e), store
+  | S.Lambda (p, xs, e) ->
+    (* Only close over the variables that the function body might reference. *)
+    let (var_set, has_eval) = S.free_vars e in
+    let filtered_env =
+      if has_eval
+      then env
+      else IdMap.filter (fun var _ -> IdSet.mem var var_set) env in
+    Closure (filtered_env, xs, e), store
   | S.Eval (p, e) ->
     begin match eval e env store with
       | String s, store -> eval_op s env store jsonPath

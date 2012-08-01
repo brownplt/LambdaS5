@@ -132,3 +132,76 @@ let pos_of exp = match exp with
   | Eval (pos, _) -> pos
   | Hint (pos, _, _) -> pos
 
+let child_exps (exp : exp) : exp list =
+  let data_child_exps {value = x; writable = _} = [x] in
+  let accessor_child_exps {getter = x; setter = y} = [x; y] in
+  let prop_child_exps prop = match prop with
+    | Data (data, _, _) -> data_child_exps data
+    | Accessor (accessor, _, _) -> accessor_child_exps accessor in
+  let prop_list_child_exps proplist =
+    List.concat (map (fun (_, prop) -> prop_child_exps prop) proplist) in
+  let option_to_list option = match option with
+    | None -> []
+    | Some x -> [x] in
+  let attrs_child_exps attrs = match attrs with
+      {primval = exp1; code = exp2; proto = exp3; klass = _; extensible = _} ->
+        List.concat (map option_to_list [exp1; exp2; exp3]) in
+  match exp with
+  | Null _ -> []
+  | Undefined _ -> []
+  | String _ -> []
+  | Num _ -> []
+  | True _ -> []
+  | False _ -> []
+  | Id _ -> []
+  | Object (_, attrs, props) ->
+    attrs_child_exps attrs @ prop_list_child_exps props
+  | GetAttr (_, _, x, y) -> [x; y]
+  | SetAttr (_, _, x, y, z) -> [x; y; z]
+  | GetObjAttr (_, _, x) -> [x]
+  | SetObjAttr (_, _, x, y) -> [x; y]
+  | GetField (_, x, y, z) -> [x; y; z]
+  | SetField (_, x, y, z, w) -> [x; y; z; w]
+  | DeleteField (_, x, y) -> [x; y]
+  | OwnFieldNames (_, x) -> [x]
+  | SetBang (_, _, x) -> [x]
+  | Op1 (_, _, x) -> [x]
+  | Op2 (_, _, x, y) -> [x; y]
+  | If (_, x, y, z) -> [x; y; z]
+  | App (_, x, ys) -> x :: ys
+  | Seq (_, x, y) -> [x; y]
+  | Let (_, _, x, y) -> [x; y]
+  | Rec (_, _, x, y) -> [x; y]
+  | Label (_, _, x) -> [x]
+  | Break (_, _, x) -> [x]
+  | TryCatch (_, x, y) -> [x; y]
+  | TryFinally (_, x, y) -> [x; y]
+  | Throw (_, x) -> [x]
+  | Lambda (_, _, x) -> [x]
+  | Eval (_, x) -> [x]
+  | Hint (_, _, x) -> [x]
+
+(* produces (free_var_set, contains_eval) *)
+let rec free_vars (exp : exp) : IdSet.t * bool =
+  match exp with
+  | Id (_, var) -> (IdSet.singleton var, false)
+  | SetBang (_, var, exp) ->
+    let (var_set, has_eval) = free_vars exp in
+    (IdSet.add var var_set, has_eval)
+  | Let (_, var, defn, body) ->
+    let (defn_vars, defn_eval) = free_vars defn in
+    let (body_vars, body_eval) = free_vars body in
+    (IdSet.union defn_vars (IdSet.remove var body_vars), defn_eval || body_eval)
+  | Rec (_, var, defn, body) ->
+    let (defn_vars, defn_eval) = free_vars defn in
+    let (body_vars, body_eval) = free_vars body in
+    (IdSet.remove var (IdSet.union defn_vars body_vars), defn_eval || body_eval)
+  | Lambda (_, vars, body) ->
+    let (body_vars, body_eval) = free_vars body in
+    (List.fold_left (flip IdSet.remove) body_vars vars, body_eval)
+  | Eval (_, exp) -> let (var_set, _) = free_vars exp in (var_set, true)
+  | exp ->
+    let child_vars = map free_vars (child_exps exp) in
+    let has_eval = List.exists (fun (vars, has_eval) -> has_eval) child_vars in
+    let var_set = List.fold_left IdSet.union IdSet.empty (map fst child_vars) in
+    (var_set, has_eval)
