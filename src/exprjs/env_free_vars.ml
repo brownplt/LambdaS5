@@ -71,9 +71,9 @@ let vars_env exp = S.Seq (
     exp
   )
 
-let env_var s =
+let env_var p s =
   if List.mem s ids
-  then S.Id (Pos.dummy, s)
+  then S.Id (Pos.synth p, s)
   else failwith ("[desugar] Attempted to use unbound id " ^ s ^
                  " in env_var.  Add it to env_free_vars.ml")
 

@@ -19,10 +19,10 @@ let null_test p v =
 let type_test p v typ =
   S.Op2 (p, "stx=", S.Op1 (p, "typeof", v), S.String (p, typ))
 
-let is_object_type p o = S.App (p, F.env_var "%IsObject", [o])
+let is_object_type p o = S.App (p, F.env_var p "%IsObject", [o])
 
 let throw_typ_error p msg =
-  S.App (p, F.env_var "%TypeError", [S.String (p, msg)])
+  S.App (p, F.env_var p "%TypeError", [S.String (p, msg)])
 
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
@@ -31,18 +31,18 @@ let make_get_field p obj fld =
 let to_string p v =
   match v with
     | S.String (p, s) -> S.String (p, s)
-    | _ -> S.App (p, F.env_var "%ToString", [v])
+    | _ -> S.App (p, F.env_var p "%ToString", [v])
 
 let to_object p v =
   match v with
     | S.Id (p, "%context") -> v
-    | _ -> S.App (p, F.env_var "%ToObject", [v])
+    | _ -> S.App (p, F.env_var p "%ToObject", [v])
 
 
 let prop_accessor_check p v =
   match v with
     | S.Id (p, "%context") -> v
-    | _ -> S.App (p, F.env_var "%PropAccessorCheck", [v])
+    | _ -> S.App (p, F.env_var p "%PropAccessorCheck", [v])
 
 let ljs_bool b = if b then S.True (Pos.dummy) else S.False (Pos.dummy)
 
@@ -52,8 +52,8 @@ let ljs_bool b = if b then S.True (Pos.dummy) else S.False (Pos.dummy)
 let make_set_field p obj fld value =
   match obj with
   | S.Id (p, "%context") -> 
-    S.App (p, F.env_var "%EnvCheckAssign", [obj; fld; value; S.Id (p, "#strict")])
-  | _ -> S.App (p, F.env_var "%set-property", [obj; fld; value])
+    S.App (p, F.env_var p "%EnvCheckAssign", [obj; fld; value; S.Id (p, "#strict")])
+  | _ -> S.App (p, F.env_var p "%set-property", [obj; fld; value])
 
 let make_args_obj p is_new args =
     let n_args = List.length args in
@@ -85,7 +85,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     and a_attrs = {
       S.primval = None;
         S.code = None;
-        S.proto = Some (F.env_var "%ArrayProto"); 
+        S.proto = Some (F.env_var p "%ArrayProto"); 
         S.klass = "Array";
         S.extensible = true; } in
     let exp_props = el_to_pl desugared 0 in
@@ -158,11 +158,11 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let o_attrs = {
       S.primval = None;
       S.code = None;
-      S.proto = Some (F.env_var "%ObjectProto");
+      S.proto = Some (F.env_var p "%ObjectProto");
       S.klass = "Object";
       S.extensible = true; } in
     S.Object (p, o_attrs, List.append reduced_assoc data_result)
-  | E.ThisExpr (p) -> F.env_var "%this"
+  | E.ThisExpr (p) -> F.env_var p "%this"
   | E.IdExpr (p, nm) -> S.Id (p, nm)
   | E.BracketExpr (p, l, r) -> 
     let o = prop_accessor_check p (ejs_to_ljs l) in
@@ -182,10 +182,10 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
                            S.String (p, "prototype"), getterargs),
           S.Let (p, pr_id, S.If (p, is_object_type p (S.Id (p, pr_id)),
                                     S.Id (p, pr_id),
-                                    F.env_var "%ObjectProto"),
+                                    F.env_var p "%ObjectProto"),
             S.Seq (p,
               S.If (p, S.Op1 (p, "!", is_object_type p (S.Id (p, pr_id))),
-                S.SetBang (p, pr_id, F.env_var "%ObjectProto"), S.Undefined p),
+                S.SetBang (p, pr_id, F.env_var p "%ObjectProto"), S.Undefined p),
             S.Let (p, newobj, S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, pr_id)) }, []),
               S.If (p, null_test p (S.GetObjAttr (p, S.Code, S.Id (p, constr_id))),
                     throw_typ_error p "Constructor was not applicable",
@@ -197,31 +197,31 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     | "postfix:++" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.GetField (_, obj, fld, _) ->
-          S.App (p, F.env_var "%PostIncrement", [obj; fld])
+          S.App (p, F.env_var p "%PostIncrement", [obj; fld])
         | _ -> failwith "desugaring error: postfix:++"
       end
     | "postfix:--" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.GetField (_, obj, fld, _) ->
-          S.App (p, F.env_var "%PostDecrement", [obj; fld])
+          S.App (p, F.env_var p "%PostDecrement", [obj; fld])
         | _ -> failwith "desugaring error: postfix:--"
       end
     | "prefix:++" -> let target = ejs_to_ljs exp in 
       begin match target with
         | S.GetField (_, obj, fld, _) ->
-          S.App (p, F.env_var "%PrefixIncrement", [obj; fld])
+          S.App (p, F.env_var p "%PrefixIncrement", [obj; fld])
         | _ -> failwith "desugaring error: prefix:++"
       end
     | "prefix:--" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.GetField (_, obj, fld, _) ->
-          S.App (p, F.env_var "%PrefixDecrement", [obj; fld])
+          S.App (p, F.env_var p "%PrefixDecrement", [obj; fld])
         | _ -> failwith "desugaring error: prefix:--"
       end
     | "typeof" -> let target = ejs_to_ljs exp in
       begin match target with
         | S.GetField (_, (S.Id (_, "%context") as context), fldexpr, _) ->
-          S.App (p, F.env_var "%Typeof", [context; fldexpr])
+          S.App (p, F.env_var p "%Typeof", [context; fldexpr])
         | _ -> S.Op1 (p, "typeof", target)
       end
     | "delete" -> let result = match exp with
@@ -234,7 +234,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
         begin match sobj with
           | S.Id (_, "%context") ->
             let null = S.Null (p) in
-            S.App (pp, F.env_var "%ThrowSyntaxError", [null; null])
+            S.App (pp, F.env_var p "%ThrowSyntaxError", [null; null])
           | _ ->
             S.Let (p, fld_id, fld_str,
               S.If (p, S.Op2 (p, "hasProperty", sobj, S.Id (p, fld_id)),
@@ -245,9 +245,9 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
                 S.True (p)))
         end
       | _ -> S.True (p) in result
-    | "-" -> S.App(p, F.env_var "%UnaryNeg", [ejs_to_ljs exp])
-    | "+" -> S.App (p, F.env_var "%UnaryPlus", [ejs_to_ljs exp])
-    | "~" -> S.App (p, F.env_var "%BitwiseNot", [ejs_to_ljs exp])
+    | "-" -> S.App(p, F.env_var p "%UnaryNeg", [ejs_to_ljs exp])
+    | "+" -> S.App (p, F.env_var p "%UnaryPlus", [ejs_to_ljs exp])
+    | "~" -> S.App (p, F.env_var p "%BitwiseNot", [ejs_to_ljs exp])
     | _ -> S.Op1 (p, op, ejs_to_ljs exp) in result
   | E.InfixExpr (p, op, l, r) ->
     let aid = mk_id "a" in
@@ -261,34 +261,34 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
         let lid = mk_id "l-evaled" in
         S.Let (p, lid, sl,
           S.If (p, 
-            S.App (p, F.env_var "%ToBoolean", [S.Id (p, lid)]),
+            S.App (p, F.env_var p "%ToBoolean", [S.Id (p, lid)]),
             sr, 
             S.Id (p, lid)))
       | "||" ->
         let lid = mk_id "l-evaled" in
         S.Let (p, lid, sl,
           S.If (p,
-            S.App (p, F.env_var "%ToBoolean", [S.Id (p, lid)]),
+            S.App (p, F.env_var p "%ToBoolean", [S.Id (p, lid)]),
             S.Id (p, lid),
             sr))
       | "!==" -> S.Op1 (p, "!", S.Op2 (p, "stx=", sl, sr))
       | "!=" -> S.Op1 (p, "!", S.App (p, S.Id (p, "%EqEq"), [sl; sr]))
-      | "==" -> S.App (p, F.env_var "%EqEq", [sl; sr])
-      | "+" -> S.App (p, F.env_var "%PrimAdd", [sl; sr])
-      | "-" -> S.App (p, F.env_var "%PrimSub", [sl; sr])
-      | "<<" -> S.App (p, F.env_var "%LeftShift", [sl; sr])
-      | ">>" -> S.App (p, F.env_var "%SignedRightShift", [sl; sr])
-      | ">>>" -> S.App (p, F.env_var "%UnsignedRightShift", [sl; sr])
+      | "==" -> S.App (p, F.env_var p "%EqEq", [sl; sr])
+      | "+" -> S.App (p, F.env_var p "%PrimAdd", [sl; sr])
+      | "-" -> S.App (p, F.env_var p "%PrimSub", [sl; sr])
+      | "<<" -> S.App (p, F.env_var p "%LeftShift", [sl; sr])
+      | ">>" -> S.App (p, F.env_var p "%SignedRightShift", [sl; sr])
+      | ">>>" -> S.App (p, F.env_var p "%UnsignedRightShift", [sl; sr])
       | "&" | "^" | "|" -> 
-        S.App (p, F.env_var "%BitwiseInfix", [sl; sr; op_func])
+        S.App (p, F.env_var p "%BitwiseInfix", [sl; sr; op_func])
       | "*" | "%" | "/" -> 
-        S.App (p, F.env_var "%PrimMultOp", [sl; sr; op_func])
-      | "<" -> S.App (p, F.env_var "%LessThan", [sl; sr])
-      | ">" -> S.App (p, F.env_var "%GreaterThan", [sl; sr])
-      | "<=" -> S.App (p, F.env_var "%LessEqual", [sl; sr])
-      | ">=" -> S.App (p, F.env_var "%GreaterEqual", [sl; sr])
-      | "instanceof" -> S.App (p, F.env_var "%instanceof", [sl; sr])
-      | "in" -> S.App (p, F.env_var "%in", [sl; sr])
+        S.App (p, F.env_var p "%PrimMultOp", [sl; sr; op_func])
+      | "<" -> S.App (p, F.env_var p "%LessThan", [sl; sr])
+      | ">" -> S.App (p, F.env_var p "%GreaterThan", [sl; sr])
+      | "<=" -> S.App (p, F.env_var p "%LessEqual", [sl; sr])
+      | ">=" -> S.App (p, F.env_var p "%GreaterEqual", [sl; sr])
+      | "instanceof" -> S.App (p, F.env_var p "%instanceof", [sl; sr])
+      | "in" -> S.App (p, F.env_var p "%in", [sl; sr])
       | "===" -> S.Op2 (p, "stx=", sl, sr)
       | _ -> failwith ("fatal: unknown infix operator: " ^ op)
     end
@@ -296,7 +296,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     and e2 = ejs_to_ljs e2
     and e3 = ejs_to_ljs e3 in 
     S.If (p, 
-      S.App (p, F.env_var "%ToBoolean", [e1]),
+      S.App (p, F.env_var p "%ToBoolean", [e1]),
       e2, 
       e3)
   | E.AssignExpr (p, obj, pr, vl) -> 
@@ -311,7 +311,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     let fun_id = mk_id "fun" in
     begin match e with
       | E.BracketExpr (_, E.IdExpr (_, "%context"), E.String (_, "eval")) ->
-        S.App (p, F.env_var "%maybeDirectEval", [S.Id (p, "%this"); S.Id (p, "%context"); args_obj; S.Id (p, "#strict")])
+        S.App (p, F.env_var p "%maybeDirectEval", [S.Id (p, "%this"); S.Id (p, "%context"); args_obj; S.Id (p, "#strict")])
       | E.BracketExpr (_, E.IdExpr (_, "%context"), _) ->
         S.Let (p, fun_id, ejs_to_ljs e,
           appexpr_check (S.Id (p, fun_id))
@@ -518,7 +518,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
           S.Let (p, disc_id, ejs_to_ljs d,
             cl_to_seq cl)))
   | E.WithExpr (p, obj, body) ->
-    S.Let (p, "%context", S.App (p, F.env_var "%makeWithContext",
+    S.Let (p, "%context", S.App (p, F.env_var p "%makeWithContext",
                                     [S.Id (p, "%context"); ejs_to_ljs obj]),
            ejs_to_ljs body)
   | E.StrictExpr (p, body) ->
@@ -530,7 +530,7 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
 and a_attrs pos = {
   S.primval = None;
       S.code = None;
-      S.proto = Some (F.env_var "%ArrayProto");
+      S.proto = Some (F.env_var pos "%ArrayProto");
       S.klass = "Array";
       S.extensible = true; }
 
@@ -546,16 +546,16 @@ and get_fobj p args body context =
     List.exists (fun nm -> (nm = "arguments") || (nm = "eval")) args in
   let uargs = remove_dupes args in
   if (uargs <> args) || contains_illegals then
-    S.App (p, F.env_var "%SyntaxError", [S.String (p, "Illegal function definition")]) else
+    S.App (p, F.env_var p "%SyntaxError", [S.String (p, "Illegal function definition")]) else
   let call = get_lambda p args body in
-  let fproto = F.env_var "%FunctionProto" in
+  let fproto = F.env_var p "%FunctionProto" in
   let fobj_attrs =
     { S.primval = None; S.code = Some (call); S.proto = Some (fproto); S.klass = "Function"; 
     S.extensible = true; } in
   let param_len = List.length args in
   let proto_id = mk_id "prototype" in
   let proto_obj = 
-    S.Object (p, {S.d_attrs with S.proto = Some (F.env_var "%ObjectProto")}, 
+    S.Object (p, {S.d_attrs with S.proto = Some (F.env_var p "%ObjectProto")}, 
               [("constructor", S.Data ({ S.value = S.Undefined p;
                                          S.writable = true}, 
                                        false, false))]) in
@@ -563,7 +563,7 @@ and get_fobj p args body context =
                            false, true) in
   let length_prop = S.Data ({ S.value = S.Num (p, (float_of_int param_len)); S.writable = true}, 
                            false, true) in
-  let errorer = F.env_var "%ThrowTypeError" in
+  let errorer = F.env_var p "%ThrowTypeError" in
   let errorer_prop = S.Accessor ({ S.getter = errorer; S.setter = errorer },
                                  false, false) in
   let func_id = mk_id "thisfunc" in
@@ -653,7 +653,7 @@ and get_lambda p args body =
     S.Seq (p,
       S.DeleteField (p, S.Id (p, "%args"), S.String (p, "%new")),
       S.Label (p, "%ret",
-        S.Let (p, "%this", S.App (p, F.env_var "%resolveThis", [S.Id (p, "#strict"); S.Id (p, "%this")]),
+        S.Let (p, "%this", S.App (p, F.env_var p "%resolveThis", [S.Id (p, "#strict"); S.Id (p, "%this")]),
           S.Let (p, "%context", ncontext, S.Seq (p, desugared, S.Undefined (p)))))))
 
 and remove_dupes lst =
@@ -721,7 +721,7 @@ and get_while p tst body after =
   S.Rec (p, whil,
     S.Lambda (p, [tst; bdyid; afterid],
       S.Let (p, result, 
-        S.App (p, F.env_var "%ToBoolean",
+        S.App (p, F.env_var p "%ToBoolean",
           [S.App (p, S.Id (p, tst), [])]),
         S.If (p, S.Id (p, result),
           S.Seq (p, 
@@ -765,7 +765,7 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
       S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
       S.Seq (p, 
               S.App (p, 
-                F.env_var "%set-property",
+                F.env_var p "%set-property",
                 [context; nms; S.App (p, S.Id (p, "%prop_itr"), [])]),
              get_while (Pos.synth p) tst bdy after))))),
     S.If (p, undef_test p robj,
@@ -784,9 +784,9 @@ and appexpr_check f app p =
 
 let add_preamble p used_ids var_ids final = 
   let define_id id =
-    S.App (p, F.env_var "%defineGlobalAccessors", [S.Id (p, "%context"); S.String (p, id)]) in
+    S.App (p, F.env_var p "%defineGlobalAccessors", [S.Id (p, "%context"); S.String (p, id)]) in
   let define_var id =
-    S.App (p, F.env_var "%defineGlobalVar", [S.Id (p, "%context"); S.String (p, id)]) in
+    S.App (p, F.env_var p "%defineGlobalVar", [S.Id (p, "%context"); S.String (p, id)]) in
   let rec dops_of_ids def_fun lst base = match lst with
     | [] -> base
     | id :: rest -> S.Seq (p, def_fun id, dops_of_ids def_fun rest base) in
@@ -800,7 +800,7 @@ let exprjs_to_ljs p (used_ids : IdSet.t) (e : E.expr) : S.exp =
     | E.NonstrictExpr _ -> false
     | _ -> failwith "exprjs_to_ljs: expected expression to be marked as strict or nonstrict" in
   let binder =
-     F.env_var (if is_strict then "%strictContext" else "%nonstrictContext") in
+     F.env_var p (if is_strict then "%strictContext" else "%nonstrictContext") in
   S.Let (p, "%context", binder,
     add_preamble p (IdSet.elements used_ids) names desugared)
 
