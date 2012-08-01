@@ -64,7 +64,7 @@ type exp =
   | TryFinally of Pos.t * exp * exp
   | Throw of Pos.t * exp
   | Lambda of Pos.t * id list * exp
-  | Eval of Pos.t * exp * exp
+  | Eval of Pos.t * exp * exp (* Pos.t, string to be evaled, env object  *)
   | Hint of Pos.t * string * exp
 and data =       
     {value : exp;
@@ -178,30 +178,22 @@ let child_exps (exp : exp) : exp list =
   | TryFinally (_, x, y) -> [x; y]
   | Throw (_, x) -> [x]
   | Lambda (_, _, x) -> [x]
-  | Eval (_, x) -> [x]
+  | Eval (_, x, y) -> [x; y]
   | Hint (_, _, x) -> [x]
 
-(* produces (free_var_set, contains_eval) *)
-let rec free_vars (exp : exp) : IdSet.t * bool =
+let rec free_vars (exp : exp) : IdSet.t =
   match exp with
-  | Id (_, var) -> (IdSet.singleton var, false)
+  | Id (_, var) ->
+    IdSet.singleton var
   | SetBang (_, var, exp) ->
-    let (var_set, has_eval) = free_vars exp in
-    (IdSet.add var var_set, has_eval)
+    IdSet.add var (free_vars exp)
   | Let (_, var, defn, body) ->
-    let (defn_vars, defn_eval) = free_vars defn in
-    let (body_vars, body_eval) = free_vars body in
-    (IdSet.union defn_vars (IdSet.remove var body_vars), defn_eval || body_eval)
+    IdSet.union (free_vars defn) (IdSet.remove var (free_vars body))
   | Rec (_, var, defn, body) ->
-    let (defn_vars, defn_eval) = free_vars defn in
-    let (body_vars, body_eval) = free_vars body in
-    (IdSet.remove var (IdSet.union defn_vars body_vars), defn_eval || body_eval)
+    IdSet.remove var (IdSet.union (free_vars defn) (free_vars body))
   | Lambda (_, vars, body) ->
-    let (body_vars, body_eval) = free_vars body in
-    (List.fold_left (flip IdSet.remove) body_vars vars, body_eval)
-  | Eval (_, exp) -> let (var_set, _) = free_vars exp in (var_set, true)
+    List.fold_left (flip IdSet.remove) (free_vars body) vars
+  | Eval (_, str_exp, env_exp) ->
+    IdSet.union (free_vars str_exp) (free_vars env_exp)
   | exp ->
-    let child_vars = map free_vars (child_exps exp) in
-    let has_eval = List.exists (fun (vars, has_eval) -> has_eval) child_vars in
-    let var_set = List.fold_left IdSet.union IdSet.empty (map fst child_vars) in
-    (var_set, has_eval)
+    List.fold_left IdSet.union IdSet.empty (map free_vars (child_exps exp))

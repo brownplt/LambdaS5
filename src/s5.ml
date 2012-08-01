@@ -3,11 +3,6 @@ open Prelude
 open Ljs
 open Ljs_eval
 open Ljs_syntax
-open Ljs_parser
-open Ljs_pretty
-open Ljs_pretty_value
-open Ljs_values
-open Exprjs_pretty
 
 type node =
   | Js of Js_syntax.program
@@ -234,9 +229,9 @@ module S5 = struct
 
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
-    let (v, store) = Ljs_eval.eval_expr ljs !jsonPath !stack_trace in
+    let (v, store) = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
     push_store store;
-    printf "%s" (pretty_value v);
+    printf "%s" (Ljs_values.pretty_value v);
     print_newline ()
 
   let do_sym_eval cmd =

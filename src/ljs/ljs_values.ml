@@ -7,8 +7,6 @@ open FormatExt
 type env = Store.loc IdMap.t
 type label = string
 
-module LocSet = Store.LocSet
-
 type value =
   | Null
   | Undefined

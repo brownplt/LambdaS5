@@ -481,11 +481,9 @@ let rec eval desugar exp env (store : store) : (value * store) =
     raise (Throw ([], v, s))
   | S.Lambda (p, xs, e) ->
     (* Only close over the variables that the function body might reference. *)
-    let (var_set, has_eval) = S.free_vars e in
+    let free_vars = S.free_vars e in
     let filtered_env =
-      if has_eval
-      then env
-      else IdMap.filter (fun var _ -> IdSet.mem var var_set) env in
+      IdMap.filter (fun var _ -> IdSet.mem var free_vars) env in
     Closure (filtered_env, xs, e), store
   | S.Eval (p, e, bindings) ->
     let evalstr, store = eval e env store in
