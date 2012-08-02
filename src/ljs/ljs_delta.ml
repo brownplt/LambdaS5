@@ -1,6 +1,7 @@
 open Prelude
 open Ljs_syntax
 open Ljs_values
+open Ljs_pretty_value
 
 let undef = Undefined
 let null = Null

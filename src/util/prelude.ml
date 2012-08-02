@@ -55,24 +55,17 @@ module Int = struct
   let compare = Pervasives.compare
 end
 
-module IntSet = Set.Make (Int)
-module IntSetExt = SetExt.Make (IntSet)
+module IntSet = SetExt.Make (Int)
 
-module IdSet = Set.Make (IdOrderedType)
+module IdSet = SetExt.Make (IdOrderedType)
 
-module IdSetExt = SetExt.Make (IdSet)
+module PosSet = SetExt.Make (Pos)
 
-module PosSet = Set.Make (Pos)
+module PosMap = MapExt.Make (Pos)
 
-module PosSetExt = SetExt.Make (PosSet)
+module IdMap = MapExt.Make (IdOrderedType)
 
-module PosMap = Map.Make (Pos)
-
-module PosMapExt = MapExt.Make (Pos) (PosMap)
-
-module IdMap = Map.Make (IdOrderedType)
-
-module IdMapExt = MapExt.Make (IdOrderedType) (IdMap)
+module IdMapExt = MapExt.Make (IdOrderedType)
 
 module IdHashtbl = Hashtbl.Make(IdHashedType)
 

@@ -1,6 +1,5 @@
 open Prelude
 open Ljs_syntax
-open Ljs_pretty
 
 open Format
 open FormatExt
@@ -19,7 +18,8 @@ type value =
       the other kinds of values *)
   | ObjLoc of Store.loc
   | Closure of env * id list * exp
-and store = ((attrsv * (propv IdMap.t)) Store.t * value Store.t)
+and store = (objectv Store.t * value Store.t)
+and objectv = attrsv * (propv IdMap.t)
 and
   attrsv = { code : value option;
              proto : value;
@@ -42,6 +42,16 @@ let d_attrsv = { primval = None;
 let get_obj (objs, _) loc = Store.lookup loc objs
 let get_var (_, vars) loc = Store.lookup loc vars
 
+let get_maybe_obj ((objs, _) as store) loc =
+  if Store.mem loc objs
+  then Some (get_obj store loc)
+  else None
+
+let get_maybe_var ((_, vars) as store) loc =
+  if Store.mem loc vars
+  then Some (get_var store loc)
+  else None
+
 let set_obj ((objs, vars) : store) (loc : Store.loc) new_obj =
   (Store.update loc new_obj objs), vars
 let set_var (objs, vars) loc new_val =
@@ -57,64 +67,15 @@ let add_var (objs, vars) new_val =
 exception Break of exp list * label * value * store
 exception Throw of exp list * value * store
 exception PrimErr of exp list * value
+exception Snapshot of exp list * value * env list * store
 
 
-let pretty_value v = match v with 
+let pretty_value v = match v with
   | Num d -> string_of_float d
   | String s -> "\"" ^ s ^ "\""
   | True -> "true"
   | False -> "false"
   | Undefined -> "undefined"
   | Null -> "null"
-  | Closure _ -> "function"
   | ObjLoc _ -> "object"
-
-let pretty_valuef v = text (pretty_value v)
-
-let rec pretty_value_store v store = match v with
-  | ObjLoc loc ->
-    let (avs, props) = get_obj store loc in
-    let proplist = IdMap.fold (fun k v l -> (k, v)::l) props [] in
-      begin match proplist with
-        | [] -> braces (pretty_attrsv avs store)
-        | _ ->
-          braces (vert [pretty_attrsv avs store;
-                        vert (vert_intersperse (text ",")
-                              (map (fun p -> pretty_prop p store) proplist))])
-      end
-  | _ -> pretty_valuef v
-
-and pretty_attrsv ({ proto = p; code = c; extensible = b; klass = k; primval = pv } : attrsv) store =
-  let proto = [horz [text "#proto:"; pretty_valuef p]] in
-  let primval = match pv with None -> []
-    | Some v -> [horz [text "#prim:"; pretty_valuef v]] in
-  let code = match c with None -> [] 
-    | Some v -> [horz [text "#code:"; pretty_valuef v]] in
-  brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
-                          (primval@
-                            proto@
-                             code@
-                             [horz [text "#class:"; text ("\"" ^ k ^ "\"")]; 
-                              horz [text "#extensible:"; text (string_of_bool b)]])))
-
-and pretty_prop (f, prop) store = match prop with
-  | Data ({value=v; writable=w}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; 
-          braces (horzOrVert [horz [text "#value";
-                                    pretty_valuef v;
-                                    text ","]; 
-                              horz [text "#writable"; text (string_of_bool w); text ","];
-                              horz [text "#configurable"; text (string_of_bool config)]])]
-  | Accessor ({getter=g; setter=s}, enum, config) ->
-    horz [text ("'" ^ f ^ "'"); text ":"; braces (vert [horz [text "#getter";
-                                          pretty_valuef g; text ","];
-                                          horz[text "#setter";
-                                               pretty_valuef s]])]
-
-let string_of_value v store =
-  (FormatExt.to_string (fun v -> pretty_value_store v store) v)
-
-let rec pretty_value_list vs = match vs with
-  | (v::vs) -> pretty_value v ^ ", " ^ pretty_value_list vs
-  | [] -> ""
-
+  | Closure _ -> "function"

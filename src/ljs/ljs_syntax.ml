@@ -64,7 +64,7 @@ type exp =
   | TryFinally of Pos.t * exp * exp
   | Throw of Pos.t * exp
   | Lambda of Pos.t * id list * exp
-  | Eval of Pos.t * exp
+  | Eval of Pos.t * exp * exp (* Pos.t, string to be evaled, env object  *)
   | Hint of Pos.t * string * exp
 and data =       
     {value : exp;
@@ -129,6 +129,71 @@ let pos_of exp = match exp with
   | TryFinally (pos, _, _) -> pos
   | Throw (pos, _) -> pos
   | Lambda (pos, _, _) -> pos
-  | Eval (pos, _) -> pos
+  | Eval (pos, _, _) -> pos
   | Hint (pos, _, _) -> pos
 
+let child_exps (exp : exp) : exp list =
+  let data_child_exps {value = x; writable = _} = [x] in
+  let accessor_child_exps {getter = x; setter = y} = [x; y] in
+  let prop_child_exps prop = match prop with
+    | Data (data, _, _) -> data_child_exps data
+    | Accessor (accessor, _, _) -> accessor_child_exps accessor in
+  let prop_list_child_exps proplist =
+    List.concat (map (fun (_, prop) -> prop_child_exps prop) proplist) in
+  let option_to_list option = match option with
+    | None -> []
+    | Some x -> [x] in
+  let attrs_child_exps attrs = match attrs with
+      {primval = exp1; code = exp2; proto = exp3; klass = _; extensible = _} ->
+        List.concat (map option_to_list [exp1; exp2; exp3]) in
+  match exp with
+  | Null _ -> []
+  | Undefined _ -> []
+  | String _ -> []
+  | Num _ -> []
+  | True _ -> []
+  | False _ -> []
+  | Id _ -> []
+  | Object (_, attrs, props) ->
+    attrs_child_exps attrs @ prop_list_child_exps props
+  | GetAttr (_, _, x, y) -> [x; y]
+  | SetAttr (_, _, x, y, z) -> [x; y; z]
+  | GetObjAttr (_, _, x) -> [x]
+  | SetObjAttr (_, _, x, y) -> [x; y]
+  | GetField (_, x, y, z) -> [x; y; z]
+  | SetField (_, x, y, z, w) -> [x; y; z; w]
+  | DeleteField (_, x, y) -> [x; y]
+  | OwnFieldNames (_, x) -> [x]
+  | SetBang (_, _, x) -> [x]
+  | Op1 (_, _, x) -> [x]
+  | Op2 (_, _, x, y) -> [x; y]
+  | If (_, x, y, z) -> [x; y; z]
+  | App (_, x, ys) -> x :: ys
+  | Seq (_, x, y) -> [x; y]
+  | Let (_, _, x, y) -> [x; y]
+  | Rec (_, _, x, y) -> [x; y]
+  | Label (_, _, x) -> [x]
+  | Break (_, _, x) -> [x]
+  | TryCatch (_, x, y) -> [x; y]
+  | TryFinally (_, x, y) -> [x; y]
+  | Throw (_, x) -> [x]
+  | Lambda (_, _, x) -> [x]
+  | Eval (_, x, y) -> [x; y]
+  | Hint (_, _, x) -> [x]
+
+let rec free_vars (exp : exp) : IdSet.t =
+  match exp with
+  | Id (_, var) ->
+    IdSet.singleton var
+  | SetBang (_, var, exp) ->
+    IdSet.add var (free_vars exp)
+  | Let (_, var, defn, body) ->
+    IdSet.union (free_vars defn) (IdSet.remove var (free_vars body))
+  | Rec (_, var, defn, body) ->
+    IdSet.remove var (IdSet.union (free_vars defn) (free_vars body))
+  | Lambda (_, vars, body) ->
+    List.fold_left (flip IdSet.remove) (free_vars body) vars
+  | Eval (_, str_exp, env_exp) ->
+    IdSet.union (free_vars str_exp) (free_vars env_exp)
+  | exp ->
+    List.fold_left IdSet.union IdSet.empty (map free_vars (child_exps exp))

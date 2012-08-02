@@ -131,6 +131,8 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
     unroll el
     | J.Call (p, J.Id (_, "___unsafeLookupIdentifier"), [J.Lit (_, J.Str id)]) ->
       E.IdExpr (p, id)
+    | J.Call (p, J.Id (_, "___takeS5Snapshot"), []) ->
+      E.HintExpr (p, "___takeS5Snapshot", E.Null p)
     | J.Call (p, e, el) -> let xl = List.map jse_to_exprjs el in 
       E.AppExpr (p, jse_to_exprjs e, xl)
 

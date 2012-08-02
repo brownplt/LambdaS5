@@ -3,10 +3,6 @@ open Prelude
 open Ljs
 open Ljs_eval
 open Ljs_syntax
-open Ljs_parser
-open Ljs_pretty
-open Ljs_values
-open Exprjs_pretty
 
 type node =
   | Js of Js_syntax.program
@@ -14,8 +10,9 @@ type node =
   | Ljs of Ljs_syntax.exp
   | Cps of Ljs_cps.cps_exp
   | Env of (Ljs_syntax.exp -> Ljs_syntax.exp)
+  | Answer of answer
 
-type nodeType = JsT | EjsT | LjsT | CpsT | EnvT
+type nodeType = JsT | EjsT | LjsT | CpsT | EnvT | AnswerT
 
 let nodeType (node : node) : nodeType =
   match node with
@@ -24,6 +21,8 @@ let nodeType (node : node) : nodeType =
   | Ljs _ -> LjsT
   | Cps _ -> CpsT
   | Env _ -> EnvT
+  | Answer _ -> AnswerT
+
 
 let showNodeType (nodeType : nodeType) : string =
   match nodeType with
@@ -32,6 +31,7 @@ let showNodeType (nodeType : nodeType) : string =
   | LjsT -> "S5"
   | CpsT -> "S5-cps"
   | EnvT -> "S5-env"
+  | AnswerT -> "Snapshot"
 
 
 module S5 = struct
@@ -44,6 +44,7 @@ module S5 = struct
   open Ljs_desugar
   open Format
   open FormatExt
+  open Ljs_gc
 
 
   (* Global Options *)
@@ -108,11 +109,17 @@ module S5 = struct
     | Env src -> src 
     | node -> type_error cmd EnvT node
 
+  let pop_answer cmd : Ljs_eval.answer =
+    match pop cmd with
+    | Answer answer -> answer
+    | node -> type_error cmd AnswerT node
+
   let push_js js = push (Js js)
   let push_ejs (used_ids, ejs) = push (Ejs (used_ids, ejs))
   let push_ljs ljs = push (Ljs ljs)
   let push_cps cps = push (Cps cps)
   let push_env env = push (Env env)
+  let push_answer answer = push (Answer answer)
 
 
   (* Pushing Commands *)
@@ -129,6 +136,10 @@ module S5 = struct
   let load_env cmd path =
     push_env (Ljs.parse_es5_env (open_in path) path)
 
+  let load_internal_env cmd name = match name with
+    | "env-vars" ->
+      push_env (Env_free_vars.vars_env)
+    | _ -> failwith ("Unknown internal environment " ^ name)
 
   (* Conversion Commands *)
 
@@ -151,42 +162,21 @@ module S5 = struct
     let src1 = pop_ljs cmd in
     push_env (fun src2 -> Ljs_syntax.Seq (Pos.dummy, src1, src2))
 
-(*
-  NOTE(Justin): Joe and I agree there's something smelly about these
-                implicit conversions. Consider, e.g., that
-                > to-ljs to-cps to-ljs != to-ljs
-
-  let to_env cmd () =
-    match nodeType (peek cmd) with
-    | JsT -> js_to_ejs cmd (); ejs_to_ljs cmd (); ljs_to_env cmd ()
-    | EjsT -> ejs_to_ljs cmd (); ljs_to_env cmd ()
-    | LjsT -> ljs_to_env cmd ()
-    | CpsT -> cps_to_ljs cmd (); ljs_to_env cmd ()
-    | EnvT -> ()
-
-  let to_ljs cmd () =
-    match nodeType (peek cmd) with
-    | JsT -> js_to_ejs cmd (); ejs_to_ljs cmd ()
-    | EjsT -> ejs_to_ljs cmd ()
-    | LjsT -> ()
-    | CpsT -> cps_to_ljs cmd ()
-    | t -> failwith (cmd ^ ": , can't convert " ^ showNodeType t ^ " to " ^ showNodeType LjsT)
-
-  let to_cps cmd () =
-    match nodeType (peek cmd) with
-    | JsT -> js_to_ejs cmd (); ejs_to_ljs cmd (); ljs_to_cps cmd ()
-    | EjsT -> ejs_to_ljs cmd (); ljs_to_cps cmd ()
-    | LjsT -> ljs_to_cps cmd ()
-    | CpsT -> ()
-    | t -> failwith ("Can't convert " ^ showNodeType t ^ " to " ^ showNodeType CpsT)
-*)
-
   let alphatize cmd () =
     let alph cps = fst (Ljs_cps_util.alphatize true (cps, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) in
     push_cps (alph (pop_cps cmd))
 
+  let collect_garbage cmd () =
+    let answer = pop_answer cmd in
+    match answer with
+      Ljs_eval.Answer (exps, v, envs, store) ->
+        let root_set = LocSet.unions (map Ljs_gc.locs_of_env envs) in
+        let store' = Ljs_gc.collect_garbage store root_set in
+        push_answer (Ljs_eval.Answer (exps, v, envs, store'))
+
 
   (* Composition Commands *)
+
   let apply cmd () =
     let ljs = pop_ljs cmd in
     let env = pop_env cmd in
@@ -220,6 +210,14 @@ module S5 = struct
     printf "%s\n" ((FormatExt.to_string (fun lst -> (vert (map text lst))))
                       (IdSet.elements fvs))
 
+  let print_store cmd () =
+    let answer = pop_answer cmd in
+    begin match answer with
+    | Ljs_eval.Answer (_, _, _, store) ->
+      Ljs_pretty_value.print_store store
+    end;
+    push_answer answer
+      
 
   (* Evaluation Commands *)
 
@@ -244,9 +242,11 @@ module S5 = struct
 
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
-    let (v, _) = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
-    printf "%s" (pretty_value v);
-    print_newline ()
+    let answer = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
+    match answer with Ljs_eval.Answer (exprs, v, envs, store) ->
+      push_answer answer;
+      printf "%s" (Ljs_values.pretty_value v);
+      print_newline ()
 
   let do_sym_eval cmd =
     let ljs = pop_ljs cmd in
@@ -292,6 +292,10 @@ module S5 = struct
         strCmd "-c3-js" load_c3_js "<file> load javascript using C3";
         strCmd "-s5" load_ljs "<file> load file as S5";
         strCmd "-env" load_env "<file> load file as S5-env";
+        strCmd "-internal-env" load_internal_env
+          ("[env-vars] load an internal environment as S5-env.  " ^
+          "Options are currently only env-vars, which sets up the " ^
+          "global environment for nested evals");
         (* Conversion *)
         unitCmd "-js-to-ejs" js_to_ejs (showType [JsT] [EjsT]);
         unitCmd "-ejs-to-s5" ejs_to_ljs (showType [EjsT] [LjsT]);
@@ -301,6 +305,7 @@ module S5 = struct
         unitCmd "-cps" ljs_to_cps (showType [LjsT] [CpsT]);
         unitCmd "-un-cps" cps_to_ljs (showType [CpsT] [LjsT]);
         unitCmd "-to-env" ljs_to_env (showType [LjsT] [EnvT]);
+        unitCmd "-gc" collect_garbage (showType [AnswerT] [AnswerT]);
         (* Composition Operations *)
         unitCmd "-apply" applyR (showType [LjsT; EnvT] [LjsT]);
         (* Printing *)
@@ -310,6 +315,8 @@ module S5 = struct
           "pretty-print s5 or exprjs code";
         unitCmd "-print-fvs" print_js_fvs
           "print JavaScript free variables";
+        unitCmd "-print-heap" print_store
+          "print heap after evaluation";
         (* Evaluation *)
         unitCmd "-eval" ljs_eval
           "evaluate S5 code";
@@ -321,13 +328,6 @@ module S5 = struct
           "evaluate code symbolically";
         unitCmd "-sym-eval-raw" ljs_sym_eval_raw
           "evaluate code symbolically and print raw OCaml results";
-(*
-        unitCmd "-to-s5" to_ljs "convert source into S5 form";
-        unitCmd "-to-cps" to_cps "convert source into S5-cps form";
-        unitCmd "-to-env" to_env "convert source into S5-env form";
-        unitCmd "-apply" apply (showType [EnvT; LjsT] [LjsT]);
-        unitCmd "-compose" compose (showType [EnvT; EnvT] [EnvT]);
-*)
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"

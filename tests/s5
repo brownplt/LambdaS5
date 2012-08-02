@@ -3,8 +3,9 @@
 TMP=`mktemp -t js.XXXXXX`
 if [ $# -eq 0 ]; then
   cat>$TMP
+  JSFILE=$TMP
 else
-  TMP=$1
+  JSFILE=$1
 fi
 
 RETMP=`mktemp -t js.XXXXXX`
@@ -16,17 +17,21 @@ cat ../lib/json/json2.js ../lib/json/json_parse.js > $JSONLIB
 JSONTMP=`mktemp -t js.XXXXXX`
 ../bin/js json_print.js $JSONLIB > $JSONTMP
 
-../bin/js json_print.js $TMP > $TMP.ast
+../bin/js json_print.js $JSFILE > $TMP.ast
 ocamlrun ../obj/s5.d.byte \
   -js $TMP.ast -js-to-s5 \
   -env ../envs/regexp.env -apply \
   -js $RETMP -js-to-s5 -to-env -apply \
   -env ../envs/json.env -apply \
   -js $JSONTMP -js-to-s5 -to-env -apply \
+  -internal-env env-vars -apply \
   -env ../envs/es5.env -apply \
-  -eval
+  -eval -print-heap
 EX=$?
+rm $TMP
 rm $TMP.ast
-rm /tmp/js.*
+rm $RETMP
+rm $JSONLIB
+rm $JSONTMP
 
 exit $EX
