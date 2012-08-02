@@ -193,7 +193,21 @@ let rec free_vars (exp : exp) : IdSet.t =
     IdSet.remove var (IdSet.union (free_vars defn) (free_vars body))
   | Lambda (_, vars, body) ->
     List.fold_left (flip IdSet.remove) (free_vars body) vars
-  | Eval (_, str_exp, env_exp) ->
-    IdSet.union (free_vars str_exp) (free_vars env_exp)
   | exp ->
     List.fold_left IdSet.union IdSet.empty (map free_vars (child_exps exp))
+
+let rec assignable_vars (exp : exp) : IdSet.t =
+  match exp with
+  | SetBang (_, var, exp) -> IdSet.add var (assignable_vars exp)
+  | Let (_, var, defn, body) ->
+    IdSet.union (assignable_vars defn)
+                (IdSet.remove var (assignable_vars body))
+  | Rec (_, var, defn, body) ->
+    IdSet.remove var (IdSet.union (assignable_vars defn)
+                                  (assignable_vars body))
+  | Lambda (_, vars, body) ->
+    List.fold_left (flip IdSet.remove) (assignable_vars body) vars
+  | exp ->
+    List.fold_left IdSet.union IdSet.empty
+      (map assignable_vars (child_exps exp))
+
