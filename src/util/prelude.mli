@@ -16,43 +16,24 @@ module Pos : sig
   val fname : t -> string
 end
 
-module IntSet : Set.S
+module IntSet : SetExt.S
   with type elt = int
 
-module IntSetExt : SetExt.S
-  with type elt = int
-  and type t = IntSet.t
-
-module IdSet : Set.S 
+module IdSet : SetExt.S
   with type elt = id
-
-module IdSetExt : SetExt.S 
-  with type elt = id 
-  and type t = IdSet.t
 
 module IdHashtbl : Hashtbl.S
   with type key = id
 
-module PosSet : Set.S 
+module PosSet : SetExt.S 
   with type elt = Pos.t
 
-module PosSetExt : SetExt.S 
-  with type elt = Pos.t
-  and type t = PosSet.t
-
-module PosMap : Map.S
+module PosMap : MapExt.S
   with type key = Pos.t
 
-module PosMapExt : MapExt.S
-  with type key = Pos.t
-  with type +'a t = 'a PosMap.t
-
-module IdMap : Map.S
+module IdMap : MapExt.S
   with type key = id
-
-module IdMapExt : MapExt.S
-  with type key = id
-  with type +'a t = 'a IdMap.t
+(* with type +'a t = 'a IdMap.t *)
 
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a

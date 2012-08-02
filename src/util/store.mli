@@ -6,8 +6,9 @@ type loc
 type +'a t
 val distinct : loc -> loc -> bool
 val print_loc : loc -> string
-val empty : 'a t
 val alloc : 'a -> 'a t -> loc * 'a t
+
+val empty : 'a t
 val update : loc -> 'a -> 'a t -> 'a t
 val free : loc -> 'a t -> 'a t
 val mem : loc -> 'a t -> bool
@@ -23,5 +24,5 @@ val bindings : 'a t -> (loc * 'a) list
 val map : ('a -> 'b) -> 'a t -> 'b t
 val mapi : (loc -> 'a -> 'b) -> 'a t -> 'b t
 
-module LocSet : Set.S with type elt = loc
+module LocSet : SetExt.S with type elt = loc
 module LocMap : Map.S with type key = loc

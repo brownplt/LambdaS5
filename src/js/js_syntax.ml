@@ -100,32 +100,32 @@ let rec fv (s : stmt) : Prelude.IdSet.t =
   | Debugger _
   | Expr _
   | Return _ -> IdSet.empty
-  | Block (_, b) -> IdSetExt.unions (map fv b)
+  | Block (_, b) -> IdSet.unions (map fv b)
   | Var (_, vdl) ->
-    IdSetExt.unions (map mf vdl)
+    IdSet.unions (map mf vdl)
   | Empty _ -> IdSet.empty
   | If (_, _, s1, s2) -> let init2 ss = match ss with
     | None -> IdSet.empty
     | Some x -> fv x in
-    IdSetExt.unions [fv s1; init2 s2]
+    IdSet.unions [fv s1; init2 s2]
   | DoWhile (_, bdy, _) -> fv bdy
   | While (_, _, bdy) -> fv bdy
   | For (_, _, _, _, bdy) -> fv bdy
-  | ForVar (_, vdl, _, _, bdy) -> IdSetExt.unions ((fv bdy) :: (map mf vdl))
+  | ForVar (_, vdl, _, _, bdy) -> IdSet.unions ((fv bdy) :: (map mf vdl))
   | ForIn (_, _, _, bdy) -> fv bdy
   | ForInVar (_, vd, _, bdy) -> IdSet.union (mf vd) (fv bdy)
   | Labeled (_, _, ss) -> fv ss
   | With (_, _, bdy) -> fv bdy
-  | Switch (_, _, cl) -> IdSetExt.unions (map c_to_fv cl)
+  | Switch (_, _, cl) -> IdSet.unions (map c_to_fv cl)
   | Try (_, b, c, f) -> 
-    let init_b = IdSetExt.unions (map fv b)
+    let init_b = IdSet.unions (map fv b)
     and init_c = let result = match c with
       | None -> IdSet.empty
-      | Some (nm, bl) -> IdSetExt.unions (map fv bl) in result
+      | Some (nm, bl) -> IdSet.unions (map fv bl) in result
     and init_f = let result = match f with
       | None -> IdSet.empty
-      | Some x -> IdSetExt.unions (map fv x) in result in
-    IdSetExt.unions [init_b; init_c; init_f]
+      | Some x -> IdSet.unions (map fv x) in result in
+    IdSet.unions [init_b; init_c; init_f]
 
 let rec var_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
   let rec var_vars_expr e = match e with
@@ -144,7 +144,7 @@ let rec var_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
     | List _
     | Call _
     | Object _ -> IdSet.empty
-    | Paren (_, el) -> IdSetExt.unions (map var_vars_expr el)
+    | Paren (_, el) -> IdSet.unions (map var_vars_expr el)
     | Func (_, _, ids, sel) -> IdSet.empty in
 
   let rec var_vars_stmt s = 
@@ -156,28 +156,28 @@ let rec var_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
       | Some (stm) -> var_vars_stmt stm
     and decl_var (VarDecl (x, _)) = IdSet.singleton x in
     match s with
-    | Block (_, sl) -> IdSetExt.unions (map var_vars_stmt sl)
+    | Block (_, sl) -> IdSet.unions (map var_vars_stmt sl)
     (* setters/getters for declared vars handled elsewhere *)
-    | Var (_, decls) -> IdSetExt.unions (map decl_var decls)
+    | Var (_, decls) -> IdSet.unions (map decl_var decls)
     | Empty _ -> IdSet.empty
     | Expr (_, e) -> var_vars_expr e
     | If (_, tst, cns, alt) -> 
       let alt_vars = svars alt in
-      IdSetExt.unions [var_vars_expr tst; var_vars_stmt cns; alt_vars]
+      IdSet.unions [var_vars_expr tst; var_vars_stmt cns; alt_vars]
     | DoWhile (_, s, e) | While (_, e, s) -> 
       IdSet.union (var_vars_stmt s) (var_vars_expr e)
     | For (_, e1, e2, e3, bdy) ->
-      let found_vars = IdSetExt.unions (map evars [e1; e2; e3]) in
+      let found_vars = IdSet.unions (map evars [e1; e2; e3]) in
       IdSet.union found_vars (var_vars_stmt bdy)
     | ForVar (_, decl, e1, e2, bdy) ->
-      let found_vars = IdSetExt.unions (map evars [e1; e2]) in
-      IdSetExt.unions [found_vars; (var_vars_stmt bdy);
-                       IdSetExt.unions (map decl_var decl)]
+      let found_vars = IdSet.unions (map evars [e1; e2]) in
+      IdSet.unions [found_vars; (var_vars_stmt bdy);
+                       IdSet.unions (map decl_var decl)]
     | ForIn (_, e1, e2, bdy) ->
-      let found_vars = IdSetExt.unions (map var_vars_expr [e1; e2]) in
+      let found_vars = IdSet.unions (map var_vars_expr [e1; e2]) in
       IdSet.union found_vars (var_vars_stmt bdy)
     | ForInVar (_, decl, e, bdy) ->
-      IdSetExt.unions [(var_vars_expr e); (var_vars_stmt bdy); decl_var decl]
+      IdSet.unions [(var_vars_expr e); (var_vars_stmt bdy); decl_var decl]
     | Labeled (_, _, bdy) -> var_vars_stmt bdy
     | Continue _ | Break _ -> IdSet.empty
     | Return (_, e) -> evars e
@@ -186,10 +186,10 @@ let rec var_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
       let case_vars c = match c with
         | Case (_, e, st) -> IdSet.union (var_vars_expr e) (var_vars_stmt st)
         | Default (_, st) -> var_vars_stmt st in
-      IdSet.union (var_vars_expr e) (IdSetExt.unions (map case_vars cl))
+      IdSet.union (var_vars_expr e) (IdSet.unions (map case_vars cl))
     | Throw (_, e) -> var_vars_expr e
     | Try (_, sl, c, f) ->
-      IdSetExt.unions [IdSetExt.unions (map var_vars_stmt sl)]
+      IdSet.unions [IdSet.unions (map var_vars_stmt sl)]
     | Debugger _ -> IdSet.empty in
 
   let var_vars_se se = match se with
@@ -207,28 +207,28 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
     | This _ -> IdSet.empty
     | Id (_, nm) -> IdSet.singleton nm
     | Lit _ -> IdSet.empty
-    | Array (_, el) -> IdSetExt.unions (map used_vars_expr el)
+    | Array (_, el) -> IdSet.unions (map used_vars_expr el)
     | Object (_, ml) ->
       let mem_var m = match m with
         | Field (_, me) -> used_vars_expr me
         | Get (_, sel) | Set (_, _, sel) -> used_vars_sel sel in
-      IdSetExt.unions (map mem_var ml)
-    | Paren (_, el) -> IdSetExt.unions (map used_vars_expr el)
+      IdSet.unions (map mem_var ml)
+    | Paren (_, el) -> IdSet.unions (map used_vars_expr el)
     | Func (_, _, ids, sel) ->
         IdSet.diff (used_vars_sel sel)
-          (IdSet.union (IdSetExt.from_list ids) (var_vars_sel sel))
+          (IdSet.union (IdSet.from_list ids) (var_vars_sel sel))
     | Bracket (_, e1, e2) -> IdSet.union (used_vars_expr e1) (used_vars_expr e2)
     | Dot (_, e1, _) -> used_vars_expr e1
     | New (_, ex, el) -> 
-      IdSet.union (used_vars_expr ex) (IdSetExt.unions (map used_vars_expr el))
+      IdSet.union (used_vars_expr ex) (IdSet.unions (map used_vars_expr el))
     | Prefix (_, _, e1) -> used_vars_expr e1
     | UnaryAssign (_, _, e1) -> used_vars_expr e1
     | Infix (_, _, e1, e2) -> IdSet.union (used_vars_expr e1) (used_vars_expr e2)
-    | Cond (_, e1, e2, e3) -> IdSetExt.unions (map used_vars_expr [e1; e2; e3])
+    | Cond (_, e1, e2, e3) -> IdSet.unions (map used_vars_expr [e1; e2; e3])
     | Assign (_, _, e1, e2) -> IdSet.union (used_vars_expr e1) (used_vars_expr e2)
-    | List (_, el) -> IdSetExt.unions (map used_vars_expr el)
+    | List (_, el) -> IdSet.unions (map used_vars_expr el)
     | Call (_, e1, el) ->
-      IdSet.union (used_vars_expr e1) (IdSetExt.unions (map used_vars_expr el)) in
+      IdSet.union (used_vars_expr e1) (IdSet.unions (map used_vars_expr el)) in
 
   let rec used_vars_stmt s = 
     let evars ex = match ex with 
@@ -238,24 +238,24 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
       | None -> IdSet.empty
       | Some (stm) -> used_vars_stmt stm in
     match s with
-    | Block (_, sl) -> IdSetExt.unions (map used_vars_stmt sl)
+    | Block (_, sl) -> IdSet.unions (map used_vars_stmt sl)
     (* setters/getters for declared vars handled elsewhere *)
     | Var _ -> IdSet.empty 
     | Empty _ -> IdSet.empty
     | Expr (_, e) -> used_vars_expr e
     | If (_, tst, cns, alt) -> 
       let alt_vars = svars alt in
-      IdSetExt.unions [used_vars_expr tst; used_vars_stmt cns; alt_vars]
+      IdSet.unions [used_vars_expr tst; used_vars_stmt cns; alt_vars]
     | DoWhile (_, s, e) | While (_, e, s) -> 
       IdSet.union (used_vars_stmt s) (used_vars_expr e)
     | For (_, e1, e2, e3, bdy) ->
-      let found_vars = IdSetExt.unions (map evars [e1; e2; e3]) in
+      let found_vars = IdSet.unions (map evars [e1; e2; e3]) in
       IdSet.union found_vars (used_vars_stmt bdy)
     | ForVar (_, _, e1, e2, bdy) ->
-      let found_vars = IdSetExt.unions (map evars [e1; e2]) in
+      let found_vars = IdSet.unions (map evars [e1; e2]) in
       IdSet.union found_vars (used_vars_stmt bdy)
     | ForIn (_, e1, e2, bdy) ->
-      let found_vars = IdSetExt.unions (map used_vars_expr [e1; e2]) in
+      let found_vars = IdSet.unions (map used_vars_expr [e1; e2]) in
       IdSet.union found_vars (used_vars_stmt bdy)
     | ForInVar (_, _, e, bdy) ->
       IdSet.union (used_vars_expr e) (used_vars_stmt bdy)
@@ -267,16 +267,16 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
       let case_vars c = match c with
         | Case (_, e, st) -> IdSet.union (used_vars_expr e) (used_vars_stmt st)
         | Default (_, st) -> used_vars_stmt st in
-      IdSet.union (used_vars_expr e) (IdSetExt.unions (map case_vars cl))
+      IdSet.union (used_vars_expr e) (IdSet.unions (map case_vars cl))
     | Throw (_, e) -> used_vars_expr e
     | Try (_, sl, c, f) ->
       let catch_vars c = match c with 
         | None -> IdSet.empty 
-        | Some ((_, sl)) -> IdSetExt.unions (map used_vars_stmt sl) in
+        | Some ((_, sl)) -> IdSet.unions (map used_vars_stmt sl) in
       let fin_vars f = match f with
         | None -> IdSet.empty
-        | Some sl -> IdSetExt.unions (map used_vars_stmt sl) in
-      IdSetExt.unions [IdSetExt.unions (map used_vars_stmt sl); 
+        | Some sl -> IdSet.unions (map used_vars_stmt sl) in
+      IdSet.unions [IdSet.unions (map used_vars_stmt sl); 
                                         catch_vars c; 
                                         fin_vars f]
     | Debugger _ -> IdSet.empty in
@@ -284,7 +284,7 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
   let used_vars_se se = match se with
     | Stmt s -> used_vars_stmt s
     | FuncDecl (nm, args, bdy) -> 
-      IdSet.diff (used_vars_sel bdy) (IdSetExt.from_list args) in
+      IdSet.diff (used_vars_sel bdy) (IdSet.from_list args) in
 
   match sel with
     | [] -> IdSet.empty
