@@ -339,8 +339,12 @@ let print_results results =
   printf "Unsat branches: %d" (List.length unsats);
   (*List.iter (fun (pc, trace) -> printf "Unsat\n"; print_trace trace) unsats;*)
 
-  let trace = Ljs_sym_trace.trace_from_results results in
-  printf "%s\n" (Ljs_sym_trace.trace_to_string trace)
+  let trace = Ljs_sym_trace.trace_of_results results in
+  printf "%s\n" (Ljs_sym_trace.string_of_trace trace);
+  let dot_string = Ljs_sym_trace.dot_of_trace trace in
+  let outch = open_out "trace.dot" in
+  output_string outch dot_string;
+  close_out outch
 
 
 
