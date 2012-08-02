@@ -5,10 +5,13 @@ module LocSet = Store.LocSet
 
 let unions sets = List.fold_left LocSet.union LocSet.empty sets
 
-let locs_of_env env =
-  List.fold_left (flip LocSet.add) LocSet.empty (map snd (IdMap.bindings env))
+let rec locs_of_env env =
+  let add_binding set elt = match elt with
+    | Mutable loc -> LocSet.add loc set
+    | Immutable value -> LocSet.union set (locs_of_value value) in
+  List.fold_left add_binding LocSet.empty (map snd (IdMap.bindings env))
 
-let locs_of_value value = match value with
+and locs_of_value value = match value with
   | ObjLoc loc -> LocSet.singleton loc
   | Closure (env, _, _) -> locs_of_env env
   | _ -> LocSet.empty
@@ -49,3 +52,4 @@ let collect_garbage store root_set =
     let reachables = fix_point next_reachables root_set in
     let reachable loc _ = LocSet.mem loc reachables in
     (Store.filter reachable obj_store, Store.filter reachable val_store)
+

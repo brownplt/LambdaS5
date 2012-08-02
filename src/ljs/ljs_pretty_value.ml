@@ -5,13 +5,17 @@ open Ljs_pretty
 open Format
 open FormatExt
 
-let pretty_loc loc = text ("#" ^ Store.print_loc loc)
+let rec pretty_loc loc = text ("#" ^ Store.print_loc loc)
 
-let pretty_env env =
-  let pretty_bind (var, loc) = horz [text var; text "="; pretty_loc loc] in
+and pretty_bind b = match b with
+  | Mutable loc -> pretty_loc loc
+  | Immutable v -> pretty_value v
+
+and pretty_env env =
+  let pretty_bind (var, loc) = horz [text var; text "="; pretty_bind loc] in
   braces (vert (map pretty_bind (IdMap.bindings env)))
 
-let pretty_value value = match value with 
+and pretty_value value = match value with 
   | ObjLoc loc -> pretty_loc loc
   | Closure (env, args, body) ->
     vert [text "let";

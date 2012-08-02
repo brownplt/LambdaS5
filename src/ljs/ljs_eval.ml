@@ -162,6 +162,19 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
   end
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
+let alloc_args body argvals argnames (store, env) =
+  let avs = S.assignable_vars body in
+  let alloc_arg body argval argname (store, env) =
+    if IdSet.mem argname avs
+    then
+      let (new_loc, store') = add_var store argval in
+      let env' = IdMap.add argname (Mutable new_loc) env in
+      (store', env')
+    else
+      let env' = IdMap.add argname (Immutable argval) env in
+      (store, env') in
+  List.fold_right2 (alloc_arg body) args xs (store, env)
+
 let rec eval desugar exp env (store : store) : (value * store) =
   let eval exp env store =
     begin try eval desugar exp env store
@@ -181,14 +194,10 @@ let rec eval desugar exp env (store : store) : (value * store) =
     end in
   let rec apply p store func args = match func with
     | Closure (env, xs, body) ->
-      let alloc_arg argval argname (store, env) =
-        let (new_loc, store) = add_var store argval in
-        let env' = IdMap.add argname new_loc env in
-        (store, env') in
       if (List.length args) != (List.length xs) then
         arity_mismatch_err p xs args
       else
-        let (store, env) = (List.fold_right2 alloc_arg args xs (store, env)) in
+        let (store, env) = alloc_args body args xs (store, env) in
         eval body env store
     | ObjLoc loc -> begin match get_obj store loc with
         | ({ code = Some f }, _) -> apply p store f args
@@ -208,22 +217,24 @@ let rec eval desugar exp env (store : store) : (value * store) =
   | S.Num (_, n) -> Num n, store
   | S.True _ -> True, store
   | S.False _ -> False, store
-  | S.Id (p, x) -> begin
-      try
-        (get_var store (IdMap.find x env), store)
-      with Not_found ->
-        failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
-                    (Pos.string_of_pos p))
+  | S.Id (p, x) -> begin try match IdMap.find x env with
+      | Mutable loc -> (get_var store loc, store)
+      | Immutable v -> (v, store)
+    with Not_found ->
+      failwith ("[interp] Unbound identifier: " ^ x ^ " in identifier lookup at " ^
+                  (Pos.string_of_pos p))
     end
-  | S.SetBang (p, x, e) -> begin
-      try
-        let loc = IdMap.find x env in
-        let (new_val, store) = eval e env store in
-        let store = set_var store loc new_val in
-        new_val, store
-      with Not_found ->
-        failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
-                    (Pos.string_of_pos p))
+  | S.SetBang (p, x, e) -> begin try match IdMap.find x env with
+      | Mutable loc ->
+          let (new_val, store) = eval e env store in
+          let store = set_var store loc new_val in
+          new_val, store
+      | Immutable v ->
+          interp_error p ("Shouldn't happen: assigned supposedly " ^
+            "unassignable variable " ^ x)
+    with Not_found ->
+      failwith ("[interp] Unbound identifier: " ^ x ^ " in set! at " ^
+                  (Pos.string_of_pos p))
     end
   | S.Object (p, attrs, props) -> 
     let { S.primval = vexp;
@@ -447,11 +458,11 @@ let rec eval desugar exp env (store : store) : (value * store) =
       eval e2 env store
   | S.Let (p, x, e, body) ->
       let (e_val, store) = eval e env store in
-      let (new_loc, store) = add_var store e_val in
-      eval body (IdMap.add x new_loc env) store
+      let (store', env') = alloc_args body [e_val] [x] (store, env) in
+      eval body env' store'
   | S.Rec (p, x, e, body) ->
       let (new_loc, store) = add_var store Undefined in
-      let env' = (IdMap.add x new_loc env) in
+      let env' = (IdMap.add x (Mutable new_loc) env) in
       let (ev_val, store) = eval e env' store in
       eval body env' (set_var store new_loc ev_val)
   | S.Label (p, l, e) ->
@@ -498,18 +509,17 @@ let rec eval desugar exp env (store : store) : (value * store) =
     begin match evalstr, bindobj with
       | String s, ObjLoc o ->
         let expr = desugar s in
-        let env, store = envstore_of_obj p (get_obj store o) store in
+        let env, store = envstore_of_obj p expr (get_obj store o) store in
         eval expr env store
       | String s, _ -> interp_error p "Non-object given to eval() for env"
       | v, _ -> v, store
     end
 
-and envstore_of_obj p (_, props) store =
+and envstore_of_obj p expr (_, props) store =
   IdMap.fold (fun id prop (env, store) -> match prop with
     | Data ({value=v}, _, _) ->
-      let new_loc, store = add_var store v in
-      let env = IdMap.add id new_loc env in
-      env, store
+      let (store', env') = alloc_arg expr v id (store, env) in
+      env', store'
     | _ -> interp_error p "Non-data value in env_of_obj")
   props (IdMap.empty, store)
 

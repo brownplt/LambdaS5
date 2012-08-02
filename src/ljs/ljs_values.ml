@@ -4,7 +4,6 @@ open Ljs_syntax
 open Format
 open FormatExt
 
-type env = Store.loc IdMap.t
 type label = string
 
 type value =
@@ -32,6 +31,10 @@ and
   | Accessor of accessorv * bool * bool
 and datav = { value : value; writable : bool; }
 and accessorv = { getter : value; setter : value; }
+and binding =
+  | Immutable of value
+  | Mutable of Store.loc
+and env = binding IdMap.t
 
 let d_attrsv = { primval = None;
                  code = None; 
