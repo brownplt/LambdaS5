@@ -173,7 +173,7 @@ let alloc_args body argvals argnames (store, env) =
     else
       let env' = IdMap.add argname (Immutable argval) env in
       (store, env') in
-  List.fold_right2 (alloc_arg body) args xs (store, env)
+  List.fold_right2 (alloc_arg body) argvals argnames (store, env)
 
 let rec eval desugar exp env (store : store) : (value * store) =
   let eval exp env store =
@@ -518,7 +518,7 @@ let rec eval desugar exp env (store : store) : (value * store) =
 and envstore_of_obj p expr (_, props) store =
   IdMap.fold (fun id prop (env, store) -> match prop with
     | Data ({value=v}, _, _) ->
-      let (store', env') = alloc_arg expr v id (store, env) in
+      let (store', env') = alloc_args expr [v] [id] (store, env) in
       env', store'
     | _ -> interp_error p "Non-data value in env_of_obj")
   props (IdMap.empty, store)
