@@ -30,6 +30,10 @@ let typeof store v = str begin match v with
   | Closure _ -> raise (PrimErr ([], str "typeof got lambda"))
 end
 
+let is_closure store v = match v with
+  | Closure _ -> bool true
+  | _ -> bool false
+
 let is_primitive store v = match v with
   | Undefined 
   | Null
@@ -187,6 +191,7 @@ let current_utc store = function
 
 let op1 store op = match op with
   | "typeof" -> typeof store
+  | "closure?" -> is_closure store
   | "primitive?" -> is_primitive store
   | "prim->str" -> prim_to_str store
   | "prim->num" -> prim_to_num store
