@@ -53,7 +53,18 @@ let make_set_field p obj fld value =
   match obj with
   | S.Id (p, "%context") -> 
     S.App (p, F.env_var p "%EnvCheckAssign", [obj; fld; value; S.Id (p, "#strict")])
-  | _ -> S.App (p, F.env_var p "%set-property", [obj; fld; value])
+  | _ ->
+    S.TryCatch (p, S.App (p, F.env_var p "%set-property", [obj; fld; value]),
+      S.Lambda (p, ["e"],
+        S.If (p, S.Op1 (p, "closure?", S.Id (p, "e")),
+              (* "Field not writable" is thrown from interp *)
+              S.If (p, S.Op2 (p, "stx=",
+                              S.App (p, S.Id (p, "e"), []),
+                              S.String (p, "Field not writable")),
+                    throw_typ_error p "Field not writable",
+                    S.Throw (p, S.Id (p, "e"))),
+              S.Throw (p, S.Id (p, "e")))))
+                              
 
 let make_args_obj p is_new args =
     let n_args = List.length args in
