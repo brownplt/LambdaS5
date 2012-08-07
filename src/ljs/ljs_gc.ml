@@ -3,10 +3,8 @@ open Ljs_values
 
 module LocSet = Store.LocSet
 
-let unions sets = List.fold_left LocSet.union LocSet.empty sets
-
 let locs_of_env env =
-  List.fold_left (flip LocSet.add) LocSet.empty (map snd (IdMap.bindings env))
+  LocSet.from_list (map snd (IdMap.bindings env))
 
 let locs_of_value value = match value with
   | ObjLoc loc -> LocSet.singleton loc
@@ -28,7 +26,8 @@ let locs_of_obj (attrs, prop_map) =
       [getter; setter] in
   let vals_of_props prop_map =
     List.concat (map vals_of_prop (map snd (IdMap.bindings prop_map))) in
-  unions (map locs_of_value (vals_of_attrs attrs @ vals_of_props prop_map))
+  LocSet.unions (map locs_of_value
+                   (vals_of_attrs attrs @ vals_of_props prop_map))
 
 let collect_garbage store root_set =
   match store with
@@ -41,11 +40,6 @@ let collect_garbage store root_set =
         | None -> LocSet.empty
         | Some obj -> locs_of_obj obj in
       LocSet.union obj_locs val_locs in
-    let rec fix_point gen set =
-      let set' = unions (set :: map gen (LocSet.elements set)) in
-      if LocSet.equal set set'
-      then set
-      else fix_point gen set' in
-    let reachables = fix_point next_reachables root_set in
+    let reachables = LocSet.fix_point next_reachables root_set in
     let reachable loc _ = LocSet.mem loc reachables in
     (Store.filter reachable obj_store, Store.filter reachable val_store)

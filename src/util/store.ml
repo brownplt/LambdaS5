@@ -4,23 +4,29 @@ open Prelude
 
 let loc = ref 0
 
+type loc = int
+
 module Loc = struct
   type t = int
   let compare = Pervasives.compare
 end
-module LocMap = Map.Make (Loc)
-module LocSet = Set.Make (Loc)
-type loc = int
+
+module LocMap = MapExt.Make (Loc)
+module LocSet = SetExt.Make (Loc)
+
 let newLoc () : Loc.t =
   loc := !loc + 1;
   !loc
+
 let distinct loc1 loc2 = (loc1 <> loc2)
 let print_loc loc = (string_of_int loc)
-type 'a t = 'a LocMap.t
-let empty = LocMap.empty
 let alloc valu store = 
   let loc = newLoc () in 
   (loc, LocMap.add loc valu store)
+
+
+type 'a t = 'a LocMap.t
+let empty = LocMap.empty
 let update = LocMap.add
 let free = LocMap.remove 
 let mem = LocMap.mem

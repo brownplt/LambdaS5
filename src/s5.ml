@@ -170,7 +170,7 @@ module S5 = struct
     let answer = pop_answer cmd in
     match answer with
       Ljs_eval.Answer (exps, v, envs, store) ->
-        let root_set = Ljs_gc.unions (map Ljs_gc.locs_of_env envs) in
+        let root_set = LocSet.unions (map Ljs_gc.locs_of_env envs) in
         let store' = Ljs_gc.collect_garbage store root_set in
         push_answer (Ljs_eval.Answer (exps, v, envs, store'))
 
