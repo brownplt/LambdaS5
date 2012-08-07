@@ -41,7 +41,7 @@ let string_of_exp e =
   to_string exp e ^ " (" ^ Pos.string_of_pos p ^ ")"
 
 (* Printing traces as tree-like strings *)
-let rec trace_print t = match t with
+let rec trace t = match t with
   | TEmpty _ -> text "<empty>"
   | TResult (_, results) -> begin
     horz (intersperse (text "|") (map
@@ -59,10 +59,10 @@ let rec trace_print t = match t with
   | TBranch (_, exp, branches) ->
     vert (text (string_of_exp exp)
       :: (map (fun (label, t) ->
-                horz [text label; text ":"; trace_print t])
+                horz [text label; text ":"; trace t])
             branches))
 
-let string_of_trace = to_string trace_print
+let string_of_trace = to_string trace
 
 (* Printing traces in graphviz Dot format.
  * To convert the dot output to an image,
@@ -137,13 +137,23 @@ let next_exn_hack_id =
   let count = ref 0 in
   (fun () -> incr count; "exnhack" ^ string_of_int !count)
 
-(* Optimized for when trace2 is linear. *)
+(* Optimized for when trace2 is linear, which is how it's used in
+ * trace_of_results below. *)
+(* Assumes that a trace point has been added at every branch point
+ * in the evaluator. These are usually identifiable by the use of
+ * the combine function to collect the results from multiple branches. *)
 let rec merge_traces trace1 trace2 = match trace1, trace2 with
   | TEmpty _, t
   | t, TEmpty _ -> t
   | TResult (vid, rs1), TResult (_, rs2) -> TResult (vid, rs2 @ rs1)
   | TBranch (vid, exp1, branches1), TBranch (_, exp2, branches2) ->
-    if S.pos_of exp1 <> S.pos_of exp2 then failwith "exp pos mismatch" else
+    if S.pos_of exp1 <> S.pos_of exp2 then
+      failwith ("exp pos mismatch\n"
+                ^ string_of_exp exp1 ^ "\n"
+                ^ string_of_exp exp2 ^ "\n"
+                ^ string_of_trace trace1 ^ "\n"
+                ^ string_of_trace trace2 ^ "\n")
+    else
     let new_branches =
       fold_left
         (fun branches1 (label2, subt2) ->

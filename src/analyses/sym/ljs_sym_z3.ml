@@ -298,7 +298,7 @@ let print_results results =
           (fun c -> printf "%s\n" (to_string c pc))
           pc.Ljs_sym_values.constraints
       end;
-      print_trace trace
+      (*print_trace trace*)
       (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
     ) rets;
   (*List.iter*)
@@ -332,7 +332,7 @@ let print_results results =
     (fun ((v, pc), trace) -> match v with
       | Ljs_sym_values.Throw v ->
         printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (-1); (*(List.length pcs)*)
-        print_trace trace
+        (*print_trace trace*)
       | _ -> printf "Exn: something other than a Throw\n")
     exns;
 

@@ -14,7 +14,9 @@ let rec vert_intersperse a lst = match lst with
  * certain cases, like so:
  * let rec myexp e = match e with
  * | Num _ -> text (string_of_int 42)
+ * | If (_, c, t, _) -> horz [text "if"; myexp c; text "then"; myexp t]
  * | _ -> exp_helper myexp e
+ * For a real example, check out ljs_sym_trace.ml.
  *)
 let rec exp_helper exprec e = match e with
   | Null _ -> text "null"
