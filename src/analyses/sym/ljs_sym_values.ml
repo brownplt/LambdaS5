@@ -178,7 +178,7 @@ let list_combine = List.append
 (*  list_join (list_map f lm)*)
 
 (* Trace monad (aka writer) *)
-type trace_pt = Pos.t * string
+type trace_pt = exp * string (* label *)
 type 'a trace_mo = 'a * trace_pt list
 
 let trace_unit a = (a, [])

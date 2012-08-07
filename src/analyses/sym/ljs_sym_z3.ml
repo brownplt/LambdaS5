@@ -269,8 +269,8 @@ let simple_to_string result pc = simple_pc result pc Format.str_formatter; Forma
 
 let print_trace trace =
   printf "%s\n" (String.concat " - "
-                   (map (fun (pos, lbl) ->
-                           lbl ^ " @ " ^ Pos.string_of_pos pos)
+                   (map (fun (exp, lbl) ->
+                           lbl ^ " @ " ^ Pos.string_of_pos (Ljs_syntax.pos_of exp))
                            trace))
 
 let print_results results = 

@@ -1,36 +1,44 @@
 open Prelude
 open Lexing
 open Ljs_sym_values
+module S = Ljs_syntax
 open FormatExt
 
-(*type trace_pt = Pos.t * label*) (* from ljs_sym_values *)
+(* type trace_pt = exp * label *) (* from ljs_sym_values *)
 type path = trace_pt list
 type vid = string (* uniq vertex id *)
 type trace =
   | TEmpty of vid
   | TResult of vid * value result list
-  | TBranch of vid * Pos.t * (label * trace) list
+  | TBranch of vid * S.exp * (label * trace) list
 
 (* Helpers to get the corresponding LJS code for a pos. *)
-let read_len inch len =
-  try begin
-    let result = String.create len in
-    really_input inch result 0 len;
-    result
-  end with Invalid_argument _ -> sprintf "invalid pos %d" len
+(*let read_len inch len =*)
+(*  try begin*)
+(*    let result = String.create len in*)
+(*    really_input inch result 0 len;*)
+(*    result*)
+(*  end with Invalid_argument _ -> sprintf "invalid pos %d" len*)
 
-let read_pos (start, endd, _) =
-  let inch = open_in start.pos_fname in
-  let len = endd.pos_cnum - start.pos_cnum in
-  seek_in inch start.pos_cnum;
-  let result = read_len inch len in
-  close_in inch;
-  if result = "" then "???" else
-  if start.pos_lnum = endd.pos_lnum then result
-  else (String.sub result 0 (String.index result '\n')) ^ "..."
+(*let read_pos (start, endd, _) =*)
+(*  let inch = open_in start.pos_fname in*)
+(*  let len = endd.pos_cnum - start.pos_cnum in*)
+(*  seek_in inch start.pos_cnum;*)
+(*  let result = read_len inch len in*)
+(*  close_in inch;*)
+(*  if result = "" then "???" else*)
+(*  if start.pos_lnum = endd.pos_lnum then result*)
+(*  else (String.sub result 0 (String.index result '\n')) ^ "..."*)
 
-let string_of_pos p =
-  read_pos p ^ " (" ^ Pos.string_of_pos p ^ ")"
+let rec exp e = match e with
+  | S.If (_, c, _, _) -> 
+    horz [text "if"; parens (horz [exp c])]
+  | _ -> Ljs_pretty.exp_helper exp e
+
+let string_of_exp e =
+  let p = S.pos_of e in
+  (*read_pos p ^ " (" ^ Pos.string_of_pos p ^ ")"*)
+  to_string exp e ^ " (" ^ Pos.string_of_pos p ^ ")"
 
 (* Printing traces as tree-like strings *)
 let rec trace_print t = match t with
@@ -48,8 +56,8 @@ let rec trace_print t = match t with
         | Unsat pc -> text "<unsat>")
       results))
   end
-  | TBranch (_, pos, branches) ->
-    vert (text (string_of_pos pos)
+  | TBranch (_, exp, branches) ->
+    vert (text (string_of_exp exp)
       :: (map (fun (label, t) ->
                 horz [text label; text ":"; trace_print t])
             branches))
@@ -78,9 +86,9 @@ let dot_of_trace trace =
           if str_contains label "Exn:" then ",fontcolor=darkgreen"
           else ",fontcolor=blue"
         in dot_of_vertex vid label color
-    | TBranch (vid, pos, branches) ->
+    | TBranch (vid, exp, branches) ->
         String.concat ""
-          (dot_of_vertex vid (string_of_pos pos) ",fontname=Courier"
+          (dot_of_vertex vid (string_of_exp exp) ",fontname=Courier"
           :: map vertices_helper (map snd branches))
   in
   let dot_of_edge vid1 vid2 label =
@@ -88,7 +96,7 @@ let dot_of_trace trace =
   in
   let rec edges_helper trace = match trace with
     | TEmpty _ | TResult _ -> ""
-    | TBranch (vid, pos, branches) ->
+    | TBranch (vid, _, branches) ->
         String.concat ""
           ((map (fun (edge_label, subtrace) ->
                    match subtrace with
@@ -122,8 +130,8 @@ let next_vid =
 let rec trace_of_path (res, path) =
   match path with
   | [] -> TResult (next_vid(), [res])
-  | (pos, label)::path ->
-    TBranch (next_vid(), pos, [(label, trace_of_path (res, path))])
+  | (exp, label)::path ->
+    TBranch (next_vid(), exp, [(label, trace_of_path (res, path))])
 
 let next_exn_hack_id =
   let count = ref 0 in
@@ -134,8 +142,8 @@ let rec merge_traces trace1 trace2 = match trace1, trace2 with
   | TEmpty _, t
   | t, TEmpty _ -> t
   | TResult (vid, rs1), TResult (_, rs2) -> TResult (vid, rs2 @ rs1)
-  | TBranch (vid, pos1, branches1), TBranch (_, pos2, branches2) ->
-    if pos1 <> pos2 then failwith "Pos mismatch" else
+  | TBranch (vid, exp1, branches1), TBranch (_, exp2, branches2) ->
+    if S.pos_of exp1 <> S.pos_of exp2 then failwith "exp pos mismatch" else
     let new_branches =
       fold_left
         (fun branches1 (label2, subt2) ->
@@ -145,14 +153,14 @@ let rec merge_traces trace1 trace2 = match trace1, trace2 with
               | None -> subt2)
              branches1)
         branches1 branches2 in
-    TBranch (vid, pos1, new_branches)
+    TBranch (vid, exp1, new_branches)
   (* Hack for when exceptions pop up without first performing
    * a proper branching. We shove them into whatever sibling branching
-   * we come across. The pos in that branch won't necessarily represent
-   * the pos where the exception was thrown, but it might be close. *)
-  | TBranch (vid1, pos, branches), TResult (vid2, r)
-  | TResult (vid2, r), TBranch (vid1, pos, branches) ->
-      TBranch (vid1, pos, (next_exn_hack_id(), TResult (vid2, r))::branches) 
+   * we come across. The exp in that branch won't necessarily represent
+   * the exp where the exception was thrown, but it might be close. *)
+  | TBranch (vid1, exp, branches), TResult (vid2, r)
+  | TResult (vid2, r), TBranch (vid1, exp, branches) ->
+      TBranch (vid1, exp, (next_exn_hack_id(), TResult (vid2, r))::branches) 
 
 let trace_of_results results =
   let results = map (fun (res, path) -> (res, List.rev path)) results in

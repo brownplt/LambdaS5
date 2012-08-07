@@ -9,7 +9,14 @@ let rec vert_intersperse a lst = match lst with
   | [x] -> [x]
   | x :: xs -> squish [x; a] :: (vert_intersperse a xs)
 
-let rec exp e = match e with
+(* Takes a function exprec to use for all recursive calls. This allows us to create the
+ * standard recursive printer, defined below as exp, but also to override the printer for
+ * certain cases, like so:
+ * let rec myexp e = match e with
+ * | Num _ -> text (string_of_int 42)
+ * | _ -> exp_helper myexp e
+ *)
+let rec exp_helper exprec e = match e with
   | Null _ -> text "null"
   | Undefined _ -> text "undefined"
   | Num (_,n) -> text (string_of_float n)
@@ -19,82 +26,82 @@ let rec exp e = match e with
   | Id (p, x) -> text x
   | Object (p, avs, props) -> begin
     match props with
-    | [] -> braces (attrsv avs)
-    | _ -> braces (vert [attrsv avs; vert (vert_intersperse (text ",") (map prop props))])
+    | [] -> braces (attrsv exprec avs)
+    | _ -> braces (vert [attrsv exprec avs; vert (vert_intersperse (text ",") (map (prop exprec) props))])
   end
   | SetField (p, o, f, v, args) ->
-    squish [exp o; brackets (horzOrVert [horz [exp f; text "="; exp v; text ","]; exp args])]
+    squish [exprec o; brackets (horzOrVert [horz [exprec f; text "="; exprec v; text ","]; exprec args])]
   | GetField (p, o, f, args) ->
-    squish [exp o; brackets (horz [exp f; text ","; exp args])]
+    squish [exprec o; brackets (horz [exprec f; text ","; exprec args])]
   | DeleteField (p, o, f) ->
-    squish [exp o; brackets (horz [text "delete"; exp f])]
+    squish [exprec o; brackets (horz [text "delete"; exprec f])]
   | GetAttr (p, a, o, f) ->
-    squish [exp o;
-            brackets (horz [exp f; angles (horz [text (string_of_attr a)])])]
+    squish [exprec o;
+            brackets (horz [exprec f; angles (horz [text (string_of_attr a)])])]
   | SetAttr (p, a, o, f, v) ->
-    squish [exp o;
-            brackets (squish [exp f; angles (horz [text (string_of_attr a)]);
-                              text "="; exp v])]
+    squish [exprec o;
+            brackets (squish [exprec f; angles (horz [text (string_of_attr a)]);
+                              text "="; exprec v])]
   | GetObjAttr (p, a, o) ->
-    squish [exp o;
+    squish [exprec o;
             brackets (angles (horz [text (string_of_oattr a)]))]
   | SetObjAttr (p, a, o, v) ->
-    squish [exp o;
+    squish [exprec o;
             brackets (squish [angles (horz [text (string_of_oattr a)]);
-                              text "="; exp v])]
+                              text "="; exprec v])]
   | OwnFieldNames (p, o) ->
-    squish [text "get-own-field-names"; parens (exp o)]
+    squish [text "get-own-field-names"; parens (exprec o)]
   | SetBang (p, x, e) ->
-    horz [text x; text ":="; exp e]
+    horz [text x; text ":="; exprec e]
   | Op1 (p, op, e) -> 
-    squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exp e])]
+    squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exprec e])]
   | Op2 (p, op, e1, e2) ->
-    squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exp e1; text ","; exp e2])]
+    squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exprec e1; text ","; exprec e2])]
   | If (p, c, t, e) -> 
-    horz [text "if"; vert [parens (horz [exp c]);
-                           braces (exp t);
+    horz [text "if"; vert [parens (horz [exprec c]);
+                           braces (exprec t);
                            text "else";
 			   (match e with
-			   | If _ -> (exp e)
-			   | _ -> braces (exp e))]]
+			   | If _ -> (exprec e)
+			   | _ -> braces (exprec e))]]
   | App (p, f, args) ->
-    squish [exp f; parens (vert (vert_intersperse (text ",") (map exp args)))]
+    squish [exprec f; parens (vert (vert_intersperse (text ",") (map exprec args)))]
   | Seq (p, e1, e2) ->
-    vert [squish [exp e1; text ";"]; exp e2]
+    vert [squish [exprec e1; text ";"]; exprec e2]
   | Let (p, x, e, body) ->
-    braces (horz [text "let"; vert [parens (horz [text x; text "="; exp e]);
-                                    exp body]])
+    braces (horz [text "let"; vert [parens (horz [text x; text "="; exprec e]);
+                                    exprec body]])
   | Rec (p, x, e, body) -> 
-    horz [text "rec"; vert [parens (horz [text x; text "="; exp e]);
-                            opt_braces body]]
+    horz [text "rec"; vert [parens (horz [text x; text "="; exprec e]);
+                            opt_braces exprec body]]
   | Label (p, l, e) ->
-    vert [horz [text "label"; text l; text ":"]; braces (exp e)]
+    vert [horz [text "label"; text l; text ":"]; braces (exprec e)]
   | Break (p, l, e) ->
-    horz [text "break"; text l; exp e]
+    horz [text "break"; text l; exprec e]
   | TryCatch (p, body, catch) ->
-    vert [text "try"; braces (exp body); text "catch"; braces (exp catch)]
+    vert [text "try"; braces (exprec body); text "catch"; braces (exprec catch)]
   | TryFinally (p, body, fin) ->
-    vert [text "try"; braces (exp body); text "finally"; braces (exp fin)]
+    vert [text "try"; braces (exprec body); text "finally"; braces (exprec fin)]
   | Throw (p, e) ->
-    horz [text "throw"; exp e]
+    horz [text "throw"; exprec e]
   | Lambda (p, xs, e) ->
     vert [squish [text "func"; parens (horz (intersperse (text ",") (map text xs)))];
-          braces (exp e)]
+          braces (exprec e)]
   | Eval (p, s, obj) -> 
-      squish [text "@eval"; parens (horz [exp s; text ","; exp obj])]
+      squish [text "@eval"; parens (horz [exprec s; text ","; exprec obj])]
   | Hint (p, hint, e) ->
       parens (vert [squish [text "/*: "; text hint; text "*/"];
-	                 exp e])
+	                 exprec e])
 
-and opt_braces expr = match expr with
-  | Seq _ -> braces (exp expr)
-  | _ -> exp expr
+and opt_braces exprec expr = match expr with
+  | Seq _ -> braces (exprec expr)
+  | _ -> exprec expr
 
-and attrsv { proto = p; code = c; extensible = b; klass = k } =
+and attrsv exprec { proto = p; code = c; extensible = b; klass = k } =
   let proto = match p with None -> [] 
-    | Some e -> [horz [text "#proto:"; exp e]] in
+    | Some e -> [horz [text "#proto:"; exprec e]] in
   let code = match c with None -> [] 
-    | Some e -> [horz [text "#code:"; exp e]] in
+    | Some e -> [horz [text "#code:"; exprec e]] in
   brackets (horzOrVert (map (fun x -> squish [x; (text ",")])
                           (proto@
                              code@
@@ -102,17 +109,19 @@ and attrsv { proto = p; code = c; extensible = b; klass = k } =
                               horz [text "#extensible:"; text (string_of_bool b)]])))
               
 (* TODO: print and parse enum and config *)
-and prop (f, prop) = match prop with
+and prop exprec (f, prop) = match prop with
   | Data ({value=v; writable=w}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; 
-          braces (horzOrVert [horz [text "#value"; parens (exp v); text ","]; 
+          braces (horzOrVert [horz [text "#value"; parens (exprec v); text ","]; 
                               horz [text "#writable"; text (string_of_bool w); text ","];
                               horz [text "#configurable"; text (string_of_bool config)]])]
   | Accessor ({getter=g; setter=s}, enum, config) ->
     horz [text ("'" ^ f ^ "'"); text ":"; braces (vert [horz [text "#getter";
-                                          exp g; text ","];
+                                          exprec g; text ","];
                                           horz[text "#setter";
-                                               exp s]])]
+                                               exprec s]])]
+
+let rec exp e = exp_helper exp e
 
 
 (* Remove duplicate leading chains (like the environment) from a trace *)
