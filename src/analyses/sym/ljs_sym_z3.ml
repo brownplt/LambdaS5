@@ -269,8 +269,8 @@ let simple_to_string result pc = simple_pc result pc Format.str_formatter; Forma
 
 let print_trace trace =
   printf "%s\n" (String.concat " - "
-                   (map (fun (pos, lbl) ->
-                           lbl ^ " @ " ^ Pos.string_of_pos pos)
+                   (map (fun (exp, lbl) ->
+                           lbl ^ " @ " ^ Pos.string_of_pos (Ljs_syntax.pos_of exp))
                            trace))
 
 let print_results results = 
@@ -298,7 +298,7 @@ let print_results results =
           (fun c -> printf "%s\n" (to_string c pc))
           pc.Ljs_sym_values.constraints
       end;
-      print_trace trace
+      (*print_trace trace*)
       (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
     ) rets;
   (*List.iter*)
@@ -332,15 +332,19 @@ let print_results results =
     (fun ((v, pc), trace) -> match v with
       | Ljs_sym_values.Throw v ->
         printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (-1); (*(List.length pcs)*)
-        print_trace trace
+        (*print_trace trace*)
       | _ -> printf "Exn: something other than a Throw\n")
     exns;
 
   printf "Unsat branches: %d" (List.length unsats);
   (*List.iter (fun (pc, trace) -> printf "Unsat\n"; print_trace trace) unsats;*)
 
-  let trace = Ljs_sym_trace.trace_from_results results in
-  printf "%s\n" (Ljs_sym_trace.trace_to_string trace)
+  let trace = Ljs_sym_trace.trace_of_results results in
+  printf "%s\n" (Ljs_sym_trace.string_of_trace trace);
+  let dot_string = Ljs_sym_trace.dot_of_trace trace in
+  let outch = open_out "trace.dot" in
+  output_string outch dot_string;
+  close_out outch
 
 
 

@@ -275,6 +275,10 @@ let rec eval desugar exp env (store : store) : (value * store) =
             let ({extensible=extensible;} as attrs, props) =
               get_obj store loc in
             let prop = get_prop p store obj_value s in
+            let unwritable = (Throw ([],
+              Closure (IdMap.empty, [], (S.String (p, "Field not writable"))),
+              store
+            )) in
             begin match prop with
               | Some (Data ({ writable = true; }, enum, config)) ->
                 let (enum, config) = 
@@ -288,8 +292,10 @@ let rec eval desugar exp env (store : store) : (value * store) =
                                enum, config))
                         props) in
                 v_value, store
-              | Some (Data _) -> raise (Throw ([], String ("Field not writable"), store))
-              | Some (Accessor ({ setter = setterv; }, enum, config)) ->
+              | Some (Data _) -> raise unwritable
+              | Some (Accessor ({ setter = Undefined; }, _, _)) ->
+                raise unwritable
+              | Some (Accessor ({ setter = setterv; }, _, _)) ->
                 (* 8.12.5, step 5 *)
                 apply p store setterv [obj_value; args_value]
               | None ->

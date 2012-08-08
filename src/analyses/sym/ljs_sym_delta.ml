@@ -51,6 +51,12 @@ let typeof ctx v =
   in 
   (String typestr, add_const_string typestr ctx)
 
+let is_closure ctx v =
+  let res = match v with
+  | Closure _ -> bool true
+  | _ -> bool false
+  in (res, ctx)
+
 let is_primitive ctx v = match v with
   | Undefined 
   | Null
@@ -261,6 +267,7 @@ let op1 ctx op v : results =
   let r f ctx v = uncurry return (f ctx v) in
   let op1_fun = match op with
   | "typeof" -> r typeof
+  | "closure?" -> r is_closure
   | "primitive?" -> r is_primitive
   | "prim->str" -> r prim_to_str
   | "prim->num" -> r prim_to_num
