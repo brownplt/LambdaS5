@@ -3,6 +3,7 @@ open Prelude
 open Ljs
 open Ljs_eval
 open Ljs_syntax
+open Ljs_pretty_html
 
 type node =
   | Js of Js_syntax.program
@@ -46,6 +47,9 @@ module S5 = struct
   open FormatExt
   open Ljs_gc
 
+  module LocSet = Store.LocSet
+  module LocMap = Store.LocMap
+
 
   (* Global Options *)
 
@@ -62,6 +66,9 @@ module S5 = struct
   (* Stack Operations *)
 
   let stack : node list ref = ref []
+
+  module VarMap = Map.Make (String)
+  let var_map = ref VarMap.empty
 
   let push (node : node) : unit =
     stack := node :: !stack
@@ -121,6 +128,11 @@ module S5 = struct
   let push_env env = push (Env env)
   let push_answer answer = push (Answer answer)
 
+  let peek_answer cmd : Ljs_eval.answer =
+    let ans = pop_answer cmd in
+    push_answer ans;
+    ans
+
 
   (* Pushing Commands *)
 
@@ -140,6 +152,7 @@ module S5 = struct
     | "env-vars" ->
       push_env (Env_free_vars.vars_env)
     | _ -> failwith ("Unknown internal environment " ^ name)
+
 
   (* Conversion Commands *)
 
@@ -162,14 +175,10 @@ module S5 = struct
     let src1 = pop_ljs cmd in
     push_env (fun src2 -> Ljs_syntax.Seq (Pos.dummy, src1, src2))
 
-  let alphatize cmd () =
-    let alph cps = fst (Ljs_cps_util.alphatize true (cps, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) in
-    push_cps (alph (pop_cps cmd))
-
   let collect_garbage cmd () =
     let answer = pop_answer cmd in
     match answer with
-      Ljs_eval.Answer (exps, v, envs, store) ->
+    | Ljs_eval.Answer (exps, v, envs, store) ->
         let root_set = LocSet.unions (map Ljs_gc.locs_of_env envs) in
         let store' = Ljs_gc.collect_garbage store root_set in
         push_answer (Ljs_eval.Answer (exps, v, envs, store'))
@@ -178,23 +187,44 @@ module S5 = struct
   (* Composition Commands *)
 
   let apply cmd () =
-    let ljs = pop_ljs cmd in
-    let env = pop_env cmd in
-    push_ljs (env ljs)
-
-  let applyR cmd () =
     let env = pop_env cmd in
     let ljs = pop_ljs cmd in
     push_ljs (env ljs)
 
-  (* This should be defined such that composing and then applying
-     has the same effect as applying twice. *)
+  (* This should be defined such that E1 apply E2 apply = E1 E2 compose apply *)
   let compose cmd () =
-    let env1 = pop_env cmd in
     let env2 = pop_env cmd in
+    let env1 = pop_env cmd in
     push_env (fun ljs -> env2 (env1 ljs))
 
+
   (* Printing Commands *)
+
+  let print_literal cmd str =
+    print_endline str
+
+  let print_value cmd () =
+    match peek_answer cmd with
+    | Ljs_eval.Answer (_, value, _, _) ->
+      print_endline (Ljs_values.pretty_value value)
+
+  let print_env cmd () =
+    match peek_answer cmd with
+    | Ljs_eval.Answer (_, _, env, _) ->
+      print_endline (Ljs_pretty_value.string_of_env (last env))
+
+  let print_store cmd () =
+    match peek_answer cmd with
+    | Ljs_eval.Answer (_, _, _, store) ->
+      Ljs_pretty_value.print_objects store;
+      Ljs_pretty_value.print_values store
+
+  let print_store_as_html cmd () =
+    match peek_answer cmd with
+    | Ljs_eval.Answer (_, _, _, store) ->
+      let title = "S5 Javascript Heap" in
+      let stylefile = "style.css" in
+      print_string (Html.html_document title [stylefile] [html_of_store store])
 
   let print_src cmd () =
     match peek cmd with
@@ -210,14 +240,33 @@ module S5 = struct
     printf "%s\n" ((FormatExt.to_string (fun lst -> (vert (map text lst))))
                       (IdSet.elements fvs))
 
-  let print_store cmd () =
-    let answer = pop_answer cmd in
-    begin match answer with
-    | Ljs_eval.Answer (_, _, _, store) ->
-      Ljs_pretty_value.print_store store
-    end;
-    push_answer answer
-      
+  (* Other Commands *)
+
+  let alphatize cmd () =
+    let alph cps = fst (Ljs_cps_util.alphatize true (cps, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) in
+    push_cps (alph (pop_cps cmd))
+
+  let save_answer cmd fileName =
+    let ans = pop_answer cmd in
+    Heapwalk.save_answer ans (open_out_bin fileName)
+
+  let load_answer cmd fileName =
+    let ans = Heapwalk.load_answer (open_in_bin fileName) in
+    push_answer ans
+
+  let get_var cmd var =
+    let x = VarMap.find var !var_map in
+    push x
+
+  let set_var cmd var =
+    let x = pop cmd in
+    var_map := VarMap.add var x !var_map
+
+  let ses_check cmd () =
+    let ses_ans = pop_answer cmd in
+    let init_ans = pop_answer cmd in
+    Heapwalk.ses_check init_ans ses_ans
+
 
   (* Evaluation Commands *)
 
@@ -242,11 +291,10 @@ module S5 = struct
 
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
+    Store.unsafe_store_reset ();
     let answer = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
     match answer with Ljs_eval.Answer (exprs, v, envs, store) ->
-      push_answer answer;
-      printf "%s" (Ljs_values.pretty_value v);
-      print_newline ()
+      push_answer answer
 
   let do_sym_eval cmd =
     let ljs = pop_ljs cmd in
@@ -307,18 +355,41 @@ module S5 = struct
         unitCmd "-to-env" ljs_to_env (showType [LjsT] [EnvT]);
         unitCmd "-gc" collect_garbage (showType [AnswerT] [AnswerT]);
         (* Composition Operations *)
-        unitCmd "-apply" applyR (showType [LjsT; EnvT] [LjsT]);
+        unitCmd "-apply" apply (showType [LjsT; EnvT] [LjsT]);
+        unitCmd "-compose" compose (showType [EnvT; EnvT] [EnvT]);
+(*        unitCmd "-diff" diff (showType [AnswerT; AnswerT] [AnswerT]); *)
         (* Printing *)
-        unitCmd "-alph" alphatize
-          "Alpha-convert the CPS representation";
-        unitCmd "-print" print_src
+        strCmd "-print-string" print_literal
+          "Output a literal string (useful for delimiting other print statements)";
+        unitCmd "-print-val" print_value
+          "print the value resulting from evaluation";
+        unitCmd "-print-env" print_env
+          "print the environment (id to store location mapping)";
+        unitCmd "-print-src" print_src
           "pretty-print s5 or exprjs code";
         unitCmd "-print-fvs" print_js_fvs
           "print JavaScript free variables";
         unitCmd "-print-heap" print_store
-          "print heap after evaluation";
+          "print objects and values in the heap after evaluation";
+        unitCmd "-print-html" print_store_as_html
+          "print objects and values in the heap as html";
+        (* Other *)
+        unitCmd "-ses-check" ses_check
+          "Check if ses ran properly. ANS(init) ANS(ses) -> ";
+        unitCmd "-alph" alphatize
+          "Alpha-convert the CPS representation";
+        strCmd "-save" save_answer
+          "<file> save the heap and environment in the specified file";
+        strCmd "-load" load_answer
+          "<file> load the heap and environment from a file";
+        strCmd "-set" set_var
+          "<VAR> Pop something off the stack and save it under the name VAR";
+        strCmd "-get" get_var
+          "<VAR> Push the thing saved as VAR onto the stack (use this after -set)";
         (* Evaluation *)
-        unitCmd "-eval" ljs_eval
+        unitCmd "-eval" (fun cmd () -> ljs_eval cmd (); print_value cmd ())
+          "evaluate S5 code and print the result";
+        unitCmd "-eval-ljs" ljs_eval
           "evaluate S5 code";
         unitCmd "-eval-cps" cps_eval
           "evaluate code in CPS form";

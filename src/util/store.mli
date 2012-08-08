@@ -3,7 +3,10 @@ open FormatExt
 open Prelude
 
 type loc
-type +'a t
+module LocSet : SetExt.S with type elt = loc
+module LocMap : MapExt.S with type key = loc
+
+type +'a t = 'a LocMap.t
 val distinct : loc -> loc -> bool
 val print_loc : loc -> string
 val alloc : 'a -> 'a t -> loc * 'a t
@@ -24,5 +27,4 @@ val bindings : 'a t -> (loc * 'a) list
 val map : ('a -> 'b) -> 'a t -> 'b t
 val mapi : (loc -> 'a -> 'b) -> 'a t -> 'b t
 
-module LocSet : SetExt.S with type elt = loc
-module LocMap : Map.S with type key = loc
+val unsafe_store_reset : unit -> unit
