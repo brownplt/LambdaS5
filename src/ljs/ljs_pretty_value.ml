@@ -5,14 +5,15 @@ open Ljs_pretty
 open Format
 open FormatExt
 
-let pretty_loc loc = text ("#" ^ Store.print_loc loc)
+let pretty_var_loc loc = text ("#" ^ Store.print_loc loc)
+let pretty_obj_loc loc = text ("@" ^ Store.print_loc loc)
 
 let pretty_env env =
-  let pretty_bind (var, loc) = horz [text var; text "="; pretty_loc loc] in
+  let pretty_bind (var, loc) = horz [text var; text "="; pretty_var_loc loc] in
   braces (vert (map pretty_bind (IdMap.bindings env)))
 
 let pretty_value value = match value with 
-  | ObjLoc loc -> pretty_loc loc
+  | ObjLoc loc -> pretty_obj_loc loc
   | Closure (env, args, body) ->
     vert [text "let";
           pretty_env env;
@@ -62,27 +63,38 @@ and pretty_prop (f, prop) store = match prop with
                                                pretty_value s]])]
 
 let string_of_value v store =
-  (FormatExt.to_string (fun v -> pretty_value_store v store) v)
+  FormatExt.to_string (fun v -> pretty_value_store v store) v
 
-let strings_of_store store = match store with
-  | (obj_store, value_store) ->
-    let pretty_bind printer (loc, value) =
-      (loc, horzOrVert [horz [pretty_loc loc; text "="]; printer value]) in
-    let bindings =
-        (map (pretty_bind (pretty_obj store)) (Store.bindings obj_store))
-      @ (map (pretty_bind pretty_value) (Store.bindings value_store)) in
-    let cmp_bindings (x, _) (y, _) = compare x y in
-    let binding_printers = map snd (List.sort cmp_bindings bindings) in
-    map (fun fmt -> FormatExt.to_string (fun _ -> fmt) ()) binding_printers
+let string_of_obj obj store =
+  FormatExt.to_string (fun obj -> pretty_obj store obj) obj
 
+let string_of_env env =
+  FormatExt.to_string pretty_env env
 
 (* Stores can be very large. This function avoids mapping over them,
    which tends to overflow the stack. *)
 let print_store store = match store with
   | (obj_store, value_store) ->
-    let pretty_bind printer (loc, value) =
+    let pretty_bind printer pretty_loc (loc, value) =
       horzOrVert [horz [pretty_loc loc; text "="]; printer value] in
-    let print_binding printer binding =
-      print_endline (FormatExt.to_string (pretty_bind printer) binding) in
-    List.iter (print_binding (pretty_obj store)) (Store.bindings obj_store);
-    List.iter (print_binding pretty_value) (Store.bindings value_store)
+    let print_binding pretty_loc printer binding =
+      print_endline
+        (FormatExt.to_string (pretty_bind printer pretty_loc) binding) in
+    let print_bindings pretty_loc printer store =
+      List.iter (print_binding pretty_loc printer) (Store.bindings store) in
+    print_bindings pretty_obj_loc (pretty_obj store) obj_store;
+    print_bindings pretty_var_loc pretty_value value_store
+
+let print_values store =
+  let pretty_binding (loc, value) =
+    horzOrVert [horz [pretty_var_loc loc; text "="]; pretty_value value] in
+  let print_binding binding =
+    print_endline (FormatExt.to_string pretty_binding binding) in
+  List.iter print_binding (Store.bindings (snd store))
+
+let print_objects store =
+  let pretty_binding (loc, value) =
+    horzOrVert [horz [pretty_obj_loc loc; text "="]; pretty_obj store value] in
+  let print_binding binding =
+    print_endline (FormatExt.to_string pretty_binding binding) in
+  List.iter print_binding (Store.bindings (fst store))
