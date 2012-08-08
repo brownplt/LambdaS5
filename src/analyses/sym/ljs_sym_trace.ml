@@ -30,10 +30,30 @@ type trace =
 (*  if start.pos_lnum = endd.pos_lnum then result*)
 (*  else (String.sub result 0 (String.index result '\n')) ^ "..."*)
 
-let rec exp e = match e with
-  | S.If (_, c, _, _) -> 
+let rec exp e =
+  let default = Ljs_pretty.exp_helper exp in
+  match e with
+  (* Only print condition *)
+  | S.If (_, S.App (_, S.Id (_, "%ToBoolean"), [c]), _, _)
+  | S.If (_, c, _, _) ->
     horz [text "if"; parens (horz [exp c])]
-  | _ -> Ljs_pretty.exp_helper exp e
+  (* Use JS func(arg) syntax *)
+  | S.Op1 (_, op, e) ->
+    squish [text op; parens (horz [exp e])]
+  (* func(arg1, arg2) plus infix notation for stx= *)
+  | S.Op2 (_, "stx=", e1, e2) ->
+    horz [exp e1; text "==="; exp e2]
+  | S.Op2 (_, op, e1, e2) ->
+    squish [text op; parens (horz [exp e1; text ","; exp e2])]
+  (* Don't print getter/setter args *)
+  | S.GetField (_, o, f, args) ->
+    squish [exp o; brackets (horz [exp f])]
+  | S.SetField (_, o, f, v, args) ->
+    squish [exp o; brackets (horzOrVert [horz [exp f; text "="; exp v]])]
+  (* Infix notation for 'or' *)
+  | S.Let (_, "%or", ex, S.If (_, _, _, f)) ->
+    horz [exp ex; text "||"; exp f]
+  | _ -> default e
 
 let string_of_exp e =
   let p = S.pos_of e in
