@@ -84,3 +84,7 @@ val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
 (** [group cmp lst] collects like elts of [lst] into lists using [cmp] to check equality.
   * Returns a list of lists, where all like elts are in one sublist *)
 val group : ('a -> 'a -> int) -> 'a list -> 'a list list 
+
+val list_of_option : 'a option -> 'a list
+
+val last : 'a list -> 'a

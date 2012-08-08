@@ -11,14 +11,10 @@ let locs_of_value value = match value with
   | Closure (env, _, _) -> locs_of_env env
   | _ -> LocSet.empty
 
-let option_to_list opt = match opt with
-  | None -> []
-  | Some x -> [x]
-
 let locs_of_obj (attrs, prop_map) =
   let vals_of_attrs {code=code; proto=proto; extensible=_;
                      klass=_; primval=primval} =
-    [proto] @ (option_to_list code) @ (option_to_list primval) in
+    [proto] @ (list_of_option code) @ (list_of_option primval) in
   let vals_of_prop prop = match prop with
     | Data ({value=value; writable=_}, _, _) ->
       [value]
