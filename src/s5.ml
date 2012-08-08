@@ -389,7 +389,7 @@ module S5 = struct
         (* Evaluation *)
         unitCmd "-eval" (fun cmd () -> ljs_eval cmd (); print_value cmd ())
           "evaluate S5 code and print the result";
-        unitCmd "-eval-ljs" ljs_eval
+        unitCmd "-eval-s5" ljs_eval
           "evaluate S5 code";
         unitCmd "-eval-cps" cps_eval
           "evaluate code in CPS form";
