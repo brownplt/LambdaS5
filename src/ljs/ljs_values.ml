@@ -28,8 +28,8 @@ and
              primval : value option; }
 and
   propv = 
-  | Data of datav * bool * bool
-  | Accessor of accessorv * bool * bool
+  | Data of datav * bool * bool (* datav, enumerable, configurable *)
+  | Accessor of accessorv * bool * bool (* accv, enumerable, configurable *)
 and datav = { value : value; writable : bool; }
 and accessorv = { getter : value; setter : value; }
 
