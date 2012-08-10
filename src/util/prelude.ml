@@ -122,7 +122,10 @@ let rec match_while f xs = match xs with
       | None -> [], xs
     end
     
-
+let rec take n xs = match n, xs with
+  | 0, _ -> []
+  | _, [] -> []
+  | _, x::xs -> x :: take (n-1) xs
 
 let rec rem (elt : 'a) (lst : 'a list) : 'a list = match lst with
     [] -> []

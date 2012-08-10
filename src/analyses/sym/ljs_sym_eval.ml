@@ -19,10 +19,12 @@ let new_sym_keyword = "NEWSYM"
 let fresh_sym_keyword = "NEWSYM_FRESH"
 let start_sym_keyword = "START SYM EVAL"
 let stop_sym_keyword = "STOP SYM EVAL"
+let summarize_regex = Str.regexp "SUMMARIZE \\(.+\\)"
 
 (* flags for debugging *)
 let print_store = false (* print store at each eval call *)
 let gc_on = true (* do garbage collection *) 
+let summarize_functions = true (* compute and reuse symbolic summaries *)
 
 let do_gc envs pc = 
   if not gc_on then pc else
@@ -529,13 +531,21 @@ let rec eval jsonPath maxDepth depth
   let pc = { pc with print_env = (cur_env envs); } in
 
   match exp with
-    | S.Hint (_, hint, exp2) ->
-      eval exp2 envs begin
-        if hint = start_sym_keyword
-        then { pc with hide_objs = false }
-        else if hint = stop_sym_keyword
-        then { pc with hide_objs = true }
-        else pc
+    | S.Hint (p, hint, exp2) ->
+      printf "%s : %b\n" hint (string_match summarize_regex hint 0);
+      if summarize_functions && string_match summarize_regex hint 0
+      then
+        let func_name = matched_group 1 hint in
+        printf "going to summarize %s\n" func_name;
+        Ljs_sym_summary.make_summary func_name eval (apply p) envs pc;
+        eval exp2 envs pc
+      else
+        eval exp2 envs begin
+          if hint = start_sym_keyword
+          then { pc with hide_objs = false }
+          else if hint = stop_sym_keyword
+          then { pc with hide_objs = true }
+          else pc
     end
 
     | S.Undefined _ -> return Undefined pc 
@@ -688,8 +698,15 @@ let rec eval jsonPath maxDepth depth
           | _ -> eval f envs pc')
         
     | S.App (p, f, args) -> 
-      bind 
-        (eval_sym f envs pc)
+      let f_vals = eval_sym f envs pc in
+      let nested_eval =
+        if summarize_functions
+        then match Ljs_sym_summary.get_summary f with
+          | Some apply_summary -> apply_summary
+          | None -> nested_eval
+        else nested_eval
+      in
+      bind f_vals
         (fun (f_val, pc_f) ->
           bind 
             (List.fold_left 

@@ -103,7 +103,13 @@ and exp e store =
     | _ -> e in
   match e with
   | Hint (s, p) -> horz [text ";;"; text s; text (Pos.string_of_pos p)] 
-  | Concrete v -> value v store
+  | Concrete v -> begin
+    match v with
+    | Num n when n < 0. ->
+      exp (SUncastJS (TNum, SApp (SId "-",
+        [SCastJS (TNum, Concrete (Num (abs_float n)))]))) store
+    | _ -> value v store
+  end
   | STime t -> int t
   | SLoc l -> text (Store.print_loc l)
   | SId id -> text id
@@ -296,7 +302,7 @@ let print_results results =
       end else begin
         List.iter 
           (fun c -> printf "%s\n" (to_string c pc))
-          pc.Ljs_sym_values.constraints
+          pc.constraints
       end;
       (*print_trace trace*)
       (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
@@ -336,7 +342,7 @@ let print_results results =
       | _ -> printf "Exn: something other than a Throw\n")
     exns;
 
-  printf "Unsat branches: %d" (List.length unsats);
+  printf "Unsat branches: %d\n" (List.length unsats);
   (*List.iter (fun (pc, trace) -> printf "Unsat\n"; print_trace trace) unsats;*)
 
   let trace = Ljs_sym_trace.trace_of_results results in
