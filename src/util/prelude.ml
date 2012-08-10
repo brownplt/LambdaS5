@@ -158,3 +158,12 @@ let group (cmp : ('a -> 'a -> int)) (lst : 'a list) : 'a list list =
         then (elt::grp)::grps
         else [elt]::grp::grps)
     [] sorted
+
+let list_of_option opt = match opt with
+  | None -> []
+  | Some x -> [x]
+
+let rec last list = match list with
+  | [] -> failwith "Attempted to take last element of empty list."
+  | [x] -> x
+  | (x :: xs) -> last xs

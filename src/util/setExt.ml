@@ -32,7 +32,9 @@ module Make (Ord : Set.OrderedType) = struct
     braces (horz (List.map p_elt (to_list set)))
 
   let rec fix_point gen set =
-    let set' = union set (unions (List.map gen (to_list set))) in
-    if set == set' then set else fix_point gen set'
+    let set' = unions (set :: List.map gen (to_list set)) in
+    if equal set set'
+    then set
+    else fix_point gen set'
 
 end

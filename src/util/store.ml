@@ -41,3 +41,7 @@ let cardinal = LocMap.cardinal
 let bindings = LocMap.bindings
 let map = LocMap.map
 let mapi = LocMap.mapi
+
+(* This may NOT be called during evaluation *)
+let unsafe_store_reset () =
+  loc := 0
