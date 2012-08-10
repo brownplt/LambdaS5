@@ -257,7 +257,7 @@ let bind rm f = bind_all rm f (uncurry throw) unsat
 let bind_exn rm g = bind_all rm (uncurry return) g unsat
 let bind_unit rm h = bind_all rm (uncurry return) (uncurry throw) h
 
-let bind_both rm f g = bind_exn (bind rm f) g
+let bind_both rm f g = bind_all rm f g unsat
 
 let just_values rm =
   res_map 
