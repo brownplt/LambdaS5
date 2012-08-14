@@ -257,7 +257,7 @@ let bind rm f = bind_all rm f (uncurry throw) unsat
 let bind_exn rm g = bind_all rm (uncurry return) g unsat
 let bind_unit rm h = bind_all rm (uncurry return) (uncurry throw) h
 
-let bind_both rm f g = bind_exn (bind rm f) g
+let bind_both rm f g = bind_all rm f g unsat
 
 let just_values rm =
   res_map 
@@ -315,7 +315,7 @@ let env_fold f env acc = (* includes shadowed bindings *)
     env acc
 
 
-let mtPath = {
+let mt_ctx = {
   constraints = [];
   vars = IdMap.empty;
   store = { objs = Store.empty; vals = Store.empty };
@@ -371,11 +371,11 @@ let check_type id t pc =
       Printf.printf "Known type of %s is %s, wanted %s\n" id (ty_to_string found) (ty_to_string t);
       raise (TypeError id)
     end
-  with Not_found -> failwith ("[interp] unknown symbolic var" ^ id)
+  with Not_found -> failwith ("[interp] unknown symbolic var " ^ id)
 
 (* Produces a new context and a bool that is true if the new
  * context did not change (i.e. is the exact same context).
- * If the context didn't change, then we know it's constraints
+ * If the context didn't change, then we know its constraints
  * are still satisfiable. *)
 let add_constraint c ctx =
   (* Only add new constraints. *)

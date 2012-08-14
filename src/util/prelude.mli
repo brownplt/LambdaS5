@@ -68,6 +68,10 @@ val take_while : ('a -> bool) -> 'a list -> 'a list * 'a list
 
 val match_while : ( 'a -> 'b option) -> 'a list -> 'b list * 'a list
 
+(** [take n lst] returns the first n elts of lst, or if there are less than n
+  * elts, lst. *)
+val take : int -> 'a list -> 'a list
+
 (** [nub lst] removes duplicates from the [lst]. Duplicates are identified by
     structural equality. *)
 val nub : 'a list -> 'a list
