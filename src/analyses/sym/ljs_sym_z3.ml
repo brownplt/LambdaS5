@@ -32,7 +32,7 @@ let rec value v store =
     else if (n = neg_infinity) then text "(NUM neg_inf)"
     else if (n <> n) then text "(NUM nan)"
     else parens (horz [text "NUM"; text (string_of_float n)])
-  | String s -> text ("S_" ^ s) (* for now; this doesn't support spaces... *)
+  | String s -> text (symid_of_string s)
   | True -> text "(BOOL true)"
   | False -> text "(BOOL false)"
   | ObjPtr loc -> text ("(OBJPTR " ^ (Store.print_loc loc) ^ ")") (* obj (sto_lookup_obj loc store) *)
@@ -305,7 +305,7 @@ let print_results results =
           (fun c -> printf "%s\n" (to_string c pc))
           pc.constraints
       end;
-      (*print_trace trace*)
+      print_trace trace
       (*printf "%s\n" (Ljs_sym_pretty.env_to_string pc.print_env)*)
     ) rets;
   (*List.iter*)

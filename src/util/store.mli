@@ -26,5 +26,7 @@ val cardinal : 'a t -> int
 val bindings : 'a t -> (loc * 'a) list
 val map : ('a -> 'b) -> 'a t -> 'b t
 val mapi : (loc -> 'a -> 'b) -> 'a t -> 'b t
+val diff : 'a t -> 'a t -> 'a t
+val join : (loc -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
 
 val unsafe_store_reset : unit -> unit

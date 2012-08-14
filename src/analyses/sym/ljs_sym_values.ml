@@ -335,8 +335,13 @@ let fresh_var =
     let nvar = "%%" ^ prefix ^ (string_of_int !count) in
     (nvar, (add_var nvar t hint pc)))
 
+let symid_of_string s =
+  if String.contains s ' '
+  then "SS_" ^ (Str.global_replace (Str.regexp_string " ") s "_")
+  else "S_" ^ s
+
 let const_string s pc = 
-  let str = "S_" ^ s in
+  let str = symid_of_string s in
   if has_var str pc then (str, pc)
   else (str, (add_var str TString s pc))
 

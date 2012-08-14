@@ -41,6 +41,8 @@ let cardinal = LocMap.cardinal
 let bindings = LocMap.bindings
 let map = LocMap.map
 let mapi = LocMap.mapi
+let diff = LocMap.diff
+let join = LocMap.join
 
 (* This may NOT be called during evaluation *)
 let unsafe_store_reset () =
