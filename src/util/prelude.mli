@@ -92,3 +92,6 @@ val group : ('a -> 'a -> int) -> 'a list -> 'a list list
 val list_of_option : 'a option -> 'a list
 
 val last : 'a list -> 'a
+
+(* Returns true if the second arg is substring of the first *)
+val str_contains : string -> string -> bool

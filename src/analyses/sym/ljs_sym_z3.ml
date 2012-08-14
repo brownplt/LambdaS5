@@ -9,6 +9,7 @@ open FormatExt
 
 let log_z3 = true
 let simple_print = true (* print in human readable form *)
+let die_on_error = true
 
 
 let rec vert_intersperse a lst = match lst with
@@ -485,74 +486,75 @@ let is_sat (p : ctx) hint : bool =
 
   let { constraints = cs; vars = vs; store = store } = p in
 
-  Printf.printf "num vars %d\n" (IdMap.cardinal vs);
+  printf "num vars %d\n" (IdMap.cardinal vs);
   let (inch, outch) = Unix.open_process "z3 -smt2 -in" in 
-  if log_z3 then Printf.printf "%s\n" z3prelude;
+  if log_z3 then printf "%s\n" z3prelude;
   output_string outch z3prelude; output_string outch "\n";
 
   IdMap.iter
     (fun id (tp, hint) -> 
       let assertion =
         match tp with
-        | TNull -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NULL %s))\n" id hint id
-        | TUndef -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-UNDEF %s))\n" id hint id
+        | TNull -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NULL %s))\n" id hint id
+        | TUndef -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-UNDEF %s))\n" id hint id
         | TString
-        | TSymString -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-STR %s))\n" id hint id
-        | TBool -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-BOOL %s))\n" id hint id
-        | TNum -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NUM %s))\n" id hint id
-        | TObjPtr -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-OBJPTR %s))\n" id hint id
-        | TFun arity -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-FUN %s))\n" id hint id
+        | TSymString -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-STR %s))\n" id hint id
+        | TBool -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-BOOL %s))\n" id hint id
+        | TNum -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-NUM %s))\n" id hint id
+        | TObjPtr -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-OBJPTR %s))\n" id hint id
+        | TFun arity -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (is-FUN %s))\n" id hint id
         (* All we know about syms of unknown type is that they can't be obj ptrs, because
          * that case is subsumed by our obj branching, and they can't be funs, because we
          * don't know how to handle sym funs. TODO do better than this*)
-        | TAny -> Printf.sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (and (not (is-OBJPTR %s)) (not (is-FUN %s))))\n" id hint id id
-        | TData -> Printf.sprintf 
+        | TAny -> sprintf "(declare-const %s JS) ;; \"%s\"\n(assert (and (not (is-OBJPTR %s)) (not (is-FUN %s))))\n" id hint id id
+        | TData -> sprintf 
           "(declare-const %s Prop) ;; \"%s\"\n(assert (is-Data %s))\n" id hint id
-        | TAccessor -> Printf.sprintf
+        | TAccessor -> sprintf
           "(declare-const %s Prop) ;; \"%s\"\n(assert (is-Accessor %s))\n" id hint id
       in
-      if log_z3 then Printf.printf "%s" assertion;
+      if log_z3 then printf "%s" assertion;
       output_string outch assertion;
     )
     vs; 
   
-  if log_z3 then Printf.printf ";; String variables:\n";
+  if log_z3 then printf ";; String variables:\n";
   let strvs = IdMap.filter (fun _ (tp, _) -> tp = TString) vs in
   if not (IdMap.is_empty strvs) then begin
     let distinctStrs = IdMap.fold (fun id _ acc -> id ^ " " ^ acc) strvs "" in
-    if log_z3 then Printf.printf "(assert (distinct %s))\n\n" distinctStrs;
-    output_string outch (Printf.sprintf "(assert (distinct %s))\n" distinctStrs);
+    if log_z3 then printf "(assert (distinct %s))\n\n" distinctStrs;
+    output_string outch (sprintf "(assert (distinct %s))\n" distinctStrs);
   end;
 
-  if log_z3 then Printf.printf ";; Operators:\n";
-  if log_z3 then Printf.printf "%s\n" op1_defs;
+  if log_z3 then printf ";; Operators:\n";
+  if log_z3 then printf "%s\n" op1_defs;
   output_string outch op1_defs; output_string outch "\n";
 
   let (lets, rest) = List.partition (fun pc -> match pc with SLet _ -> true | _ -> false) cs in
   let print_pc constraintExp = 
-    if log_z3 then Printf.printf "%s\n" (to_string constraintExp p);
+    if log_z3 then printf "%s\n" (to_string constraintExp p);
     output_string outch 
-      (Printf.sprintf "%s\n" (to_string constraintExp p)) in
-  if log_z3 then Printf.printf ";; Let constraints:\n";
+      (sprintf "%s\n" (to_string constraintExp p)) in
+  if log_z3 then printf ";; Let constraints:\n";
   List.iter print_pc lets;
-  if log_z3 then Printf.printf ";; Other constraints:\n";
+  if log_z3 then printf ";; Other constraints:\n";
   List.iter print_pc rest;
 
   output_string outch "(check-sat-using (then simplify solve-eqs smt))";
   close_out outch;
-  if log_z3 then Printf.printf "(check-sat-using (then simplify solve-eqs smt))\n";
-  if log_z3 then Printf.printf "%s\n" hint;
+  if log_z3 then printf "(check-sat-using (then simplify solve-eqs smt))\n";
+  if log_z3 then printf "%s\n" hint;
   flush stdout;
   let res = input_line inch in
   close_in inch; 
   let  _ = Unix.close_process (inch, outch) in
-  if log_z3 then Printf.printf "z3 said: %s\n\n" res;
+  if log_z3 then printf "z3 said: %s\n\n" res;
+  if die_on_error && str_contains res "error" then failwith "z3 error!";
   let res = if (String.length res) > 3 then String.sub res 0 3 else res in (* strip line endings... *)
   if log_z3 then begin
     let t2 = Sys.time() in
     tot := !tot +. (t2 -. t1);
-    Printf.printf "z3 took: %f secs\n" (t2 -. t1);
-    Printf.printf "total: %f secs\n\n" (!tot)
+    printf "z3 took: %f secs\n" (t2 -. t1);
+    printf "total: %f secs\n\n" (!tot)
   end;
   (res = "sat")
     

@@ -89,10 +89,6 @@ let string_of_trace = to_string trace
  * install graphviz and run something like:
  * dot -Tpng trace.dot -o trace.png
  * or replace png with the format of your choice. *)
-
-let str_contains str substr =
-  Str.string_match (Str.regexp_string substr) str 0
-
 let dot_of_trace trace =
   let dot_of_vertex vid label attrs =
     sprintf "%s [label=\"%s\"%s];\n" vid (String.escaped label) attrs
