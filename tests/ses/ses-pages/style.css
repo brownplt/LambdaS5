@@ -1,0 +1,82 @@
+.frozen {
+    background: #ccf;
+}
+
+.primordial {
+    border: 1px solid red;
+    background: #fcc;
+}
+
+.frozen_primordial {
+    border: 1px solid green;
+    background: #cfc;
+}
+
+.unfrozen_nonprimordial {
+    background: #eee;
+}
+
+table {
+    border:1px solid black;
+}
+
+table td {
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+a {text-decoration: none}
+
+.label {font-weight: bold}
+
+.backrefs {
+    display:inline-block;
+    max-height: 500px;
+    min-width: 120px;
+    overflow-y: auto;
+    overflow-x: visible; /* Completely ignored :-( */
+}
+
+/* value */
+
+.number {color:#008000}
+
+.string:before {content:"\""}
+.string:after {content:"\""}
+.string {color:#008000}
+
+.constant {color:#800000}
+
+.closure {font-style: italic}
+
+.code {
+    font-size: small;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+
+/* store */
+
+.objloc:before {content:"Object "}
+.objloc {font-weight: bold}
+
+.objref:before {content:"obj"}
+.varref:before {content:"var"}
+
+.varloc:before {content:"Variable "}
+.varloc {font-weight: bold}
+
+
+/* object */
+
+.attr {font-weight: bold}
+
+.prop {}
+
+.propattr:after {content:":"}
+
+.mask {
+    font-weight: bold;
+    font-family: monospace;
+}

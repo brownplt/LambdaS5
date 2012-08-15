@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Construct pretty html renderings of the heap, before and after ses.
+
+if [ ! -e "init.heap" -o ! -e "ses.heap" ]
+then
+  ./s5_save_snapshots
+fi
+
+../../../obj/s5.d.byte -load init.heap -print-html > init-heap.html
+
+../../../obj/s5.d.byte -load init.heap -load ses.heap -print-ses-html > ses-heap.html
