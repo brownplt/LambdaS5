@@ -92,3 +92,9 @@ val group : ('a -> 'a -> int) -> 'a list -> 'a list list
 val list_of_option : 'a option -> 'a list
 
 val last : 'a list -> 'a
+
+val identity : 'a -> 'a
+
+val compose : ('a -> 'a) list -> 'a -> 'a
+
+val apply : ('b -> 'a -> 'a) -> 'b list -> 'a -> 'a

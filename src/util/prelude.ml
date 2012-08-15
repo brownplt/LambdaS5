@@ -167,3 +167,11 @@ let rec last list = match list with
   | [] -> failwith "Attempted to take last element of empty list."
   | [x] -> x
   | (x :: xs) -> last xs
+
+let identity x = x
+
+let rec compose fs x = match fs with
+  | [] -> x
+  | (f :: fs) -> let x = f x in compose fs x
+
+let apply f list = compose (List.map f list)
