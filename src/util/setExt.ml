@@ -33,7 +33,7 @@ module Make (Ord : Set.OrderedType) = struct
 
   let rec fix_point gen set =
     let set' = unions (set :: List.map gen (to_list set)) in
-    if equal set set'
+    if cardinal set = cardinal set'
     then set
     else fix_point gen set'
 
