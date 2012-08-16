@@ -10,14 +10,14 @@ let mk_id str =
   idx := !idx + 1;
   "%" ^ str ^ (string_of_int !idx)
 
-let undef_test p v =
-  S.Op2 (p, "stx=", v, S.Undefined p)
+let eq p e1 e2 = S.Op2 (p, "stx=", e1, e2)
 
-let null_test p v =
-  S.Op2 (p, "stx=", v, S.Null p)
+let undef_test p v = eq p v (S.Undefined p)
+
+let null_test p v = eq p v (S.Null p)
 
 let type_test p v typ =
-  S.Op2 (p, "stx=", S.Op1 (p, "typeof", v), S.String (p, typ))
+  eq p (S.Op1 (p, "typeof", v)) (S.String (p, typ))
 
 let is_object_type p o = S.App (p, F.env_var p "%IsObject", [o])
 
@@ -27,6 +27,9 @@ let throw_typ_error p msg =
 let make_get_field p obj fld =
   let argsobj = S.Object (p, S.d_attrs, []) in
   S.GetField (p, obj, fld, argsobj)
+
+let get_string_field p obj str =
+  make_get_field p obj (S.String (p, str))
 
 let to_string p v =
   match v with
@@ -48,23 +51,14 @@ let ljs_bool b = if b then S.True (Pos.dummy) else S.False (Pos.dummy)
 
 (* 15.4: A property name P (in the form of a String value) is an array index if and
  * only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to
- * 2^32−1 *)
+ * 2^32−1.  This is checked in %EnvCheckAssign *)
 let make_set_field p obj fld value =
   match obj with
   | S.Id (p, "%context") -> 
     S.App (p, F.env_var p "%EnvCheckAssign", [obj; fld; value; S.Id (p, "#strict")])
   | _ ->
     S.TryCatch (p, S.App (p, F.env_var p "%set-property", [obj; fld; value]),
-      S.Lambda (p, ["e"],
-        S.If (p, S.Op1 (p, "closure?", S.Id (p, "e")),
-              (* "Field not writable" is thrown from interp *)
-              S.If (p, S.Op2 (p, "stx=",
-                              S.App (p, S.Id (p, "e"), []),
-                              S.String (p, "Field not writable")),
-                    throw_typ_error p "Field not writable",
-                    S.Throw (p, S.Id (p, "e"))),
-              S.Throw (p, S.Id (p, "e")))))
-                              
+      S.Id (p, "%ErrorDispatch"))
 
 let make_args_obj p is_new args =
     let n_args = List.length args in
@@ -370,18 +364,34 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
   | E.BreakExpr (p, id, e) -> S.Break (p, id, ejs_to_ljs e)
   | E.ForInExpr (p, nm, vl, bdy) ->
     get_forin p nm (ejs_to_ljs vl) (ejs_to_ljs bdy)
+    (* JavaScript exceptions are desugared to throw values that look
+       like {%js-exn: <js-exn-value>}, and we desugar catch blocks to
+       check for this pattern and rethrow if it's not found.  This lets
+       the interpreter throw arbitrary values to signal special
+       exceptions in its own effective namespace. *)
+  | E.ThrowExpr (p, e) -> S.Throw (p, S.Object (p, S.d_attrs,
+      [("%js-exn", S.Data ({
+          S.value = ejs_to_ljs e;
+          S.writable = false;
+        }, false, false))]))
   | E.TryCatchExpr (p, body, ident, catch) -> 
+    let is_js_exn = S.App (p, S.Id (p, "%IsJSError"), [S.Id (p, ident)]) in
     let new_ctxt = 
       S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, "%parent")) },
                 [(ident, 
-                  S.Data ({ S.value = S.Id (p, ident); S.writable = true }, 
-                         false, false) );])
+                  S.Data ({
+                    S.value = get_string_field p (S.Id (p, ident)) "%js-exn";
+                    S.writable = true
+                  }, 
+                  false, false) );])
     in
     S.TryCatch (p, ejs_to_ljs body, 
-                S.Lambda(p, [ident], 
-                         S.Let (p, "%parent", S.Id (p, "%context") ,
-                                S.Let (p, "%context", new_ctxt, 
-                                       ejs_to_ljs catch))))
+      S.Lambda(p, [ident], 
+        S.If (p, is_js_exn,
+              S.Let (p, "%parent", S.Id (p, "%context"),
+                     S.Let (p, "%context", new_ctxt, 
+                            ejs_to_ljs catch)),
+              S.Throw (p, (S.Id (p, ident))))))
   | E.FuncStmtExpr (p, nm, args, body) -> 
     let fobj = get_fobj p args body (S.Id (p, "%context")) in
     let f_id = mk_id "fobj" in
@@ -393,7 +403,6 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       S.SetField (p, S.Id (p, "%context"), S.String (p, nm), S.Id (p, f_id), argsobj))
   | E.TryFinallyExpr (p, body, finally) -> 
     S.TryFinally (p, ejs_to_ljs body, ejs_to_ljs finally)
-  | E.ThrowExpr (p, e) -> S.Throw (p, ejs_to_ljs e)
   | E.SwitchExpr (p, d, cl) ->
 
     let or' a b = 

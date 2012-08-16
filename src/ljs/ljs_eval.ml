@@ -276,7 +276,7 @@ let rec eval desugar exp env (store : store) : (value * store) =
               get_obj store loc in
             let prop = get_prop p store obj_value s in
             let unwritable = (Throw ([],
-              Closure (IdMap.empty, [], (S.String (p, "Field not writable"))),
+              String "Field not writable",
               store
             )) in
             begin match prop with
