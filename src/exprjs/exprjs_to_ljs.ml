@@ -41,6 +41,8 @@ let to_object p v =
     | S.Id (p, "%context") -> v
     | _ -> S.App (p, F.env_var p "%ToObject", [v])
 
+let with_error_dispatch p e =
+  S.TryCatch (p, e, S.Id (p, "%ErrorDispatch"))
 
 let prop_accessor_check p v =
   match v with
@@ -56,9 +58,8 @@ let make_set_field p obj fld value =
   match obj with
   | S.Id (p, "%context") -> 
     S.App (p, F.env_var p "%EnvCheckAssign", [obj; fld; value; S.Id (p, "#strict")])
-  | _ ->
-    S.TryCatch (p, S.App (p, F.env_var p "%set-property", [obj; fld; value]),
-      S.Id (p, "%ErrorDispatch"))
+  | _ -> with_error_dispatch p
+      (S.App (p, F.env_var p "%set-property", [obj; fld; value]))
 
 let make_args_obj p is_new args =
     let n_args = List.length args in
@@ -231,23 +232,14 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       end
     | "delete" -> let result = match exp with
       | E.BracketExpr (pp, obj, fld) -> 
-        let fld_id = mk_id "fld" in
-        let fld_str = S.Op1 (p, "prim->str", ejs_to_ljs fld)
+        let fld_str = to_string p (ejs_to_ljs fld)
         and sobj = ejs_to_ljs obj in
-        (* TODO(joe): unused var --- what's it doing here? *)
-        (* let null = S.Null (pp) in *)
         begin match sobj with
           | S.Id (_, "%context") ->
             let null = S.Null (p) in
             S.App (pp, F.env_var p "%ThrowSyntaxError", [null; null])
           | _ ->
-            S.Let (p, fld_id, fld_str,
-              S.If (p, S.Op2 (p, "hasProperty", sobj, S.Id (p, fld_id)),
-                S.If (p,
-                  S.GetAttr (pp, S.Config, sobj, S.Id (p, fld_id)),
-                  S.DeleteField (pp, sobj, S.Id (p, fld_id)),
-                  throw_typ_error p "Deleting non-configurable field"),
-                S.True (p)))
+            with_error_dispatch p (S.DeleteField (pp, sobj, fld_str))
         end
       | _ -> S.True (p) in result
     | "-" -> S.App(p, F.env_var p "%UnaryNeg", [ejs_to_ljs exp])

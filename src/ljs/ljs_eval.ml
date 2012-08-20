@@ -276,7 +276,7 @@ let rec eval desugar exp env (store : store) : (value * store) =
               get_obj store loc in
             let prop = get_prop p store obj_value s in
             let unwritable = (Throw ([],
-              String "Field not writable",
+              String "unwritable-field",
               store
             )) in
             begin match prop with
@@ -349,7 +349,8 @@ let rec eval desugar exp env (store : store) : (value * store) =
                     let store = set_obj store loc
                       (attrs, IdMap.remove s props) in
                     True, store
-                  | _ -> False, store
+                  | _ ->
+                    raise (Throw ([], String "unconfigurable-delete", store))
                 with Not_found -> False, store
               end
             end
@@ -541,17 +542,10 @@ with
   | Throw (t, v, store) ->
       let err_msg = 
         match v with
-          | ObjLoc loc ->
-              let (attrs, props) = get_obj store loc in
-                begin try
-                  match IdMap.find "message" props with
-                    | Data ({ value = msg_val; }, _, _) ->
-                        (pretty_value msg_val)
-                    | _ -> string_of_value v store
-                with Not_found -> string_of_value v store
-                end
+          | ObjLoc loc -> string_of_value v store
           | v -> (pretty_value v) in
         err print_trace t (sprintf "Uncaught exception: %s\n" err_msg)
   | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
   | PrimErr (t, v) ->
       err print_trace t (sprintf "Uncaught error: %s\n" (pretty_value v))
+
