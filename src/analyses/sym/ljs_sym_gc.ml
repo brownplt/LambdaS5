@@ -1,5 +1,7 @@
 open Prelude
 open Ljs_sym_values
+open Ljs_sym_env
+
 
 let print_gc_stats = true
 
@@ -19,8 +21,8 @@ let store_of_mstore (mstore : marked_store) : sto_type =
 
 (* The root set is the *set* of all locs in the envs.
  * We'll represent it with a list with no duplicates. *)
-let root_set envs = nub (List.rev_map snd (envs_bindings envs))
-let env_root_set env = root_set (push_env env mt_envs)
+let root_set envs = nub (List.rev_map snd (Env.stack_bindings envs))
+let env_root_set env = root_set (Env.stack_push env Env.mt_envs)
 
 let mark_true loc v sto = Store.update loc (v, true) sto
 
@@ -72,7 +74,7 @@ and mark_attrs attrs mstore =
     (mark_val attrs.proto
        (opt_helper attrs.primval mstore))
 
-let mark (envs : env_stack) (store : sto_type) : marked_store =
+let mark (envs : Env.stack) (store : sto_type) : marked_store =
   fold_left (flip mark_val) (mstore_of_store store) (root_set envs)
 
 let sweep (mstore : marked_store) : sto_type =
@@ -81,7 +83,7 @@ let sweep (mstore : marked_store) : sto_type =
     { vals = Store.filter is_marked mstore.vals;
       objs = Store.filter is_marked mstore.objs; }
 
-let garbage_collect (envs : env_stack) (store : sto_type) : sto_type =
+let garbage_collect (envs : Env.stack) (store : sto_type) : sto_type =
   if print_gc_stats then
     let v = Store.cardinal store.vals in
     let o = Store.cardinal store.objs in

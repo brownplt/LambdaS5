@@ -4,6 +4,7 @@ module S = Ljs_syntax
 open Format
 open Ljs
 open Ljs_sym_values
+open Ljs_sym_env
 open Ljs_sym_pretty
 open Ljs_sym_delta
 open Ljs_sym_z3
@@ -73,13 +74,13 @@ let rec apply p func args envs pc nested_eval = match func with
   | Closure (arg_ids, body_exp, closure_env) ->
     let bind_arg arg id (envs, pc) = 
       let (loc, pc') = sto_alloc_val arg pc in 
-      (env_add id loc envs, pc')
+      (Env.add id loc envs, pc')
     in
     if (List.length args) != (List.length arg_ids) then
       arity_mismatch_err p arg_ids args pc
     else
       (* Push the closed-over env onto the env stack. *)
-      let envs = push_env closure_env envs in
+      let envs = Env.stack_push closure_env envs in
       let (envs_args, pc_args) = List.fold_right2 bind_arg args arg_ids (envs, pc) in
       nested_eval body_exp envs_args pc_args
   | ObjPtr obj_loc ->
@@ -552,9 +553,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth exp pc obj_ptr field =
 let sym_get_prop = sym_get_prop_helper true max_sym_proto_depth
 let sym_get_own_prop = sym_get_prop_helper false max_sym_proto_depth
 
-let rec eval jsonPath maxDepth depth
-      exp (envs : env_stack) (pc : ctx)
-      : results = 
+let rec eval jsonPath maxDepth depth exp (envs : Env.stack) (pc : ctx) : results = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
   if (not pc.hide_objs) && print_store then printf "%s\n" (store_to_string pc.store);
@@ -570,7 +569,7 @@ let rec eval jsonPath maxDepth depth
    * In either case, eval_sym should be used to evaluate e. *)
   let eval_sym exp envs pc = bind (eval exp envs pc) (uncurry (branch_sym exp)) in
 
-  let pc = { pc with print_env = (cur_env envs); } in
+  let pc = { pc with print_env = (Env.stack_curr envs); } in
 
   match exp with
     | S.Hint (p, hint, exp2) ->
@@ -608,16 +607,16 @@ let rec eval jsonPath maxDepth depth
         uncurry return
           (new_sym_fresh (fresh_sym_keyword ^ " at " ^ (Pos.string_of_pos p)) pc)
       else
-        try return (sto_lookup_val (env_lookup x envs) pc) pc
+        try return (sto_lookup_val (Env.lookup x envs) pc) pc
         with Not_found -> failwith (interp_error p
-          ("Unbound identifier: " ^ x ^ ", " ^ Store.print_loc (env_lookup x envs) ^ " in identifier lookup at "
+          ("Unbound identifier: " ^ x ^ ", " ^ Store.print_loc (Env.lookup x envs) ^ " in identifier lookup at "
            ^ Pos.string_of_pos p))
     end
 
 
     | S.Lambda (p, xs, e) ->
       (* Close over the current env on the env stack *)
-      return (Closure (xs, e, cur_env envs)) pc
+      return (Closure (xs, e, Env.stack_curr envs)) pc
 
     | S.Op1 (p, op, e) ->
       bind 
@@ -786,11 +785,11 @@ let rec eval jsonPath maxDepth depth
         (eval e envs pc)
         (fun (e_val, pc) -> 
           let loc, pc = sto_alloc_val e_val pc in 
-          eval body (env_add x loc envs) pc)
+          eval body (Env.add x loc envs) pc)
         
     | S.Rec (p, x, e, body) ->
       let (loc, pc') = sto_alloc_val Undefined pc in
-      let envs' = env_add x loc envs in
+      let envs' = Env.add x loc envs in
       bind
         (eval e envs' pc')
         (fun (ev_val, pc') -> 
@@ -799,7 +798,7 @@ let rec eval jsonPath maxDepth depth
 
     | S.SetBang (p, x, e) -> begin
       try
-        let loc = env_lookup x envs in
+        let loc = Env.lookup x envs in
         bind 
           (eval e envs pc)
           (fun (e_val, pc') ->
@@ -972,7 +971,7 @@ let rec eval jsonPath maxDepth depth
       let update_prop obj_loc f prop newval setter_params pc = 
         let objv = sto_lookup_obj obj_loc pc in
         let unwritable = Throw (Closure ([],
-          S.String (p, "Field not writable"), mt_env))
+          S.String (p, "Field not writable"), Env.mt_env))
         in
         match prop with
         | Some (Data ({ writable = sym_writ; }, enum, config)) ->
@@ -1157,7 +1156,7 @@ and eval_op str envs jsonPath maxDepth pc =
       let (used_ids, exprjsd) = 
         js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global")) in
       let desugard = exprjs_to_ljs Pos.dummy used_ids exprjsd in
-      if (env_mem "%global" envs) then
+      if (Env.mem "%global" envs) then
         (Ljs_pretty.exp desugard std_formatter; print_newline ();
          eval jsonPath maxDepth 0 desugard envs pc (* TODO: which envs? *))
       else
@@ -1166,7 +1165,7 @@ and eval_op str envs jsonPath maxDepth pc =
 let rec eval_expr expr jsonPath maxDepth pc = 
   let results =
     bind_exn
-      (eval jsonPath maxDepth 0 expr mt_envs pc)
+      (eval jsonPath maxDepth 0 expr Env.mt_envs pc)
       (fun (e, pc) -> match e with
       | Throw v ->
         throw_str ("Uncaught exception: " ^ message_of_throw v pc) pc

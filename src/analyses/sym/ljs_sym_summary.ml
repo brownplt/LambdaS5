@@ -1,5 +1,6 @@
 open Prelude
 open Ljs_sym_values
+open Ljs_sym_env
 open Ljs_sym_pretty
 module S = Ljs_syntax
 
@@ -189,7 +190,7 @@ let summarize fname eval apply envs pc : summary option =
   printf "Summarizing %s\n" fname;
   let fval =
     try
-      sto_lookup_val (env_lookup fname envs) pc
+      sto_lookup_val (Env.lookup fname envs) pc
     with Not_found -> failwith "Couldn't find %s to summarize\n"
   in
   match fval with
@@ -315,7 +316,7 @@ let apply_summary fexp (branches, sym_args) envs pc =
           | SLet (symid, _) -> begin
             try
               let arg_id = List.assoc symid sym_args in
-              let argv = sto_lookup_val (env_lookup arg_id envs) pc in
+              let argv = sto_lookup_val (Env.lookup arg_id envs) pc in
               printf "bound arg %s to %s\n" (val_to_string argv) arg_id;
               Concrete argv
             with Not_found -> exp
@@ -328,7 +329,7 @@ let apply_summary fexp (branches, sym_args) envs pc =
       map_sym_val' (fun symid ->
         try
           let arg_id = List.assoc symid sym_args in
-          sto_lookup_val (env_lookup arg_id envs) pc
+          sto_lookup_val (Env.lookup arg_id envs) pc
         with Not_found -> v)
       v
     in
@@ -358,7 +359,7 @@ let apply_summary fexp (branches, sym_args) envs pc =
     (map
       (fun (_, arg_id) ->
          val_to_string
-           (sto_lookup_val (env_lookup arg_id envs) pc))
+           (sto_lookup_val (Env.lookup arg_id envs) pc))
       sym_args)
   in
   (* Need unique labels for each branch for the trace to work correctly *)
@@ -408,7 +409,7 @@ let make_summary fname eval apply envs pc : unit =
 
 (* Returns a function with the same signature as nested_eval,
  * so that it can be passed through to apply *)
-let get_summary fexp : (S.exp -> env_stack -> ctx -> results) option =
+let get_summary fexp : (S.exp -> Env.stack -> ctx -> results) option =
   match fexp with
   | S.Id (p, fname) -> begin
     try
