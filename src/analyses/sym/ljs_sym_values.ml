@@ -1,7 +1,6 @@
 open Prelude
 open Ljs_syntax
-
-
+open Ljs_sym_env
 
 
 (* If you change these, make sure to change the 
@@ -30,11 +29,6 @@ type symstring = SString of string | SSym of id
 (* Used within GetField and SetField only *)
 type field_type = SymField of id | ConField of id
 
-(* Maps var ids to store locations *)
-type env = (id * Store.loc) list
-(* Represents the envs in the call stack of the evaluator *)
-type env_stack = env list
-
 type value =
   (* Scalar types *)
   | Null
@@ -43,7 +37,7 @@ type value =
   | String of string
   | True
   | False
-  | Closure of id list * exp * env (* (args, body, env) *)
+  | Closure of id list * exp * Env.env (* (args, body, env) *)
   (* ObjPtr is a pointer to an obj in the object store *)
   | ObjPtr of Store.loc
   (* NewSym is an uninitialized symbolic value,
@@ -97,7 +91,7 @@ and ctx = { constraints : sym_exp list;
             store : sto_type;
             (* if true, new objs will be hidden in the store *)
             hide_objs : bool;
-            print_env : env; }
+            print_env : Env.env; }
 
 (* language of constraints *)
 and sym_exp =
@@ -279,48 +273,12 @@ let collect_with_pcs cmp res_list =
     (group cmp res_list)
 let collect cmp = collect_with_pcs (fun (v1,_) (v2,_) -> cmp v1 v2)
 
-(* Abstraction for environment *)
-
-(* The "environment" is actually a stack of envs, representing
- * the call stack. The top env on the stack has the all of the
- * bindings currently in scope. *)
-let mt_env = []
-let mt_envs = [mt_env]
-
-(* Functions that take advantage of the entire stack, which
- * are useful for the garbage collector and for closures. *)
-let cur_env envs = List.hd envs
-let f_cur_env f envs = (f (List.hd envs)) :: (List.tl envs)
-let push_env env envs = env :: envs
-(* Returns a list of all bindings in the env stack.
- * May contain duplicates. *)
-let envs_bindings envs =
-  fold_left
-    (fun bindings env ->
-       List.rev_append env bindings)
-    [] envs
-
-(* Functions that operate on an env stack as if it were
- * just the top env on the stack. This is useful when we 
- * only care about the current scope. *)
-let env_lookup id envs = List.assoc id (cur_env envs)
-let env_mem id envs = List.mem_assoc id (cur_env envs)
-let env_add id loc envs =
-  f_cur_env (fun env -> (id, loc) :: env) envs
-
-(* Functions on one env *)
-let env_fold f env acc = (* includes shadowed bindings *)
-  List.fold_right 
-    (fun (id, loc) acc -> f id loc acc)
-    env acc
-
-
 let mt_ctx = {
   constraints = [];
   vars = IdMap.empty;
   store = { objs = Store.empty; vals = Store.empty };
   hide_objs = true;
-  print_env = mt_env; (* the env to use when printing results *)
+  print_env = Env.mt_env; (* the env to use when printing results *)
 }
 
 let add_var id ty hint ctx = 

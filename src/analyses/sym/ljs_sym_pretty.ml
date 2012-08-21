@@ -1,5 +1,6 @@
 open Prelude
 open Ljs_sym_values
+open Ljs_sym_env
 
 open Format
 open FormatExt
@@ -189,7 +190,7 @@ let updateWith f k v m =
     with Not_found -> v) m
 
 let invert_env pc : (id list) Store.t =
-  env_fold 
+  Env.fold 
     (fun id vloc inv_map ->
       match sto_lookup_val vloc pc with
       | ObjPtr oloc -> updateWith (@) oloc [id] inv_map
@@ -221,7 +222,7 @@ let store { objs = objs; vals = vals } =
 let store_to_string = to_string store
 
 let env the_env = vert
-  (env_fold
+  (Env.fold
     (fun id loc printers ->
        (horz [text id; text ":"; 
              text (Store.print_loc loc);])
