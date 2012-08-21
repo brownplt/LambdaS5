@@ -14,18 +14,29 @@ open Exprjs_to_ljs
 open Js_to_exprjs
 open Str
 
-(* Constants *)
+(* How many times we should recursively check sym prototypes *)
 let max_sym_proto_depth = 0
+
+(* Create a new sym val *)
 let new_sym_keyword = "NEWSYM"
+(* Create a new sym val that can't be a pointer to a concrete object.
+ * This is still sound, since it will still be able to be a pointer
+ * to a sym object, which subsumes all concrete objects. *)
 let fresh_sym_keyword = "NEWSYM_FRESH"
+
+(* Hints *)
+(* Objects created after this will be included in the set of objects that a new
+ * symbolic value might point to. *)
 let start_sym_keyword = "START SYM EVAL"
+(* Objects created after this will NOT be included ... etc. *)
 let stop_sym_keyword = "STOP SYM EVAL"
+(* Summarize the given function (looked up by name). *)
 let summarize_regex = Str.regexp "SUMMARIZE \\(.+\\)"
 
-(* flags for debugging *)
+(* Flags *)
 let print_store = false (* print store at each eval call *)
-let gc_on = true (* do garbage collection *) 
 let summarize_functions = true (* compute and reuse symbolic summaries *)
+let gc_on = true (* do garbage collection *) 
 
 let do_gc envs pc = 
   if not gc_on then pc else
@@ -396,20 +407,49 @@ let check_field field pc =
   | String f    -> return (ConField f) pc
   | SymScalar f -> return (SymField f) pc
   | _ -> throw_str ("get_field called with non-string/sym field: "
-                    ^ Ljs_sym_pretty.val_to_string field) pc
+                    ^ val_to_string field) pc
 
-(* Assume we are given field = String or SymScalar, and obj = Null or ObjPtr, then
-   To Lookup a field on an obj: 
-   * if a String, find in conps, or else branch against symps, or else 
-   ** if a symbolic object then new prop, else 
-   * if a SymScalar, find in symps, or else branch against symps and conps, or else
-   ** if a symbolic object then new prop, else None.
-
- * 
- * if Null then None
- * if some ObjPtr then lookup 
-*)
-(* TODO comments for this function *)
+(* sym_get_prop takes a field name and a pointer to an object and looks up the property
+ * at that field on the object. The field and the object may each by concrete or
+ * symbolic, which means we have to use our super secret algorithm, which, with the gory
+ * details omitted, is below.
+ *
+ * (apologies for the odd conflation of "field" and "property" - let's just say that
+ * fields are the keys, properties are the values.
+ *
+ * Invariant on the concrete and symbolic field maps in an object:
+ *    Every field name in either map is distinct (in the Z3 sense)
+ *    from all other field names in both maps.
+ *
+ * Let F be the field, O be the object, prop(X) be the prop at field x
+ * If O is null, return None
+ * If F is concrete (a string)
+ *  - If F is in the concrete fields, return prop(F)
+ *  - Otherwise, we branch:
+ *    1. For each F' in sym fields, create a branch, assert F = F', and return prop(F')
+ *    2. Create a branch, assert for all F' in sym fields, F <> F',
+ *       and recurse on the prototype of O
+ *    3. If O symbolic, create a branch, assert for all F' in sym fields, F <> F',
+ *       add a prop P containing a new sym val to the con fields of O at F, return P 
+ * If F is symbolic (hopefully a string)
+ *  - If F is in the symbolic fields, return prop(F)
+ *  - Otherwise, we branch:
+ *    1. For each F' in concrete or sym fields, create a branch,
+ *       assert F = F', and return prop(F')
+ *    2. Create a branch, assert for all F' in concrete or sym fields, F <> F',
+ *       and recurse on the prototype of O
+ *    3. If O symbolic, create a branch, assert for all F' in concrete or
+ *       sym fields, F <> F', add a prop P containing a new sym val to the
+ *       sym fields of O at F, return P 
+ *
+ * Note that the two cases are nearly symmetrical, but when F is concrete, we don't
+ * need to check the cases where F is asserted equal to some other concrete field,
+ * since we know those are going to be unsat.
+ *
+ * We check sat when creating each branch, naturally.
+ *
+ * sym_get_own_prop is the same, without checking the proto.
+ *)
 let rec sym_get_prop_helper check_proto sym_proto_depth exp pc obj_ptr field =
   match obj_ptr with
   | NewSym (id, locs) -> failwith "Impossible"
@@ -473,7 +513,8 @@ let rec sym_get_prop_helper check_proto sym_proto_depth exp pc obj_ptr field =
       bind potential_props (fun ((field, prop), pc) ->
         match prop with
         | None -> 
-          (* If it's possible that the property wasn't found, then
+          (* Case 3.
+           * If it's possible that the property wasn't found, then
            * if this obj is symbolic, the property *might* have existed on this obj, 
            * or it might never have existed, so return both None and the new prop (and
            * add the new prop to the object) *)
@@ -770,11 +811,9 @@ let rec eval jsonPath maxDepth depth
     end
 
     | S.Object (p, attrse, propse) -> begin
-      (* TODO which of these do we need to eval_sym? 
-       * probably none, because they aren't user facing *)
       match attrse with
       | { S.primval = valexp;
-          S.proto = protoexp; (* TODO look in spec to see if prototype can be declared *)
+          S.proto = protoexp;
           S.code = codexp;
           S.extensible = ext;
           S.klass = kls; } ->
@@ -811,7 +850,6 @@ let rec eval jsonPath maxDepth depth
                             let v2loc, pc_v2 = sto_alloc_val v2 pc_v2 in
                             return (Data ({ value = v2loc; writable = symbool w; },
                                           symbool enum, symbool config)) pc_v2)
-                      (* TODO do we need eval_sym? *)
                       | S.Accessor ({ S.getter = ge; S.setter = se; }, enum, config) ->
                         bind (eval ge envs pc)
                           (fun (v2, pc_v2) ->
@@ -897,13 +935,6 @@ let rec eval jsonPath maxDepth depth
               | Null -> throw_str "SetObjAttr given Null" pc
               | _ -> throw_str "SetObjAttr given non-object" pc))
 
-    (* Invariant on the concrete and symbolic field maps in an object:
-     *    Every field name in either map is distinct (in the Z3 sense)
-     *    from all other field names in both maps.
-     *
-     * This is the only constraint imposed by our representation. All other
-     * constraints must be checked by Z3.
-     *)
     | S.GetField (p, obj_ptr, f, args) -> 
       bind (eval_sym obj_ptr envs pc)
         (fun (obj_ptrv, pc) -> 

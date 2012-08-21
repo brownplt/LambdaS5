@@ -4,6 +4,14 @@ open Ljs_sym_values
 module S = Ljs_syntax
 open FormatExt
 
+(* The general strategy for creating a trace tree of all the
+ * paths explored in symbolic execution is to accumulate a linear
+ * trace of the path leading to each result of evaluation, and then
+ * combine these linear traces into a tree. Each linear trace
+ * is a log of all branching points on that path, so we can merge
+ * traces together by looking for matching sequences of branch points,
+ * kind of like how a trie works. *)
+
 (* type trace_pt = exp * label *) (* from ljs_sym_values *)
 type path = trace_pt list
 type vid = string (* uniq vertex id *)
@@ -30,6 +38,7 @@ type trace =
 (*  if start.pos_lnum = endd.pos_lnum then result*)
 (*  else (String.sub result 0 (String.index result '\n')) ^ "..."*)
 
+(* Custom printer for expressions to make them more useful in traces. *)
 let rec exp e =
   let default = Ljs_pretty.exp_helper exp in
   match e with
@@ -71,7 +80,7 @@ let rec trace t = match t with
         | Exn (ev, pc) -> begin
           match ev with
           | Throw v -> text (Ljs_sym_pretty.val_to_string v)
-          | _ -> text "Exn"
+          | _ -> text "non-throw exn"
         end
         | Unsat pc -> text "<unsat>")
       results))
@@ -99,7 +108,8 @@ let dot_of_trace trace =
         let label = string_of_trace trace in
         let color =
           if label = "<unsat>" then ",fontcolor=red" else
-          if str_contains label "Exn:" then ",fontcolor=darkgreen"
+          if str_contains label "exn" || str_contains label "exception"
+          then ",fontcolor=darkgreen"
           else ",fontcolor=blue"
         in dot_of_vertex vid label color
     | TBranch (vid, exp, branches) ->
