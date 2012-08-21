@@ -289,8 +289,8 @@ let print_results results =
   (*let t1 = Sys.time() in*)
   List.iter
     (fun ((v, pc), trace) ->
-      printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
       print_string "----------\n";
+      printf "Result: %s:\n" (Ljs_sym_pretty.val_to_string v);
       if simple_print then begin
         (match v with
         | ObjPtr loc ->
@@ -336,13 +336,17 @@ let print_results results =
   (*  ret_grps;*)
 
   List.iter
-    (fun ((v, pc), trace) -> match v with
+    (fun ((v, pc), trace) ->
+      print_string "==========\n";
+      match v with
       | Ljs_sym_values.Throw v ->
-        printf "Exn: %s: %d\n" (Ljs_sym_pretty.val_to_string v) (-1); (*(List.length pcs)*)
+        printf "Exn: %s\n%s\n" (Ljs_sym_pretty.val_to_string v)
+          (simple_to_string v pc);
         (*print_trace trace*)
       | _ -> printf "Exn: something other than a Throw\n")
     exns;
 
+  printf "Exn branches: %d\n" (List.length exns);
   printf "Unsat branches: %d\n" (List.length unsats);
   (*List.iter (fun (pc, trace) -> printf "Unsat\n"; print_trace trace) unsats;*)
 

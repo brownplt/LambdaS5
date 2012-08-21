@@ -4,7 +4,7 @@ open Ljs_sym_values
 open Format
 open FormatExt
 
-let print_hidden = false
+let print_hidden = true
 let verbose_objs = false
 
 let rec vert_intersperse a lst = match lst with
@@ -230,3 +230,21 @@ let env the_env = vert
 
 let env_to_string = to_string env
 
+(* Didn't know where else to put this...*)
+let message_of_throw v pc =
+  match v with
+  | ObjPtr loc -> begin
+    match sto_lookup_obj loc pc with
+    | ConObj { conps = props } 
+    | SymObj ({ conps = props }, _) -> begin
+      try
+        match IdMap.find "message" props with
+        | Data ({ value = msg_val_loc; }, _, _) ->
+          let msg_val = sto_lookup_val msg_val_loc pc in
+          (val_to_string msg_val)
+        | _ -> (val_to_string v)
+      with Not_found -> (val_to_string v)
+    end
+    | NewSymObj locs -> "Threw a NewSymObj -- what were you thinking??"
+  end
+  | v -> (val_to_string v)

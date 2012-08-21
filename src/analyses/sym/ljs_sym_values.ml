@@ -217,10 +217,10 @@ module ResMo = struct
   (* This is where the magic happens (actually we just make the types match up).
    * The types of each expression are on the right (read from bottom to top). *)
   let join (rmm : ('a t) t) : 'a t =
-    ListMo.map TraceMo.join       (* : 'a trace_mo list_mo *)
-      (ListMo.join              (* : 'a trace_mo trace_mo list_mo *)
-        (ListMo.map swap        (* : 'a trace_mo trace_mo list_mo list_mo *)
-          rmm))               (* : 'a trace_mo list_mo trace_mo list_mo *)
+    ListMo.map TraceMo.join   (* : 'a TraceMo ListMo *)
+      (ListMo.join            (* : 'a TraceMo TraceMo ListMo *)
+        (ListMo.map swap      (* : 'a TraceMo TraceMo ListMo ListMo *)
+          rmm))               (* : 'a TraceMo ListMo TraceMo ListMo *)
     
   let bind (rm : 'a t) (f : ('a -> 'b t)) : 'b t = join (map f rm)
   let filter test rm = bind rm (fun r -> if test r then yunit r else none)
@@ -274,9 +274,10 @@ let just_unsats rm =
     (fun r -> match r with Unsat pc -> pc | _ -> failwith "filter fail")
     (ResMo.filter (fun r -> match r with Unsat _ -> true | _ -> false) rm)
 
-let collect cmp res_list = 
+let collect_with_pcs cmp res_list = 
   map (fun grp -> (fst (List.hd grp), map snd grp))
-    (group (fun (v1,_) (v2,_) -> cmp v1 v2) res_list)
+    (group cmp res_list)
+let collect cmp = collect_with_pcs (fun (v1,_) (v2,_) -> cmp v1 v2)
 
 (* Abstraction for environment *)
 

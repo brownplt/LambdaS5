@@ -4,6 +4,7 @@ module S = Ljs_syntax
 open Format
 open Ljs
 open Ljs_sym_values
+open Ljs_sym_pretty
 open Ljs_sym_delta
 open Ljs_sym_z3
 open Ljs_sym_gc
@@ -55,7 +56,7 @@ let arity_mismatch_err p xs args pc =
                (List.fold_right (^) (map (fun s -> " " ^ s ^ " ") xs) "") ^ 
                ". Values were: " ^ 
                (List.fold_right (^) (map (fun v -> " " ^ 
-                 Ljs_sym_pretty.val_to_string v ^ " ") args) ""))
+                 val_to_string v ^ " ") args) ""))
 
 let rec apply p func args envs pc nested_eval = match func with
   | Closure (arg_ids, body_exp, closure_env) ->
@@ -78,13 +79,13 @@ let rec apply p func args envs pc nested_eval = match func with
     | NewSymObj _ -> failwith (interp_error p ("Apply got NewSymObj"))
     | o -> throw_str (interp_error p
                         ("Applied an object without a code attribute: "
-                        ^ Ljs_sym_pretty.obj_to_string (o, false))) pc
+                        ^ obj_to_string (o, false))) pc
     end
   | SymScalar id -> throw_str (interp_error p
                                  ("Tried to apply a symbolic value: " ^ id)) pc
   | _ -> failwith (interp_error p 
                      ("Applied non-function, was actually " ^ 
-                         Ljs_sym_pretty.val_to_string func))
+                         val_to_string func))
 
 (* Creates all possible branches for a symbolic boolean value,
  * returning results whose values are OCaml bools. *)
@@ -110,12 +111,12 @@ let branch_sym exp v pc =
   match v with
   | NewSym (id, obj_locs) ->
     let branch newval pc =
-      add_trace_pt (exp, id ^ " -> " ^ Ljs_sym_pretty.val_to_string newval)
+      add_trace_pt (exp, id ^ " -> " ^ val_to_string newval)
         (return newval
           (* Update every location in the store that has a NewSym
            * with the same id, since that sym value has now been init'd *)
           (add_hint
-            ("Replaced NewSym " ^ id ^ " with " ^ Ljs_sym_pretty.val_to_string newval)
+            ("Replaced NewSym " ^ id ^ " with " ^ val_to_string newval)
             (S.pos_of exp)
             { pc with store =
               { pc.store with vals =
@@ -166,7 +167,8 @@ let rec add_field_helper force exp obj_loc field newval pc =
   | ((ConObj { attrs = { extensible = symext; }}) as o) ->
     bind
       (if force then (* Create a new sym prop *)
-        (* TODO : Create Accessor fields once we figure out sym code *)
+        (* TODO : Create Accessor fields once we figure out how to handle symbolic
+        * functions *)
         let vloc, pc = sto_alloc_val newval pc in
         let symwrit, pc = new_sym_bool "writable" "add_field writable" pc in
         let symenum, pc = new_sym_bool "enum" "add_field enum" pc in
@@ -233,14 +235,13 @@ let set_obj_attr oattr obj_loc newattr pc =
       set_attrs { o.attrs with proto=ploc } pc
     | S.Proto, _ ->
       throw_str ("[interp] Update proto given invalid value: "
-                 ^ Ljs_sym_pretty.val_to_string newattr) pc
+                 ^ val_to_string newattr) pc
     | S.Extensible, True -> set_attrs { o.attrs with extensible=BTrue } pc
     | S.Extensible, False -> set_attrs { o.attrs with extensible=BFalse } pc
-      (* TODO do we need to assert that this sym is a bool? *)
     | S.Extensible, SymScalar id -> set_attrs { o.attrs with extensible=BSym id } pc
     | S.Extensible, _ ->
       throw_str ("[interp] Update extensible given invalid value: "
-                 ^ Ljs_sym_pretty.val_to_string newattr) pc
+                 ^ val_to_string newattr) pc
     | S.Code, _ -> throw_str "[interp] Can't update Code" pc
     | S.Primval, _ -> throw_str "[interp] Can't update Primval" pc
     | S.Klass, _ -> throw_str "[interp] Can't update Klass" pc
@@ -374,9 +375,9 @@ let set_attr exp attr obj_loc field prop newval pc =
           throw_str (interp_error (Ljs_syntax.pos_of exp) ("Can't set attr "
             ^ Ljs_syntax.string_of_attr attr
             ^ " to "
-            ^ Ljs_sym_pretty.val_to_string newval
+            ^ val_to_string newval
             ^ " for field: " ^ fstr)) pc
-            (*^ (FormatExt.to_string (curry Ljs_sym_pretty.prop)) (fstr, prop))) pc*)
+            (*^ (FormatExt.to_string (curry prop)) (fstr, prop))) pc*)
       end)
 
 (* 8.10.5, steps 7/8 "If iscallable(getter) is false and getter is not
@@ -428,7 +429,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth exp pc obj_ptr field =
               let pc, unchanged = add_assert (is_equal (SId fstr) (SId f'str)) pc in
               let new_branch =
                 if unchanged || is_sat pc
-                     ("get_prop " ^ Ljs_sym_pretty.val_to_string obj_ptr ^ " at " ^ fstr)
+                     ("get_prop " ^ val_to_string obj_ptr ^ " at " ^ fstr)
                 then return (field', Some v') pc
                 else unsat pc in
               let new_branch = add_trace_pt (exp, fstr ^ " = " ^ f'str) new_branch in
@@ -452,7 +453,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth exp pc obj_ptr field =
           | SymField f -> IdMap.fold (assert_neq (fun f -> ConField f)) conps (none_pc, unchanged)
           in
           let none_branch = 
-            if not (unchanged || is_sat none_pc ("get_prop none " ^ Ljs_sym_pretty.val_to_string obj_ptr))
+            if not (unchanged || is_sat none_pc ("get_prop none " ^ val_to_string obj_ptr))
             then unsat none_pc
             else
               if check_proto && (not is_sym || sym_proto_depth > 0) then
@@ -505,7 +506,7 @@ let rec sym_get_prop_helper check_proto sym_proto_depth exp pc obj_ptr field =
     end
   | _ -> throw_str (interp_error (S.pos_of exp)
          "get_prop on a non-object.  The expression was (get-prop " 
-       ^ Ljs_sym_pretty.val_to_string obj_ptr
+       ^ val_to_string obj_ptr
        ^ " " ^ fst (field_str field pc) ^ ")") pc
 let sym_get_prop = sym_get_prop_helper true max_sym_proto_depth
 let sym_get_own_prop = sym_get_prop_helper false max_sym_proto_depth
@@ -515,7 +516,7 @@ let rec eval jsonPath maxDepth depth
       : results = 
   (* printf "In eval %s %d %d %s\n" jsonPath maxDepth depth *)
   (*   (Ljs_pretty.exp exp Format.str_formatter; Format.flush_str_formatter()); *)
-  if (not pc.hide_objs) && print_store then printf "%s\n" (Ljs_sym_pretty.store_to_string pc.store);
+  if (not pc.hide_objs) && print_store then printf "%s\n" (store_to_string pc.store);
 
   if (depth >= maxDepth)
   then throw_str ("Reached max recursion depth " ^ (string_of_int maxDepth)) pc else 
@@ -684,14 +685,14 @@ let rec eval jsonPath maxDepth depth
                 (let (true_pc, unchanged) =
                    add_assert (SCastJS (TBool, SId id)) pc' in
                  let true_pc = add_hint ("if true") p true_pc in
-                 if unchanged || is_sat true_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " true")
+                 if unchanged || is_sat true_pc ("if " ^ val_to_string c_val ^ " true")
                  then eval t envs true_pc
                  else unsat true_pc))
               (add_trace_pt (exp, "if false")
                 (let (false_pc, unchanged) =
                    add_assert (SNot (SCastJS (TBool, SId id))) pc' in
                  let false_pc = add_hint ("if false") p false_pc in
-                 if unchanged || is_sat false_pc ("if " ^ Ljs_sym_pretty.val_to_string c_val ^ " false")
+                 if unchanged || is_sat false_pc ("if " ^ val_to_string c_val ^ " false")
                  then eval f envs false_pc
                  else unsat false_pc))
           (* TODO should ObjPtr's be truthy? *)
@@ -1137,24 +1138,7 @@ let rec eval_expr expr jsonPath maxDepth pc =
       (eval jsonPath maxDepth 0 expr mt_envs pc)
       (fun (e, pc) -> match e with
       | Throw v ->
-        let err_msg = 
-          match v with
-          | ObjPtr loc -> begin
-            match sto_lookup_obj loc pc with
-            | ConObj { conps = props } 
-            | SymObj ({ conps = props }, _) -> begin
-              try
-                match IdMap.find "message" props with
-                | Data ({ value = msg_val_loc; }, _, _) ->
-                  let msg_val = sto_lookup_val msg_val_loc pc in
-                  (Ljs_sym_pretty.val_to_string msg_val)
-                | _ -> (Ljs_sym_pretty.val_to_string v)
-              with Not_found -> (Ljs_sym_pretty.val_to_string v)
-            end
-            | NewSymObj locs -> "Threw a NewSymObj -- what were you thinking??"
-          end
-          | v -> (Ljs_sym_pretty.val_to_string v) in
-        throw_str ("Uncaught exception: " ^ err_msg) pc
+        throw_str ("Uncaught exception: " ^ message_of_throw v pc) pc
       | Break (l, v) -> throw_str ("Broke to top of execution, missed label: " ^ l) pc)
     in
     results
