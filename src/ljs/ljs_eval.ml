@@ -542,8 +542,13 @@ with
   | Throw (t, v, store) ->
       let err_msg = 
         match v with
-          | ObjLoc loc -> string_of_value v store
-          | v -> (pretty_value v) in
+          | ObjLoc loc -> begin match get_obj store loc with
+            | _, props -> try match IdMap.find "%js-exn" props with
+              | Data ({value=jserr}, _, _) -> string_of_value jserr store
+              | _ -> string_of_value v store
+              with Not_found -> string_of_value v store
+            end
+          | v -> string_of_value v store in
         err print_trace t (sprintf "Uncaught exception: %s\n" err_msg)
   | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
   | PrimErr (t, v) ->
