@@ -4,6 +4,7 @@ open Ljs
 open Ljs_eval
 open Ljs_syntax
 open Ljs_pretty_html
+open Reachability
 
 type node =
   | Js of Js_syntax.program
@@ -220,11 +221,36 @@ module S5 = struct
       Ljs_pretty_value.print_values store
 
   let print_store_as_html cmd () =
-    match peek_answer cmd with
-    | Ljs_eval.Answer (_, _, _, store) ->
-      let title = "S5 Javascript Heap" in
-      let stylefile = "style.css" in
-      print_string (Html.html_document title [stylefile] [html_of_store store])
+    let answer = peek_answer cmd in
+    let title = "S5 Javascript Heap" in
+    let stylefiles = ["style.css"] in
+    let filter = {
+      traverse_hidden_props = true;
+      traverse_closures = true;
+      primordials = LocSet.empty;
+    } in
+    let html = html_of_answer answer filter in
+    let document = Html.document title stylefiles [] [html] in
+    Html.print_document document
+
+  let print_ses_store_as_html cmd () =
+    let ses_answer = pop_answer cmd in
+    let init_answer = pop_answer cmd in
+    push_answer init_answer;
+    push_answer ses_answer;
+    match init_answer with
+    | Ljs_eval.Answer (_, _, _, (obj_store, var_store)) ->
+      let title = "SES Javascript Heap" in
+      let stylefiles = ["style.css"] in
+      let filter = {
+        traverse_hidden_props = true;
+        traverse_closures = false;
+        primordials = LocSet.from_list (LocMap.keys obj_store
+                                        @ LocMap.keys var_store)
+      } in
+      let html = html_of_answer ses_answer filter in
+      let document = Html.document title stylefiles [] [html] in
+      Html.print_document document
 
   let print_src cmd () =
     match peek cmd with
@@ -246,12 +272,12 @@ module S5 = struct
     let alph cps = fst (Ljs_cps_util.alphatize true (cps, IdMap.add "%error" 0 (IdMap.add "%answer" 0 IdMap.empty))) in
     push_cps (alph (pop_cps cmd))
 
-  let save_answer cmd fileName =
+  let save_answer cmd file_name =
     let ans = pop_answer cmd in
-    Heapwalk.save_answer ans (open_out_bin fileName)
+    Marshal.to_channel (open_out_bin file_name) ans []
 
-  let load_answer cmd fileName =
-    let ans = Heapwalk.load_answer (open_in_bin fileName) in
+  let load_answer cmd file_name =
+    let ans = Marshal.from_channel (open_in_bin file_name) in
     push_answer ans
 
   let get_var cmd var =
@@ -266,7 +292,6 @@ module S5 = struct
     let ses_ans = pop_answer cmd in
     let init_ans = pop_answer cmd in
     Heapwalk.ses_check init_ans ses_ans
-
 
   (* Evaluation Commands *)
 
@@ -373,6 +398,8 @@ module S5 = struct
           "print objects and values in the heap after evaluation";
         unitCmd "-print-html" print_store_as_html
           "print objects and values in the heap as html";
+        unitCmd "-print-ses-html" print_ses_store_as_html
+          "print ses heap as html. init_heap ses_heap -> init_heap ses_heap";
         (* Other *)
         unitCmd "-ses-check" ses_check
           "Check if ses ran properly. ANS(init) ANS(ses) -> ";

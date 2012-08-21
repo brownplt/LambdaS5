@@ -7,12 +7,6 @@ module LocMap = Store.LocMap
 
 type answer = Ljs_eval.answer
 
-let save_answer (answer : answer) chan =
-  Marshal.to_channel chan answer []
-
-let load_answer chan : answer =
-  Marshal.from_channel chan
-
 type node =
   | ValueNode of value
   | ObjNode of Store.loc * objectv
@@ -47,18 +41,6 @@ let fold_heap (f : 'a -> node -> 'a) (init : 'a) store : 'a =
     List.fold_left fold_value ans (LocMap.values val_store) in
 
   fold_store init store
-
-
-let direct_reachables (obj_store, var_store) =
-  (LocMap.values obj_store, LocMap.values var_store)
-
-
-let reachables store =
-  let f (objs, values) node = match node with
-    | ValueNode value -> (objs, value :: values)
-    | ObjNode (loc, obj) -> ((loc, obj) :: objs, values) in
-  fold_heap f ([], []) store
-
 
 let fold_heap_values f init store =
   fold_heap (fun ans node ->  match node with
@@ -101,6 +83,13 @@ let find_frozen_objs store =
     else objs in
   fold_heap_objs f [] store
 
+let accessible_primordials init_ans ses_ans =
+  let Ljs_eval.Answer (_, _, _, (init_obj_store, init_var_store)) = init_ans in
+  let Ljs_eval.Answer (_, _, _, (ses_obj_store, ses_var_store)) = ses_ans in
+  let accessible_primordials =
+    LocMap.filter (fun loc _ -> LocMap.mem loc init_obj_store) ses_obj_store in
+  (accessible_primordials, ses_var_store)
+
 let ses_check init_ans ses_ans =
   let Ljs_eval.Answer (init_exps, init_value, init_envs,
                        (init_obj_store, init_var_store)) = init_ans in
@@ -122,67 +111,3 @@ let ses_check init_ans ses_ans =
   print_endline (Ljs_pretty_value.string_of_env env_changes);
   print_endline "[[[UNFROZEN ACCESSIBLE PRIMORDIALS (these are bad)]]]";
   Ljs_pretty_value.print_objects (unfrozen_accessible_primordials, LocMap.empty)
-
-(*
-type env_diff = {
-  introduced: env; (* things in new but not in old *)
-  deleted: env; (* things in old but not in new *)
-  modified: env; (* things in both old and new, but modified *)
-  unchanged: env (* things the same in old and new *)
-}
-
-type store_diff = {
-  introduced: store; (* things in new but not in old *)
-  deleted: store; (* things in old but not in new *)
-  modified: store; (* things in both old and new, but modified *)
-  unchanged: store (* things the same in old and new *)
-}
-
-let take_env_diff (new_env: env) (old_env: env) : env_diff =
-  let introduced id _ = not (IdMap.mem id old_env) in
-  let deleted id _ = not (IdMap.mem id new_env) in
-  let modified id _ = IdMap.mem id old_env &&
-    IdMap.find id old_env <> IdMap.find id new_env in
-  let unchanged id _ = IdMap.mem id old_env &&
-    IdMap.find id old_env = IdMap.find id new_env in
-  {introduced = IdMap.filter introduced new_env;
-   deleted = IdMap.filter deleted old_env;
-   modified = IdMap.filter modified new_env;
-   unchanged = IdMap.filter unchanged new_env}
-*)
-(*
-let take_store_diff new_store old_store : store_diff =
-  let introduced id _ = !(LocMap.mem id old_store) in
-  let deleted id _ = !(LocMap.mem id new_store) in
-  let modified id _ = LocMap.mem id old_store &&
-    LocMap.find id old_store <> LocMap.find id new_store in
-  let unchanged id _ = LocMap.mem id old_store &&
-    LocMap.find id old_store = LocMap.find id new_store in
-  {introduced = LocMap.filter introduced new_store;
-   deleted = LocMap.filter deleted old_store;
-   modified = LocMap.filter modified new_store;
-   unchanged = LocMap.filter unchanged new_store}
-*)
-(*
-let take_answer_diff (new_ans : answer) (old_ans : answer) : answer =
-  let env_diff new_env old_env =
-    let changed id loc =
-      if IdMap.mem id old_env
-      then loc <> IdMap.find id old_env
-      else true in
-    IdMap.filter changed new_env in
-  let store_diff new_store old_store =
-    let changed loc v =
-      if LocMap.mem loc old_store
-      then v <> LocMap.find loc old_store
-      else true in
-    LocMap.filter changed new_store in
-  match new_ans with
-  | Ljs_eval.Answer (exps, value, new_env, (new_obj_store, new_var_store)) ->
-    match old_ans with
-    | Ljs_eval.Answer (_, _, old_env, (old_obj_store, old_var_store)) ->
-      let env = [env_diff (last new_env) (last old_env)] in
-      let obj_store = store_diff new_obj_store old_obj_store in
-      let var_store = store_diff new_var_store old_var_store in
-      Ljs_eval.Answer (exps, value, env, (obj_store, var_store))
-*)

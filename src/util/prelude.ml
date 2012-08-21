@@ -172,3 +172,10 @@ let str_contains str substr =
   try let _ = Str.search_forward (Str.regexp_string substr) str 0 in true
   with Not_found -> false
 
+let identity x = x
+
+let rec compose fs x = match fs with
+  | [] -> x
+  | (f :: fs) -> let x = f x in compose fs x
+
+let apply f list = compose (List.map f list)

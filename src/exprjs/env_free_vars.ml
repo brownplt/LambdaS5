@@ -50,6 +50,8 @@ let ids = [
   "%in";
   "%ArrayProto";
   "%EqEq";
+  "%IsJSError";
+  "%ErrorDispatch"
 ]
 
 let id_obj = S.Object (
