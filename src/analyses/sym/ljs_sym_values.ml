@@ -1,7 +1,6 @@
 open Prelude
 open Ljs_syntax
-
-
+open Ljs_sym_env
 
 
 (* If you change these, make sure to change the 
@@ -30,11 +29,6 @@ type symstring = SString of string | SSym of id
 (* Used within GetField and SetField only *)
 type field_type = SymField of id | ConField of id
 
-(* Maps var ids to store locations *)
-type env = (id * Store.loc) list
-(* Represents the envs in the call stack of the evaluator *)
-type env_stack = env list
-
 type value =
   (* Scalar types *)
   | Null
@@ -43,12 +37,14 @@ type value =
   | String of string
   | True
   | False
-  | Closure of id list * exp * env (* (args, body, env) *)
+  | Closure of id list * exp * Env.env (* (args, body, env) *)
   (* ObjPtr is a pointer to an obj in the object store *)
   | ObjPtr of Store.loc
   (* NewSym is an uninitialized symbolic value,
    * which could either be a SymScalar or an ObjPtr *)
-  | NewSym of id * Store.loc list (* TODO explain this list *)
+  (* The list of locs contains the locs of all objects
+   * that this sym value could point to if it's an ObjPtr *)
+  | NewSym of id * Store.loc list 
   (* SymScalar is a symbolic value of a scalar type
    * (i.e. not a pointer or object) *)
   | SymScalar of id
@@ -95,7 +91,7 @@ and ctx = { constraints : sym_exp list;
             store : sto_type;
             (* if true, new objs will be hidden in the store *)
             hide_objs : bool;
-            print_env : env; }
+            print_env : Env.env; }
 
 (* language of constraints *)
 and sym_exp =
@@ -150,177 +146,139 @@ let is_equal a b = SApp (SId "=", [a; b])
 let is_not_equal a b = SNot (is_equal a b)
 
 (* TODO what are these? *)
-let is_num t l = SApp(SId "isNum", [t; l])
-let is_undef t l = SApp(SId "isUndef", [t; l])
-let is_null t l = SApp(SId "isNull", [t; l])
-let is_absent t l = SApp(SId "isAbsent", [t; l])
-let is_bool t l = SApp(SId "isBool", [t; l])
-let is_str t l = SApp(SId "isStr", [t; l])
-let is_fun t l = SApp(SId "isFun", [t; l])
-let is_objcell t l = SApp(SId "isObjCell", [t; l])
-let is_obj t l = SApp(SId "isObj", [t; l])
-
-let lookup_store t l = SApp(SId "lookup", [t; l])
-
-let lookup_field o f = SApp(SId "lookupField", [o; f])
-let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])
-let update_dataField o f v = SApp(SId "updateField", [o; f; v])
+(*let is_num t l = SApp(SId "isNum", [t; l])*)
+(*let is_undef t l = SApp(SId "isUndef", [t; l])*)
+(*let is_null t l = SApp(SId "isNull", [t; l])*)
+(*let is_absent t l = SApp(SId "isAbsent", [t; l])*)
+(*let is_bool t l = SApp(SId "isBool", [t; l])*)
+(*let is_str t l = SApp(SId "isStr", [t; l])*)
+(*let is_fun t l = SApp(SId "isFun", [t; l])*)
+(*let is_objcell t l = SApp(SId "isObjCell", [t; l])*)
+(*let is_obj t l = SApp(SId "isObj", [t; l])*)
+(*let lookup_store t l = SApp(SId "lookup", [t; l])*)
+(*let lookup_field o f = SApp(SId "lookupField", [o; f])*)
+(*let add_dataField o f v w e c = SApp(SId "addField", [o; f; v; w; e; c])*)
+(*let update_dataField o f v = SApp(SId "updateField", [o; f; v])*)
 
 (* List monad *) 
-type 'a list_mo = 'a list
+module ListMo = struct
+  type 'a t = 'a list
+  let none = []
+  let yunit a = [a]
+  let join = List.concat
+  let map = List.map
+  let combine = List.append
+  (*let bind (lm : 'a t) (f : ('a -> 'b t)) : 'b t = join (map f lm)*)
+end
 
-let list_none = []
-let list_unit a = [a]
-let list_join = List.concat
-let list_map = List.map
-let list_combine = List.append
-(*let list_bind (lm : 'a list_mo) (f : ('a -> 'b list_mo)) : 'b list_mo =*)
-(*  list_join (list_map f lm)*)
-
-(* Trace monad (aka writer) *)
 type trace_pt = exp * string (* label *)
-type 'a trace_mo = 'a * trace_pt list
-
-let trace_unit a = (a, [])
-
-let trace_join (tmm : ('a trace_mo) trace_mo) : 'a trace_mo =
-  let ((a, t1), t2) = tmm in
-  (a, t1 @ t2)
-
-let trace_map (f : ('a -> 'b)) (tm : 'a trace_mo) : 'b trace_mo =
-  let (a, trace) = tm in
-  (f a, trace)
-
-(*let trace_bind (tm : 'a trace_mo) (f : ('a -> 'b trace_mo)) : 'b trace_mo =  *)
-(*  trace_join (trace_map f tm)*)
-
-let trace_add (pt : trace_pt) : unit trace_mo = ((), [pt])
+(* Trace monad (aka writer) *)
+module TraceMo = struct
+  type 'a t = 'a * trace_pt list
+  let yunit a = (a, [])
+  let join (tmm : ('a t) t) : 'a t =
+    let ((a, t1), t2) = tmm in
+    (a, t1 @ t2)
+  let map (f : ('a -> 'b)) (tm : 'a t) : 'b t =
+    let (a, trace) = tm in
+    (f a, trace)
+  (*let bind (tm : 'a t) (f : ('a -> 'b t)) : 'b t = join (map f tm)*)
+  let reset (a, _) = yunit a
+  let add (pt : trace_pt) : unit t = ((), [pt])
+end
 
 (* Results monad, created by composing the two previous monads. *)
-type 'a res_mo = ('a trace_mo) list_mo
+module ResMo = struct
+  type 'a t = ('a TraceMo.t) ListMo.t
 
-let res_none = list_none
-let res_unit a = list_unit (trace_unit a)
-let res_combine = list_combine
-let res_add_trace pt : unit res_mo = list_unit (trace_add pt)
+  let none = ListMo.none
+  let yunit a = ListMo.yunit (TraceMo.yunit a)
+  let combine = ListMo.combine
+  let add_trace pt : unit t = ListMo.yunit (TraceMo.add pt)
+  let reset_trace rm = ListMo.map TraceMo.reset rm
 
-(* Takes a nested monad of the inverse type and flips it into a res_mo. *)
-(* Note that this is the only function in the composition that needs
- * to take advantage of the internal structure of one of the monads.
- * All the other functions use the map and join interfaces *)
-let swap (tm : ('a list_mo) trace_mo) : 'a res_mo = 
-  let (lm, trace) = tm in
-  list_map (fun a -> (a, trace)) lm
+  (* Takes a nested monad of the inverse type and flips it into a ResMo. *)
+  (* Note that this is the only function in the composition that needs
+   * to take advantage of the internal structure of one of the monads.
+   * All the other functions use the map and join interfaces. *)
+  let swap (tm : ('a ListMo.t) TraceMo.t) : 'a t = 
+    let (lm, trace) = tm in
+    ListMo.map (fun a -> (a, trace)) lm
 
-let res_map (f : 'a -> 'b) (rm : 'a res_mo) : 'b res_mo =
-  list_map (trace_map f) rm
+  let map (f : 'a -> 'b) (rm : 'a t) : 'b t =
+    ListMo.map (TraceMo.map f) rm
 
-(* This is where the magic happens (actually we just make the types match up).
- * The types of each expression are on the right (read from bottom to top). *)
-let res_join (rmm : ('a res_mo) res_mo) : 'a res_mo =
-  list_map trace_join       (* : 'a trace_mo list_mo *)
-    (list_join              (* : 'a trace_mo trace_mo list_mo *)
-      (list_map swap        (* : 'a trace_mo trace_mo list_mo list_mo *)
-        rmm))               (* : 'a trace_mo list_mo trace_mo list_mo *)
-  
-let res_bind (rm : 'a res_mo) (f : ('a -> 'b res_mo)) : 'b res_mo =
-  res_join (res_map f rm)
-
-let res_filter rm test =
-  res_bind rm (fun r -> if test r then res_unit r else res_none)
+  (* This is where the magic happens (actually we just make the types match up).
+   * The types of each expression are on the right (read from bottom to top). *)
+  let join (rmm : ('a t) t) : 'a t =
+    ListMo.map TraceMo.join   (* : 'a TraceMo ListMo *)
+      (ListMo.join            (* : 'a TraceMo TraceMo ListMo *)
+        (ListMo.map swap      (* : 'a TraceMo TraceMo ListMo ListMo *)
+          rmm))               (* : 'a TraceMo ListMo TraceMo ListMo *)
+    
+  let bind (rm : 'a t) (f : ('a -> 'b t)) : 'b t = join (map f rm)
+  let filter test rm = bind rm (fun r -> if test r then yunit r else none)
+end
 
 (* Now let's build our actual monad *)
 type 'a result =
   | Value of 'a * ctx
   | Exn of exval * ctx
   | Unsat of ctx
-type results = (value result) res_mo
+type results = (value result) ResMo.t
 
-let none = res_none
-let return v pc = res_unit (Value (v, pc))
-let throw ev pc = res_unit (Exn (ev, pc))
-let unsat    pc = res_unit (Unsat pc)
+let none = ResMo.none
+let return v pc = ResMo.yunit (Value (v, pc))
+let throw ev pc = ResMo.yunit (Exn (ev, pc))
+let unsat    pc = ResMo.yunit (Unsat pc)
 
-let combine = res_combine
+let combine = ResMo.combine
 let add_trace_pt pt rm =
-  res_bind
-    (res_add_trace pt)
+  ResMo.bind
+    (ResMo.add_trace pt)
     (fun () -> rm)
+let reset_traces = ResMo.reset_trace
+let prune_unsats rm =
+  ResMo.filter (fun r -> match r with Unsat _ -> false | _ -> true) rm
 
 let bind_all rm f g h =
-  res_bind rm (fun r -> match r with
+  ResMo.bind rm (fun r -> match r with
               | Value (v, pc) -> f (v, pc)
               | Exn (ev, pc) -> g (ev, pc)
               | Unsat pc -> h pc)
 
 let bind rm f = bind_all rm f (uncurry throw) unsat
 let bind_exn rm g = bind_all rm (uncurry return) g unsat
-let bind_unit rm h = bind_all rm (uncurry return) (uncurry throw) h
+let bind_unsat rm h = bind_all rm (uncurry return) (uncurry throw) h
 
 let bind_both rm f g = bind_all rm f g unsat
 
 let just_values rm =
-  res_map 
+  ResMo.map 
     (fun r -> match r with Value (v, pc) -> (v, pc) | _ -> failwith "filter fail")
-    (res_filter rm (fun r -> match r with Value _ -> true | _ -> false))
+    (ResMo.filter (fun r -> match r with Value _ -> true | _ -> false) rm)
 
 let just_exns rm =
-  res_map 
+  ResMo.map 
     (fun r -> match r with Exn (ev, pc) -> (ev, pc) | _ -> failwith "filter fail")
-    (res_filter rm (fun r -> match r with Exn _ -> true | _ -> false))
+    (ResMo.filter (fun r -> match r with Exn _ -> true | _ -> false) rm)
 
 let just_unsats rm =
-  res_map 
+  ResMo.map 
     (fun r -> match r with Unsat pc -> pc | _ -> failwith "filter fail")
-    (res_filter rm (fun r -> match r with Unsat _ -> true | _ -> false))
+    (ResMo.filter (fun r -> match r with Unsat _ -> true | _ -> false) rm)
 
-
-let collect cmp res_list = 
+let collect_with_pcs cmp res_list = 
   map (fun grp -> (fst (List.hd grp), map snd grp))
-    (group (fun (v1,_) (v2,_) -> cmp v1 v2) res_list)
-
-(* Abstraction for environment *)
-
-(* The "environment" is actually a stack of envs, representing
- * the call stack. The top env on the stack has the all of the
- * bindings currently in scope. *)
-let mt_env = []
-let mt_envs = [mt_env]
-
-(* Functions that take advantage of the entire stack, which
- * are useful for the garbage collector and for closures. *)
-let cur_env envs = List.hd envs
-let f_cur_env f envs = (f (List.hd envs)) :: (List.tl envs)
-let push_env env envs = env :: envs
-(* Returns a list of all bindings in the env stack.
- * May contain duplicates. *)
-let envs_bindings envs =
-  fold_left
-    (fun bindings env ->
-       List.rev_append env bindings)
-    [] envs
-
-(* Functions that operate on an env stack as if it were
- * just the top env on the stack. This is useful when we 
- * only care about the current scope. *)
-let env_lookup id envs = List.assoc id (cur_env envs)
-let env_mem id envs = List.mem_assoc id (cur_env envs)
-let env_add id loc envs =
-  f_cur_env (fun env -> (id, loc) :: env) envs
-
-(* Functions on one env *)
-let env_fold f env acc = (* includes shadowed bindings *)
-  List.fold_right 
-    (fun (id, loc) acc -> f id loc acc)
-    env acc
-
+    (group cmp res_list)
+let collect cmp = collect_with_pcs (fun (v1,_) (v2,_) -> cmp v1 v2)
 
 let mt_ctx = {
   constraints = [];
   vars = IdMap.empty;
   store = { objs = Store.empty; vals = Store.empty };
   hide_objs = true;
-  print_env = mt_env; (* the env to use when printing results *)
+  print_env = Env.mt_env; (* the env to use when printing results *)
 }
 
 let add_var id ty hint ctx = 
@@ -336,8 +294,13 @@ let fresh_var =
     let nvar = "%%" ^ prefix ^ (string_of_int !count) in
     (nvar, (add_var nvar t hint pc)))
 
+let symid_of_string s =
+  if String.contains s ' '
+  then "SS_" ^ (Str.global_replace (Str.regexp_string " ") s "_")
+  else "S_" ^ s
+
 let const_string s pc = 
-  let str = "S_" ^ s in
+  let str = symid_of_string s in
   if has_var str pc then (str, pc)
   else (str, (add_var str TString s pc))
 
@@ -460,7 +423,7 @@ let new_sym hint pc =
 
 (* A fresh sym is a new sym that isn't equal to any objects
  * already in the store. *)
-(* TODO probably still want to allow its prototype to have locs *)
+(* TODO do we want to allow its prototype to have locs? *)
 let new_sym_fresh hint pc =
   new_sym_from_locs [] "" hint pc
 

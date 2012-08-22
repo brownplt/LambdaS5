@@ -172,6 +172,10 @@ let rec last list = match list with
   | [x] -> x
   | (x :: xs) -> last xs
 
+let str_contains str substr =
+  try let _ = Str.search_forward (Str.regexp_string substr) str 0 in true
+  with Not_found -> false
+
 let identity x = x
 
 let rec compose fs x = match fs with

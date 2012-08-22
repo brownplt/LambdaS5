@@ -95,6 +95,9 @@ val null : 'a list -> bool
 
 val last : 'a list -> 'a
 
+(* Returns true if the second arg is substring of the first *)
+val str_contains : string -> string -> bool
+
 val identity : 'a -> 'a
 
 val compose : ('a -> 'a) list -> 'a -> 'a

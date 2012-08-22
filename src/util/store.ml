@@ -14,6 +14,7 @@ module LocSet = SetExt.Make (Loc)
 
 let distinct loc1 loc2 = (loc1 <> loc2)
 let print_loc loc = (string_of_int loc)
+
 let alloc valu (store, loc) =
   (loc, (LocMap.add loc valu store, loc + 1))
 
@@ -27,6 +28,8 @@ let app2 f x y = app0 (f x y)
 type 'a t = 'a LocMap.t * loc
 let empty = (LocMap.empty, 0)
 let update x y = lift2 LocMap.add x y
+(* You'd really like to take the x out, wouldn't you?
+   Try it. I dare you. *)
 let free x = lift1 LocMap.remove x
 let mem x = app1 LocMap.mem x
 let lookup x = app1 LocMap.find x

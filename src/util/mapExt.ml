@@ -30,6 +30,7 @@ module Make (Ord: Map.OrderedType) = struct
   let values m =
       fold (fun _ v lst -> v :: lst) m []
 
+  (* NOTE(jonah): This doesn't really look like a union to me...*)
   let union f m1 m2 = 
     let rec g (k1, v1) (k2, v2) =
       if Ord.compare k1 k2 = 0 then (k1, f v1 v2)

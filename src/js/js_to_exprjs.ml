@@ -79,22 +79,22 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | Some s ->
           let rec_obj = mk_id "rec_store" in
           let func_id = mk_id "rec_func" in
-          E.LetExpr (p, "%%" ^ s, E.Undefined (p),
           E.LetExpr (p, rec_obj, E.ObjectExpr (p, [(p, "%rec_prop", E.Data (E.Undefined (p)))]),
           E.LetExpr (p, func_id,
             E.FuncExpr(p, args,
-              wrapper
-                (E.SeqExpr (p, 
-                  E.AssignExpr (p, 
-                    E.IdExpr (p, "%context"), 
-                    E.String (p, s), 
-                    E.BracketExpr (p, E.IdExpr (p, rec_obj), E.String (p, "%rec_prop"))), 
-                  last))),
+              E.LetExpr (p, "%%" ^ s, E.Undefined (p),
+                wrapper
+                  (E.SeqExpr (p, 
+                    E.AssignExpr (p, 
+                      E.IdExpr (p, "%context"), 
+                      E.String (p, s), 
+                      E.BracketExpr (p, E.IdExpr (p, rec_obj), E.String (p, "%rec_prop"))), 
+                    last)))),
             E.SeqExpr (p,
               E.AssignExpr (p, E.IdExpr (p, rec_obj),
                                E.String (p, "%rec_prop"),
                                E.IdExpr (p, func_id)),
-              E.IdExpr (p, func_id)))))
+              E.IdExpr (p, func_id))))
         | None -> E.FuncExpr (p, args, wrapper last) in
       strict_wrapper p body fun_expr
     | J.Bracket (p, e1, e2) -> 
