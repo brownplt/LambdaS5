@@ -163,6 +163,10 @@ let list_of_option opt = match opt with
   | None -> []
   | Some x -> [x]
 
+let null list = match list with
+  | [] -> true
+  | _ -> false
+
 let rec last list = match list with
   | [] -> failwith "Attempted to take last element of empty list."
   | [x] -> x
@@ -175,3 +179,30 @@ let rec compose fs x = match fs with
   | (f :: fs) -> let x = f x in compose fs x
 
 let apply f list = compose (List.map f list)
+
+let rec repeat n f x =
+  if n = 0
+  then x
+  else repeat (n - 1) f (f x)
+
+(* Brent's Algorithm. Returns empty list if there is no cycle. *)
+let find_cycle (first : 'a) (next : 'a -> 'a option) (equals : 'a -> 'a -> bool) : 'a list =
+  let rec find_cycle tortoise hare power loop_len loop =
+    if equals tortoise hare
+    then (hare :: loop)
+    else match next hare with
+    | None -> []
+    | Some hare' ->
+      if power = loop_len
+      then find_cycle hare hare' (power * 2) 1 []
+      else find_cycle tortoise hare' power (loop_len + 1) (hare :: loop) in
+  match next first with
+  | None -> []
+  | Some second -> find_cycle first second 1 1 []
+
+(* Read a file into a string *)
+let string_of_file file_name =
+  let inchan = open_in file_name in
+  let buf = String.create (in_channel_length inchan) in
+  really_input inchan buf 0 (in_channel_length inchan);
+  buf

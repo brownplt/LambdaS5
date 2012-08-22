@@ -3,8 +3,10 @@
 PASSED=0
 FAILED=0
 
+source save_snapshots.sh
+
 for file in `ls unit-tests/*.js`; do
-  STR1=`./s5 $file | grep "passed\|Passed"`
+  STR1=`../obj/s5.d.byte -load init.heap -desugar $file -continue-s5-eval | grep "passed\|Passed"`
 
   if [ -n "$STR1" ]; then
     PASSED=$(($PASSED+1))

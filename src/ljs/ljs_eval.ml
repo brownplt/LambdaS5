@@ -12,6 +12,7 @@ open Exprjs_to_ljs
 open Js_to_exprjs
 open Str
 
+
 type answer = Answer of S.exp list * value * env list * store
 
 let bool b = match b with
@@ -531,9 +532,9 @@ let err show_stack trace message =
     eprintf "%s\n" message;
     failwith "Runtime error"
 
-let rec eval_expr expr desugar print_trace = try
+let continue_eval expr desugar print_trace env store = try
   Sys.catch_break true;
-  let (v, store) = eval desugar expr IdMap.empty (Store.empty, Store.empty) in
+  let (v, store) = eval desugar expr env store in
   Answer ([], v, [], store)
 with
   | Snapshot (exprs, v, envs, store) ->
@@ -555,3 +556,6 @@ with
   | Break (p, l, v, _) -> failwith ("Broke to top of execution, missed label: " ^ l)
   | PrimErr (t, v) ->
       err print_trace t (sprintf "Uncaught error: %s\n" (pretty_value v))
+
+let eval_expr expr desugar print_trace =
+  continue_eval expr desugar print_trace IdMap.empty (Store.empty, Store.empty)

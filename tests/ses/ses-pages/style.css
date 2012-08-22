@@ -2,18 +2,18 @@
     background: #ccf;
 }
 
-.primordial {
-    border: 1px solid red;
-    background: #fcc;
+.unfrozen {
+    background: #eee;
 }
 
 .frozen_primordial {
-    border: 1px solid green;
+    border: 2px solid green;
     background: #cfc;
 }
 
-.unfrozen_nonprimordial {
-    background: #eee;
+.unfrozen_primordial {
+    border: 2px solid red;
+    background: #fcc;
 }
 
 table {
@@ -23,6 +23,10 @@ table {
 table td {
     vertical-align: top;
     white-space: nowrap;
+}
+
+textarea {
+    background-color: inherit;
 }
 
 a {text-decoration: none}
@@ -61,8 +65,8 @@ a {text-decoration: none}
 .objloc:before {content:"Object "}
 .objloc {font-weight: bold}
 
-.objref:before {content:"obj"}
-.varref:before {content:"var"}
+.objref {}
+.varref {}
 
 .varloc:before {content:"Variable "}
 .varloc {font-weight: bold}
