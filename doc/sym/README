@@ -1,0 +1,10 @@
+In this directory are summaries of the progress we've made on various
+aspects of the symbolic evaluator. The files are written in Pandoc's
+extended Markdown. To compile into PDFs (or just about any other file
+type), just download Pandoc (http://johnmacfarlane.net/pandoc/) and
+run:
+
+    pandoc file.md -o file.pdf
+
+
+- Jonah Kagan, 8/23/12
