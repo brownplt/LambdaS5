@@ -4,8 +4,6 @@ open Ljs_values
 open Html
 open Reachability
 
-module LocMap = Store.LocMap
-
 let print_loc = Store.print_loc
 
 let style_backrefs = style "backrefs"
@@ -41,9 +39,9 @@ let html_of_objloc loc =
 let html_of_varloc loc =
   anchor ("var" ^ print_loc loc) [style_varloc (text (print_loc loc))]
 let html_of_objref loc =
-  anchor_link ("obj" ^ print_loc loc) [style_objref (text (print_loc loc))]
+  anchor_link ("obj" ^ print_loc loc) [style_objref (text ("obj" ^ print_loc loc))]
 let html_of_varref loc =
-  anchor_link ("var" ^ print_loc loc) [style_varref (text (print_loc loc))]
+  anchor_link ("var" ^ print_loc loc) [style_varref (text ("var" ^ print_loc loc))]
 let html_of_id id = style_id (text id)
 
 
@@ -56,9 +54,12 @@ let html_of_value value =
   let html_of_closure env args body =
 	  let args = "(" ^ String.concat ", " args ^ ")" in
     let code = FormatExt.to_string Ljs_pretty.exp body in
-    let code_html = table [row [cell [style_code (pre code)]]] in
-    tag "div" [] [style_closure (text "let"); html_of_env env;
-                  style_closure (text ("in func" ^ args)); code_html] in
+    let code_html = tag "textarea" [("rows", "5"); ("cols", "80")] [text code] in
+    tag "div" [] [style_closure (text "let");
+                  html_of_env env;
+                  style_closure (text ("in func" ^ args));
+                  tag "br" [] [];
+                  code_html] in
   match value with
   | Null -> html_of_null
   | Undefined -> html_of_undefined
@@ -128,13 +129,14 @@ let html_of_paths paths =
   let html_of_path path =
     table (List.map (fun node -> row [cell [html_of_node node]]) path) in
   let html_row_of_path path = row [cell [html_of_path path]] in
-  let first_row = row [cell [style_label (text "Reachability")]] in
+  let first_row = row [cell [style_label (text "BackRefs")]] in
   style_backrefs (div [table (first_row :: List.map html_row_of_path paths)])
 
 
 let html_of_answer answer filter =
   match answer with
   | Ljs_eval.Answer (_, _, envs, store) ->
+    let store = (Store.to_map (fst store), Store.to_map (snd store)) in
     let env = (* Is (last envs) correct? *)
       IdMap.filter (fun id _ -> List.mem id Env_free_vars.ids) (last envs) in
     let reachability =
@@ -150,9 +152,9 @@ let html_of_answer answer filter =
           let primordial = LocSet.mem loc filter.primordials in
           let frozen = Heapwalk.is_frozen obj in
           if primordial && frozen then "frozen_primordial"
-          else if primordial then "primordial"
+          else if primordial then "unfrozen_primordial"
           else if frozen then "frozen"
-          else "unfrozen_nonprimordial" in
+          else "unfrozen" in
         row [cell [html_of_objloc loc];
              cell [html_of_loc loc];
              cell [div [label ("Contents (" ^ obj_style ^ ")");

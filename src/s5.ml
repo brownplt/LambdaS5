@@ -54,14 +54,14 @@ module S5 = struct
 
   (* Global Options *)
 
-  let jsonPath = ref "../tests/desugar.sh"
+  let json_path = ref "../tests/desugar.sh"
   let stack_trace = ref true
 
   let set_stack_trace (cmdName : string) (on : bool) : unit =
     stack_trace := on
 
   let set_json (cmdName : string) (path : string) : unit =
-    jsonPath := path
+    json_path := path
 
 
   (* Stack Operations *)
@@ -139,6 +139,12 @@ module S5 = struct
 
   let load_c3_js cmd path =
     push_js (C3.parse_c3 (open_in path) path)
+
+  let load_desugared cmd path =
+    let js_src = string_of_file path in
+    try push_ljs (Ljs_desugar.desugar !json_path js_src)
+    with Ljs_values.PrimErr (t, v) -> print_string
+      ("Error while desugaring: " ^ Ljs_values.pretty_value v ^ "\n")
 
   let load_js cmd path =
     push_js (SpiderMonkey.parse_spidermonkey (open_in path) path)
@@ -245,8 +251,8 @@ module S5 = struct
       let filter = {
         traverse_hidden_props = true;
         traverse_closures = false;
-        primordials = LocSet.from_list (LocMap.keys obj_store
-                                        @ LocMap.keys var_store)
+        primordials = LocSet.from_list (Store.keys obj_store
+                                        @ Store.keys var_store)
       } in
       let html = html_of_answer ses_answer filter in
       let document = Html.document title stylefiles [] [html] in
@@ -316,15 +322,20 @@ module S5 = struct
 
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
-    Store.unsafe_store_reset ();
-    let answer = Ljs_eval.eval_expr ljs (desugar !jsonPath) !stack_trace in
-    match answer with Ljs_eval.Answer (exprs, v, envs, store) ->
-      push_answer answer
+    let answer = Ljs_eval.eval_expr ljs (desugar !json_path) !stack_trace in
+    push_answer answer
+
+  let continue_ljs_eval cmd () =
+    let ljs = pop_ljs cmd in
+    let Ljs_eval.Answer (_, _, envs, store) = pop_answer cmd in
+    let answer = Ljs_eval.continue_eval
+      ljs (desugar !json_path) !stack_trace (last envs) store in
+    push_answer answer
 
   let do_sym_eval cmd =
     let ljs = pop_ljs cmd in
     let t1 = Sys.time() in
-    let res = Ljs_sym_eval.eval_expr ljs !jsonPath 50 Ljs_sym_values.mt_ctx in
+    let res = Ljs_sym_eval.eval_expr ljs !json_path 50 Ljs_sym_values.mt_ctx in
     let t2 = Sys.time() in
     printf "Spent %f secs in sym eval\n" (t2 -. t1);
     res
@@ -361,6 +372,7 @@ module S5 = struct
         boolCmd "-set-stack-trace" set_stack_trace
           "<bool> enable/disable stack traces from the interpreter";
         (* Loading *)
+        strCmd "-desugar" load_desugared "<file> load Javascript as S5";
         strCmd "-js" load_js "<file> load file as JavaScript AST";
         strCmd "-c3-js" load_c3_js "<file> load javascript using C3";
         strCmd "-s5" load_ljs "<file> load file as S5";
@@ -416,6 +428,9 @@ module S5 = struct
         (* Evaluation *)
         unitCmd "-eval" (fun cmd () -> ljs_eval cmd (); print_value cmd ())
           "evaluate S5 code and print the result";
+        unitCmd "-continue-s5-eval"
+          (fun cmd () -> continue_ljs_eval cmd (); print_value cmd ())
+          (showType [AnswerT; LjsT] [AnswerT]);
         unitCmd "-eval-s5" ljs_eval
           "evaluate S5 code";
         unitCmd "-eval-cps" cps_eval

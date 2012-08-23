@@ -36,14 +36,12 @@ let desugar jsonPath str =
      The environment checks for the thrown string "EvalError" to
      construct the appropriate exception object. *)
   let do_err_check st i =
-    let inchan = open_in errfilename in
-    let buf = String.create (in_channel_length inchan) in
-    really_input inchan buf 0 (in_channel_length inchan);
+    let spidermonkey_err = string_of_file errfilename in
     (* We're done with all the files here, so just clean them up *)
     cleanup ();
     let json_err = regexp (quote "SyntaxError") in
     begin try
-      ignore (search_forward json_err buf 0);
+      ignore (search_forward json_err spidermonkey_err 0);
       S.Throw (Pos.dummy,
         S.App (Pos.dummy, S.Id (Pos.dummy, "%SyntaxError"),
                [S.String (Pos.dummy, "Syntax error in eval()")]))

@@ -91,6 +91,8 @@ val group : ('a -> 'a -> int) -> 'a list -> 'a list list
 
 val list_of_option : 'a option -> 'a list
 
+val null : 'a list -> bool
+
 val last : 'a list -> 'a
 
 (* Returns true if the second arg is substring of the first *)
@@ -101,3 +103,7 @@ val identity : 'a -> 'a
 val compose : ('a -> 'a) list -> 'a -> 'a
 
 val apply : ('b -> 'a -> 'a) -> 'b list -> 'a -> 'a
+
+val find_cycle : 'a -> ('a -> 'a option) -> ('a -> 'a -> bool) -> 'a list
+
+val string_of_file : string -> string
