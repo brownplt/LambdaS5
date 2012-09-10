@@ -50,7 +50,7 @@ let ids = [
   "%in";
   "%ArrayProto";
   "%EqEq";
-  "%IsJSError";
+  "%ToJSError";
   "%ErrorDispatch"
 ]
 

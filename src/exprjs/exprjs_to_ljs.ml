@@ -367,23 +367,21 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
           S.writable = false;
         }, false, false))]))
   | E.TryCatchExpr (p, body, ident, catch) -> 
-    let is_js_exn = S.App (p, S.Id (p, "%IsJSError"), [S.Id (p, ident)]) in
+    let to_js_exn = S.App (p, S.Id (p, "%ToJSError"), [S.Id (p, ident)]) in
     let new_ctxt = 
       S.Object (p, { S.d_attrs with S.proto = Some (S.Id (p, "%parent")) },
                 [(ident, 
                   S.Data ({
-                    S.value = get_string_field p (S.Id (p, ident)) "%js-exn";
+                    S.value = to_js_exn;
                     S.writable = true
                   }, 
                   false, false) );])
     in
     S.TryCatch (p, ejs_to_ljs body, 
       S.Lambda(p, [ident], 
-        S.If (p, is_js_exn,
-              S.Let (p, "%parent", S.Id (p, "%context"),
-                     S.Let (p, "%context", new_ctxt, 
-                            ejs_to_ljs catch)),
-              S.Throw (p, (S.Id (p, ident))))))
+        S.Let (p, "%parent", S.Id (p, "%context"),
+          S.Let (p, "%context", new_ctxt, 
+            ejs_to_ljs catch))))
   | E.FuncStmtExpr (p, nm, args, body) -> 
     let fobj = get_fobj p args body (S.Id (p, "%context")) in
     let f_id = mk_id "fobj" in
