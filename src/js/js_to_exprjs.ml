@@ -17,7 +17,7 @@ let split_regexp s =
   (* Index 1 always, because regexps look like /foo/g, so we cut off
    * the initial / *)
   let pattern = String.sub s 1 (before_flags - 1) in
-  let flags = String.sub s before_flags (((String.length s) - before_flags) - 1) in
+  let flags = String.sub s (before_flags + 1) (((String.length s) - before_flags) - 1) in
   (pattern, flags)
 
 let rec jse_to_exprjs (e : J.expr) : E.expr =
