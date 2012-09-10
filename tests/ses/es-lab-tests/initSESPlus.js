@@ -229,15 +229,15 @@ if (!ses) { ses = {}; }
   }
 
   /**
-   * By default is silent
+   * By default is chatty
    */
   function defaultReportRepairs(reports) {
-    reports.forEach(function(report) {
-      if (report !== undefined && report.status !== "All fine") {
-        console.log(report.description);
-        console.log(report.status);
+    for (var i = 0; i < reports.length; i++) {
+      var report = reports[i];
+      if (report && report.status !== 'All fine') {
+        logger.warn(report.status + ': ' + report.description);
       }
-    });
+    }
   }
 
   if (!logger.reportRepairs) {
@@ -263,12 +263,6 @@ if (!ses) { ses = {}; }
     var classification = ses.logger.classify(severity);
     ses.logger[classification.consoleLevel](
       problemList.length + ' ' + status);
-    if(status !== "Apparently fine") {
-      problemList.forEach(function(p) {
-        console.log("Reporting diagnosis for " + status);
-        console.log(p);
-      });
-    }
   }
 
   if (!logger.reportDiagnosis) {
@@ -278,7 +272,6 @@ if (!ses) { ses = {}; }
   ses.logger = logger;
 
 })();
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -634,19 +627,20 @@ var ses;
    * assignment.
    *
    * <p>Because of lack of sufficient foresight at the time, ES5
-   * unifortunately specified that a simple assignment to a
+   * unfortunately specified that a simple assignment to a
    * non-existent property must fail if it would override a
    * non-writable data property of the same name. (In retrospect, this
    * was a mistake, but it is now too late and we must live with the
    * consequences.) As a result, simply freezing an object to make it
    * tamper proof has the unfortunate side effect of breaking
    * previously correct code that is considered to have followed JS
-   * best practices, of this previous code used assignment to
+   * best practices, if this previous code used assignment to
    * override.
    *
    * <p>To work around this mistake, tamperProof(obj) detects if obj
    * is <i>prototypical</i>, i.e., is an object whose own
-   * "constructor" is a function whose "prototype" is this obj. If so,
+   * "constructor" is a function whose "prototype" is this obj. For example,
+   * Object.prototype and Function.prototype are prototypical.  If so,
    * then when tamper proofing it, prior to freezing, replace all its
    * configurable own data properties with accessor properties which
    * simulate what we should have specified -- that assignments to
@@ -755,10 +749,15 @@ var ses;
    *
    * <p>"makeDelayedTamperProof()" must only be called once.
    */
+  var makeDelayedTamperProofCalled = false;
   ses.makeDelayedTamperProof = function makeDelayedTamperProof() {
+    if (makeDelayedTamperProofCalled) {
+      throw "makeDelayedTamperProof() must only be called once.";
+    }
     var tamperProof = makeTamperProof();
     strictForEachFn(needToTamperProof, tamperProof);
     needToTamperProof = void 0;
+    makeDelayedTamperProofCalled = true;
     return tamperProof;
   };
 
@@ -1815,6 +1814,26 @@ var ses;
   }
 
   /**
+   * Detects whether callng pop on a frozen array can modify the array.
+   * See https://bugs.webkit.org/show_bug.cgi?id=75788
+   */
+  function test_POP_IGNORES_FROZEN() {
+    var x = [1,2];
+    Object.freeze(x);
+    try {
+      x.pop();
+    } catch (e) {
+      if (x.length !== 2) { return 'Unexpected modification of frozen array'; }
+      if (x[0] === 1 && x[1] === 2) { return false; }
+    }
+    if (x.length !== 2 || x[0] !== 1 || x[1] !== 2) {
+      return 'Unexpected silent modification of frozen array';
+    }
+    // Should report silent failure as a safe spec violation
+    return false;
+  }
+
+  /**
    *
    */
   function test_CANT_REDEFINE_NAN_TO_ITSELF() {
@@ -1826,6 +1845,26 @@ var ses;
       return 'defineProperty of NaN failed with: ' + err;
     }
     return false;
+  }
+
+  /**
+   * In Firefox 15+, Object.freeze and Object.isFrozen only work for
+   * descendents of that same Object.
+   */
+  function test_FIREFOX_15_FREEZE_PROBLEM() {
+    if (typeof document === 'undefined' ||
+       typeof document.createElement !== 'function') {
+      // likely not a browser environment
+      return false;
+    }
+    var iframe = document.createElement('iframe');
+    var where = document.getElementsByTagName('script')[0];
+    where.parentNode.insertBefore(iframe, where);
+    var otherObject = iframe.contentWindow.Object;
+    where.parentNode.removeChild(iframe);
+    var obj = {};
+    otherObject.freeze(obj);
+    return !Object.isFrozen(obj);
   }
 
   /**
@@ -1920,7 +1959,7 @@ var ses;
   }
 
   /**
-   * Do Error instances on thos platform carry own properties that we
+   * Do Error instances on those platform carry own properties that we
    * haven't yet examined and determined to be SES-safe?
    *
    * <p>A new property should only be added to the
@@ -1959,7 +1998,6 @@ var ses;
     try { null.foo = 3; } catch (err) { suspects.push(err); }
 
     var unreported = Object.create(null);
-
     strictForEachFn(suspects, function(suspect) {
       var candidates = freshHiddenPropertyCandidates();
       strictForEachFn(gopn(suspect), function(name) {
@@ -1979,8 +2017,9 @@ var ses;
 
     var unreportedNames = gopn(unreported);
     if (unreportedNames.length === 0) { return false; }
+    // TODO(felix8a): firefox14+ is doing something weird here
     return 'Error own properties unreported by getOwnPropertyNames: ' +
-      unreportedNames.sort().join(',');
+        unreportedNames.sort().join(',');
   }
 
 
@@ -3113,8 +3152,7 @@ var ses;
       repair: void 0,
       preSeverity: severities.NOT_OCAP_SAFE,
       canRepair: false,
-      urls: ['https://bugs.webkit.org/show_bug.cgi?id=65832',
-             'https://bugs.webkit.org/show_bug.cgi?id=78438'],
+      urls: ['https://bugs.webkit.org/show_bug.cgi?id=65832'],
       sections: ['8.6.2'],
       tests: ['S8.6.2_A8']
     },
@@ -3172,6 +3210,16 @@ var ses;
       tests: ['15.2.3.6-4-405']
     },
     {
+      description: 'Array.prototype.pop ignores frozeness',
+      test: test_POP_IGNORES_FROZEN,
+      repair: void 0,
+      preSeverity: severities.UNSAFE_SPEC_VIOLATION,
+      canRepair: false,
+      urls: ['https://bugs.webkit.org/show_bug.cgi?id=75788'],
+      sections: ['15.4.4.6'],
+      tests: [] // TODO(erights): Add to test262
+    },
+    {
       description: 'Cannot redefine global NaN to itself',
       test: test_CANT_REDEFINE_NAN_TO_ITSELF,
       repair: repair_CANT_REDEFINE_NAN_TO_ITSELF,
@@ -3180,6 +3228,17 @@ var ses;
       urls: [], // Seen on WebKit Nightly. TODO(erights): report
       sections: ['8.12.9', '15.1.1.1'],
       tests: [] // TODO(erights): Add to test262
+    },
+    {
+      description: 'Firefox 15 cross-frame freeze problem',
+      test: test_FIREFOX_15_FREEZE_PROBLEM,
+      repair: void 0,
+      preSeverity: severities.NOT_ISOLATED,
+      canRepair: false,
+      urls: ['https://bugzilla.mozilla.org/show_bug.cgi?id=784892',
+             'https://bugzilla.mozilla.org/show_bug.cgi?id=674195'],
+      sections: [],
+      tests: []
     },
     {
       description: 'Error instances have unexpected properties',
@@ -3197,7 +3256,7 @@ var ses;
       repair: void 0,
       preSeverity: severities.NOT_ISOLATED,
       canRepair: false,
-      urls: ['https://bugzilla.mozilla.org/show_bug.cgi?id=726477'],
+      urls: [],  // TODO(erights): need bugs filed
       sections: [],
       tests: []
     }
@@ -3284,8 +3343,12 @@ var ses;
         }
       }
 
-      if (typeof beforeFailure === 'string' ||
-          typeof afterFailure === 'string') {
+      if (typeof beforeFailure === 'string') {
+        logger.error('New Symptom: ' + beforeFailure);
+        postSeverity = severities.NEW_SYMPTOM;
+      }
+      if (typeof afterFailure === 'string') {
+        logger.error('New Symptom: ' + afterFailure);
         postSeverity = severities.NEW_SYMPTOM;
       }
 
@@ -3309,21 +3372,19 @@ var ses;
   try {
     var reports = testRepairReport(baseKludges);
     if (ses.ok()) {
-//      console.log("We're ok");
-      reports.push.apply(reports, testRepairReport(supportedKludges));
+      var x = testRepairReport(supportedKludges);
+      reports.push.apply(reports, x);
     }
     logger.reportRepairs(reports);
   } catch (err) {
     ses.updateMaxSeverity(ses.severities.NOT_SUPPORTED);
     var during = aboutTo ? '(' + aboutTo.join('') + ') ' : '';
-//    throw ('ES5 Repair ' + during + 'failed with: ', err);
     logger.error('ES5 Repair ' + during + 'failed with: ', err);
   }
 
   logger.reportMax();
 
 })(this);
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -3775,7 +3836,6 @@ var WeakMap;
   });
 
 })();
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -3819,7 +3879,7 @@ var ses;
 
    /**
     * Save away the original Error constructor as ses.UnsafeError and
-    * make it otheriwse unreachable. Replace it with a reachable
+    * make it otherwise unreachable. Replace it with a reachable
     * wrapping constructor with the same standard behavior.
     *
     * <p>When followed by the rest of SES initialization, the
@@ -3992,8 +4052,7 @@ var ses;
    };
    ses.getStack = getStack;
 
- })(this);;
-// Copyright (C) 2011 Google Inc.
+ })(this);// Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -4055,7 +4114,6 @@ var StringMap;
    };
 
  })();
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -4420,6 +4478,7 @@ var ses;
         toLocaleString: t,
         toLocaleDateString: t,
         toLocaleTimeString: t,
+        valueOf: t,
         getTime: t,
         getFullYear: t,
         getUTCFullYear: t,
@@ -4503,7 +4562,6 @@ var ses;
     }
   };
 })();
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -4558,43 +4616,78 @@ var ses;
 
   /////////////// KLUDGE SWITCHES ///////////////
 
+  // Section 7.2 ES5 recognizes the following whitespace characters
+  // FEFF           ; BOM
+  // 0009 000B 000C ; White_Space # Cc
+  // 0020           ; White_Space # Zs       SPACE
+  // 00A0           ; White_Space # Zs       NO-BREAK SPACE
+  // 1680           ; White_Space # Zs       OGHAM SPACE MARK
+  // 180E           ; White_Space # Zs       MONGOLIAN VOWEL SEPARATOR
+  // 2000..200A     ; White_Space # Zs  [11] EN QUAD..HAIR SPACE
+  // 2028           ; White_Space # Zl       LINE SEPARATOR
+  // 2029           ; White_Space # Zp       PARAGRAPH SEPARATOR
+  // 202F           ; White_Space # Zs       NARROW NO-BREAK SPACE
+  // 205F           ; White_Space # Zs       MEDIUM MATHEMATICAL SPACE
+  // 3000           ; White_Space # Zs       IDEOGRAPHIC SPACE
+
+  // Unicode characters which have the Zs property are an open set and can
+  // grow.  Not all versions of a browser treat Zs characters the same.
+  // The trade off is as follows:
+  //   * if SES treats a character as non-whitespace which the browser
+  //      treats as whitespace, a sandboxed program would be able to
+  //      break out of the sandbox.  SES avoids this by encoding any
+  //      characters outside the range of well understood characters
+  //      and disallowing unusual whitespace characters which are
+  //      rarely used and may be treated non-uniformly by browsers.
+  //   * if SES treats a character as whitespace which the browser
+  //      treats as non-whitespace, a sandboxed program will be able
+  //      to break out of the SES sandbox.  However, at worst it might
+  //      be able to read, write and execute globals which have the
+  //      corresponding whitespace character.  This is a limited
+  //      breach because it is exceedingly rare for browser functions
+  //      or powerful host functions to have names which contain
+  //      potential whitespace characters.  At worst, sandboxed
+  //      programs would be able to communicate with each other.
+  //
+  // We are conservative with the whitespace characters we accept.  We
+  // deny whitespace > u00A0 to make unexpected functional differences
+  // in sandboxed programs on browsers even if it was safe to allow them.
+  var OTHER_WHITESPACE = new RegExp(
+    '[\\uFEFF\\u1680\\u180E\\u2000-\\u2009\\u200a'
+    + '\\u2028\\u2029\\u200f\\u205F\\u3000]');
+
   /**
-   * Currently we use this to limit the input text to ascii only
-   * without backslash-u escapes, in order to simply our identifier
-   * gathering.
-   *
-   * <p>This is only a temporary development hack. TODO(erights): fix.
+   * We use this to limit the input text to ascii only text.  All other
+   * characters are encoded using backslash-u escapes.
    */
   function LIMIT_SRC(programSrc) {
-    if ((/[^\u0000-\u007f]/).test(programSrc)) {
-      throw new EvalError('Non-ascii text not yet supported');
+    if (OTHER_WHITESPACE.test(programSrc)) {
+      throw new EvalError(
+        'Disallowing unusual unicode whitespace characters');
     }
-    if ((/\\u/).test(programSrc)) {
-      throw new EvalError('Backslash-u escape encoded text not yet supported');
-    }
+    programSrc = programSrc.replace(/([\u0080-\u009f\u00a1-\uffff])/g,
+      function(_, u) {
+        return '\\u' + ('0000' + u.charCodeAt(0).toString(16)).slice(-4);
+      });
+    return programSrc;
   }
 
   /**
    * Return a regexp that can be used repeatedly to scan for the next
-   * identifier.
+   * identifier. It works correctly in concert with LIMIT_SRC above.
    *
-   * <p>The current implementation is safe only because of the above
-   * LIMIT_SRC. To do this right takes quite a lot of unicode
-   * machinery. See the "Identifier" production at
-   * http://es-lab.googlecode.com/svn/trunk/src/parser/es5parser.ojs
-   * which depends on
-   * http://es-lab.googlecode.com/svn/trunk/src/parser/unicode.js
-   *
-   * <p>This is only a temporary development hack. TODO(erights): fix.
+   * If this regexp is changed compileExprLater.js should be checked for
+   * correct escaping of freeNames.
    */
-  function SHOULD_MATCH_IDENTIFIER() { return (/(\w|\$)+/g); }
-
+  function SHOULD_MATCH_IDENTIFIER() {
+    return /(\w|\\u\d{4}|\$)+/g;
+  }
 
   //////////////// END KLUDGE SWITCHES ///////////
 
   ses.atLeastFreeVarNames = function atLeastFreeVarNames(programSrc) {
     programSrc = String(programSrc);
-    LIMIT_SRC(programSrc);
+    programSrc = LIMIT_SRC(programSrc);
     // Now that we've temporarily limited our attention to ascii...
     var regexp = SHOULD_MATCH_IDENTIFIER();
     // Once we decide this file can depends on ES5, the following line
@@ -4619,7 +4712,6 @@ var ses;
   };
 
 })();
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -4642,6 +4734,7 @@ var ses;
  *
  * //provides ses.startSES
  * @author Mark S. Miller,
+ * @author Jasvir Nagra
  * @requires WeakMap
  * @overrides ses, console, eval, Function, cajaVM
  */
@@ -4883,8 +4976,7 @@ ses.startSES = function(global,
 
 
   function fail(str) {
-// CHEATING(jpolitz)
-//    debugger;
+    //debugger; Note[Justin]: SpiderMonkey doesn't implement this yet.
     throw new EvalError(str);
   }
 
@@ -5154,6 +5246,7 @@ ses.startSES = function(global,
             set: function scopedSet(newValue) {
               if (name in imports) {
                 imports[name] = newValue;
+                return newValue;
               }
               throw new TypeError('Cannot set "' + name + '"');
             },
@@ -5858,7 +5951,6 @@ ses.startSES = function(global,
           configurable: false
         });
       } catch (cantFreezeHarmless) {
-        console.log("Failing to poison in cleanProperty", base, name);
         reportProperty(ses.severities.NOT_ISOLATED,
                        'Cannot be poisoned', path);
         return false;
@@ -5936,7 +6028,6 @@ ses.startSES = function(global,
     ses.logger.error('initSES failed.');
   }
 };
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -6285,8 +6376,10 @@ var ses;
       var g = {
         toString: constFunc(function() { return typename + 'T'; }),
         coerce: constFunc(function(specimen, opt_ejector) {
-          if (!table.get(specimen)) { eject(opt_ejector, errorMessage); }
-          return specimen;
+          if (Object(specimen) === specimen && table.get(specimen)) {
+            return specimen;
+          }
+          eject(opt_ejector, errorMessage);
         })
       };
       stamp([GuardStamp], g);
@@ -6310,7 +6403,6 @@ var ses;
     });
   };
 })();
-;
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -6354,4 +6446,3 @@ var ses;
     ses.logger.error('hookupSESPlus failed with: ', err);
   }
 })(this);
-
