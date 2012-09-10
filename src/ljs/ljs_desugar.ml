@@ -57,12 +57,13 @@ let desugar jsonPath str =
   let do_eval () =
     try
       let ast = parse_spidermonkey (open_in jsonfilename) jsonfilename in
-      (* We're done with all the files here, so just clean them up *)
-      cleanup ();
       let (used_ids, exprjsd) = 
         js_to_exprjs Pos.dummy ast (Exprjs_syntax.IdExpr (Pos.dummy, "%global"))
       in
-      exprjs_to_ljs Pos.dummy used_ids exprjsd
+      let ljs = exprjs_to_ljs Pos.dummy used_ids exprjsd in
+      (* Wait until the last minute to clean up, to make sure we only do it once. *)
+      cleanup ();
+      ljs
     (* SpiderMonkey parse had some terrible error *)
     with
       (* parse_spidermonkey throws Failures for all errors it can have *)
@@ -84,6 +85,7 @@ let desugar jsonPath str =
   let args = Array.of_list [jsonPath; jsfilename] in
   let pid = create_process jsonPath args null_stdin jsonfile errfile in
   let (_, status) = waitpid [] pid in
+  
   begin match status with
     | WEXITED 0 -> do_eval ()
     | WEXITED i -> do_err_check "WEXITED" i
