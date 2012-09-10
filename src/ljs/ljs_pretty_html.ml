@@ -143,10 +143,11 @@ let html_of_answer answer filter =
       make_reachability_graph store env filter in
     let store = match store with
       | (obj_store, var_store) ->
-      (LocMap.filter (fun loc _ -> LocMap.mem loc reachability) obj_store,
-       LocMap.filter (fun loc _ -> LocMap.mem loc reachability) var_store) in
+      (LocMap.filter (fun loc _ -> LocMap.mem loc (fst reachability)) obj_store,
+       LocMap.filter (fun loc _ -> LocMap.mem loc (snd reachability)) var_store) in
     let html_of_store (obj_store, var_store) =
-      let html_of_loc loc = html_of_paths (LocMap.find loc reachability) in
+      let html_of_obj_refs loc = html_of_paths (LocMap.find loc (fst reachability)) in
+      let html_of_var_refs loc = html_of_paths (LocMap.find loc (snd reachability)) in
       let html_of_obj_binding (loc, obj) =
         let obj_style =
           let primordial = LocSet.mem loc filter.primordials in
@@ -156,12 +157,12 @@ let html_of_answer answer filter =
           else if frozen then "frozen"
           else "unfrozen" in
         row [cell [html_of_objloc loc];
-             cell [html_of_loc loc];
+             cell [html_of_obj_refs loc];
              cell [div [label ("Contents (" ^ obj_style ^ ")");
                         html_of_obj obj obj_style]]] in
       let html_of_var_binding (loc, value) =
         row [cell [html_of_varloc loc];
-             cell [html_of_loc loc];
+             cell [html_of_var_refs loc];
              cell [html_of_value value]] in
       (table (map html_of_obj_binding (LocMap.bindings obj_store)),
        table (map html_of_var_binding (LocMap.bindings var_store))) in
@@ -172,6 +173,6 @@ let html_of_answer answer filter =
     match html_of_store store with
     | (obj_table, var_table) ->
       div [header 1 "Javascript heap"; html_key;
-           header 2 "Environments"; html_of_env (last envs);
+           header 2 "Environment"; html_of_env env;
            header 2 "Objects"; obj_table;
            header 2 "Variables"; var_table]

@@ -239,7 +239,7 @@ module S5 = struct
     let document = Html.document title stylefiles [] [html] in
     Html.print_document document
 
-  let print_ses_store_as_html cmd () =
+  let print_ses_store_as_html cmd opt =
     let ses_answer = pop_answer cmd in
     let init_answer = pop_answer cmd in
     push_answer init_answer;
@@ -248,11 +248,14 @@ module S5 = struct
     | Ljs_eval.Answer (_, _, _, (obj_store, var_store)) ->
       let title = "SES Javascript Heap" in
       let stylefiles = ["style.css"] in
+      let traverse_closures = match opt with
+        | "closure" -> true
+        | "noclosure" -> false
+        | _ -> failwith ("S5: " ^ cmd ^ ": unrecognized print style option.") in
       let filter = {
-        traverse_hidden_props = true;
-        traverse_closures = false;
-        primordials = LocSet.from_list (Store.keys obj_store
-                                        @ Store.keys var_store)
+        traverse_hidden_props = false;
+        traverse_closures = traverse_closures;
+        primordials = LocSet.from_list (Store.keys obj_store)
       } in
       let html = html_of_answer ses_answer filter in
       let document = Html.document title stylefiles [] [html] in
@@ -410,8 +413,8 @@ module S5 = struct
           "print objects and values in the heap after evaluation";
         unitCmd "-print-html" print_store_as_html
           "print objects and values in the heap as html";
-        unitCmd "-print-ses-html" print_ses_store_as_html
-          "print ses heap as html. init_heap ses_heap -> init_heap ses_heap";
+        strCmd "-print-ses-html" print_ses_store_as_html
+          "<string> print ses heap as html. init_heap ses_heap -> init_heap ses_heap";
         (* Other *)
         unitCmd "-ses-check" ses_check
           "Check if ses ran properly. ANS(init) ANS(ses) -> ";
