@@ -1,0 +1,95 @@
+This document describes how to build S5 and reproduce the results from our DLS
+2012 submission.  Any comments, problems, or questions should be emailed to
+joe@cs.brown.edu.  This file is intended to accompany the tarball found at
+http://www.cs.brown.edu/research/plt/dl/s5/index.html.  That tarball contains
+source code from revision aef71e59a7f9bbc955450021b59fa2d8969f3fb2 of the
+LambdaS5 repository (https://github.com/brownplt/LambdaS5), and a checkout of
+revision a63149989665 of the Test262 repository
+(http://hg.ecmascript.org/).
+
+What we ran on (approximate system requirements):
+
+- 32-bit Linux (we have a precompiled SpiderMonkey for you; see later for how
+  to run on other systems)
+- Ocaml 3.12 or higher (though nothing higher exists as this is written)
+- Python 2.6 or higher (earlier might work, but you need good popen() support)
+- sh, make, etc.
+
+To build S5, you need to build the ocamlgraph library and copy some files to
+the right spot.  All the source is included in this tarball, but you need to
+run the following:
+
+1. cd src/ocamlgraph-1.8.1
+2. ./configure
+3. make
+4. cp graph.cmi graph.cma ../../lib/
+5. cd ..
+6. make
+
+Before you can run anything, you need to make sure that bin/js is linked to an
+appropriate executable for your OS.  The default is js-1.8.5-Linux-i686, which
+should work on most 32-bit Linux systems, for other systems we're happy to
+help, but might not know off the top of our heads how to get it set up for you.
+
+Then, go into the tests/ directory, and the script s5 takes JavaScript files or
+stdin and runs it through parsing, desugaring, and S5-interp:
+
+> cd tests
+> echo "console.log('s5 works');" | ./s5
+s5 works
+undefined
+>
+
+To test that most things are working, without going through the longer process
+of running all of the conformance suite, you can run our own set of unit tests
+(this takes about 5 minutes for us, your system may vary):
+
+> ./all_tests.sh 
+189 tests passed
+0 tests failed
+
+Finally, to reproduce the results from the paper, this tarball is set up with
+the checkout of test262 that we used in the hg-test262 directory.  If you'd
+like to check them out separately, they are from revision a63149989665, found
+at http://hg.ecmascript.org/tests/test262/. We ran them using the
+test-section.sh script, one chapter at a time.  test-results.sh is a thin
+wrapper around a call to the test262-provided harness/runner that points it to
+the s5 script and specifies what kind of output we'd like.  Note that if you
+check the test262 repository separately, you will need to change the path in
+test-section.sh to point to your checkout.  To run a section with the defaults:
+
+> cd tests/
+> sh test-section.sh <section-name> > <outfile>
+
+For example, to generate results for chapter 7:
+
+> sh test-section.sh ch07 > ch07-nonstrict.txt
+
+To run strict tests only, use:
+
+> sh test-section.sh --strict ch07 > ch07-strict.txt
+
+So, to reproduce the tables in the paper, you'd run test-section.sh for each
+section, in both modes.  WARNING: Before you run, know that this takes several
+minutes for most chapters.  For chapters 12 and 15 in non-strict mode, it takes
+overnight, so be ready to get a cup of coffee or go to bed when you start
+running.
+
+> sh test-section.sh ch07 > ch07-nonstrict.txt
+ ...
+> sh test-section.sh ch15 > ch15-nonstrict.txt
+
+> sh test-section.sh --strict ch07 > ch07-strict.txt
+ ...
+> sh test-section.sh --strict ch15 > ch15-strict.txt
+
+In each outputted file, there is a "Summary" section that we used to pull
+results for the paper.  You can also compare the files you output (using your
+favorite diff program), with the paper-results directory we've included, which
+has the full output for each file:
+
+> diff ch07-strict.txt paper-results/ch07-strict.txt
+>
+
+Send mail to joe@cs.brown.edu with any problems or questions.
+
