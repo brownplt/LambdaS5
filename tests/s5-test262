@@ -9,11 +9,11 @@ else
 fi
 
 ocamlrun ../obj/s5.d.byte \
-  -desugar $JSFILE
+  -desugar $JSFILE \
   -internal-env env-vars -apply \
   -env ../envs/es5.env -apply \
-  -eval
+  -eval-s5
 EX=$?
-rm $TMP.ast
+rm $TMP
 
 exit $EX
