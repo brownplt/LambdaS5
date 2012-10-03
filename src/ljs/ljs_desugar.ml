@@ -44,7 +44,7 @@ let desugar jsonPath str =
       ignore (search_forward json_err spidermonkey_err 0);
       S.Throw (Pos.dummy,
         S.App (Pos.dummy, S.Id (Pos.dummy, "%SyntaxError"),
-               [S.String (Pos.dummy, "Syntax error in eval()")]))
+               [S.String (Pos.dummy, "Syntax error in eval(): \n" ^ spidermonkey_err)]))
     with Not_found ->
       raise (PrimErr ([], String
         (sprintf "Fatal eval error, exit code of desugar was: %s %d" st i)))
