@@ -1061,4 +1061,5 @@ function testcase() {
         return e instanceof TypeError;
     }
 }
-testcase();
+runTestCase(testcase);
+console.log("passed");
