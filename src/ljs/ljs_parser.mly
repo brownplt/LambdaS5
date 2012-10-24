@@ -122,8 +122,6 @@ attr_name :
  | ENUM { Enum }
 
 prop_attrs :
- | WRITABLE BOOL COMMA VALUE exp 
-     { Data ({ value = $5; writable = $2 }, false, true) }
  | VALUE exp COMMA WRITABLE BOOL
      { Data ({ value = $2; writable = $5 }, false, false) }
  | VALUE exp COMMA WRITABLE BOOL COMMA CONFIG BOOL
