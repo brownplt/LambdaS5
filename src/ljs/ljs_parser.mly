@@ -98,13 +98,17 @@ const :
           then True (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) 
           else False (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1)) }
 
-oattrsv :
+more_oattrs :
+ | COMMA oattrsv { $2 }
+ | COMMA { d_attrs }
  | { d_attrs }
- | PRIMVAL COLON exp COMMA oattrsv { { $5 with primval = Some $3 } }
- | EXTENSIBLE COLON BOOL COMMA oattrsv { { $5 with extensible = $3 } }
- | PROTO COLON exp COMMA oattrsv { { $5 with proto = Some $3 } }
- | CODE COLON exp COMMA oattrsv { {$5 with code = Some $3 } }
- | CLASS COLON STRING COMMA oattrsv { { $5 with klass = $3 } }
+
+oattrsv :
+ | PRIMVAL COLON exp more_oattrs { { $4 with primval = Some $3 } }
+ | EXTENSIBLE COLON BOOL more_oattrs { { $4 with extensible = $3 } }
+ | PROTO COLON exp more_oattrs { { $4 with proto = Some $3 } }
+ | CODE COLON exp more_oattrs { {$4 with code = Some $3 } }
+ | CLASS COLON STRING more_oattrs { { $4 with klass = $3 } }
 
 oattr_name :
  | PRIMVAL { Primval }
@@ -161,6 +165,8 @@ atom :
  | ID { Id (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 1), $1) }
  | LBRACE LBRACK oattrsv RBRACK props RBRACE 
    { Object (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5 )}
+ | LBRACE LBRACK RBRACK props RBRACE 
+   { Object (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), d_attrs, $4 )}
  | braced_seq_exp
    { $1 }
  | LPAREN unbraced_seq_exp RPAREN { $2 }
