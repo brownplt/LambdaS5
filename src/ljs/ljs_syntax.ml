@@ -1,6 +1,6 @@
 open Prelude
 
-type oattr = 
+type oattr =
   | Proto
   | Klass
   | Extensible
@@ -66,10 +66,10 @@ type exp =
   | Lambda of Pos.t * id list * exp
   | Eval of Pos.t * exp * exp (* Pos.t, string to be evaled, env object  *)
   | Hint of Pos.t * string * exp
-and data =       
+and data =
     {value : exp;
      writable : bool; }
-and accessor =       
+and accessor =
     {getter : exp;
      setter : exp; }
 and prop =
@@ -83,7 +83,7 @@ and attrs =
       extensible : bool; }
 
 (* Some useful defaults for these things, to avoid typing too much *)
-let d_attrs = 
+let d_attrs =
   { primval = None;
     code = None;
     proto = Some (Null Pos.dummy);
@@ -94,7 +94,7 @@ let d_data =
   { value = Undefined Pos.dummy;
     writable = true; }
 
-let d_accessor = 
+let d_accessor =
   { getter = Undefined Pos.dummy;
     setter = Undefined Pos.dummy; }
 
@@ -111,8 +111,8 @@ let pos_of exp = match exp with
   | SetAttr (pos, _, _, _, _) -> pos
   | GetObjAttr (pos, _, _) -> pos
   | SetObjAttr (pos, _, _, _) -> pos
-  | GetField (pos, _, _, _) -> pos 
-  | SetField (pos, _, _, _, _) -> pos 
+  | GetField (pos, _, _, _) -> pos
+  | SetField (pos, _, _, _, _) -> pos
   | DeleteField (pos, _, _) -> pos
   | OwnFieldNames (pos, _) -> pos
   | SetBang (pos, _, _) -> pos

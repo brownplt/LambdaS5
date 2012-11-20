@@ -5,7 +5,7 @@
 # e.g. s5 stdin -eval
 
 TMP=`mktemp -t js.XXXXXX`
-if [ $1 == "stdin" ]; then
+if [ "$1" == "stdin" ]; then
   cat>$TMP
   JSFILE=$TMP
 else

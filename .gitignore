@@ -13,7 +13,9 @@ tests/test262/test262/
 tests/test262/results*
 tests/ses/es-lab-read-only/
 tests/sym/harness/*/*.es5.result
+tests/*.heap
 
+_build/
 build/
 *~
 *#
@@ -50,4 +52,3 @@ src/ocamlgraph-1.8.1/src/dot_parser.mli
 src/ocamlgraph-1.8.1/src/dot_parser.output
 src/ocamlgraph-1.8.1/src/gml.ml
 src/ocamlgraph-1.8.1/src/version.ml
-

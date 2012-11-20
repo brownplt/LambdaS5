@@ -397,7 +397,8 @@ let rec is_accessor store a b = match a, b with
   | Null, String s -> raise (PrimErr ([], str "isAccessor topped out"))
   | _ -> raise (PrimErr ([], str "isAccessor"))
 
-let op2 store op = match op with
+let op2 store op = 
+  match op with
   | "+" -> arith_sum store
   | "-" -> arith_sub store
   | "/" -> arith_div store

@@ -27,16 +27,16 @@ and
              klass : string;
              primval : value option; }
 and
-  propv = 
+  propv =
   | Data of datav * bool * bool (* datav, enumerable, configurable *)
   | Accessor of accessorv * bool * bool (* accv, enumerable, configurable *)
 and datav = { value : value; writable : bool; }
 and accessorv = { getter : value; setter : value; }
 
 let d_attrsv = { primval = None;
-                 code = None; 
-                 proto = Null; 
-                 extensible = false; 
+                 code = None;
+                 proto = Null;
+                 extensible = false;
                  klass = "LambdaJS internal"; }
 
 let get_obj (objs, _) loc = Store.lookup loc objs

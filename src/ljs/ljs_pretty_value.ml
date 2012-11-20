@@ -71,6 +71,9 @@ let string_of_obj obj store =
 let string_of_env env =
   FormatExt.to_string pretty_env env
 
+let string_of_loc loc =
+  FormatExt.to_string pretty_var_loc loc
+
 (* Stores can be very large. This function avoids mapping over them,
    which tends to overflow the stack. *)
 let print_store store = match store with

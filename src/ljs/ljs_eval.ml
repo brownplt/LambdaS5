@@ -164,6 +164,7 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
   | _ -> failwith ("[interp] set-attr didn't get an object and a string")
 
 let rec eval desugar exp env (store : store) : (value * store) =
+(*  print_objects store; *)
   let eval exp env store =
     begin try eval desugar exp env store
       with 
