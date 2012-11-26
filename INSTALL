@@ -35,7 +35,7 @@ Then, go into the tests/ directory, and the script s5 takes JavaScript files or
 stdin and runs it through parsing, desugaring, and S5-interp:
 
 > cd tests
-> echo "console.log('s5 works');" | ./s5
+> echo "console.log('s5 works');" | ./s5i
 s5 works
 undefined
 >
