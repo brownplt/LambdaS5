@@ -26,8 +26,7 @@ ocamlrun ../obj/s5.d.byte \
   -env ../envs/json.env -apply \
   -js $JSONTMP -js-to-s5 -to-env -apply \
   -internal-env env-vars -apply \
-  -env ../envs/es5.env -apply \
-  -eval
+  -env ../envs/es5.env -apply
 EX=$?
 rm $TMP
 rm $TMP.ast
