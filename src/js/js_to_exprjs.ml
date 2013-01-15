@@ -23,8 +23,7 @@ let split_regexp s =
 let rec jse_to_exprjs (e : J.expr) : E.expr =
   match e with
     | J.This (p) -> E.ThisExpr (p)
-    | J.Id (p, i) -> 
-      E.BracketExpr(p, E.IdExpr (p, "%context"), E.String (p, i))
+    | J.Id (p, i) -> E.JSIdExpr (p, i)
     | J.Lit (p, l) -> 
       let result = match l with 
         | J.Null -> E.Null (p)
@@ -52,11 +51,11 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | J.Field (name, e) -> 
           (p, prop_to_str name, E.Data (jse_to_exprjs e))
         | J.Get (nm, sel) ->
-          let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
-          (p, name, E.Getter (name, srcElts p sel parent))
+          let name = prop_to_str nm in
+          (p, name, E.Getter (name, srcElts p sel))
         | J.Set (nm, argnm, sel) ->
-          let name = prop_to_str nm and parent = E.IdExpr (p, "%context") in
-          let let_body = srcElts p sel parent in
+          let name = prop_to_str nm in
+          let let_body = srcElts p sel in
           let inner_let = (* will be stripped off in next stage *)
             E.LetExpr (p, argnm, E.Undefined (p), let_body) in
           (p, name, E.Setter (name, inner_let)) in
@@ -67,33 +66,30 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
         | [f] -> jse_to_exprjs f
         | f :: rest -> E.SeqExpr (p, jse_to_exprjs f, unroll rest) in
       unroll el
-    | J.Func (p, nm, args, body) -> let parent = E.IdExpr (p, "%context") in
+    | J.Func (p, nm, args, body) ->
       let free_vars = IdSet.elements (J.fv_sel body) in
       let rec fvl_to_letchain fvl final = match fvl with
         | [] -> final
         | first :: rest -> let newnm = "%%" ^ first in
           E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
-      let last = srcElts p body parent in
+      let last = srcElts p body in
       let wrapper = fvl_to_letchain free_vars in
       let fun_expr = match nm with
         | Some s ->
           let rec_obj = mk_id "rec_store" in
           let func_id = mk_id "rec_func" in
-          E.LetExpr (p, rec_obj, E.ObjectExpr (p, [(p, "%rec_prop", E.Data (E.Undefined (p)))]),
+          E.LetExpr (p, rec_obj, E.Undefined (p),
           E.LetExpr (p, func_id,
             E.FuncExpr(p, args,
-              E.LetExpr (p, "%%" ^ s, E.Undefined (p),
+              E.LetExpr (p, "%" ^ s, E.Undefined (p),
                 wrapper
                   (E.SeqExpr (p, 
-                    E.AssignExpr (p, 
-                      E.IdExpr (p, "%context"), 
-                      E.String (p, s), 
-                      E.BracketExpr (p, E.IdExpr (p, rec_obj), E.String (p, "%rec_prop"))), 
+                    E.AssignExpr (p,
+                      "%" ^ s,
+                      E.IdExpr (p, rec_obj)),
                     last)))),
             E.SeqExpr (p,
-              E.AssignExpr (p, E.IdExpr (p, rec_obj),
-                               E.String (p, "%rec_prop"),
-                               E.IdExpr (p, func_id)),
+              E.AssignExpr (p, rec_obj, E.IdExpr (p, func_id)),
               E.IdExpr (p, func_id))))
         | None -> E.FuncExpr (p, args, wrapper last) in
       strict_wrapper p body fun_expr
@@ -110,19 +106,24 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
     | J.Cond (p, e1, e2, e3) ->  
       E.IfExpr (p, jse_to_exprjs e1, jse_to_exprjs e2, jse_to_exprjs e3)
     | J.Assign (p, aop, l, r) ->
-      let el = jse_to_exprjs l
-      and er = jse_to_exprjs r in
-      let target = match el with
-        | E.BracketExpr (p, ll, rr) -> ll
-        | _ -> E.IdExpr (p, "%context")
-      and left = match el with
-        | E.BracketExpr (p, ll, rr) -> rr
-        | _ -> el in
-      begin match aop with
-        | "=" -> E.AssignExpr (p, target, left, er)
-        | _ -> let iop = String.sub aop 0 ((String.length aop) - 1) in
-          E.AssignExpr (p, target, left,
-            E.InfixExpr (p, iop, E.BracketExpr (p, target, left), er))
+      let el = jse_to_exprjs l in
+      let er = jse_to_exprjs r in
+      begin match el with
+        | E.BracketExpr (p, ll, rr) ->
+          begin match aop with
+            | "=" -> E.ObjAssignExpr (p, ll, rr, er)
+            | _ -> let iop = String.sub aop 0 ((String.length aop) - 1) in
+              E.ObjAssignExpr (p, ll, rr,
+                E.InfixExpr (p, iop, E.BracketExpr (p, ll, rr), er))
+          end
+        | E.JSIdExpr (p, id) ->
+          begin match aop with
+            | "=" -> E.JSAssignExpr (p, id, er)
+            | _ -> let iop = String.sub aop 0 ((String.length aop) - 1) in
+              E.JSAssignExpr (p, id,
+                E.InfixExpr (p, iop, E.JSIdExpr (p, id), er))
+          end
+        | _ -> failwith "Fatal: unexpected LHS for J.Assign"
       end
     | J.List (p, el) -> let rec unroll = function
       | [] -> E.Undefined (p)
@@ -142,8 +143,7 @@ and vdj_to_vde v p = match v with
   | J.VarDecl (id, e) -> match e with
     | None -> E.Undefined (p)
     | Some x -> let init_val = jse_to_exprjs x in
-      let context = E.IdExpr (p, "%context") and fld_str = E.String (p, id) in
-      E.AssignExpr (p, context, fld_str, init_val)
+      E.JSAssignExpr (p, id, init_val)
 
 and jss_to_exprjs (s : J.stmt) : E.expr = 
   match s with
@@ -244,25 +244,25 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
   | J.With (p, obj, body) -> E.WithExpr (p, jse_to_exprjs obj, jss_to_exprjs body)
   | J.Debugger _ -> failwith "Debugger statements not implemented"
 
-and srcElts p (ss : J.srcElt list) (context : E.expr) : E.expr =
+and srcElts p (ss : J.srcElt list) : E.expr =
   let se_to_e se = match se with
     | J.Stmt (s) -> jss_to_exprjs s
     | J.FuncDecl (nm, args, body) ->
-      strict_wrapper p body (E.FuncStmtExpr (p, nm, args, create_context p body context)) in
+      strict_wrapper p body (E.FuncStmtExpr (p, nm, args, create_context p body)) in
   let reordered = J.reorder_sel ss in
   match reordered with
     | [] -> E.Undefined (p)
     | [first] -> se_to_e first
-    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts p rest context) 
+    | first :: rest -> E.SeqExpr (p, se_to_e first, srcElts p rest) 
 
-and create_context p (ss : J.srcElt list) (parent : E.expr) : E.expr = 
+and create_context p (ss : J.srcElt list) : E.expr = 
   let rec fvl_to_letchain fvl final = match fvl with
     | [] -> final
     | first :: rest -> let newnm = "%%" ^ first in
       E.LetExpr (p, newnm, E.Undefined (p), fvl_to_letchain rest final) in
   let free_vars = IdSet.elements (J.fv_sel ss) in
   let reordered = J.reorder_sel ss in
-  let last = srcElts p reordered parent in
+  let last = srcElts p reordered in
   fvl_to_letchain free_vars last
 
 and strict_wrapper p body func =
@@ -275,5 +275,5 @@ let js_to_exprjs p ss parent =
     if J.is_strict_mode ss
     then E.StrictExpr (p, expr)
     else E.NonstrictExpr (p, expr) in
-  (J.used_vars_sel ss, wrapper (create_context p ss parent))
+  (J.used_vars_sel ss, wrapper (create_context p ss))
 

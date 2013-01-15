@@ -170,6 +170,8 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
     S.Object (p, o_attrs, List.append reduced_assoc data_result)
   | E.ThisExpr (p) -> F.env_var p "%this"
   | E.IdExpr (p, nm) -> S.Id (p, nm)
+  | E.JSIdExpr (p, nm) ->
+    make_get_field p (S.Id (p, "%context")) (S.String (p, nm))
   | E.BracketExpr (p, l, r) -> 
     let o = prop_accessor_check p (ejs_to_ljs l) in
     let f = to_string p (ejs_to_ljs r) in
@@ -296,11 +298,17 @@ let rec ejs_to_ljs (e : E.expr) : S.exp = match e with
       S.App (p, F.env_var p "%ToBoolean", [e1]),
       e2, 
       e3)
-  | E.AssignExpr (p, obj, pr, vl) -> 
+  | E.ObjAssignExpr (p, obj, pr, vl) -> 
     let sobj = to_object p (ejs_to_ljs obj) in
     let spr = to_string p (ejs_to_ljs pr) in
     let svl = ejs_to_ljs vl in
     make_set_field p sobj spr svl
+  | E.JSAssignExpr (p, id, vl) -> 
+    let sobj = S.Id (p, "%context") in
+    let svl = ejs_to_ljs vl in
+    make_set_field p sobj (S.String (p, id)) svl
+  | E.AssignExpr (p, id, vl) -> 
+    S.SetBang (p, id, ejs_to_ljs vl)
   | E.AppExpr (p, e, el) -> 
     let sl = List.map ejs_to_ljs el in
     let args_obj = make_args_obj p false sl in

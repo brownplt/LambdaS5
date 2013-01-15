@@ -15,6 +15,7 @@ let rec exp e = match e with
   | ObjectExpr (_, pl) -> braces (horz (map prop pl))
   | ThisExpr (_) -> text "this"
   | IdExpr (_, nm) -> text nm
+  | JSIdExpr (_, nm) -> text nm
   | BracketExpr (_, e1, e2) ->  
     squish [exp e1; 
       (brackets (horz [exp e2;]))];
@@ -23,8 +24,12 @@ let rec exp e = match e with
   | InfixExpr (_, op, l, r) -> horz [exp l; text op; exp r]
   | IfExpr (_, tst, thn, els) -> parens (vert 
       [text "if"; exp tst; exp thn; exp els])
-  | AssignExpr (_, o, pr, vl) -> 
-    parens (horz [text "assign"; exp o; exp pr; exp vl;])
+  | ObjAssignExpr (_, o, pr, vl) -> 
+    parens (horz [text "objassign"; exp o; exp pr; exp vl;])
+  | JSAssignExpr (_, id, vl) -> 
+    parens (horz [text "jsassign"; text id; exp vl;])
+  | AssignExpr (_, id, vl) -> 
+    parens (horz [text "assign"; text id; exp vl;])
   | AppExpr (_, f, args) ->
     let al = map exp args in
     parens (horz [text "app"; exp f; horz al;])

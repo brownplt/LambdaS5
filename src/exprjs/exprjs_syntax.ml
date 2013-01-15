@@ -11,12 +11,15 @@ type expr =
   | ObjectExpr of Pos.t * (Pos.t * string * prop) list
   | ThisExpr of Pos.t
   | IdExpr of Pos.t * id
+  | JSIdExpr of Pos.t * id
   | BracketExpr of Pos.t * expr * expr
   | NewExpr of Pos.t * expr * expr list
   | PrefixExpr of Pos.t * id * expr
   | InfixExpr of Pos.t * id * expr * expr
   | IfExpr of Pos.t * expr * expr * expr
-  | AssignExpr of Pos.t * expr * expr * expr
+  | ObjAssignExpr of Pos.t * expr * expr * expr
+  | AssignExpr of Pos.t * id * expr
+  | JSAssignExpr of Pos.t * id * expr
   | AppExpr of Pos.t * expr * expr list
   | FuncExpr of Pos.t * id list * expr
   | LetExpr of Pos.t * id * expr * expr
@@ -55,12 +58,15 @@ let pos_of_expr expr = match expr with
   | ObjectExpr (pos, _) -> pos
   | ThisExpr (pos) -> pos
   | IdExpr (pos, _) -> pos
+  | JSIdExpr (pos, _) -> pos
   | BracketExpr (pos, _, _) -> pos
   | NewExpr (pos, _, _) -> pos
   | PrefixExpr (pos, _, _) -> pos
   | InfixExpr (pos, _, _, _) -> pos
   | IfExpr (pos, _, _, _) -> pos
-  | AssignExpr (pos, _, _, _) -> pos
+  | ObjAssignExpr (pos, _, _, _) -> pos
+  | JSAssignExpr (pos, _, _) -> pos
+  | AssignExpr (pos, _, _) -> pos
   | AppExpr (pos, _, _) -> pos
   | FuncExpr (pos, _, _) -> pos
   | LetExpr (pos, _, _, _) -> pos

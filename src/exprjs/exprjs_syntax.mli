@@ -23,12 +23,15 @@ type expr =
       (** Object properties are transformed into string literals *)
   | ThisExpr of Pos.t
   | IdExpr of Pos.t * id (** let-bound identifiers *)
+  | JSIdExpr of Pos.t * id (** identifiers from JS source *)
   | BracketExpr of Pos.t * expr * expr
   | NewExpr of Pos.t * expr * expr list
   | PrefixExpr of Pos.t * id * expr
   | InfixExpr of Pos.t * id * expr * expr
   | IfExpr of Pos.t * expr * expr * expr
-  | AssignExpr of Pos.t * expr * expr * expr
+  | ObjAssignExpr of Pos.t * expr * expr * expr
+  | AssignExpr of Pos.t * id * expr
+  | JSAssignExpr of Pos.t * id * expr
   | AppExpr of Pos.t * expr * expr list
   | FuncExpr of Pos.t * id list * expr
   | LetExpr of Pos.t * id * expr * expr 
