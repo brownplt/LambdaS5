@@ -2,6 +2,7 @@ open List
 open Prelude
 open Ljs
 open Ljs_eval
+open Ljs_cesk
 open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
@@ -323,9 +324,21 @@ module S5 = struct
              FX.horz [FX.text "ERROR  <="; Ljs_cps_absdelta.ValueLattice.pretty err]] Format.str_formatter;
     printf "%s\n" (Format.flush_str_formatter ())
 
+  let ljs_cesk cmd () =
+    let ljs = pop_ljs cmd in
+    let answer = Ljs_cesk.eval_expr ljs (desugar !json_path) !stack_trace in
+    push_answer answer
+
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
     let answer = Ljs_eval.eval_expr ljs (desugar !json_path) !stack_trace in
+    push_answer answer
+
+  let continue_cesk_eval cmd () =
+    let ljs = pop_ljs cmd in
+    let Ljs_eval.Answer (_, _, envs, store) = pop_answer cmd in
+    let answer = Ljs_cesk.continue_eval
+      ljs (desugar !json_path) !stack_trace (last envs) store in
     push_answer answer
 
   let continue_ljs_eval cmd () =
@@ -436,6 +449,11 @@ module S5 = struct
           (showType [AnswerT; LjsT] [AnswerT]);
         unitCmd "-eval-s5" ljs_eval
           "evaluate S5 code";
+        unitCmd "-continue-cesk-eval"
+          (fun cmd () -> continue_cesk_eval cmd (); print_value cmd ())
+          (showType [AnswerT; LjsT] [AnswerT]);
+        unitCmd "-eval-cesk" ljs_cesk
+          "evaluate S5 code using a CESK";
         unitCmd "-eval-cps" cps_eval
           "evaluate code in CPS form";
         unitCmd "-eval-cps-abs" cps_eval_abs
