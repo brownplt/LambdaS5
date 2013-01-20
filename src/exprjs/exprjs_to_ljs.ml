@@ -774,7 +774,7 @@ and get_forin p nm robj bdy = (* TODO: null args object below!! *)
   S.Let (p, doloop_id,
     S.Lambda (p, [], 
       S.Rec (p, "%get_itr", prop_itr (Pos.synth p),
-      S.Let (p, "%pnameobj", S.App (p, S.Id (p, "%propertyNames"), [robj]),
+      S.Let (p, "%pnameobj", S.App (p, S.Id (p, "%propertyNames"), [robj; S.False p]),
       S.Let (p, "%prop_itr", S.App (p, S.Id (p, "%get_itr"), [S.Id (p, "%pnameobj")]),
       S.Seq (p, 
               S.App (p, 
