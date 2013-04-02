@@ -161,7 +161,8 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
             true, store
         end
   end
-  | _ -> failwith ("[interp] set-attr didn't get an object and a string")
+  | _ -> raise (PrimErr ([], String ("[interp] set-attr didn't get
+                             ^ an object and a string")))
 
 let rec eval desugar exp env (store : store) : (value * store) =
   let eval exp env store =
