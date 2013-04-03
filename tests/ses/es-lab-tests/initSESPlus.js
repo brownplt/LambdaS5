@@ -2027,12 +2027,14 @@ var ses;
   function test_PUSH_IGNORES_SEALED() {
     var x = [1,2];
     Object.seal(x);
+    console.log("Before:", x);
     try {
       x.push(3);
     } catch (e) {
       if (x.length !== 2) { return 'Unexpected modification of frozen array'; }
       if (x[0] === 1 && x[1] === 2) { return false; }
     }
+    console.log("After:", x);
     return (x.length !== 2 || x[0] !== 1 || x[1] !== 2);
   }
 
@@ -2077,6 +2079,7 @@ var ses;
     try {
       x.length = 0;
     } catch (e) {}
+    console.log("After length set:", x);
     return x.length !== 1 || x[0] !== 3;
   }
 
@@ -2113,6 +2116,7 @@ var ses;
    * descendents of that same Object.
    */
   function test_FIREFOX_15_FREEZE_PROBLEM() {
+    if (typeof document === 'undefined') { return false; }
     if (!document || !document.createElement) { return false; }
     var iframe = document.createElement('iframe');
     var where = document.getElementsByTagName('script')[0];
@@ -2324,9 +2328,14 @@ var ses;
    * we only care about the case where we cannot replace it.
    */
   function test_NONCONFIGURABLE_OWN_PROTO() {
+      console.log('Checking proto');
     var o = Object.create(null);
     var desc = Object.getOwnPropertyDescriptor(o, '__proto__');
-    if (desc === undefined) { return false; }
+    if (desc === undefined) {
+      console.log('Proto was:');
+      console.log(desc);
+      console.log(desc === undefined);
+      return false; }
     if (desc.configurable) { return false; }
     if (desc.value === null && desc.configurable === false) {
       // the problematic-for-us case, known to occur in Chrome 25.0.1364.172
@@ -2632,6 +2641,9 @@ var ses;
           var kValue;
           if (k in O) {
             kValue = O[k];
+//            console.log(T, kValue, k, O);
+// TODO(joe): why is there an extra 59th element?
+            if (kValue === undefined) { break; }
             callback.call(T, kValue, k, O);
           }
           k++;
@@ -3935,7 +3947,7 @@ var ses;
     });
   }
 
-  try {
+//  try {
     var reports = testRepairReport(baseKludges);
     if (ses.ok()) {
       reports.push.apply(reports, testRepairReport(supportedKludges));
@@ -3951,11 +3963,12 @@ var ses;
     ses.es5ProblemReports = indexedReports;
 
     logger.reportRepairs(reports);
-  } catch (err) {
+//  } catch (err) {
+    console.log(err);
     ses.updateMaxSeverity(ses.severities.NOT_SUPPORTED);
     var during = aboutTo ? '(' + aboutTo.join('') + ') ' : '';
     logger.error('ES5 Repair ' + during + 'failed with: ', err);
-  }
+//  }
 
   logger.reportMax();
 
