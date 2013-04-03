@@ -161,8 +161,10 @@ let rec set_attr (store : store) attr obj field newval = match obj, field with
             true, store
         end
   end
-  | _ -> raise (PrimErr ([], String ("[interp] set-attr didn't get
-                             ^ an object and a string")))
+  | _ ->
+    let msg = (sprintf "[interp] set-attr got: %s[%s] not object and string"
+                  (pretty_value obj) (pretty_value field)) in
+    raise (PrimErr ([], String msg))
 
 let rec eval desugar exp env (store : store) : (value * store) =
   let eval exp env store =
