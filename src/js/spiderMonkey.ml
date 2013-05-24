@@ -139,7 +139,7 @@ let rec stmt (v : json_type) : stmt =
        * define alternative portable means for declaring functions in a Statement 
        * context.
        *)
-      failwith "Function Delcarations not allowed as statements"
+      failwith "Function Declarations not allowed as statements"
     | _ -> failwith (sprintf "unexpected %s statement" typ)
 
 and varDecl (v : json_type) : varDecl = 
@@ -270,7 +270,7 @@ let parse_spidermonkey (cin : in_channel) (name : string) : Js_syntax.program =
     program
       (Json_parser.main (Json_lexer.token (Json_lexer.make_param ())) lexbuf)
     with
-      |  Failure "lexing: empty token" ->
+      | Failure "lexing: empty token" ->
           raise (Failure (sprintf "lexical error at %s"
                        (Pos.string_of_pos (Pos.real
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))))
