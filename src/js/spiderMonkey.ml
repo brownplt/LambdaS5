@@ -114,14 +114,16 @@ let rec stmt (v : json_type) : stmt =
       let left = get "left" v in
       let right = expr (get "right" v) in
       let body = stmt (get "body" v) in
-      (* TODO: What is each? *)
-      (* let each = bool (get "each" v) in *)
-      begin match string (get "type" left) with
-        | "VariableDeclaration" -> 
-          ForInVar (p, List.nth (map varDecl (list (get "declarations" left))) 0, 
-                    right, body)
-        | _ -> ForIn (p, expr left, right, body)
-      end
+      let each = bool (get "each" v) in
+      if each then
+        failwith "for-each statements are not valid ES5"
+      else
+        begin match string (get "type" left) with
+          | "VariableDeclaration" ->
+            ForInVar (p, List.nth (map varDecl (list (get "declarations" left))) 0,
+                      right, body)
+          | _ -> ForIn (p, expr left, right, body)
+        end
     | "Debugger" -> Debugger p
     | "FunctionDeclaration" ->
       (* 12: Statements
