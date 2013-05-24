@@ -7,10 +7,9 @@ open Printf
 let mk_pos (v : json_type) : Pos.t = 
   let jstart = get "start" v in
   let jend = get "end" v in
-  let fname = match (get "source" v) with
-  | Json_type.String s -> s
-  | Json_type.Null -> "<unknown>" 
-  | _ -> failwith "Expected JSON string or null in mk_pos" in
+  let fname = match (try_get "source" v) with
+  | Some (Json_type.String s) -> s
+  | _ -> "<unknown>" in
   let json_pos_to_prelude_pos pos = {
     Lexing.pos_fname = fname;
     Lexing.pos_lnum = int_of_float (float (get "line" pos));
@@ -115,14 +114,16 @@ let rec stmt (v : json_type) : stmt =
       let left = get "left" v in
       let right = expr (get "right" v) in
       let body = stmt (get "body" v) in
-      (* TODO: What is each? *)
-      (* let each = bool (get "each" v) in *)
-      begin match string (get "type" left) with
-        | "VariableDeclaration" -> 
-          ForInVar (p, List.nth (map varDecl (list (get "declarations" left))) 0, 
-                    right, body)
-        | _ -> ForIn (p, expr left, right, body)
-      end
+      let each = bool (get "each" v) in
+      if each then
+        failwith "for-each statements are not valid ES5"
+      else
+        begin match string (get "type" left) with
+          | "VariableDeclaration" ->
+            ForInVar (p, List.nth (map varDecl (list (get "declarations" left))) 0,
+                      right, body)
+          | _ -> ForIn (p, expr left, right, body)
+        end
     | "Debugger" -> Debugger p
     | "FunctionDeclaration" ->
       (* 12: Statements
@@ -138,7 +139,7 @@ let rec stmt (v : json_type) : stmt =
        * define alternative portable means for declaring functions in a Statement 
        * context.
        *)
-      failwith "Function Delcarations not allowed as statements"
+      failwith "Function Declarations not allowed as statements"
     | _ -> failwith (sprintf "unexpected %s statement" typ)
 
 and varDecl (v : json_type) : varDecl = 
@@ -269,7 +270,7 @@ let parse_spidermonkey (cin : in_channel) (name : string) : Js_syntax.program =
     program
       (Json_parser.main (Json_lexer.token (Json_lexer.make_param ())) lexbuf)
     with
-      |  Failure "lexing: empty token" ->
+      | Failure "lexing: empty token" ->
           raise (Failure (sprintf "lexical error at %s"
                        (Pos.string_of_pos (Pos.real
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))))
