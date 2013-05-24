@@ -7,10 +7,9 @@ open Printf
 let mk_pos (v : json_type) : Pos.t = 
   let jstart = get "start" v in
   let jend = get "end" v in
-  let fname = match (get "source" v) with
-  | Json_type.String s -> s
-  | Json_type.Null -> "<unknown>" 
-  | _ -> failwith "Expected JSON string or null in mk_pos" in
+  let fname = match (try_get "source" v) with
+  | Some (Json_type.String s) -> s
+  | _ -> "<unknown>" in
   let json_pos_to_prelude_pos pos = {
     Lexing.pos_fname = fname;
     Lexing.pos_lnum = int_of_float (float (get "line" pos));
