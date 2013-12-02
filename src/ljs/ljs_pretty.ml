@@ -72,7 +72,7 @@ let rec exp_helper exprec e = match e with
     vert [squish [exprec e1; text ";"]; exprec e2]
   | Let (p, x, e, body) ->
     braces (horz [text "let"; vert [parens (horz [text x; text "="; exprec e]);
-                                    exprec body]])
+                                    opt_braces exprec body]])
   | Rec (p, x, e, body) -> 
     horz [text "rec"; vert [parens (horz [text x; text "="; exprec e]);
                             opt_braces exprec body]]
