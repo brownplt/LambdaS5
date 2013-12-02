@@ -13,6 +13,6 @@ RETMP=`mktemp -t js.XXXXXX`
 ../bin/js json_print.js $TMP > $TMP.ast
 ocamlrun ../obj/s5.d.byte -set-json ../tests/desugar.sh \
   -js $TMP.ast -js-to-s5 \
-  -print
+  -print-src
 rm $RETMP
 rm $TMP.ast
