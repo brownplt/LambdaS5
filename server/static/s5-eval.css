@@ -1,0 +1,42 @@
+.container {
+  width: 100%;
+  min-width: 50em;
+  min-height: 40em;
+}
+
+.left {
+  float: left;
+  max-width: 40%;
+  min-width: 20em;
+  min-height: 40em;
+  height: 100%;
+}
+
+.right {
+  float: left;
+  padding-left: 2em;
+  max-width: 40%;
+  min-width: 40em;
+  min-height: 40em;
+  height: 100%;
+}
+
+.clear {
+  clear: both;
+}
+
+.codeinput {
+  min-width: 100%;
+  min-height: 35em;
+}
+
+.stdout {
+  min-width: 90%;
+}
+.s5-code {
+  min-height: 35em;
+}
+.stderr {
+  min-width: 90%;
+  color: red;
+}

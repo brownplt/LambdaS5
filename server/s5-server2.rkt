@@ -1,29 +1,21 @@
 #lang racket
 
-(require
- json
- web-server/http
- web-server/http/response-structs
- web-server/servlet
- web-server/servlet-env
- web-server/templates
- )
+(require web-server/servlet
+         web-server/http
+         json
+         web-server/servlet-env)
 
-(define PORT 80)
 
 (define (start req)
   (define u (request-uri req))
   (define meth (path/param-path (first (url-path u))))
   (cond
     [(string=? meth "main")
-     (define baseurl (string-append "http://66.228.37.176:" (number->string PORT)))
-     (response/full
-       200
-       #"OK"
-       (current-seconds)
-       TEXT/HTML-MIME-TYPE
-       (list)
-       (list (string->bytes/utf-8 (include-template "main.html"))))]
+     (response/xexpr
+       `(html (head (title "Eval S5"))
+              (body (form ((action "/eval"))
+                     (textarea ((name "code") (width "200") (height "200")))
+                     (button ((type "submit")) "Submit")))))]
     [(string=? meth "eval")
      (define to-eval (bindings-assq
                        #"code"
@@ -54,8 +46,7 @@
      (response/xexpr out)]))
 
 (serve/servlet start
-               #:port PORT
-               #:servlet-regexp #rx"main$|eval$"
+               #:port 8081
+               #:servlet-regexp #rx""
                #:listen-ip #f
-               #:extra-files-paths (list (build-path (current-directory) "static/"))
                #:command-line? #t)

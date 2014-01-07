@@ -1,0 +1,187 @@
+<!doctype HTML>
+<html>
+<head>
+  <title>Evaluate and Desugar S5 Code</title>
+  <link rel="stylesheet" href="s5-eval.css"></link>
+  <script>
+    var BASEURL = "@baseurl";
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="left">
+      <label>Input JavaScript here (scroll down for examples):</label>
+      <br/>
+      <textarea class="codeinput"></textarea>
+      <button id="send-code">Desugar and Evaluate</button>
+    </div>
+    <div class="right">
+      <label>Desugared to S5:</label>
+      <br/>
+      <textarea class="stdout s5-code" id="desugar-out">
+      </textarea>
+      <br/>
+      <label>Standard output:</label>
+      <br/>
+      <textarea class="stdout" id="eval-out">
+      </textarea>
+      <br/>
+      <label>Errors:</label>
+      <br/>
+      <textarea class="stderr" id="errors">
+      </textarea>
+    </div>
+
+    <div class="clear"></div>
+  </div>
+<div>
+<h3>Some Examples</h3>
+<p>Here are some examples to try, with explanations of some of the desugaring
+output.</p>
+<ul>
+
+  <li><code>2 + 2</code> - Note that this refers to the helper
+  <code>%PrimAdd</code>, which is defined in a separate <a
+  href="https://github.com/brownplt/LambdaS5/blob/master/envs/es5.env#L4251"><em>environment</em></a>,
+  which is written in the same core language as the results of desugaring.
+  </li>
+  <li>
+
+<pre>
+if(42) {
+  '42 counts as true';
+}
+</pre>
+
+<p>Here, we see that the helper <code>%ToBoolean</code> is used to coerce the
+value in the conditional position to a boolean.  We also make explicit the
+implicit <code>else</code> branch of the conditional, which holds the special
+value <code>undefined</code>.
+
+</li>
+
+  <li><code>2 || 3</code> - This uses a <code>let</code> pattern to only
+  evaluate the left-hand side once, and then <code>if</code> to check if the
+  boolean coercion of <code>2</code> is truthy, and defers to evaluating
+  <code>3</code> if not.  Compare the output to <code>0 || 3</code>.</li>
+
+<li>
+
+<pre>
+switch ('the-value') {
+  case 'the-value': 'it was the-value';
+}
+</pre>
+
+<p>Here, we remove all semblance of the original <code>switch</code> statement,
+and desugar it to <code>if</code> statements that check primitive equality
+(<code>stx=</code>) on each test against the switched-on value.  We also see
+the creation of a new variable, <code>fallthroughN</code> (suffix incremented
+and appended for uniqueness), which keeps track of if we've matched and should
+start evaluating fallthrough cases, for example:</p>
+
+<pre>
+switch ('the-value') {
+  case 'the-value': 'it was the-value';
+  case false: 'it was the value, but we fell through';
+}
+</pre>
+
+</li>
+
+  <li><code>"use strict";</code> - JavaScript has two "modes", <em>strict</em>
+  and <em>non-strict</em>.  Putting <code>"use strict";</code> at the beginning
+  of a block indicates that it should be interpreted in strict mode; in
+  desugared code this is accomplished by binding the variable
+  <code>#strict</code> (which other expressions will use), and changing the
+  <code>%context</code> object that holds variables.</li>
+
+  <li>
+<pre>
+var x = 'an explicit global variable';
+this.x
+</pre>
+
+  <p>This program uses <code>var</code> to declare <code>x</code> as a variable
+  at the top level, and initialize it to a string.  In JavaScript, the keyword
+  <code>this</code> is bound to an object containing (roughly) all the global
+  variables; on the second line we access the variable we just created through
+  a field access.  The second argument in square brackets (with <code>#proto :
+  null</code>) is best to ignore for now; this is simply a lookup of the
+  <code>"x"</code> field on the object <code>%this</code></p>
+
+<p>
+  This relies on three helpers from the same environment:
+  <code>%defineGlobalVar</code>, <code>%EnvCheckAssign</code>, and
+  <code>%PropAccessorCheck</code>.  The first sets up <code>x</code> as a
+  variable on <code>%context</code>, the second checks that the assignment to
+  <code>x</code> is allowed (more on this further down; note for now that it
+  takes <code>#strict</code> as an argument), and the third makes sure that
+  <code>%this</code> is actually an object.
+</p>
+
+<p>Interestingly, the identifier <code>x</code> has been turned into the string
+value <code>"x"</code> everywhere it appears in the desugared output; this is
+because of how this particular desugaring needs access to identifier names as
+values to do its work.</p>
+
+  </li>
+
+  <li>
+<pre>
+x = 'an implicit global variable';
+this.x
+</pre>
+
+<p>This is much the same as the last example, except that the desugaring uses
+<code>%defineGlobalAccessors</code> instead of <code>%defineGlobalVar</code>.
+In particular, note that the assignment statement is exactly the same as
+before; we actually decompose initializations like <code>var x = e</code> into
+a variable declaration and an assignment statement. This program appears to do
+much the same as the last; we assign a variable and look it up on the global
+object <code>%this</code>.</p>
+
+</li>
+
+<li>
+
+<pre>
+"use strict";
+x = 'an implicit global variable';
+this.x
+</pre>
+
+<p>Here's our first program with an error (and no normal output).  Now we see
+why <code>#strict</code> matters as an argument to
+<code>%EnvCheckAssign</code>: it needs to throw an exception when, in strict
+mode, the program creates a global variable without <code>var</code>.</p>
+
+</li>
+
+<li>
+
+<pre>
+"use strict";
+var x = 'an explicit global variable';
+this.x
+</pre>
+
+<p>The same program with a <code>var</code> declaration for the variable allows
+the assignment even in strict mode.  Under the hood, the difference in
+intialization between <code>%defineGlobalVar</code> and
+<code>%defineGlobalAccessors</code> conspires with the later
+<code>%PropAccessorCheck</code> to give the right behavior in both cases.
+
+</p>
+
+</li>
+
+
+</ul>
+</div>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+  <script src="s5-eval.js"></script>
+</body>
+</html>
