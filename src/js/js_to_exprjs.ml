@@ -101,7 +101,9 @@ let rec jse_to_exprjs (e : J.expr) : E.expr =
       E.BracketExpr (p, jse_to_exprjs e1, jse_to_exprjs e2)
     | J.Dot (p, e, nm) ->
       E.BracketExpr (p, jse_to_exprjs e, E.String (p, nm))
-    | J.New (p, c, al) -> let argl = map (fun a -> jse_to_exprjs a) al in
+    | J.New (p, c, al) ->
+      let map = Prelude.map in
+      let argl = map (fun a -> jse_to_exprjs a) al in
       E.NewExpr (p, jse_to_exprjs c, argl)
     | J.Prefix (p, pop, r) -> E.PrefixExpr (p, pop, jse_to_exprjs r)
     | J.UnaryAssign (p, aop, r) -> E.PrefixExpr (p, aop, jse_to_exprjs r)
@@ -240,6 +242,7 @@ and jss_to_exprjs (s : J.stmt) : E.expr =
     let case = function 
       | J.Case (p, e, s) -> E.Case (p, jse_to_exprjs e, jss_to_exprjs s)
       | J.Default (p, s) -> E.Default (p, jss_to_exprjs s) in
+    let map = Prelude.map in
     E.SwitchExpr (p, jse_to_exprjs disc, map case cl)
   | J.With (p, obj, body) -> E.WithExpr (p, jse_to_exprjs obj, jss_to_exprjs body)
   | J.Debugger _ -> failwith "Debugger statements not implemented"

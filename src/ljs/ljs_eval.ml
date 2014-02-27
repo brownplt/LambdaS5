@@ -436,6 +436,9 @@ let rec eval desugar exp env (store : store) : (value * store) =
   | S.Op1 (p, op, e) ->
       let (e_val, store) = eval e env store in
       op1 store op e_val, store
+  | S.Op1Effect (p, op, e) ->
+      let (e_val, store) = eval e env store in
+      op1 store op e_val, store
   | S.Op2 (p, op, e1, e2) -> 
       let (e1_val, store) = eval e1 env store in
       let (e2_val, store) = eval e2 env store in

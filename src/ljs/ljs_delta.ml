@@ -193,6 +193,7 @@ let op1_effect store op = match op with
   | "print" -> print store 
   | "pretty" -> pretty store
   | "current-utc-millis" -> current_utc store
+  | _ -> raise (PrimErr ([], String (op ^ " has no effect")))
 
 let op1 store op = match op with
   | "typeof" -> typeof store

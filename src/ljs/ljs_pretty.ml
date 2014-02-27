@@ -57,6 +57,8 @@ let rec exp_helper exprec e = match e with
     horz [text x; text ":="; exprec e]
   | Op1 (p, op, e) -> 
     squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exprec e])]
+  | Op1Effect (p, op, e) -> 
+    squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exprec e])]
   | Op2 (p, op, e1, e2) ->
     squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); exprec e1; text ","; exprec e2])]
   | If (p, c, t, e) -> 

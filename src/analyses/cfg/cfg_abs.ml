@@ -170,6 +170,9 @@ let partition_vars e =
     | C.Op1 (_, l, _, v) ->
       part_val curL v;
       LabelUF.union labelSets curL l
+    | C.Op1Effect (_, l, _, v) ->
+      part_val curL v;
+      LabelUF.union labelSets curL l
     | C.Op2 (_, l, _, u, v) ->
       part_val curL u;      part_val curL v;
       LabelUF.union labelSets curL l
@@ -214,6 +217,7 @@ let partition_vars e =
     | C.GetObjAttr (_, _, _, o) -> vars_at_val o acc
     | C.SetObjAttr (_, _, _, o, v) -> vars_at_val v (vars_at_val o acc)
     | C.Op1 (_, _, _, v) -> vars_at_val v acc
+    | C.Op1Effect (_, _, _, v) -> vars_at_val v acc
     | C.Op2 (_, _, _, l, r) -> vars_at_val r (vars_at_val l acc)
     | C.DeleteField (_, _, o, f) -> vars_at_val f (vars_at_val o acc)
     | C.SetBang (_, _, _, v) -> vars_at_val v acc
@@ -922,6 +926,7 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
       | C.SetObjAttr(_, l, a, o, v) -> printf "%s SetAttr %s[<%s> = %s]\n" (C.Label.toString l) (pretty_val o) (E.string_of_oattr a) (pretty_val v)
       | C.DeleteField(_, l, o, f) -> printf "%s DeleteField %s[%s]\n" (C.Label.toString l) (pretty_val o) (pretty_val f)
       | C.Op1(_, l, o, a) -> printf "%s Op1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
+      | C.Op1Effect(_, l, o, a) -> printf "%s Op1(%s, %s)\n" (C.Label.toString l) o (pretty_val a)
       | C.Op2(_, l, o, a, b) -> printf "%s Op2(%s, %s, %s)\n" (C.Label.toString l) o (pretty_val a) (pretty_val b)
       | C.SetBang(_, l, i, v) -> printf "%s Set!(%s = %s)\n" (C.Label.toString l) i (pretty_val v)
       | C.OwnFieldNames(_, l, o) -> printf "%s GetOwnFieldNames(%s)\n" (C.Label.toString l) (pretty_val o)
@@ -1114,6 +1119,14 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
     | C.GetObjAttr _ -> failwith "[cfg_abs] GetObjAttr NYI"
     | C.SetObjAttr _ -> failwith "[cfg_abs] SetObjAttr NYI"
     | C.Op1(_, label, op, arg) ->
+      let oldArg = eval_val arg env store in
+      let envArg = copyEnv label (C.label_of_val arg) env in
+      let storeArg = pushStore label (C.label_of_val arg) store in
+      let arg' = eval_val arg envArg storeArg in
+      let (bindingStore, _, _) = getStore label storeArg in
+      printModReasons label ["oldArg <> arg'", arg' <> oldArg];
+      (D.op1 op arg' bindingStore, storeArg, oldArg <> arg')
+    | C.Op1Effect(_, label, op, arg) ->
       let oldArg = eval_val arg env store in
       let envArg = copyEnv label (C.label_of_val arg) env in
       let storeArg = pushStore label (C.label_of_val arg) store in

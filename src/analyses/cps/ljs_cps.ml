@@ -41,6 +41,7 @@ and cps_prim =
   | GetObjAttr of Pos.t * Label.t * E.oattr * cps_value
   | SetObjAttr of Pos.t * Label.t * E.oattr * cps_value * cps_value
   | Op1 of Pos.t * Label.t * string * cps_value
+  | Op1Effect of Pos.t * Label.t * string * cps_value
   | Op2 of Pos.t * Label.t * string * cps_value * cps_value
   | DeleteField of Pos.t * Label.t * cps_value * cps_value (* Pos.t, obj, field *)
   | SetBang of Pos.t * Label.t * id * cps_value
@@ -114,6 +115,7 @@ let pos_of_prim (prim : cps_prim) = match prim with
 | GetObjAttr (pos, _, _, _) -> pos
 | SetObjAttr (pos, _, _, _, _) -> pos
 | Op1 (pos, _, _, _) -> pos
+| Op1Effect (pos, _, _, _) -> pos
 | Op2 (pos, _, _, _, _) -> pos
 | DeleteField (pos, _, _, _) -> pos
 | SetBang (pos, _, _, _) -> pos
@@ -146,6 +148,7 @@ let label_of_prim (prim : cps_prim) = match prim with
 | GetObjAttr (_, label, _, _) -> label
 | SetObjAttr (_, label, _, _, _) -> label
 | Op1 (_, label, _, _) -> label
+| Op1Effect (_, label, _, _) -> label
 | Op2 (_, label, _, _, _) -> label
 | DeleteField (_, label, _, _) -> label
 | SetBang (_, label, _, _) -> label
@@ -379,6 +382,11 @@ let rec cps (exp : E.exp)
           LetPrim (pos,Label.newLabel(), temp, SetBang (pos,Label.newLabel(), id, var), 
                    ret (Id(pos,Label.newLabel(),temp))))
     | E.Op1 (pos, op, exp) -> 
+        cps exp exnName (fun var ->
+          let temp = newVar "op1Temp" in
+          LetPrim (pos,Label.newLabel(), temp, Op1 (pos,Label.newLabel(), op, var), 
+                   ret (Id(pos,Label.newLabel(), temp))))
+    | E.Op1Effect (pos, op, exp) -> 
         cps exp exnName (fun var ->
           let temp = newVar "op1Temp" in
           LetPrim (pos,Label.newLabel(), temp, Op1 (pos,Label.newLabel(), op, var), 
