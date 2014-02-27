@@ -571,6 +571,31 @@ let rec eval jsonPath maxDepth depth exp (envs : Env.stack) (pc : ctx) : results
 
   let pc = { pc with print_env = (Env.stack_curr envs); } in
 
+  let eval_op1 p op e =
+      bind 
+        (eval_sym e envs pc)
+        (fun (ev, pc) -> 
+          try
+            match ev with
+            | SymScalar id -> 
+              let (t,ret_ty) = typeofOp1 op in 
+              let pc = check_type id t pc in
+              let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
+                ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
+              return (SymScalar ret_op1)
+                (add_let ret_op1 (SOp1 (op, SId id)) pc)
+            | ObjPtr obj_loc ->
+              begin match sto_lookup_obj obj_loc pc with
+              | NewSymObj locs ->
+                let _, pc = init_sym_obj locs obj_loc "op1 init_sym_obj" pc in
+                op1 pc op ev
+              | _ -> op1 pc op ev
+              end
+            | _ -> op1 pc op ev
+          with
+          | PrimError msg -> throw_str msg pc
+          | TypeError _ -> none) in
+
   match exp with
     | S.Hint (p, hint, exp2) ->
       printf "%s : %b\n" hint (string_match summarize_regex hint 0);
@@ -619,29 +644,10 @@ let rec eval jsonPath maxDepth depth exp (envs : Env.stack) (pc : ctx) : results
       return (Closure (xs, e, Env.stack_curr envs)) pc
 
     | S.Op1 (p, op, e) ->
-      bind 
-        (eval_sym e envs pc)
-        (fun (ev, pc) -> 
-          try
-            match ev with
-            | SymScalar id -> 
-              let (t,ret_ty) = typeofOp1 op in 
-              let pc = check_type id t pc in
-              let (ret_op1, pc) = fresh_var ("P1_" ^ op ^ "_") ret_ty
-                ("return from " ^ op ^ " " ^ Pos.string_of_pos p) pc in
-              return (SymScalar ret_op1)
-                (add_let ret_op1 (SOp1 (op, SId id)) pc)
-            | ObjPtr obj_loc ->
-              begin match sto_lookup_obj obj_loc pc with
-              | NewSymObj locs ->
-                let _, pc = init_sym_obj locs obj_loc "op1 init_sym_obj" pc in
-                op1 pc op ev
-              | _ -> op1 pc op ev
-              end
-            | _ -> op1 pc op ev
-          with
-          | PrimError msg -> throw_str msg pc
-          | TypeError _ -> none)
+      eval_op1 p op e
+
+    | S.Op1Effect (p, op, e) ->
+      eval_op1 p op e
         
     | S.Op2 (p, op, e1, e2) -> 
       bind
