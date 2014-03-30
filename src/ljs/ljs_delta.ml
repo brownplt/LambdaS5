@@ -189,12 +189,6 @@ let numstr store = function
 let current_utc store = function
   | _ -> Num (Unix.gettimeofday ())
 
-let op1_effect store op = match op with
-  | "print" -> print store 
-  | "pretty" -> pretty store
-  | "current-utc-millis" -> current_utc store
-  | _ -> raise (PrimErr ([], String (op ^ " has no effect")))
-
 let op1 store op = match op with
   | "typeof" -> typeof store
   | "closure?" -> is_closure store
@@ -202,6 +196,8 @@ let op1 store op = match op with
   | "prim->str" -> prim_to_str store
   | "prim->num" -> prim_to_num store
   | "prim->bool" -> prim_to_bool store
+  | "print" -> print store
+  | "pretty" -> pretty store
   | "object-to-string" -> object_to_string store
   | "strlen" -> strlen store
   | "is-array" -> is_array store
@@ -219,6 +215,7 @@ let op1 store op = match op with
   | "~" -> bnot store
   | "sin" -> sine store
   | "numstr->num" -> numstr store
+  | "current-utc-millis" -> current_utc store
   | _ -> raise (PrimErr ([], String ("no implementation of unary operator: " ^ op)))
 
 let arith store s i_op f_op v1 v2 = match v1, v2 with

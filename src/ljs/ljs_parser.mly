@@ -40,7 +40,6 @@ let with_pos exp pos = match exp with
   | OwnFieldNames (_, obj) -> OwnFieldNames(pos, obj)
   | SetBang (_, id, exp) -> SetBang (pos, id, exp)
   | Op1 (_, op, exp) -> Op1 (pos, op, exp)
-  | Op1Effect (_, op, exp) -> Op1Effect (pos, op, exp)
   | Op2 (_, op, left, right) -> Op2 (pos, op, left, right)
   | If (_, test, trueBlock, falseBlock) -> If (pos, test, trueBlock, falseBlock)
   | App (_, func, args) -> App (pos, func, args)
@@ -186,11 +185,7 @@ exp :
  | PRIM LPAREN STRING COMMA unbraced_seq_exp COMMA unbraced_seq_exp RPAREN
    { Op2 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 8), $3, $5, $7) }
  | PRIM LPAREN STRING COMMA unbraced_seq_exp RPAREN
-   { if Ljs_syntax.has_effect($3)
-     then Op1Effect (Pos.real (Parsing.rhs_start_pos 1,
-                               Parsing.rhs_end_pos 6), $3, $5)
-     else Op1 (Pos.real (Parsing.rhs_start_pos 1,
-                               Parsing.rhs_end_pos 6), $3, $5) }
+   { Op1 (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 6), $3, $5) }
  | ID COLONEQ exp
    { SetBang (Pos.real (Parsing.rhs_start_pos 1, Parsing.rhs_end_pos 3), $1, $3) }
  | exp EQEQEQUALS exp

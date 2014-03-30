@@ -54,8 +54,6 @@ and prim verbose p =
     label verbose lbl (horz [text x; text "<-"; value e])
   | Op1 (p,lbl, op, e) -> 
     label verbose lbl (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); value e])])
-  | Op1Effect (p,lbl, op, e) -> 
-    label verbose lbl (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); value e])])
   | Op2 (p,lbl, op, e1, e2) ->
     label verbose lbl (squish [text "prim"; parens (horz [text ("\"" ^ op ^ "\","); 
                                                           value e1; text ","; value e2])])

@@ -52,7 +52,6 @@ type exp =
   | SetBang of Pos.t * id * exp
   | Op1 of Pos.t * string * exp
   | Op2 of Pos.t * string * exp * exp
-  | Op1Effect of Pos.t * string * exp
   | If of Pos.t * exp * exp * exp
   | App of Pos.t * exp * exp list
   | Seq of Pos.t * exp * exp
@@ -118,7 +117,6 @@ let pos_of exp = match exp with
   | OwnFieldNames (pos, _) -> pos
   | SetBang (pos, _, _) -> pos
   | Op1 (pos, _, _) -> pos
-  | Op1Effect (pos, _, _) -> pos
   | Op2 (pos, _, _, _) -> pos
   | If (pos, _, _, _) -> pos
   | App (pos, _, _) -> pos
@@ -168,7 +166,6 @@ let child_exps (exp : exp) : exp list =
   | OwnFieldNames (_, x) -> [x]
   | SetBang (_, _, x) -> [x]
   | Op1 (_, _, x) -> [x]
-  | Op1Effect (_, _, x) -> [x]
   | Op2 (_, _, x, y) -> [x; y]
   | If (_, x, y, z) -> [x; y; z]
   | App (_, x, ys) -> x :: ys
@@ -200,10 +197,3 @@ let rec free_vars (exp : exp) : IdSet.t =
     IdSet.union (free_vars str_exp) (free_vars env_exp)
   | exp ->
     List.fold_left IdSet.union IdSet.empty (map free_vars (child_exps exp))
-
-let has_effect (op : string) : bool =
-  match op with
-  | "print" -> true
-  | "pretty" -> true
-  | "current-utc-millis" -> true
-  | _ -> false

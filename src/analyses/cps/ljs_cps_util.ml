@@ -29,7 +29,6 @@ let no_free_vars exp (env : unit IdMap.t) : bool =
     | C.GetObjAttr (_,_, _, obj) -> free_val env obj
     | C.SetObjAttr (_,_, _, obj, value) -> List.for_all (free_val env) [obj; value]
     | C.Op1 (_,_, _, arg) -> free_val env arg
-    | C.Op1Effect (_,_, _, arg) -> free_val env arg
     | C.Op2 (_,_, _, left, right) -> List.for_all (free_val env) [left; right]
     | C.DeleteField (_,_, obj, field) -> List.for_all (free_val env) [obj; field]
     | C.SetBang (_,_, id, value) -> (env $$ [id]) && free_val env value
@@ -137,9 +136,6 @@ let alphatize allowUnbound (exp, env) =
     | C.Op1 (p,l, op, arg) ->
       let (arg', env1) = alph_val (arg, env) in
       (C.Op1(p,l, op, arg'), env1)
-    | C.Op1Effect (p,l, op, arg) ->
-      let (arg', env1) = alph_val (arg, env) in
-      (C.Op1Effect(p,l, op, arg'), env1)
     | C.Op2 (p,l, op, left, right) ->
       let (left', env1) = alph_val (left, env) in
       let (right', env2) = alph_val (right, env1) in
