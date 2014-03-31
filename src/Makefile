@@ -1,6 +1,6 @@
 .PHONY = clean builddir debug
 
-INCLUDES = analyses/cfg,analyses/cps,analyses/sym,analyses/ses,js,exprjs,ljs,util,experimental,test
+INCLUDES = analyses/cfg,analyses/cps,analyses/sym,analyses/ses,analyses/opt,js,exprjs,ljs,util,experimental,test
 
 OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix,str,graph,oUnit -lflags -I,../lib -Is $(INCLUDES) -cflags -annot -cflags -I,../lib -Is $(INCLUDES)
 

@@ -6,6 +6,7 @@ open Ljs_cesk
 open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
+open Ljs_opt
 
 type node =
   | Js of Js_syntax.program
