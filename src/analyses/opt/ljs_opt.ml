@@ -17,29 +17,22 @@ type cfg = {
 
 (* add edges from node1 to node2. node1's out edge will
    include node2 and node2's in edge will include node1 *)
-(* val add_edge : node->node *)
-let add_edge node1 node2 =
-  node1.edgeOut :=  node2 :: (! node1.edgeOut) ;
-  node2.edgeIn  :=  node1 :: (! node2.edgeIn)
+let add_edge (node1 : node) (node2 : node) : unit =
+  node1.edgeOut :=  node2 :: !(node1.edgeOut) ;
+  node2.edgeIn  :=  node1 :: !(node2.edgeIn)
 ;;
 
 (* add list of nodes as the in-nodes of the second argument *)
-(* val add_edges: node list -> node -> None *)
-let add_edges n_list node2 =
-  let add_single n1 =
-    add_edge n1 node2 in
-  List.map add_single n_list
+let add_edges (n_list : node list) (node2 : node) : unit =
+  List.iter (fun node1 -> add_edge node1 node2) n_list
 ;;
 
 (* map from string(ret id in this case) to something else *)
 module StringMap = Map.Make(String);;
 
-(* cfg StringMap -> exp -> cfg *)
-let build_graph labelMap e =
-  let meta_node exp =
-    { block = exp; edgeIn = ref 0; edgeOut = ref 0 } in
-  let meta_cfg node =
-    { first = node; last = [node] } in
+let rec build_graph (labelMap : cfg StringMap.t) (e : exp) : cfg =
+  let init_node exp =
+    { block = exp; edgeIn = ref []; edgeOut = ref [] } in
   match e with
   | Seq (_, e1, e2) ->
      let g1 = build_graph labelMap e1 in
@@ -60,11 +53,10 @@ let build_graph labelMap e =
      let g_list = List.map (fun(arg : exp) -> build_graph labelMap arg)
                            args
      in 
-     let walk_args (prev:cfg)(nexts:cfg list) =
+     let rec walk_args (prev:cfg) (nexts:cfg list) =
        match nexts with
-       | l :: [] -> 
-          add_edges prev.last l.first; 
-          l
+       | [] ->
+         prev
        | f :: l  -> 
           add_edges prev.last f.first;
           walk_args f l
@@ -85,27 +77,27 @@ let build_graph labelMap e =
      { first = g1.first ; last = g2.last }
 
   | Label (pos, id, body) -> (* the id is a string *)
-     let g1 = build_graph labelMap Id(pos, id) in
-     let new_labelMap = Map.add id g1 in
+     let g1 = build_graph labelMap (Id(pos, id)) in
+     let new_labelMap = StringMap.add id g1 labelMap in
      let g2 = build_graph new_labelMap body in
      (* flow from body to ret *)
      add_edges g2.last g1.first;
      { first = g2.first ; last = g1.last }
 
   | Break (pos, id, body) ->
-     let g1 = build_graph labelMap Id(pos, id) in
      let g2 = build_graph labelMap body in
      let return_node = StringMap.find id labelMap in
-     (* body -> ret id *)
-     add_edges g2.last g1.first; 
      (* ret id -> cfg *)
-     add_edges g1.last return_node.first;
+     add_edges g2.last return_node.first;
      (* comes into body, goes out from ret id *)
-     { first = g2.first; last = g1.last }
+     { first = g2.first; last = return_node.last }
 
   (* TODO: add tryCatch and tryFinally *)
+  (* Potentially have edges from raise to try/catch and to try/finally. *)
 
-  | _ -> meta_cfg (meta_node e)
+  | _ ->
+    let node = init_node e in
+    {first = node; last = [node]}
 
 (* use the map:
 let m = StringMap.empty;;
