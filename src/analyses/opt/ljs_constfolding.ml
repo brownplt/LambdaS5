@@ -25,15 +25,17 @@ let is_constant (e : S.exp) : bool =
 (* to check if the value of an constant expression is true.
  * assumption: the exp passed in is a constant 
  * see Ljs_delta.ml prim_to_bool *)
-let is_true (e : S.exp) : bool =
+let is_truthy (e : S.exp) : bool option =
   assert (is_constant e);
   match e with
-  | Undefined _ -> false
-  | Null _ -> false
-  | False _ -> false
-  | String (_, s) -> not (string_len s = 0)
-  | Num (_, n) -> not (x == nan || x = 0.0 || x = -0.0)
-  | _ -> true
+  | Undefined _ -> some(false)
+  | Null _ -> some(false)
+  | False _ -> some(false)
+  | String (_, s) -> some(not (string_len s = 0))
+  | Num (_, n) -> some(not (x == nan || x = 0.0 || x = -0.0))
+  | True _ -> some(true)
+  | Lambda (_, _, _) -> some(true)
+  | _ -> none
 
 (* try to simplify the op1, 
  * return new exp in option on success, None otherwise.
@@ -55,6 +57,7 @@ let const_folding (e : S.exp) : S.exp =
   | S.False _ -> e
   | S.Id (p, x) -> e
   | S.Object (_, _, _) -> e
+  (* *)
   | S.GetAttr (p, attr, obj, field) ->
      let o = const_folding obj in
      let f = const_folding field in
@@ -64,12 +67,14 @@ let const_folding (e : S.exp) : S.exp =
      let f = const_folding field in
      let v = const_folding newval in
      S.SetAttr p, attr, o, f, v
+  (* *)
   | S.GetObjAttr (p, oattr, obj) ->
      S.GetObjAttr p oattr (const_folding obj)
   | S.SetObjAttr (p, oattr, obj, attre) ->
      let o = const_folding obj in
      let attr = const_folding attre in
      S.SetObjAttr p oattr o attr
+  (* *)
   | S.GetField (p, obj, fld, args) ->
      let o = const_folding obj in
      let f = const_folding fld in
@@ -85,6 +90,7 @@ let const_folding (e : S.exp) : S.exp =
      let o = const_folding obj in
      let f = const_folding fld in
      S.DeleteField p o f
+  (* *)
   | S.OwnFieldNames (p, obj) ->
      S.OwnFieldNames p (const_folding obj)
   | S.SetBang (p, x, e) ->
@@ -104,11 +110,12 @@ let const_folding (e : S.exp) : S.exp =
      | None -> S.Op2 p op newe1 newe2
   | S.If (p, cond, thn, els) ->
      let c_val = const_folding cond in
-     if (is_constant c_val)
-     then if (is_true c_val)
-          then const_folding thn
-          else const_folding els
-     else 
+     match is_truthy c_val with
+     | some(true) ->
+       const_folding thn
+     | some(false) ->
+       const_folding els
+     | none ->
        let t = const_folding thn in
        let e = const_folding els in
        S.If p c_val t e
