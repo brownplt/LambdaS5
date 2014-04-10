@@ -7,6 +7,7 @@ open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
 open Ljs_opt
+open Ljs_constfolding
 
 type node =
   | Js of Js_syntax.program
