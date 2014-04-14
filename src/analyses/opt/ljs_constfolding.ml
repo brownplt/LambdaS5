@@ -63,7 +63,7 @@ let rec const_folding (e : S.exp) : S.exp =
   | S.False _ -> e
   | S.Id (p, x) -> e
   | S.Object (_, _, _) -> e
-  | S.GetAttr (p, pattr, obj, field) ->
+  | S.GetAttr (p, pattr, obj, field) -> (* TODO: opt this *)
      let o = const_folding obj in
      let f = const_folding field in
      const_folding_GetAttr p pattr o f
@@ -72,13 +72,13 @@ let rec const_folding (e : S.exp) : S.exp =
      let f = const_folding field in
      let v = const_folding newval in
      S.SetAttr (p, attr, o, f, v)
-  | S.GetObjAttr (p, oattr, obj) ->
+  | S.GetObjAttr (p, oattr, obj) -> (* TODO: opt this *)
      S.GetObjAttr (p, oattr, (const_folding obj))
   | S.SetObjAttr (p, oattr, obj, attre) ->
      let o = const_folding obj in
      let attr = const_folding attre in
      S.SetObjAttr (p, oattr, o, attr)
-  | S.GetField (p, obj, fld, args) ->
+  | S.GetField (p, obj, fld, args) -> (* TODO: opt this *)
      let o = const_folding obj in
      let f = const_folding fld in
      let a = const_folding args in
@@ -93,7 +93,7 @@ let rec const_folding (e : S.exp) : S.exp =
      let o = const_folding obj in
      let f = const_folding fld in
      S.DeleteField (p, o, f)
-  | S.OwnFieldNames (p, obj) ->
+  | S.OwnFieldNames (p, obj) -> (* TODO: opt this *)
      S.OwnFieldNames (p, (const_folding obj))
   | S.SetBang (p, x, e) ->
      S.SetBang (p, x, (const_folding e))
