@@ -1,4 +1,6 @@
+open Prelude
 module S = Ljs_syntax
+module OP = Op1_op2
 
 (* TODO: should the opt phase check type error? e.g.
    to check the op1 args has the right type for op1.
@@ -18,15 +20,27 @@ let is_true (e : S.exp) : bool option =
   | S.Lambda (_, _, _) -> Some true
   | _ -> None
 
+let is_contant(e : S.exp) : bool= 
+  match e with
+  | S.Undefined _
+  | S.Null _
+  | S.False _
+  | S.True _
+  | S.String (_, _)
+  | S.Num (_, _)
+  | S.Object (_, _, _)
+  | S.Lambda (_, _, _) -> true
+  | _ -> false 
+
 (* try to simplify the op1, 
  * return new exp in option on success, None otherwise.
  * Note: the e should be a simplified exp.
  *)
-let const_folding_op1 (op : string) (e : S.exp) : S.exp option =
-  None
+let const_folding_op1 (p : Pos.t) (op : string) (e : S.exp) : S.exp option =
+  OP.op1 p op e
 
-let const_folding_op2 (op : string) (e1 : S.exp) (e2 : S.exp) : S.exp option = 
-  None
+let const_folding_op2 (p : Pos.t) (op : string) (e1 : S.exp) (e2 : S.exp) : S.exp option = 
+  OP.op2 p op e1 e2
 
 (* obj and field should be simplified before passing it *)  
 let const_folding_GetAttr p pattr obj field = 
@@ -85,7 +99,7 @@ let rec const_folding (e : S.exp) : S.exp =
      S.SetBang (p, x, (const_folding e))
   | S.Op1 (p, op, e) ->
      let newe = const_folding e in
-     let v = const_folding_op1 op newe in 
+     let v = const_folding_op1 p op newe in 
      begin
        match v with
        | Some (folded) -> folded
@@ -94,7 +108,7 @@ let rec const_folding (e : S.exp) : S.exp =
   | S.Op2 (p, op, e1, e2) ->
      let newe1 = const_folding e1 in
      let newe2 = const_folding e2 in
-     let v = const_folding_op2 op newe1 newe2 in
+     let v = const_folding_op2 p op newe1 newe2 in
      begin
        match v with
        | Some (folded) -> folded
