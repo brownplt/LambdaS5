@@ -1,6 +1,7 @@
 open Prelude
 module S = Ljs_syntax
 module OP = Op1_op2
+module EV = Exp_val
 
 (* TODO: should the opt phase check type error? e.g.
    to check the op1 args has the right type for op1.
@@ -37,10 +38,10 @@ let is_contant(e : S.exp) : bool=
  * Note: the e should be a simplified exp.
  *)
 let const_folding_op1 (p : Pos.t) (op : string) (e : S.exp) : S.exp option =
-  OP.op1 p op e
+  EV.apply_op1 p op e
 
 let const_folding_op2 (p : Pos.t) (op : string) (e1 : S.exp) (e2 : S.exp) : S.exp option = 
-  OP.op2 p op e1 e2
+  EV.apply_op2 p op e1 e2
 
 (* obj and field should be simplified before passing it *)  
 let const_folding_GetAttr p pattr obj field = 
@@ -66,7 +67,7 @@ let rec const_folding (e : S.exp) : S.exp =
   | S.GetAttr (p, pattr, obj, field) -> (* TODO: opt this *)
      let o = const_folding obj in
      let f = const_folding field in
-     const_folding_GetAttr p pattr o f
+     S.GetAttr (p, pattr, o, f)
   | S.SetAttr (p, attr, obj, field, newval) ->
      let o = const_folding obj in
      let f = const_folding field in

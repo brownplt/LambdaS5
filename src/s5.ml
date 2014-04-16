@@ -371,7 +371,14 @@ module S5 = struct
     output_value stdout results;
     print_newline()
 
+  (* optimization command *)
 
+  let opt_constant_folding cmd () = 
+    let ljs = pop_ljs cmd in
+    let new_ljs = const_folding ljs in
+    push_ljs new_ljs;
+    Ljs_pretty.exp ljs std_formatter; (* print origin one for debug *)
+    print_newline ()
   (* Main *)
 
   let command spec optName func desc = (optName, spec (func optName), desc)
@@ -464,6 +471,9 @@ module S5 = struct
           "evaluate code symbolically";
         unitCmd "-sym-eval-raw" ljs_sym_eval_raw
           "evaluate code symbolically and print raw OCaml results";
+        (* optimization *)
+        unitCmd "-opt-const-folding" opt_constant_folding
+          "apply constant folding on s5";
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"
