@@ -8,6 +8,7 @@ open Ljs_pretty_html
 open Reachability
 open Ljs_opt
 open Ljs_constfolding
+open Ljs_sub_eval
 
 type node =
   | Js of Js_syntax.program
@@ -376,9 +377,16 @@ module S5 = struct
   let opt_constant_folding cmd () = 
     let ljs = pop_ljs cmd in
     let new_ljs = const_folding ljs in
-    push_ljs new_ljs;
-    Ljs_pretty.exp ljs std_formatter; (* print origin one for debug *)
-    print_newline ()
+    push_ljs new_ljs
+    (* print origin one for debug *)
+    (*Ljs_pretty.exp ljs std_formatter; 
+    print_newline ()*)
+
+  let opt_partial_eval cmd () = 
+    let ljs = pop_ljs cmd in
+    let new_ljs = partial_eval ljs in
+    push_ljs new_ljs
+
   (* Main *)
 
   let command spec optName func desc = (optName, spec (func optName), desc)
@@ -474,6 +482,8 @@ module S5 = struct
         (* optimization *)
         unitCmd "-opt-const-folding" opt_constant_folding
           "apply constant folding on s5";
+        unitCmd "-opt-partial_eval" opt_partial_eval
+          "apply partial evaluation on s5";
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"
