@@ -1,4 +1,3 @@
-open Prelude
 open Ljs_const_folding
 open Ljs_partial_eval
 

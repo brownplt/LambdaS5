@@ -97,18 +97,19 @@ let partial_eval (e : exp) : (exp * bool) =
          | Num (_, _)
          | String (_, _)
          | True _
-         | False _ -> true (* TODO: lambda and object *)
+         | False _ 
+         | Id (_,_) -> true (* TODO: lambda and object *)
          | _ -> false  in
        let exp = sub_eval exp env in
-       let new_env = 
-         if (is_constant exp) then
-           begin modified := true; IdMap.add x exp env end
-         else
-           IdMap.remove x env in
-       let new_body = sub_eval body new_env in
-       if (is_constant new_body) then 
-         new_body 
+       if (is_constant exp) 
+       then
+         let new_env = IdMap.add x exp env in
+         begin modified := true;
+               sub_eval body new_env
+         end 
        else
+         let new_env = IdMap.remove x env in
+         let new_body = sub_eval body new_env in
          Let (p, x, exp, new_body)
     | Rec (p, x, e, body) ->
        let new_e = sub_eval e env in
