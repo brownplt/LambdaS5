@@ -482,7 +482,7 @@ module S5 = struct
         (* optimization *)
         unitCmd "-opt-const-folding" opt_constant_folding
           "apply constant folding on s5";
-        unitCmd "-opt-partial_eval" opt_partial_eval
+        unitCmd "-opt-partial-eval" opt_partial_eval
           "apply partial evaluation on s5";
       ]
       (load_ljs "-s5")

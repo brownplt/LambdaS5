@@ -11,7 +11,10 @@ type env = exp IdMap.t
 
 let partial_eval e : exp =
   let empty_env = IdMap.empty in
-  let rec sub_eval e env = 
+  let rec sub_eval_option opt env = match opt with
+    | Some (e) -> Some (sub_eval e env)
+    | None -> None 
+  and sub_eval e env = 
     match e with 
     | Undefined _ -> e
     | Null _ -> e
@@ -22,9 +25,22 @@ let partial_eval e : exp =
     | Id (p, x) -> 
        begin
          try IdMap.find x env 
-         with Not_found -> failwith ("[substitution] Unbound identifier: " ^ x) end
-     (* TODO: attrs *)
-    | Object (_, _, _) -> e 
+         with Not_found -> e end
+    | Object (p, attrs, strprop) -> 
+       let new_attrs = {
+         primval = sub_eval_option attrs.primval env;
+         code = sub_eval_option attrs.code env;
+         proto = sub_eval_option attrs.proto env;
+         klass = attrs.klass; 
+         extensible = attrs.extensible } in
+       let handle_prop p = match p with 
+         | (s, Data (data, b1, b2)) -> 
+            s, Data ({value = sub_eval data.value env; writable = data.writable}, b1, b2)
+         | (s, Accessor (acc, b1, b2)) -> 
+            s, Accessor ({getter = sub_eval acc.getter env; setter = sub_eval acc.setter env},
+                      b1, b2) in
+       let prop_list = List.map handle_prop strprop in
+       Object (p, new_attrs, prop_list)
     | GetAttr (p, pattr, obj, field) -> (* potential *)
        let o = sub_eval obj env in
        let f = sub_eval field env in
@@ -74,11 +90,20 @@ let partial_eval e : exp =
        let new_e2 = sub_eval e2 env in
        Seq (p, new_e1, new_e2)
     | Let (p, x, exp, body) ->
-       let new_exp = sub_eval exp env in
-       let new_env = IdMap.add x new_exp env in
-       (* TODO: check the mutation in the body *)
+       let can_bind e = match e with
+         | Null _ 
+         | Undefined _ 
+         | Num (_, _)
+         | String (_, _)
+         | True _
+         | False _ -> true (* TODO: lambda and object *)
+         | _ -> false  in
+       let exp = sub_eval exp env in
+       let new_env = if (can_bind exp) then
+                       IdMap.add x exp env else
+                       IdMap.remove x env in
        let new_body = sub_eval body new_env in
-       Let (p, x, new_exp, new_body)
+       Let (p, x, exp, new_body)
     | Rec (p, x, e, body) ->
        let new_e = sub_eval e env in
        let new_body = sub_eval body env in
