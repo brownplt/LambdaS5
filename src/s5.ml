@@ -7,8 +7,9 @@ open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
 open Ljs_opt
-open Ljs_constfolding
-open Ljs_sub_eval
+open Ljs_const_folding
+open Ljs_partial_eval
+open Ljs_const_propagation
 
 type node =
   | Js of Js_syntax.program
@@ -384,7 +385,12 @@ module S5 = struct
 
   let opt_partial_eval cmd () = 
     let ljs = pop_ljs cmd in
-    let new_ljs = partial_eval ljs in
+    let new_ljs, modified = partial_eval ljs in
+    push_ljs new_ljs
+
+  let opt_const_propation cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = const_propagation ljs in
     push_ljs new_ljs
 
   (* Main *)
@@ -481,9 +487,11 @@ module S5 = struct
           "evaluate code symbolically and print raw OCaml results";
         (* optimization *)
         unitCmd "-opt-const-folding" opt_constant_folding
-          "apply constant folding on s5";
+          "perform constant folding on s5";
         unitCmd "-opt-partial-eval" opt_partial_eval
-          "apply partial evaluation on s5";
+          "perform partial evaluation on s5";
+        unitCmd "-opt-const-propagation" opt_const_propation
+          "perform constant propagation on s5";
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"

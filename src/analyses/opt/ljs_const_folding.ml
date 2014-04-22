@@ -1,6 +1,5 @@
 open Prelude
 module S = Ljs_syntax
-module OP = Op1_op2
 module EV = Exp_val
 
 (* TODO: should the opt phase check type error? e.g.
@@ -20,18 +19,6 @@ let is_true (e : S.exp) : bool option =
   | S.Num (_, x) -> Some (not (x == nan || x = 0.0 || x = -0.0))
   | S.Lambda (_, _, _) -> Some true
   | _ -> None
-
-let is_contant(e : S.exp) : bool= 
-  match e with
-  | S.Undefined _
-  | S.Null _
-  | S.False _
-  | S.True _
-  | S.String (_, _)
-  | S.Num (_, _)
-  | S.Object (_, _, _)
-  | S.Lambda (_, _, _) -> true
-  | _ -> false 
 
 (* try to simplify the op1, 
  * return new exp in option on success, None otherwise.

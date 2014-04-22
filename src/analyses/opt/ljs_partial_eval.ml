@@ -1,6 +1,6 @@
 open Prelude
 open Ljs_syntax
-open Ljs_constfolding
+open Ljs_const_folding
 
 (* partial evaluation using substitution.
  * 
@@ -9,12 +9,13 @@ open Ljs_constfolding
  *)
 type env = exp IdMap.t
 
-let partial_eval e : exp =
+let partial_eval (e : exp) : (exp * bool) =
   let empty_env = IdMap.empty in
-  let rec sub_eval_option opt env = match opt with
-    | Some (e) -> Some (sub_eval e env)
-    | None -> None 
-  and sub_eval e env = 
+  let modified = (ref false) in 
+  let rec sub_eval e env = 
+    let rec sub_eval_option opt env = match opt with
+      | Some (e) -> Some (sub_eval e env)
+      | None -> None in
     match e with 
     | Undefined _ -> e
     | Null _ -> e
@@ -38,7 +39,7 @@ let partial_eval e : exp =
             s, Data ({value = sub_eval data.value env; writable = data.writable}, b1, b2)
          | (s, Accessor (acc, b1, b2)) -> 
             s, Accessor ({getter = sub_eval acc.getter env; setter = sub_eval acc.setter env},
-                      b1, b2) in
+                         b1, b2) in
        let prop_list = List.map handle_prop strprop in
        Object (p, new_attrs, prop_list)
     | GetAttr (p, pattr, obj, field) -> (* potential *)
@@ -90,7 +91,7 @@ let partial_eval e : exp =
        let new_e2 = sub_eval e2 env in
        Seq (p, new_e1, new_e2)
     | Let (p, x, exp, body) ->
-       let can_bind e = match e with
+       let is_constant e = match e with
          | Null _ 
          | Undefined _ 
          | Num (_, _)
@@ -99,11 +100,16 @@ let partial_eval e : exp =
          | False _ -> true (* TODO: lambda and object *)
          | _ -> false  in
        let exp = sub_eval exp env in
-       let new_env = if (can_bind exp) then
-                       IdMap.add x exp env else
-                       IdMap.remove x env in
+       let new_env = 
+         if (is_constant exp) then
+           begin modified := true; IdMap.add x exp env end
+         else
+           IdMap.remove x env in
        let new_body = sub_eval body new_env in
-       Let (p, x, exp, new_body)
+       if (is_constant new_body) then 
+         new_body 
+       else
+         Let (p, x, exp, new_body)
     | Rec (p, x, e, body) ->
        let new_e = sub_eval e env in
        let new_body = sub_eval body env in
@@ -131,6 +137,6 @@ let partial_eval e : exp =
        let new_bindings = sub_eval bindings env in
        Eval (p, new_e, new_bindings)
     | Hint (p, id, e) -> 
-       Hint (p, id, (sub_eval e env))
-  in 
-  sub_eval e empty_env
+       Hint (p, id, (sub_eval e env)) in
+  let result = sub_eval e empty_env in
+  result, !modified
