@@ -14,7 +14,7 @@ open Str
    the filesystem. 
 
    TODO(joe): I have no idea what happens on windows. *)
-let desugar jsonPath str = 
+let parse_and_desugar jsToJsonScriptPath str =
   let jsfilename = temp_file "evaljs" ".js" in
   let jsfile = open_out jsfilename in
   (* This puts the appropriate *javascript* in a temp file; the argument
@@ -82,8 +82,8 @@ let desugar jsonPath str =
      respectively.  Note that we need to pass two arguments in args to
      please Ocaml create_process, the JS filename being second makes
      it be the $1 argument in the script. *)
-  let args = Array.of_list [jsonPath; jsfilename] in
-  let pid = create_process jsonPath args null_stdin jsonfile errfile in
+  let args = Array.of_list [jsToJsonScriptPath; jsfilename] in
+  let pid = create_process jsToJsonScriptPath args null_stdin jsonfile errfile in
   let (_, status) = waitpid [] pid in
   
   begin match status with
