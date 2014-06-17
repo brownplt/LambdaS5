@@ -9,9 +9,9 @@ var l = [];
   l.push(a[0]);
   foo();
 })();
-if (l[0] === "foo" &&
+if (l[0] === "baz" &&
     l[1] === "bar" &&
-    l[2] === "baz") {
+    l[2] === "foo") {
   console.log("passed");
 }
 
