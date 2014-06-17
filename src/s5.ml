@@ -55,14 +55,14 @@ module S5 = struct
 
   (* Global Options *)
 
-  let json_path = ref "../tests/desugar.sh"
+  let jsparser_path = ref "../tests/jsparser.sh"
   let stack_trace = ref true
 
   let set_stack_trace (cmdName : string) (on : bool) : unit =
     stack_trace := on
 
   let set_json (cmdName : string) (path : string) : unit =
-    json_path := path
+    jsparser_path := path
 
 
   (* Stack Operations *)
@@ -143,7 +143,7 @@ module S5 = struct
 
   let load_desugared cmd path =
     let js_src = string_of_file path in
-    try push_ljs (Ljs_desugar.desugar !json_path js_src)
+    try push_ljs (Ljs_desugar.parse_and_desugar !jsparser_path js_src)
     with Ljs_values.PrimErr (t, v) -> print_string
       ("Error while desugaring: " ^ Ljs_values.pretty_value v ^ "\n")
 
@@ -326,32 +326,32 @@ module S5 = struct
 
   let ljs_cesk cmd () =
     let ljs = pop_ljs cmd in
-    let answer = Ljs_cesk.eval_expr ljs (desugar !json_path) !stack_trace in
+    let answer = Ljs_cesk.eval_expr ljs (parse_and_desugar !jsparser_path) !stack_trace in
     push_answer answer
 
   let ljs_eval cmd () =
     let ljs = pop_ljs cmd in
-    let answer = Ljs_eval.eval_expr ljs (desugar !json_path) !stack_trace in
+    let answer = Ljs_eval.eval_expr ljs (parse_and_desugar !jsparser_path) !stack_trace in
     push_answer answer
 
   let continue_cesk_eval cmd () =
     let ljs = pop_ljs cmd in
     let Ljs_eval.Answer (_, _, envs, store) = pop_answer cmd in
     let answer = Ljs_cesk.continue_eval
-      ljs (desugar !json_path) !stack_trace (last envs) store in
+      ljs (parse_and_desugar !jsparser_path) !stack_trace (last envs) store in
     push_answer answer
 
   let continue_ljs_eval cmd () =
     let ljs = pop_ljs cmd in
     let Ljs_eval.Answer (_, _, envs, store) = pop_answer cmd in
     let answer = Ljs_eval.continue_eval
-      ljs (desugar !json_path) !stack_trace (last envs) store in
+      ljs (parse_and_desugar !jsparser_path) !stack_trace (last envs) store in
     push_answer answer
 
   let do_sym_eval cmd =
     let ljs = pop_ljs cmd in
     let t1 = Sys.time() in
-    let res = Ljs_sym_eval.eval_expr ljs !json_path 50 Ljs_sym_values.mt_ctx in
+    let res = Ljs_sym_eval.eval_expr ljs !jsparser_path 50 Ljs_sym_values.mt_ctx in
     let t2 = Sys.time() in
     printf "Spent %f secs in sym eval\n" (t2 -. t1);
     res

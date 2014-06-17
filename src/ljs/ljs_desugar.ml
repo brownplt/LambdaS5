@@ -14,7 +14,7 @@ open Str
    the filesystem. 
 
    TODO(joe): I have no idea what happens on windows. *)
-let desugar jsToJsonScriptPath str =
+let parse_and_desugar jsToJsonScriptPath str =
   let jsfilename = temp_file "evaljs" ".js" in
   let jsfile = open_out jsfilename in
   (* This puts the appropriate *javascript* in a temp file; the argument
