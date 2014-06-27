@@ -13,6 +13,7 @@ tests/test262/test262/
 tests/test262/results*
 tests/ses/es-lab-read-only/
 tests/sym/harness/*/*.es5.result
+tests/init.heap
 
 build/
 *~
@@ -50,4 +51,6 @@ src/ocamlgraph-1.8.1/src/dot_parser.mli
 src/ocamlgraph-1.8.1/src/dot_parser.output
 src/ocamlgraph-1.8.1/src/gml.ml
 src/ocamlgraph-1.8.1/src/version.ml
-
+src/ocamlgraph-1.8.1/.depend
+src/ocamlgraph-1.8.1/configure
+src/ocamlgraph-1.8.1/autom4te.cache/
