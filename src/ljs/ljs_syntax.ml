@@ -1,5 +1,6 @@
 open Prelude
 
+(* object attributes *)
 type oattr = 
   | Proto
   | Klass
@@ -14,6 +15,7 @@ let string_of_oattr oattr = match oattr with
   | Primval -> "#primval"
   | Code -> "#code"
 
+(* property attributes *)
 type pattr =
   | Value
   | Getter

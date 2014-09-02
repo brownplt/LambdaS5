@@ -1,6 +1,11 @@
 open Prelude
-module S = Ljs_syntax
+open Ljs_syntax
 module EV = Exp_val
+
+(* Optimization phase
+ * 
+ * constant folding will fold two constant into one, in place.
+ *)
 
 (* TODO: should the opt phase check type error? e.g.
    to check the op1 args has the right type for op1.
@@ -9,100 +14,121 @@ module EV = Exp_val
 (* to check if the value of an constant expression is true. 
    if the argument passed in is not a const, return None
 *)
-let is_true (e : S.exp) : bool option =
+let is_true (e : exp) : bool option =
   match e with
-  | S.Undefined _ -> Some false
-  | S.Null _ -> Some false
-  | S.False _ -> Some false
-  | S.True _ -> Some true
-  | S.String (_, s) -> Some (not (String.length s = 0))
-  | S.Num (_, x) -> Some (not (x == nan || x = 0.0 || x = -0.0))
-  | S.Lambda (_, _, _) -> Some true
+  | Undefined _ -> Some false
+  | Null _ -> Some false
+  | False _ -> Some false
+  | True _ -> Some true
+  | String (_, s) -> Some (not (String.length s = 0))
+  | Num (_, x) -> Some (not (x == nan || x = 0.0 || x = -0.0))
+  | Lambda (_, _, _) -> Some true
   | _ -> None
 
 (* try to simplify the op1, 
  * return new exp in option on success, None otherwise.
  * Note: the e should be a simplified exp.
  *)
-let const_folding_op1 (p : Pos.t) (op : string) (e : S.exp) : S.exp option =
+let const_folding_op1 (p : Pos.t) (op : string) (e : exp) : exp option =
   EV.apply_op1 p op e
 
-let const_folding_op2 (p : Pos.t) (op : string) (e1 : S.exp) (e2 : S.exp) : S.exp option = 
+let const_folding_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp option = 
   EV.apply_op2 p op e1 e2
 
 (* obj and field should be simplified before passing it *)  
 let const_folding_GetAttr p pattr obj field = 
   match obj with 
-  | S.Object (_, attrs, props) ->
+  | Object (_, attrs, props) ->
      begin
        match field with
          (* TODO: here check the field for optimizing *)
-       | _ -> S.GetAttr (p, pattr, obj, field)
+       | _ -> GetAttr (p, pattr, obj, field)
      end
-  | _ -> S.GetAttr (p, pattr, obj, field)
+  | _ -> GetAttr (p, pattr, obj, field)
 
-let rec const_folding (e : S.exp) : S.exp =
+let rec const_folding (e : exp) : exp =
+  let const_folding_option (o : exp option) : exp option =
+    match o with
+    | Some (o) -> Some (const_folding o)
+    | None -> None in
   match e with
-  | S.Undefined _ -> e
-  | S.Null _ -> e
-  | S.String (_, _) -> e
-  | S.Num (_, n) -> e
-  | S.True _ -> e
-  | S.False _ -> e
-  | S.Id (p, x) -> e
-  | S.Object (_, _, _) -> e
-  | S.GetAttr (p, pattr, obj, field) -> (* TODO: opt this *)
+  | Undefined _ -> e
+  | Null _ -> e
+  | String (_, _) -> e
+  | Num (_, n) -> e
+  | True _ -> e
+  | False _ -> e
+  | Id (p, x) -> e
+  | Object (p, attr, strprop) -> 
+     let new_attrs = {
+       primval = const_folding_option attr.primval;
+       code = const_folding_option attr.code;
+       proto = const_folding_option attr.proto;
+       klass = attr.klass;
+       extensible = attr.extensible
+     } in
+     let handle_prop p = match p with 
+       | (s, Data (data, b1, b2)) ->
+          s, Data ({value = const_folding data.value; 
+                      writable = data.writable}, b1, b2)
+       | (s, Accessor (acc, b1, b2)) -> 
+          s, Accessor ({getter = const_folding acc.getter; 
+                        setter = const_folding acc.setter},
+                       b1, b2) in
+     let prop_list = List.map handle_prop strprop in
+     Object (p, new_attrs, prop_list)
+  | GetAttr (p, pattr, obj, field) -> (* TODO: opt this *)
      let o = const_folding obj in
      let f = const_folding field in
-     S.GetAttr (p, pattr, o, f)
-  | S.SetAttr (p, attr, obj, field, newval) ->
+     GetAttr (p, pattr, o, f)
+  | SetAttr (p, attr, obj, field, newval) ->
      let o = const_folding obj in
      let f = const_folding field in
      let v = const_folding newval in
-     S.SetAttr (p, attr, o, f, v)
-  | S.GetObjAttr (p, oattr, obj) -> (* TODO: opt this *)
-     S.GetObjAttr (p, oattr, (const_folding obj))
-  | S.SetObjAttr (p, oattr, obj, attre) ->
+     SetAttr (p, attr, o, f, v)
+  | GetObjAttr (p, oattr, obj) -> (* TODO: opt this *)
+     GetObjAttr (p, oattr, (const_folding obj))
+  | SetObjAttr (p, oattr, obj, attre) ->
      let o = const_folding obj in
      let attr = const_folding attre in
-     S.SetObjAttr (p, oattr, o, attr)
-  | S.GetField (p, obj, fld, args) -> (* TODO: opt this *)
+     SetObjAttr (p, oattr, o, attr)
+  | GetField (p, obj, fld, args) -> (* TODO: opt this *)
      let o = const_folding obj in
      let f = const_folding fld in
      let a = const_folding args in
-     S.GetField (p, o, f, a)
-  | S.SetField (p, obj, fld, newval, args) ->
+     GetField (p, o, f, a)
+  | SetField (p, obj, fld, newval, args) ->
      let o = const_folding obj in
      let f = const_folding fld in
      let v = const_folding newval in
      let a = const_folding args in
-     S.SetField (p, o, f, v, a)
-  | S.DeleteField (p, obj, fld) -> 
+     SetField (p, o, f, v, a)
+  | DeleteField (p, obj, fld) -> 
      let o = const_folding obj in
      let f = const_folding fld in
-     S.DeleteField (p, o, f)
-  | S.OwnFieldNames (p, obj) -> (* TODO: opt this *)
-     S.OwnFieldNames (p, (const_folding obj))
-  | S.SetBang (p, x, e) ->
-     S.SetBang (p, x, (const_folding e))
-  | S.Op1 (p, op, e) ->
+     DeleteField (p, o, f)
+  | OwnFieldNames (p, obj) -> (* TODO: opt this *)
+     OwnFieldNames (p, (const_folding obj))
+  | SetBang (p, x, e) ->
+     SetBang (p, x, (const_folding e))
+  | Op1 (p, op, e) ->
      let newe = const_folding e in
      let v = const_folding_op1 p op newe in 
      begin
        match v with
        | Some (folded) -> folded
-       | None -> S.Op1 (p, op, newe)
+       | None -> Op1 (p, op, newe)
      end 
-  | S.Op2 (p, op, e1, e2) ->
+  | Op2 (p, op, e1, e2) ->
      let newe1 = const_folding e1 in
      let newe2 = const_folding e2 in
      let v = const_folding_op2 p op newe1 newe2 in
      begin
        match v with
        | Some (folded) -> folded
-       | None -> S.Op2 (p, op, newe1, newe2)
+       | None -> Op2 (p, op, newe1, newe2)
      end
-  | S.If (p, cond, thn, els) ->
+  | If (p, cond, thn, els) ->
      let c_val = const_folding cond in
      begin
        match (is_true c_val) with
@@ -113,45 +139,45 @@ let rec const_folding (e : S.exp) : S.exp =
        | None -> (* cannot fold *)
           let t = const_folding thn in
           let e = const_folding els in
-          S.If (p, c_val, t, e)
+          If (p, c_val, t, e)
      end 
-  | S.App (p, func, args) ->
+  | App (p, func, args) ->
      let f = const_folding func in
      let a = List.map const_folding args in
-     S.App (p, f, a)
-  | S.Seq (p, e1, e2) ->
+     App (p, f, a)
+  | Seq (p, e1, e2) ->
      let new_e1 = const_folding e1 in
      let new_e2 = const_folding e2 in
-     S.Seq (p, new_e1, new_e2)
-  | S.Let (p, x, e, body) ->
+     Seq (p, new_e1, new_e2)
+  | Let (p, x, e, body) ->
      let new_e = const_folding e in
      let new_body = const_folding body in
-     S.Let (p, x, new_e, new_body)
-  | S.Rec (p, x, e, body) ->
+     Let (p, x, new_e, new_body)
+  | Rec (p, x, e, body) ->
      let new_e = const_folding e in
      let new_body = const_folding body in
-     S.Rec (p, x, new_e, new_body)
-  | S.Label (p, l, e) ->
+     Rec (p, x, new_e, new_body)
+  | Label (p, l, e) ->
      let new_e = const_folding e in
-     S.Label (p, l, new_e)
-  | S.Break (p, l, e) ->
+     Label (p, l, new_e)
+  | Break (p, l, e) ->
      let new_e = const_folding e in
-     S.Break (p, l, new_e)
-  | S.TryCatch (p, body, catch) ->
+     Break (p, l, new_e)
+  | TryCatch (p, body, catch) ->
      let b = const_folding body in
      let c = const_folding catch in
-     S.TryCatch (p, b, c)
-  | S.TryFinally (p, body, fin) ->
+     TryCatch (p, b, c)
+  | TryFinally (p, body, fin) ->
      let b = const_folding body in
      let f = const_folding fin in
-     S.TryFinally (p, b, f)
-  | S.Throw (p, e) ->
-     S.Throw (p, (const_folding e))
-  | S.Lambda (p, xs, e) ->
-     S.Lambda (p, xs, (const_folding e))
-  | S.Eval (p, e, bindings) ->
+     TryFinally (p, b, f)
+  | Throw (p, e) ->
+     Throw (p, (const_folding e))
+  | Lambda (p, xs, e) ->
+     Lambda (p, xs, (const_folding e))
+  | Eval (p, e, bindings) ->
      let new_e = const_folding e in
      let new_bindings = const_folding bindings in
-     S.Eval (p, new_e, new_bindings)
-  | S.Hint (p, id, e) -> 
-     S.Hint (p, id, (const_folding e))
+     Eval (p, new_e, new_bindings)
+  | Hint (p, id, e) -> 
+     Hint (p, id, (const_folding e))

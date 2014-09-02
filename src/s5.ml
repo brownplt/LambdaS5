@@ -8,7 +8,7 @@ open Ljs_pretty_html
 open Reachability
 open Ljs_opt
 open Ljs_const_folding
-open Ljs_partial_eval
+open Ljs_substitute_eval
 open Ljs_const_propagation
 
 type node =
@@ -383,9 +383,9 @@ module S5 = struct
     (*Ljs_pretty.exp ljs std_formatter; 
     print_newline ()*)
 
-  let opt_partial_eval cmd () = 
+  let opt_substitute_const cmd () = 
     let ljs = pop_ljs cmd in
-    let new_ljs, modified = partial_eval ljs in
+    let new_ljs, modified = substitute_const ljs in
     push_ljs new_ljs
 
   let opt_const_propation cmd () =
@@ -488,8 +488,8 @@ module S5 = struct
         (* optimization *)
         unitCmd "-opt-const-folding" opt_constant_folding
           "perform constant folding on s5";
-        unitCmd "-opt-partial-eval" opt_partial_eval
-          "perform partial evaluation on s5";
+        unitCmd "-opt-substitute-const" opt_substitute_const
+          "perform partial evaluation by substitution on s5";
         unitCmd "-opt-const-propagation" opt_const_propation
           "perform constant propagation on s5";
       ]

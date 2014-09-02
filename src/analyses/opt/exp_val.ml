@@ -5,6 +5,8 @@ module V = Ljs_values
 
 exception ExpValError of string
 
+(* TODO: move is_constant of ljs_substitute_eval here *)
+
 let exp_to_value (e : S.exp) : V.value = 
   match e with 
   | S.Null _ -> V.Null
@@ -28,19 +30,57 @@ let value_to_exp (v : V.value) (p : Pos.t) : S.exp =
 
 let dummy_store = (Store.empty, Store.empty)
 
-let apply_op1 p op e : S.exp option =
-  try 
-    let v = exp_to_value e in
-    let op = op1 dummy_store op in
-    let result = op v in
-    Some (value_to_exp result p)
-  with _ -> None
+let has_side_effect (op : string) : bool = match op with
+  | "print"
+  | "pretty"
+  | "current-utc-millis" -> true
+  | _ -> false 
+
+let apply_op1 p (op : string) e : S.exp option = 
+  if (has_side_effect op) then
+    None
+  else
+    try 
+      let v = exp_to_value e in
+      let op = op1 dummy_store op in
+      let result = op v in
+      Some (value_to_exp result p)
+    with _ -> None
                           
 let apply_op2 p op e1 e2 : S.exp option =
-  try
-    let v1 = exp_to_value e1 in
-    let v2 = exp_to_value e2 in
-    let op = op2 dummy_store op in
-    let result = op v1 v2 in
-    Some (value_to_exp result p)
-  with _ -> None
+  if (has_side_effect op) then
+    None
+  else
+    try
+      let v1 = exp_to_value e1 in
+      let v2 = exp_to_value e2 in
+      let op = op2 dummy_store op in
+      let result = op v1 v2 in
+      Some (value_to_exp result p)
+    with _ -> None
+
+let is_constant (e : S.exp) : bool = match e with
+  | S.Null _
+  | S.Undefined _
+  | S.Num (_, _)
+  | S.String (_, _)
+  | S.True _
+  | S.False _
+  | S.Id (_, _) -> true 
+  | S.Object (_, attr, strprop) ->
+     (* an const object requires extensible is false, all fields
+        have configurable and writable set to false *)
+     let { S.primval=_;S.proto=_;S.code=_;S.extensible = ext;S.klass=_ } = attr in
+     let const_prop (p : string * S.prop) = match p with
+       | (s, S.Data ({S.value = _; S.writable=false}, _, false)) -> true
+       | _ -> false in
+     let is_const_property = List.for_all const_prop strprop in
+     ext == false && is_const_property
+  (* TODO: lambda *)
+  | _ -> false
+                                                      
+          
+             
+
+           
+       
