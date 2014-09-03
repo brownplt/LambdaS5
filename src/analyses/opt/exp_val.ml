@@ -59,14 +59,7 @@ let apply_op2 p op e1 e2 : S.exp option =
       Some (value_to_exp result p)
     with _ -> None
 
-let is_constant (e : S.exp) : bool = match e with
-  | S.Null _
-  | S.Undefined _
-  | S.Num (_, _)
-  | S.String (_, _)
-  | S.True _
-  | S.False _
-  | S.Id (_, _) -> true 
+let is_object_constant (e : S.exp) : bool = match e with
   | S.Object (_, attr, strprop) ->
      (* an const object requires extensible is false, all fields
         have configurable and writable set to false *)
@@ -76,6 +69,17 @@ let is_constant (e : S.exp) : bool = match e with
        | _ -> false in
      let is_const_property = List.for_all const_prop strprop in
      ext == false && is_const_property
+  | _ -> false
+
+let is_constant (e : S.exp) : bool = match e with
+  | S.Null _
+  | S.Undefined _
+  | S.Num (_, _)
+  | S.String (_, _)
+  | S.True _
+  | S.False _
+  | S.Id (_, _) -> true 
+  | S.Object (_, attr, strprop) -> is_object_constant e
   (* TODO: lambda *)
   | _ -> false
                                                       

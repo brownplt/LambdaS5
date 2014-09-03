@@ -59,6 +59,82 @@ let eval_getobjattr_exp pos (oattr : oattr) o : exp =
   | Code, Object (_, {code=Some code}, _) -> code
   | _ -> GetObjAttr(pos, oattr, o)
 
+(* decide if `id` is used more than once *)
+let used_more_than_once (var_id : id) (e : exp) : bool =
+  let use = (ref 0) in
+  let rec multiple_usages (var_id : id) (e : exp) : bool = 
+    match e with
+    | Id (p, x) ->
+       if (x = var_id) then 
+         begin
+           use := !use + 1;
+           !use >= 2
+         end
+       else false
+    | Object (_, attrs, strprop) -> 
+       let {primval=primexp; code=_; proto=protoexp; extensible=_; klass=_;} = attrs in 
+       let check_option option = match option with
+         | Some (e) -> multiple_usages var_id e
+         | None -> false in
+       let check_prop prop = match prop with
+         | s, Data({value = vexp; writable=_;}, _, _) -> multiple_usages var_id vexp 
+         | s, Accessor({getter = gv; setter = sv},_,_) -> 
+            multiple_usages var_id gv || multiple_usages var_id sv
+       in 
+       check_option primexp || check_option protoexp || List.exists check_prop strprop
+    | GetAttr (_, _, obj, fld) ->
+       (multiple_usages var_id obj) || (multiple_usages var_id fld)
+    | SetAttr (_, _, obj, fld, newval) ->
+       (multiple_usages var_id obj) || (multiple_usages var_id fld) || (multiple_usages var_id newval)
+    | GetObjAttr (_,_,obj) -> multiple_usages var_id obj
+    | SetObjAttr (_,_,obj,v) -> multiple_usages var_id obj || multiple_usages var_id v
+    | GetField (_, left, right, arg) ->
+       multiple_usages var_id left || multiple_usages var_id right || multiple_usages var_id arg
+    | SetField (_, obj, field, newval, arg) ->
+       multiple_usages var_id obj || multiple_usages var_id field || 
+         multiple_usages var_id newval || multiple_usages var_id arg
+    | DeleteField (_, obj, field) ->
+       multiple_usages var_id obj || multiple_usages var_id field
+    | OwnFieldNames (_, e) -> multiple_usages var_id e
+    | SetBang (_, _, v) -> multiple_usages var_id v
+    | Op1 (_,_,arg) -> multiple_usages var_id arg
+    | Op2 (_,_,arg1,arg2) -> multiple_usages var_id arg1 || multiple_usages var_id arg2
+    | If (_,cond, thn, els) -> 
+       multiple_usages var_id cond || multiple_usages var_id thn || multiple_usages var_id els
+    | App (_, app, args) ->
+       multiple_usages var_id app || List.exists (fun(arg)->multiple_usages var_id arg) args 
+    | Seq (_, e1, e2) ->
+       multiple_usages var_id e1 || multiple_usages var_id e2
+    | Let (_, x, xexp, body) ->
+       if (multiple_usages var_id xexp) then true
+       else begin
+           if (x = var_id) then (* previous x scope is over. *)
+             (!use) >= 2
+           else
+             multiple_usages var_id body
+         end
+    | Rec (_, x, xexp, body) ->
+       if (multiple_usages var_id xexp) then true
+       else begin
+           if (x = var_id) then (* previous x scope is over. *)
+             (!use) >= 2
+           else
+             multiple_usages var_id body
+         end
+    | Label (_, _, body) -> multiple_usages var_id body
+    | Break (_, _, e) -> multiple_usages var_id e
+    | TryCatch (_, try_e, catch_e) -> 
+       multiple_usages var_id try_e || multiple_usages var_id catch_e
+    | TryFinally (_, try_e, final_e) ->
+       multiple_usages var_id try_e || multiple_usages var_id final_e
+    | Throw (_, e) -> multiple_usages var_id e
+    | Lambda (_, xs, body) -> 
+       if (List.mem var_id xs) then false (* don't search body *)
+       else 
+         multiple_usages var_id body
+    | _ -> false 
+  in multiple_usages var_id e
+
 let substitute_const (e : exp) : (exp * bool) =
   let empty_env = IdMap.empty in
   let modified = (ref false) in
@@ -161,30 +237,35 @@ let substitute_const (e : exp) : (exp * bool) =
 
     | Let (p, x, exp, body) ->
        let new_exp = substitute_eval exp env in
-       if (EV.is_constant new_exp)
+       let is_obj_const = EV.is_object_constant new_exp in
+       (* obj constant should only be used once *)
+       if ((is_obj_const && not (used_more_than_once x body)) || 
+             ((not is_obj_const) && EV.is_constant new_exp))
        then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
-               (* Printf.printf "%s is constant\n" x; *)
                substitute_eval body new_env
          end
        else
          let new_env = IdMap.remove x env in
          let new_body = substitute_eval body new_env in
          Let (p, x, new_exp, new_body)
-
-    | Rec (p, x, e, body) -> 
-       let new_e = substitute_eval e env in
-       if (EV.is_constant new_e) then
-         let new_env = IdMap.add x new_e env in
-         begin 
-           modified := true;
-           substitute_eval body new_env
+             
+    | Rec (p, x, exp, body) -> 
+       let new_exp = substitute_eval exp env in
+       let is_obj_const = EV.is_object_constant new_exp in
+       (* obj constant should only be used once *)
+       if ((is_obj_const && not (used_more_than_once x body)) || 
+             ((not is_obj_const) && EV.is_constant new_exp))
+       then
+         let new_env = IdMap.add x new_exp env in
+         begin modified := true;
+               substitute_eval body new_env
          end
        else
          let new_env = IdMap.remove x env in
          let new_body = substitute_eval body new_env in
-         Rec (p, x, new_e, new_body)
+         Rec (p, x, new_exp, new_body)
 
     | Label (p, l, e) ->
        let new_e = substitute_eval e env in
@@ -202,8 +283,15 @@ let substitute_const (e : exp) : (exp * bool) =
        TryFinally (p, b, f)
     | Throw (p, e) ->
        Throw (p, (substitute_eval e env))
-    | Lambda (p, xs, e) ->
-       Lambda (p, xs, (substitute_eval e env))
+    | Lambda (p, xs, e) -> (* lambda needs a modified env *)
+       let rec get_new_env ids env =  match ids with
+         | [] -> env
+         | id :: rest ->
+            let new_env = IdMap.remove id env in
+            get_new_env rest new_env 
+       in 
+       let new_env = get_new_env xs env in
+       Lambda (p, xs, (substitute_eval e new_env))
     | Eval (p, e, bindings) ->
        let new_e = substitute_eval e env in
        let new_bindings = substitute_eval bindings env in
