@@ -59,10 +59,11 @@ let apply_op2 p op e1 e2 : S.exp option =
       Some (value_to_exp result p)
     with _ -> None
 
+(* an const object requires extensible is false, all fields have configurable
+   and writable set to false 
+ *)
 let is_object_constant (e : S.exp) : bool = match e with
   | S.Object (_, attr, strprop) ->
-     (* an const object requires extensible is false, all fields
-        have configurable and writable set to false *)
      let { S.primval=_;S.proto=_;S.code=_;S.extensible = ext;S.klass=_ } = attr in
      let const_prop (p : string * S.prop) = match p with
        | (s, S.Data ({S.value = _; S.writable=false}, _, false)) -> true
@@ -71,7 +72,16 @@ let is_object_constant (e : S.exp) : bool = match e with
      ext == false && is_const_property
   | _ -> false
 
-let is_constant (e : S.exp) : bool = match e with
+(* a lambda is a constant if no free vars [incorrect?: or all free vars are bound in env] *)
+let is_lambda_constant (e: S.exp) : bool = match e with
+  | S.Lambda (_, ids, body) ->
+     let free_vars = S.free_vars e in 
+     (*let all_freevars_bound = IdSet.for_all (fun var->IdMap.mem var env) free_vars in*)
+     IdSet.is_empty free_vars
+  | _ -> false
+
+(* NOTE(junsong): this predicate can only be used for non-lambda and non-object exp *)
+let is_scalar_constant (e : S.exp) : bool = match e with
   | S.Null _
   | S.Undefined _
   | S.Num (_, _)
@@ -79,8 +89,6 @@ let is_constant (e : S.exp) : bool = match e with
   | S.True _
   | S.False _
   | S.Id (_, _) -> true 
-  | S.Object (_, attr, strprop) -> is_object_constant e
-  (* TODO: lambda *)
   | _ -> false
                                                       
           

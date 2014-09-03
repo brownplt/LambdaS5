@@ -60,6 +60,7 @@ let eval_getobjattr_exp pos (oattr : oattr) o : exp =
   | _ -> GetObjAttr(pos, oattr, o)
 
 (* decide if `id` is used more than once *)
+(* TODO: use child_exps in ljs_syntax.ml instead *)
 let used_more_than_once (var_id : id) (e : exp) : bool =
   let use = (ref 0) in
   let rec multiple_usages (var_id : id) (e : exp) : bool = 
@@ -161,7 +162,7 @@ let substitute_const (e : exp) : (exp * bool) =
          klass = attrs.klass;
          extensible = attrs.extensible } in
        let handle_prop p = match p with
-         | (s, Data (data, enum, config)) -> (* TODO: "s" should be applied by substitute_eval *)
+         | (s, Data (data, enum, config)) ->
             s, Data ({value = substitute_eval data.value env;
                       writable = data.writable}, enum, config)
          | (s, Accessor (acc, enum, config)) ->
@@ -238,9 +239,10 @@ let substitute_const (e : exp) : (exp * bool) =
     | Let (p, x, exp, body) ->
        let new_exp = substitute_eval exp env in
        let is_obj_const = EV.is_object_constant new_exp in
+       let is_lambda_const = EV.is_lambda_constant new_exp in
        (* obj constant should only be used once *)
-       if ((is_obj_const && not (used_more_than_once x body)) || 
-             ((not is_obj_const) && EV.is_constant new_exp))
+       if (((is_obj_const || is_lambda_const) && not (used_more_than_once x body)) || 
+             EV.is_scalar_constant new_exp)
        then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
@@ -253,10 +255,8 @@ let substitute_const (e : exp) : (exp * bool) =
              
     | Rec (p, x, exp, body) -> 
        let new_exp = substitute_eval exp env in
-       let is_obj_const = EV.is_object_constant new_exp in
-       (* obj constant should only be used once *)
-       if ((is_obj_const && not (used_more_than_once x body)) || 
-             ((not is_obj_const) && EV.is_constant new_exp))
+       let is_lambda_const = EV.is_lambda_constant new_exp in 
+       if (is_lambda_const && not (used_more_than_once x body))
        then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
@@ -270,20 +270,24 @@ let substitute_const (e : exp) : (exp * bool) =
     | Label (p, l, e) ->
        let new_e = substitute_eval e env in
        Label (p, l, new_e)
+
     | Break (p, l, e) ->
        let new_e = substitute_eval e env in
        Break (p, l, new_e)
+
     | TryCatch (p, body, catch) ->
        let b = substitute_eval body env in
        let c = substitute_eval catch env in
        TryCatch (p, b, c)
+
     | TryFinally (p, body, fin) ->
        let b = substitute_eval body env in
        let f = substitute_eval fin env in
        TryFinally (p, b, f)
     | Throw (p, e) ->
        Throw (p, (substitute_eval e env))
-    | Lambda (p, xs, e) -> (* lambda needs a modified env *)
+
+    | Lambda (p, xs, e) -> (* lambda needs a modified env *) (* TODO: see lambda in ljs_eval.ml *)
        let rec get_new_env ids env =  match ids with
          | [] -> env
          | id :: rest ->
@@ -292,6 +296,7 @@ let substitute_const (e : exp) : (exp * bool) =
        in 
        let new_env = get_new_env xs env in
        Lambda (p, xs, (substitute_eval e new_env))
+
     | Eval (p, e, bindings) ->
        let new_e = substitute_eval e env in
        let new_bindings = substitute_eval bindings env in
