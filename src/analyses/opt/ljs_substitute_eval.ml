@@ -37,7 +37,7 @@ let eval_getattr_exp pos pattr obj field : exp =
      | Some prop -> 
         begin
           match pattr, prop with 
-          (* | Value, Data ({value = v; writable=_}, _, _) -> v *)
+          | Value, Data ({value = v; writable=_}, _, _) -> v
           (*| Getter, Accessor ({getter = gv; setter=_}, _, _) -> gv*)
           (*| Setter, Accessor ({getter = _; setter=sv}, _, _) -> sv*)
           | Config, Data (_, _, config) -> exp_bool config
@@ -262,9 +262,10 @@ let substitute_const (e : exp) : (exp * bool) =
 
     | Let (p, x, exp, body) ->
        (* substitution can only be done when
-        - var has no side effect
-        - var is used only once if var is object constant or lambda constant, 
-        - var is other constant, e.g. integer *)
+        - var will not be mutated.
+        - exp should have no side effect
+        - either var is used only once if var is object constant or lambda constant, 
+          or var is other constant, e.g. integer *)
        let new_exp = substitute_eval exp env in
        let no_side_effect = not (var_has_side_effect x body) in
        let is_obj_const = EV.is_object_constant new_exp in
