@@ -136,6 +136,30 @@ let used_more_than_once (var_id : id) (e : exp) : bool =
     | _ -> false 
   in multiple_usages var_id e
 
+(* decide if x has side effect in e *)
+let rec var_has_side_effect (x : id) (e : exp) : bool = match e with
+  | SetBang (_, var, target) -> x = var || var_has_side_effect x target
+  | Let (_, var, defn, body) ->
+     if (var_has_side_effect x defn) then (* look at the def first *)
+       true
+     else
+       if (var = x) then (* previous scope is over *)
+         false
+       else (* continue search in body *)
+         var_has_side_effect x body
+  | Rec (_, var, defn, body) ->
+     if (var_has_side_effect x defn) then true
+     else
+       if (var = x) then false
+       else var_has_side_effect x body
+  | Lambda (_, vars, body) ->
+     if (List.mem x vars) then (* x is shadowed in lambda *)
+       false
+     else
+       var_has_side_effect x body
+  | _ -> List.exists (fun x->x) (map (fun exp-> var_has_side_effect x exp) (child_exps e))
+     
+  
 let substitute_const (e : exp) : (exp * bool) =
   let empty_env = IdMap.empty in
   let modified = (ref false) in
@@ -237,26 +261,33 @@ let substitute_const (e : exp) : (exp * bool) =
        Seq (p, new_e1, new_e2)
 
     | Let (p, x, exp, body) ->
+       (* substitution can only be done when
+        - var has no side effect
+        - var is used only once if var is object constant or lambda constant, 
+        - var is other constant, e.g. integer *)
        let new_exp = substitute_eval exp env in
+       let no_side_effect = not (var_has_side_effect x body) in
        let is_obj_const = EV.is_object_constant new_exp in
        let is_lambda_const = EV.is_lambda_constant new_exp in
        (* obj constant should only be used once *)
-       if (((is_obj_const || is_lambda_const) && not (used_more_than_once x body)) || 
-             EV.is_scalar_constant new_exp)
+       if (no_side_effect &&
+           (((is_obj_const || is_lambda_const) && not (used_more_than_once x body)) || 
+            EV.is_scalar_constant new_exp))
        then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
                substitute_eval body new_env
          end
-       else
+       else 
          let new_env = IdMap.remove x env in
          let new_body = substitute_eval body new_env in
          Let (p, x, new_exp, new_body)
              
     | Rec (p, x, exp, body) -> 
        let new_exp = substitute_eval exp env in
+       let no_side_effect = not (var_has_side_effect x body) in
        let is_lambda_const = EV.is_lambda_constant new_exp in 
-       if (is_lambda_const && not (used_more_than_once x body))
+       if (no_side_effect && is_lambda_const && not (used_more_than_once x body))
        then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
