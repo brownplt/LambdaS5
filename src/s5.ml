@@ -6,7 +6,6 @@ open Ljs_cesk
 open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
-open Ljs_opt
 open Ljs_const_folding
 open Ljs_substitute_eval
 open Ljs_const_propagation

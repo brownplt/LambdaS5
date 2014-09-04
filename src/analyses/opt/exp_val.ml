@@ -87,8 +87,8 @@ let is_scalar_constant (e : S.exp) : bool = match e with
   | S.Num (_, _)
   | S.String (_, _)
   | S.True _
-  | S.False _
-  | S.Id (_, _) -> true 
+  | S.False _ -> true
+  (*| S.Id (_, _) -> true *)
   | _ -> false
                                                       
           

@@ -1,6 +1,6 @@
 .PHONY = clean builddir debug
 
-INCLUDES = analyses/cfg,analyses/cps,analyses/sym,analyses/ses,analyses/opt,js,exprjs,ljs,util,experimental,test
+INCLUDES = analyses/cfg,analyses/cps,analyses/sym,analyses/ses,analyses/opt,analyses/opt/test,js,exprjs,ljs,util,experimental,test
 
 OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix,str,graph,oUnit -lflags -I,../lib -Is $(INCLUDES) -cflags -annot -cflags -I,../lib -Is $(INCLUDES)
 
@@ -22,3 +22,12 @@ test: debug
 
 compare: debug
 	$(OCAMLBUILD) sym_compare.d.byte
+
+# for optimization
+OPTTEST=../obj/analyses/opt/test
+opttest: debug
+	$(OCAMLBUILD) constant_test.d.byte
+
+runopttest: opttest
+	@echo "running tests..."
+	$(OPTTEST)/constant_test.d.byte
