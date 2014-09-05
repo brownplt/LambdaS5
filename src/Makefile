@@ -27,7 +27,9 @@ compare: debug
 OPTTEST=../obj/analyses/opt/test
 opttest: debug
 	$(OCAMLBUILD) constant_test.d.byte
+	$(OCAMLBUILD) substitute_eval_test.d.byte
 
 runopttest: opttest
 	@echo "running tests..."
 	$(OPTTEST)/constant_test.d.byte
+	$(OPTTEST)/substitute_eval_test.d.byte

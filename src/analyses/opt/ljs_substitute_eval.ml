@@ -16,7 +16,7 @@ module EV = Exp_val
 
 type env = exp IdMap.t
 
-(* partially evaluate exp GetAttr *)
+(* partially evaluate GetAttr exp *)
 
 let eval_getattr_exp pos pattr obj field : exp = 
   (* helper function for extracting property of one field *)
@@ -59,108 +59,88 @@ let eval_getobjattr_exp pos (oattr : oattr) o : exp =
   | Code, Object (_, {code=Some code}, _) -> code
   | _ -> GetObjAttr(pos, oattr, o)
 
-(* decide if `id` is used more than once *)
-(* TODO: use child_exps in ljs_syntax.ml instead *)
-let used_more_than_once (var_id : id) (e : exp) : bool =
+(* decide if `id` appears more than once.
+   NOTE: This function doesn't build control flow graph, so simply
+         issue error on SetBang.
+*)
+let multiple_usages (var_id : id) (e : exp) : bool =
   let use = (ref 0) in
-  let rec multiple_usages (var_id : id) (e : exp) : bool = 
+  let result() = !use >= 2 in
+  let rec multiple_usages_rec (var_id : id) (e : exp) : bool = 
     match e with
     | Id (p, x) ->
        if (x = var_id) then 
          begin
            use := !use + 1;
-           !use >= 2
+           result()
          end
        else false
-    | Object (_, attrs, strprop) -> 
-       let {primval=primexp; code=_; proto=protoexp; extensible=_; klass=_;} = attrs in 
-       let check_option option = match option with
-         | Some (e) -> multiple_usages var_id e
-         | None -> false in
-       let check_prop prop = match prop with
-         | s, Data({value = vexp; writable=_;}, _, _) -> multiple_usages var_id vexp 
-         | s, Accessor({getter = gv; setter = sv},_,_) -> 
-            multiple_usages var_id gv || multiple_usages var_id sv
-       in 
-       check_option primexp || check_option protoexp || List.exists check_prop strprop
-    | GetAttr (_, _, obj, fld) ->
-       (multiple_usages var_id obj) || (multiple_usages var_id fld)
-    | SetAttr (_, _, obj, fld, newval) ->
-       (multiple_usages var_id obj) || (multiple_usages var_id fld) || (multiple_usages var_id newval)
-    | GetObjAttr (_,_,obj) -> multiple_usages var_id obj
-    | SetObjAttr (_,_,obj,v) -> multiple_usages var_id obj || multiple_usages var_id v
-    | GetField (_, left, right, arg) ->
-       multiple_usages var_id left || multiple_usages var_id right || multiple_usages var_id arg
-    | SetField (_, obj, field, newval, arg) ->
-       multiple_usages var_id obj || multiple_usages var_id field || 
-         multiple_usages var_id newval || multiple_usages var_id arg
-    | DeleteField (_, obj, field) ->
-       multiple_usages var_id obj || multiple_usages var_id field
-    | OwnFieldNames (_, e) -> multiple_usages var_id e
-    | SetBang (_, _, v) -> multiple_usages var_id v
-    | Op1 (_,_,arg) -> multiple_usages var_id arg
-    | Op2 (_,_,arg1,arg2) -> multiple_usages var_id arg1 || multiple_usages var_id arg2
-    | If (_,cond, thn, els) -> 
-       multiple_usages var_id cond || multiple_usages var_id thn || multiple_usages var_id els
-    | App (_, app, args) ->
-       multiple_usages var_id app || List.exists (fun(arg)->multiple_usages var_id arg) args 
-    | Seq (_, e1, e2) ->
-       multiple_usages var_id e1 || multiple_usages var_id e2
     | Let (_, x, xexp, body) ->
-       if (multiple_usages var_id xexp) then true
+       if (multiple_usages_rec var_id xexp) then true
        else begin
            if (x = var_id) then (* previous x scope is over. *)
-             (!use) >= 2
+             result()
            else
-             multiple_usages var_id body
+             multiple_usages_rec var_id body
          end
+    | SetBang (_, x, vexp) -> 
+       if (x = var_id) then failwith "should not reach here"
+       else multiple_usages_rec var_id vexp
     | Rec (_, x, xexp, body) ->
-       if (multiple_usages var_id xexp) then true
+       if (multiple_usages_rec var_id xexp) then true
        else begin
            if (x = var_id) then (* previous x scope is over. *)
-             (!use) >= 2
+             result()
            else
-             multiple_usages var_id body
+             multiple_usages_rec var_id body
          end
-    | Label (_, _, body) -> multiple_usages var_id body
-    | Break (_, _, e) -> multiple_usages var_id e
-    | TryCatch (_, try_e, catch_e) -> 
-       multiple_usages var_id try_e || multiple_usages var_id catch_e
-    | TryFinally (_, try_e, final_e) ->
-       multiple_usages var_id try_e || multiple_usages var_id final_e
-    | Throw (_, e) -> multiple_usages var_id e
     | Lambda (_, xs, body) -> 
        if (List.mem var_id xs) then false (* don't search body *)
        else 
-         multiple_usages var_id body
-    | _ -> false 
-  in multiple_usages var_id e
+         multiple_usages_rec var_id body
+    | _ -> List.exists (fun x->x) (map (fun exp->multiple_usages_rec var_id exp) (child_exps e))
+  in multiple_usages_rec var_id e
 
-(* decide if x has side effect in e *)
-let rec var_has_side_effect (x : id) (e : exp) : bool = match e with
-  | SetBang (_, var, target) -> x = var || var_has_side_effect x target
+(* decide if x is mutated in e *)
+let rec mutate_var (x : id) (e : exp) : bool = match e with
+  | SetBang (_, var, target) -> x = var || mutate_var x target
   | Let (_, var, defn, body) ->
-     if (var_has_side_effect x defn) then (* look at the def first *)
+     if (mutate_var x defn) then (* look at the def first *)
        true
      else
        if (var = x) then (* previous scope is over *)
          false
        else (* continue search in body *)
-         var_has_side_effect x body
+         mutate_var x body
   | Rec (_, var, defn, body) ->
-     if (var_has_side_effect x defn) then true
+     if (mutate_var x defn) then true
      else
        if (var = x) then false
-       else var_has_side_effect x body
+       else mutate_var x body
   | Lambda (_, vars, body) ->
      if (List.mem x vars) then (* x is shadowed in lambda *)
        false
      else
-       var_has_side_effect x body
-  | _ -> List.exists (fun x->x) (map (fun exp-> var_has_side_effect x exp) (child_exps e))
-     
+       mutate_var x body
+  | _ -> List.exists (fun x->x) (map (fun exp-> mutate_var x exp) (child_exps e))
+
+(* NOTE: xexp should be an optimized one
+
+To drop a let(or rec binding), 
+ - var will not be mutated.
+ - either var is used only once if var is object constant or lambda constant, 
+   or var is other constants, e.g. integer *)
+let can_substitute x xexp body : bool = 
+  if mutate_var x body then false
+  else 
+    if (EV.is_scalar_constant xexp) then true
+    else
+      if (EV.is_object_constant xexp || EV.is_lambda_constant xexp) then
+        not (multiple_usages x body)
+      else false
   
-let substitute_const (e : exp) : (exp * bool) =
+  
+let rec substitute_const (e : exp) : (exp * bool) =
   let empty_env = IdMap.empty in
   let modified = (ref false) in
   let rec substitute_eval e env =
@@ -260,19 +240,15 @@ let substitute_const (e : exp) : (exp * bool) =
        let new_e2 = substitute_eval e2 env in
        Seq (p, new_e1, new_e2)
 
+    (* TODO: write a predicate drop_binding *)
     | Let (p, x, exp, body) ->
-       (* substitution can only be done when
-        - var will not be mutated.
-        - exp should have no side effect
-        - either var is used only once if var is object constant or lambda constant, 
-          or var is other constant, e.g. integer *)
        let new_exp = substitute_eval exp env in
-       let no_side_effect = not (var_has_side_effect x body) in
+       let no_mutation = not (mutate_var x body) in
        let is_obj_const = EV.is_object_constant new_exp in
        let is_lambda_const = EV.is_lambda_constant new_exp in
        (* obj constant should only be used once *)
-       if (no_side_effect &&
-           (((is_obj_const || is_lambda_const) && not (used_more_than_once x body)) || 
+       if (no_mutation &&
+           (((is_obj_const || is_lambda_const) && not (multiple_usages x body)) || 
             EV.is_scalar_constant new_exp))
        then
          let new_env = IdMap.add x new_exp env in
@@ -286,9 +262,9 @@ let substitute_const (e : exp) : (exp * bool) =
              
     | Rec (p, x, exp, body) -> 
        let new_exp = substitute_eval exp env in
-       let no_side_effect = not (var_has_side_effect x body) in
+       let no_mutation = not (mutate_var x body) in
        let is_lambda_const = EV.is_lambda_constant new_exp in 
-       if (no_side_effect && is_lambda_const && not (used_more_than_once x body))
+       if (no_mutation && is_lambda_const && not (multiple_usages x body))
        then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
@@ -338,3 +314,4 @@ let substitute_const (e : exp) : (exp * bool) =
   in
   let result = substitute_eval e empty_env in
   result, !modified
+

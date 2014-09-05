@@ -35,17 +35,6 @@ let const_folding_op1 (p : Pos.t) (op : string) (e : exp) : exp option =
 let const_folding_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp option = 
   EV.apply_op2 p op e1 e2
 
-(* obj and field should be simplified before passing it *)  
-let const_folding_GetAttr p pattr obj field = 
-  match obj with 
-  | Object (_, attrs, props) ->
-     begin
-       match field with
-         (* TODO: here check the field for optimizing *)
-       | _ -> GetAttr (p, pattr, obj, field)
-     end
-  | _ -> GetAttr (p, pattr, obj, field)
-
 let rec const_folding (e : exp) : exp =
   let const_folding_option (o : exp option) : exp option =
     match o with

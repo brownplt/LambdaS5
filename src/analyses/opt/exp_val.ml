@@ -30,14 +30,14 @@ let value_to_exp (v : V.value) (p : Pos.t) : S.exp =
 
 let dummy_store = (Store.empty, Store.empty)
 
-let has_side_effect (op : string) : bool = match op with
+let op_has_side_effect (op : string) : bool = match op with
   | "print"
   | "pretty"
   | "current-utc-millis" -> true
   | _ -> false 
 
 let apply_op1 p (op : string) e : S.exp option = 
-  if (has_side_effect op) then
+  if (op_has_side_effect op) then
     None
   else
     try 
@@ -48,7 +48,7 @@ let apply_op1 p (op : string) e : S.exp option =
     with _ -> None
                           
 let apply_op2 p op e1 e2 : S.exp option =
-  if (has_side_effect op) then
+  if (op_has_side_effect op) then
     None
   else
     try
@@ -59,29 +59,51 @@ let apply_op2 p op e1 e2 : S.exp option =
       Some (value_to_exp result p)
     with _ -> None
 
+
+                                                      
+let rec is_constant (e : S.exp) : bool = match e with
+  | S.Object(_,_,_) -> is_object_constant(e)
+  | S.Lambda(_,_,_) -> is_lambda_constant(e)
+  | _ -> is_scalar_constant(e)
+ 
 (* an const object requires extensible is false, all fields have configurable
    and writable set to false 
  *)
-let is_object_constant (e : S.exp) : bool = match e with
+and is_object_constant (e : S.exp) : bool = match e with
   | S.Object (_, attr, strprop) ->
-     let { S.primval=_;S.proto=_;S.code=_;S.extensible = ext;S.klass=_ } = attr in
-     let const_prop (p : string * S.prop) = match p with
-       | (s, S.Data ({S.value = _; S.writable=false}, _, false)) -> true
-       | _ -> false in
-     let is_const_property = List.for_all const_prop strprop in
-     ext == false && is_const_property
+     let { S.primval=primval;S.proto=proto;S.code=_;S.extensible = ext;S.klass=_ } = attr in
+     let const_primval = match primval with
+       | Some e -> is_constant e
+       | None -> true 
+     in
+     let const_proto = match proto with
+       | Some e -> is_constant e
+       | None -> true
+     in
+     if (not const_primval || not const_proto || ext = true) then
+       false
+     else begin 
+         let const_prop (p : string * S.prop) = match p with
+           | (s, S.Data ({S.value = value; S.writable=false}, _, false)) -> 
+              is_constant(value)
+           | _ -> false in
+         let is_const_property = List.for_all const_prop strprop in
+         is_const_property
+       end
   | _ -> false
 
-(* a lambda is a constant if no free vars [incorrect?: or all free vars are bound in env] *)
-let is_lambda_constant (e: S.exp) : bool = match e with
+(* a lambda is a constant if no free vars in the body.
+ NOTE: it is safe to have the side effect in the lambda body, since the shrink-optimization will
+       only be performed when the lambda is used once.
+*)
+and is_lambda_constant (e: S.exp) : bool = match e with
   | S.Lambda (_, ids, body) ->
      let free_vars = S.free_vars e in 
-     (*let all_freevars_bound = IdSet.for_all (fun var->IdMap.mem var env) free_vars in*)
      IdSet.is_empty free_vars
   | _ -> false
 
 (* NOTE(junsong): this predicate can only be used for non-lambda and non-object exp *)
-let is_scalar_constant (e : S.exp) : bool = match e with
+and is_scalar_constant (e : S.exp) : bool = match e with
   | S.Null _
   | S.Undefined _
   | S.Num (_, _)
@@ -90,9 +112,6 @@ let is_scalar_constant (e : S.exp) : bool = match e with
   | S.False _ -> true
   (*| S.Id (_, _) -> true *)
   | _ -> false
-                                                      
-          
-             
 
            
        
