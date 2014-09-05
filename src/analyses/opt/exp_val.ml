@@ -67,7 +67,10 @@ let rec is_constant (e : S.exp) : bool = match e with
   | _ -> is_scalar_constant(e)
  
 (* an const object requires extensible is false, all fields have configurable
-   and writable set to false 
+   and writable set to false.
+   XXX: it seems that when getter and setter are present, configurable cannot be set from 
+        the syntax. So there is no such an object that getter and setter and configurable attr
+        are both initially constant.
  *)
 and is_object_constant (e : S.exp) : bool = match e with
   | S.Object (_, attr, strprop) ->
@@ -86,7 +89,10 @@ and is_object_constant (e : S.exp) : bool = match e with
          let const_prop (p : string * S.prop) = match p with
            | (s, S.Data ({S.value = value; S.writable=false}, _, false)) -> 
               is_constant(value)
-           | _ -> false in
+           | (s, S.Accessor({S.getter=getter; S.setter=setter}, _, false)) -> 
+                is_constant getter && is_constant setter
+           | _ -> false
+         in
          let is_const_property = List.for_all const_prop strprop in
          is_const_property
        end

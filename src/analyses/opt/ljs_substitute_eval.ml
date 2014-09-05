@@ -18,46 +18,6 @@ type env = exp IdMap.t
 
 (* partially evaluate GetAttr exp *)
 
-let eval_getattr_exp pos pattr obj field : exp = 
-  (* helper function for extracting property of one field *)
-  let rec find_field name obj_fields= 
-    match obj_fields with 
-    | (fld_name, prop) :: rest -> 
-       if (fld_name = name) 
-       then Some prop
-       else find_field name rest  
-    | [] -> None in
-  let exp_bool (b : bool) : exp = match b with
-    | true -> True pos
-    | false -> False pos in
-  match obj, field with 
-  | Object (_, attrs, strprop), String (_, name) -> 
-     (* get field and its property *)
-     begin match find_field name strprop with
-     | Some prop -> 
-        begin
-          match pattr, prop with 
-          | Value, Data ({value = v; writable=_}, _, _) -> v
-          (*| Getter, Accessor ({getter = gv; setter=_}, _, _) -> gv*)
-          (*| Setter, Accessor ({getter = _; setter=sv}, _, _) -> sv*)
-          | Config, Data (_, _, config) -> exp_bool config
-          (*| Config, Accessor (_, _, config) -> exp_bool config*)
-          | Writable, Data({value=_; writable=w}, _, _) -> exp_bool w
-          | Enum, Data(_, enum, _) -> exp_bool enum
-          (*| Enum, Accessor (_, enum, _) -> exp_bool enum *)
-          | _ -> GetAttr(pos, pattr, obj, field) (* no optimization in other situations *)
-        end
-     | None -> GetAttr(pos, pattr, obj, field) (* if field is not in the object. don't optimize. *)
-     end
-  | _ -> GetAttr(pos, pattr, obj, field)
- 
-(* partially evaluate exp GetObjAttr *)
-let eval_getobjattr_exp pos (oattr : oattr) o : exp =
-  match oattr, o with 
-  | Klass, Object (_, {klass=klass}, _) -> String(pos, klass)
-  | Code, Object (_, {code=None}, _) -> Null(pos)
-  | Code, Object (_, {code=Some code}, _) -> code
-  | _ -> GetObjAttr(pos, oattr, o)
 
 (* decide if `id` appears more than once.
    NOTE: This function doesn't build control flow graph, so simply
@@ -176,11 +136,9 @@ let rec substitute_const (e : exp) : (exp * bool) =
        Object (p, new_attrs, prop_list)
 
     | GetAttr (p, pattr, obj, field) -> 
-       (* if object is a const object and field name is a const, 
-          try to get the field and then its attr *)
        let o = substitute_eval obj env in
        let f = substitute_eval field env in
-       eval_getattr_exp p pattr o f
+       GetAttr(p, pattr, o, f)
 
     | SetAttr (p, attr, obj, field, newval) ->
        let o = substitute_eval obj env in
@@ -190,7 +148,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
 
     | GetObjAttr (p, oattr, obj) ->
        let o = substitute_eval obj env in
-       eval_getobjattr_exp p oattr o
+       GetObjAttr(p, oattr, o)
 
     | SetObjAttr (p, oattr, obj, attre) ->
        let o = substitute_eval obj env in
@@ -240,17 +198,9 @@ let rec substitute_const (e : exp) : (exp * bool) =
        let new_e2 = substitute_eval e2 env in
        Seq (p, new_e1, new_e2)
 
-    (* TODO: write a predicate drop_binding *)
     | Let (p, x, exp, body) ->
        let new_exp = substitute_eval exp env in
-       let no_mutation = not (mutate_var x body) in
-       let is_obj_const = EV.is_object_constant new_exp in
-       let is_lambda_const = EV.is_lambda_constant new_exp in
-       (* obj constant should only be used once *)
-       if (no_mutation &&
-           (((is_obj_const || is_lambda_const) && not (multiple_usages x body)) || 
-            EV.is_scalar_constant new_exp))
-       then
+       if can_substitute x new_exp body then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
                substitute_eval body new_env
@@ -262,10 +212,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
              
     | Rec (p, x, exp, body) -> 
        let new_exp = substitute_eval exp env in
-       let no_mutation = not (mutate_var x body) in
-       let is_lambda_const = EV.is_lambda_constant new_exp in 
-       if (no_mutation && is_lambda_const && not (multiple_usages x body))
-       then
+       if (can_substitute x new_exp body) then
          let new_env = IdMap.add x new_exp env in
          begin modified := true;
                substitute_eval body new_env

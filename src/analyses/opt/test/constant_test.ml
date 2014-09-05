@@ -9,8 +9,9 @@ let constants = [
   "1"; "1.3";
   "true"; "false";
   "{[#proto: null, #extensible: false]
-    'field1': {#value 0, #writable false}}";
+    'field1': {#value 0, #writable false, #configurable false}}";
   "func(x, y) { prim('+', x, y) }";
+  "func(x,y,z) {1}";
 ]
 
 (*"func(x, y) { prim('pretty', x, y) }";
@@ -25,10 +26,13 @@ let non_constants = [
   "{[#proto: null, #extensible: true]}";
   "{[#proto: {[#proto: null, #extensible: true]},
      #extensible: false]}";
+  "{[#proto: {[#proto: w, #extensible: false]},
+     #extensible: false]}";
   "{[#proto: null, #extensible: false]
     'field1': {#value 0, #writable true}}";
   "{[#proto: null, #extensible: false]
     'field1': {#value {[#proto: null, #extensible: true]}, #writable false}}";
+
   (* TODO: getter and setter *)
 ]
 

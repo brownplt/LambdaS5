@@ -35,6 +35,52 @@ let const_folding_op1 (p : Pos.t) (op : string) (e : exp) : exp option =
 let const_folding_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp option = 
   EV.apply_op2 p op e1 e2
 
+
+let rec get_obj_field (name : string) (obj_fields : (string * prop) list) : prop option = 
+  match obj_fields with 
+  | (fld_name, p) :: rest -> 
+     if (fld_name = name) 
+     then Some p
+     else get_obj_field name rest  
+  | [] -> None 
+
+(* if object is a const object and field name is a const, 
+   try to get the field and then its attr *)
+let const_folding_getattr pos pattr obj field : exp = 
+  (* helper function for extracting property of one field *)
+  let exp_bool (b : bool) : exp = match b with
+    | true -> True pos
+    | false -> False pos in
+  match obj, field with 
+  | Object (_, attrs, strprop), String (_, name) -> 
+     (* get field and its property *)
+     begin match get_obj_field name strprop with
+     | Some prop -> 
+        begin
+          match pattr, prop with 
+          | Value, Data ({value = v; writable=_}, _, _) -> v
+          (*| Getter, Accessor ({getter = gv; setter=_}, _, _) -> gv*)
+          (*| Setter, Accessor ({getter = _; setter=sv}, _, _) -> sv*)
+          | Config, Data (_, _, config) -> exp_bool config
+          (*| Config, Accessor (_, _, config) -> exp_bool config*)
+          | Writable, Data({value=_; writable=w}, _, _) -> exp_bool w
+          | Enum, Data(_, enum, _) -> exp_bool enum
+          (*| Enum, Accessor (_, enum, _) -> exp_bool enum *)
+          | _ -> GetAttr(pos, pattr, obj, field) (* no optimization in other situations *)
+        end
+     | None -> GetAttr(pos, pattr, obj, field) (* if field is not in the object. don't optimize. *)
+     end
+  | _ -> GetAttr(pos, pattr, obj, field)
+ 
+(* TODO: maybe we can do more on this? *)
+(* partially evaluate exp GetObjAttr *)
+let const_folding_getobjattr pos (oattr : oattr) o : exp =
+  match oattr, o with 
+  | Klass, Object (_, {klass=klass}, _) -> String(pos, klass)
+  | Code, Object (_, {code=None}, _) -> Null(pos)
+  | Code, Object (_, {code=Some code}, _) -> code
+  | _ -> GetObjAttr(pos, oattr, o)
+
 let rec const_folding (e : exp) : exp =
   let const_folding_option (o : exp option) : exp option =
     match o with
@@ -66,40 +112,66 @@ let rec const_folding (e : exp) : exp =
                        b1, b2) in
      let prop_list = List.map handle_prop strprop in
      Object (p, new_attrs, prop_list)
-  | GetAttr (p, pattr, obj, field) -> (* TODO: opt this *)
+
+  | GetAttr (p, pattr, obj, field) -> 
      let o = const_folding obj in
      let f = const_folding field in
-     GetAttr (p, pattr, o, f)
+     const_folding_getattr p pattr o f
+
   | SetAttr (p, attr, obj, field, newval) ->
      let o = const_folding obj in
      let f = const_folding field in
      let v = const_folding newval in
      SetAttr (p, attr, o, f, v)
-  | GetObjAttr (p, oattr, obj) -> (* TODO: opt this *)
-     GetObjAttr (p, oattr, (const_folding obj))
+
+  | GetObjAttr (p, oattr, obj) -> 
+     let o = const_folding obj in     
+     const_folding_getobjattr p oattr o
+
   | SetObjAttr (p, oattr, obj, attre) ->
      let o = const_folding obj in
      let attr = const_folding attre in
      SetObjAttr (p, oattr, o, attr)
-  | GetField (p, obj, fld, args) -> (* TODO: opt this *)
+
+  | GetField (pos, obj, fld, args) -> 
+     (* if the object is a constant, which means no getter and setter on it,
+        get the value of the field *)
      let o = const_folding obj in
      let f = const_folding fld in
      let a = const_folding args in
-     GetField (p, o, f, a)
+     if (EV.is_constant o && EV.is_constant f) then
+       begin
+         match o, f with
+         | Object (_, _, strprop), String (_, fld) ->
+            begin
+            let p = get_obj_field fld strprop in 
+            match p with
+            | None -> GetField (pos, o, f, a)
+            | Some (Data ({value=v; writable=_},_,_)) -> v
+            | _ -> failwith "opt on field containing accessors are not implemented"
+            end
+         | _ -> GetField (pos, o, f, a)
+       end
+     else GetField (pos, o, f, a)
+
   | SetField (p, obj, fld, newval, args) ->
      let o = const_folding obj in
      let f = const_folding fld in
      let v = const_folding newval in
      let a = const_folding args in
      SetField (p, o, f, v, a)
+
   | DeleteField (p, obj, fld) -> 
      let o = const_folding obj in
      let f = const_folding fld in
      DeleteField (p, o, f)
+
   | OwnFieldNames (p, obj) -> (* TODO: opt this *)
      OwnFieldNames (p, (const_folding obj))
+
   | SetBang (p, x, e) ->
      SetBang (p, x, (const_folding e))
+
   | Op1 (p, op, e) ->
      let newe = const_folding e in
      let v = const_folding_op1 p op newe in 
