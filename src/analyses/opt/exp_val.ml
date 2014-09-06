@@ -4,6 +4,7 @@ module S = Ljs_syntax
 module V = Ljs_values
 
 exception ExpValError of string
+type constpool = (S.exp * bool) IdMap.t
 
 (* TODO: move is_constant of ljs_substitute_eval here *)
 
@@ -61,26 +62,28 @@ let apply_op2 p op e1 e2 : S.exp option =
 
 
                                                       
-let rec is_constant (e : S.exp) : bool = match e with
-  | S.Object(_,_,_) -> is_object_constant(e)
-  | S.Lambda(_,_,_) -> is_lambda_constant(e)
-  | _ -> is_scalar_constant(e)
+let rec is_constant (e : S.exp) constpool : bool = match e with
+  | S.Object(_,_,_) -> is_object_constant e constpool
+  | S.Lambda(_,_,_) -> is_lambda_constant e 
+  | S.Id (_, _) -> is_const_var e constpool
+  | _ -> is_scalar_constant e
  
 (* an const object requires extensible is false, all fields have configurable
    and writable set to false.
+
    XXX: it seems that when getter and setter are present, configurable cannot be set from 
         the syntax. So there is no such an object that getter and setter and configurable attr
         are both initially constant.
  *)
-and is_object_constant (e : S.exp) : bool = match e with
+and is_object_constant (e : S.exp) constpool : bool = match e with
   | S.Object (_, attr, strprop) ->
      let { S.primval=primval;S.proto=proto;S.code=_;S.extensible = ext;S.klass=_ } = attr in
      let const_primval = match primval with
-       | Some e -> is_constant e
+       | Some e -> is_constant e constpool
        | None -> true 
      in
      let const_proto = match proto with
-       | Some e -> is_constant e
+       | Some e -> is_constant e constpool
        | None -> true
      in
      if (not const_primval || not const_proto || ext = true) then
@@ -88,9 +91,7 @@ and is_object_constant (e : S.exp) : bool = match e with
      else begin 
          let const_prop (p : string * S.prop) = match p with
            | (s, S.Data ({S.value = value; S.writable=false}, _, false)) -> 
-              is_constant(value)
-           | (s, S.Accessor({S.getter=getter; S.setter=setter}, _, false)) -> 
-                is_constant getter && is_constant setter
+              is_constant value constpool
            | _ -> false
          in
          let is_const_property = List.for_all const_prop strprop in
@@ -108,7 +109,7 @@ and is_lambda_constant (e: S.exp) : bool = match e with
      IdSet.is_empty free_vars
   | _ -> false
 
-(* NOTE(junsong): this predicate can only be used for non-lambda and non-object exp *)
+(* NOTE(junsong): this predicate can only be used for non-lambda and non-object non-id exp *)
 and is_scalar_constant (e : S.exp) : bool = match e with
   | S.Null _
   | S.Undefined _
@@ -116,8 +117,10 @@ and is_scalar_constant (e : S.exp) : bool = match e with
   | S.String (_, _)
   | S.True _
   | S.False _ -> true
-  (*| S.Id (_, _) -> true *)
   | _ -> false
 
-           
+and is_const_var (e : S.exp)  (constpool : constpool) : bool = match e with
+  | S.Id (_, id) ->  (* constpool is a const pool *)
+     IdMap.mem id constpool
+  | _ -> false
        

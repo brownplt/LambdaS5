@@ -28,8 +28,14 @@ OPTTEST=../obj/analyses/opt/test
 opttest: debug
 	$(OCAMLBUILD) constant_test.d.byte
 	$(OCAMLBUILD) substitute_eval_test.d.byte
+	$(OCAMLBUILD) const_folding_test.d.byte
+	$(OCAMLBUILD) const_propagation_test.d.byte
+	$(OCAMLBUILD) const_propagation_env.d.byte
 
 runopttest: opttest
 	@echo "running tests..."
 	$(OPTTEST)/constant_test.d.byte
 	$(OPTTEST)/substitute_eval_test.d.byte
+	$(OPTTEST)/const_folding_test.d.byte
+	$(OPTTEST)/const_propagation_test.d.byte
+	$(OPTTEST)/const_propagation_env.d.byte

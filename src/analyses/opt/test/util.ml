@@ -1,6 +1,6 @@
 open Prelude
-open Lexing
 open Ljs_syntax
+open Lexing
 
 (* parse a string to produce ljs *)
 let parse str =
@@ -21,7 +21,6 @@ let parse str =
                                              (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
                        (lexeme lexbuf)
                        str)
-              
 
 let succeed () = 
   Printf.printf "passed\n"; 
@@ -85,6 +84,8 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
      a1 = a2 && equal_exp obj1 obj2
   | SetField (_, o1, f1, v1, arg1), SetField (_, o2, f2, v2, arg2) ->
      equal_exp o1 o2 && equal_exp f1 f2 && equal_exp v1 v2 && equal_exp arg1 arg2 
+  | GetField (_, o1, f1, v1), GetField (_, o2, f2, v2) ->
+     equal_exp o1 o2 && equal_exp f1 f2 && equal_exp v1 v2 
   | DeleteField (_, o1, f1), DeleteField(_, o2, f2) ->
      equal_exp o1 o2 && equal_exp f1 f2
   | OwnFieldNames (_, o1), OwnFieldNames (_, o2) ->
@@ -111,15 +112,42 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
      x1 = x2 && equal_exp e1 e2
   | _ ->  false (*failwith "not implemented" *)
 
+let rec count (e : exp) : int =
+  match e with
+  | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e)))
+
 (* assert optfunc(from) equals to expected *)
 let assert_equal optfunc (from : string) (expected : string) : bool=
   let from_ljs = parse from in
   let expected_ljs = parse expected in
   let to_ljs = optfunc from_ljs in
+  let eval (e : exp) = 
+    let dummy_desugar = fun (s) -> Null Pos.dummy in
+    Ljs_eval.eval_expr e dummy_desugar true
+  in
   if (equal_exp expected_ljs to_ljs) then
-    succeed()
+    try
+    begin
+      match (eval to_ljs), (eval expected_ljs) with
+      | Ljs_eval.Answer(_, to_v, _, _), 
+        Ljs_eval.Answer(_, expected_v, _, _) ->
+         if (to_v = expected_v) then
+           succeed()
+         else begin
+             printf "\nGot: \n";
+             print_ljs to_ljs; printf "\nexpected: "; print_ljs expected_ljs;
+             failwith "optimized code produce different value"
+           end 
+      | _ -> begin
+             printf "\nGot: \n";
+             print_ljs to_ljs; printf "\nexpected: "; print_ljs expected_ljs;
+             failwith "optimized code produce different value"
+           end
+    end
+    with _ -> fail "eval error"; 
   else begin
     fail from;
-    print_ljs to_ljs; print_ljs expected_ljs;
-    failwith "assertion error"
+    printf "\nGot: \n";
+    print_ljs to_ljs; printf "\nexpected: "; print_ljs expected_ljs;
+    failwith "optimized code does not meet expectations"
   end

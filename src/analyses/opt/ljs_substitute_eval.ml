@@ -13,11 +13,10 @@ module EV = Exp_val
  *
  *)
 
-
-type env = exp IdMap.t
-
-(* partially evaluate GetAttr exp *)
-
+(* constpool is constant pool. It maps from id to constant `exp` and `substitute`, which
+   indicates if the constant `exp` can substitute id later
+ *)
+type constpool = (exp * bool) IdMap.t
 
 (* decide if `id` appears more than once.
    NOTE: This function doesn't build control flow graph, so simply
@@ -90,22 +89,13 @@ To drop a let(or rec binding),
  - var will not be mutated.
  - either var is used only once if var is object constant or lambda constant, 
    or var is other constants, e.g. integer *)
-let can_substitute x xexp body : bool = 
-  if mutate_var x body then false
-  else 
-    if (EV.is_scalar_constant xexp) then true
-    else
-      if (EV.is_object_constant xexp || EV.is_lambda_constant xexp) then
-        not (multiple_usages x body)
-      else false
-  
-  
+
 let rec substitute_const (e : exp) : (exp * bool) =
-  let empty_env = IdMap.empty in
+  let empty_constpool = IdMap.empty in
   let modified = (ref false) in
-  let rec substitute_eval e env =
-    let rec substitute_eval_option opt env = match opt with
-      | Some (e) -> Some (substitute_eval e env)
+  let rec substitute_eval e constpool =
+    let rec substitute_eval_option opt constpool = match opt with
+      | Some (e) -> Some (substitute_eval e constpool)
       | None -> None in
     match e with
     | Undefined _ -> e
@@ -116,149 +106,188 @@ let rec substitute_const (e : exp) : (exp * bool) =
     | False _ -> e
     | Id (p, x) ->
        begin
-         try IdMap.find x env
-         with Not_found -> e end
+         try 
+           match IdMap.find x constpool with
+           | (x_v, true) -> 
+              begin 
+                Printf.printf "replace %s with " x; Ljs_pretty.exp x_v Format.std_formatter; print_newline();
+                x_v
+              end
+           | (x_v, false) -> e
+         with Not_found -> e 
+       end
     | Object (p, attrs, strprop) ->
        let new_attrs = {
-         primval = substitute_eval_option attrs.primval env;
-         code = substitute_eval_option attrs.code env;
-         proto = substitute_eval_option attrs.proto env;
+         primval = substitute_eval_option attrs.primval constpool;
+         code = substitute_eval_option attrs.code constpool;
+         proto = substitute_eval_option attrs.proto constpool;
          klass = attrs.klass;
          extensible = attrs.extensible } in
        let handle_prop p = match p with
          | (s, Data (data, enum, config)) ->
-            s, Data ({value = substitute_eval data.value env;
+            s, Data ({value = substitute_eval data.value constpool;
                       writable = data.writable}, enum, config)
          | (s, Accessor (acc, enum, config)) ->
-            s, Accessor ({getter = substitute_eval acc.getter env; setter = substitute_eval acc.setter env},
+            s, Accessor ({getter = substitute_eval acc.getter constpool; setter = substitute_eval acc.setter constpool},
                          enum, config) in
        let prop_list = List.map handle_prop strprop in
        Object (p, new_attrs, prop_list)
 
     | GetAttr (p, pattr, obj, field) -> 
-       let o = substitute_eval obj env in
-       let f = substitute_eval field env in
+       let o = substitute_eval obj constpool in
+       let f = substitute_eval field constpool in
        GetAttr(p, pattr, o, f)
 
     | SetAttr (p, attr, obj, field, newval) ->
-       let o = substitute_eval obj env in
-       let f = substitute_eval field env in
-       let v = substitute_eval newval env in
+       let o = substitute_eval obj constpool in
+       let f = substitute_eval field constpool in
+       let v = substitute_eval newval constpool in
        SetAttr (p, attr, o, f, v)
 
     | GetObjAttr (p, oattr, obj) ->
-       let o = substitute_eval obj env in
+       let o = substitute_eval obj constpool in
        GetObjAttr(p, oattr, o)
 
     | SetObjAttr (p, oattr, obj, attre) ->
-       let o = substitute_eval obj env in
-       let attr = substitute_eval attre env in
+       let o = substitute_eval obj constpool in
+       let attr = substitute_eval attre constpool in
        SetObjAttr (p, oattr, o, attr)
 
     | GetField (p, obj, fld, args) -> 
-       let o = substitute_eval obj env in
-       let f = substitute_eval fld env in
-       let a = substitute_eval args env in
+       let o = substitute_eval obj constpool in
+       let f = substitute_eval fld constpool in
+       let a = substitute_eval args constpool in
        GetField (p, o, f, a)
 
     | SetField (p, obj, fld, newval, args) ->
-       let o = substitute_eval obj env in
-       let f = substitute_eval fld env in
-       let v = substitute_eval newval env in
-       let a = substitute_eval args env in
+       let o = substitute_eval obj constpool in
+       let f = substitute_eval fld constpool in
+       let v = substitute_eval newval constpool in
+       let a = substitute_eval args constpool in
        SetField (p, o, f, v, a)
 
     | DeleteField (p, obj, fld) ->
-       let o = substitute_eval obj env in
-       let f = substitute_eval fld env in
+       let o = substitute_eval obj constpool in
+       let f = substitute_eval fld constpool in
        DeleteField (p, o, f)
 
     | OwnFieldNames (p, obj) -> 
-       OwnFieldNames (p, (substitute_eval obj env))
+       OwnFieldNames (p, (substitute_eval obj constpool))
 
     | SetBang (p, x, e) ->
-       SetBang (p, x, (substitute_eval e env))
+       SetBang (p, x, (substitute_eval e constpool))
 
     | Op1 (p, op, e) ->
-       Op1 (p, op, (substitute_eval e env))
+       Op1 (p, op, (substitute_eval e constpool))
 
     | Op2 (p, op, e1, e2) ->
-       Op2 (p, op, (substitute_eval e1 env), (substitute_eval e2 env))
+       Op2 (p, op, (substitute_eval e1 constpool), (substitute_eval e2 constpool))
 
     | If (p, cond, thn, els) -> (* more optimization in constant folding *)
-       If (p, (substitute_eval cond env), (substitute_eval thn env), (substitute_eval els env))
+       If (p, (substitute_eval cond constpool), (substitute_eval thn constpool), (substitute_eval els constpool))
 
     | App (p, func, args) ->
-       let f = substitute_eval func env in
-       let a = List.map (fun x->substitute_eval x env) args in
+       let f = substitute_eval func constpool in
+       let a = List.map (fun x->substitute_eval x constpool) args in
        App (p, f, a)
 
     | Seq (p, e1, e2) ->
-       let new_e1 = substitute_eval e1 env in
-       let new_e2 = substitute_eval e2 env in
+       let new_e1 = substitute_eval e1 constpool in
+       let new_e2 = substitute_eval e2 constpool in
        Seq (p, new_e1, new_e2)
 
     | Let (p, x, exp, body) ->
-       let new_exp = substitute_eval exp env in
-       if can_substitute x new_exp body then
-         let new_env = IdMap.add x new_exp env in
-         begin modified := true;
-               substitute_eval body new_env
-         end
-       else 
-         let new_env = IdMap.remove x env in
-         let new_body = substitute_eval body new_env in
-         Let (p, x, new_exp, new_body)
-             
-    | Rec (p, x, exp, body) -> 
-       let new_exp = substitute_eval exp env in
-       if (can_substitute x new_exp body) then
-         let new_env = IdMap.add x new_exp env in
-         begin modified := true;
-               substitute_eval body new_env
-         end
+       let x_v = substitute_eval exp constpool in
+       let nonconst_bound() =
+         let new_constpool = IdMap.remove x constpool in
+         let new_body = substitute_eval body new_constpool in 
+         Let (p, x, x_v, new_body) in
+
+       if mutate_var x body then nonconst_bound()
        else
-         let new_env = IdMap.remove x env in
-         let new_body = substitute_eval body new_env in
-         Rec (p, x, new_exp, new_body)
+         (* no mutation *)
+         let is_const = EV.is_constant x_v constpool in
+         if not is_const then nonconst_bound()
+         else
+           (* is constant, decide the substitute *)
+           let substitute = 
+             EV.is_scalar_constant x_v || EV.is_const_var x_v constpool ||
+               ((EV.is_object_constant x_v constpool || EV.is_lambda_constant x_v) && 
+                  not (multiple_usages x body)) 
+           in
+           let new_constpool = IdMap.add x (x_v, substitute) constpool in
+           if substitute then
+             begin
+               modified := true;
+               substitute_eval body new_constpool
+             end
+           else
+             let new_body = substitute_eval body new_constpool in
+             Let (p, x, x_v, new_body)
+             
+    | Rec (p, x, exp, body) ->  
+       let x_v = substitute_eval exp constpool in
+       let nonconst_bound() =
+         let new_constpool = IdMap.remove x constpool in
+         let new_body = substitute_eval body new_constpool in 
+         Rec (p, x, x_v, new_body) in
+
+       if mutate_var x body then nonconst_bound()
+       else
+         (* no mutation *)
+         let is_const = EV.is_constant x_v constpool in
+         if not is_const then nonconst_bound()
+         else
+           (* is constant, decide the substitute, const lambda exp can be substitute
+              if the lambda is used once *)
+           let substitute =  not (multiple_usages x body) in
+           let new_constpool = IdMap.add x (x_v, substitute) constpool in
+           if substitute then
+             begin
+               modified := true;
+               substitute_eval body new_constpool
+             end
+           else
+             let new_body = substitute_eval body new_constpool in
+             Rec (p, x, x_v, new_body)
 
     | Label (p, l, e) ->
-       let new_e = substitute_eval e env in
+       let new_e = substitute_eval e constpool in
        Label (p, l, new_e)
 
     | Break (p, l, e) ->
-       let new_e = substitute_eval e env in
+       let new_e = substitute_eval e constpool in
        Break (p, l, new_e)
 
     | TryCatch (p, body, catch) ->
-       let b = substitute_eval body env in
-       let c = substitute_eval catch env in
+       let b = substitute_eval body constpool in
+       let c = substitute_eval catch constpool in
        TryCatch (p, b, c)
 
     | TryFinally (p, body, fin) ->
-       let b = substitute_eval body env in
-       let f = substitute_eval fin env in
+       let b = substitute_eval body constpool in
+       let f = substitute_eval fin constpool in
        TryFinally (p, b, f)
     | Throw (p, e) ->
-       Throw (p, (substitute_eval e env))
+       Throw (p, (substitute_eval e constpool))
 
-    | Lambda (p, xs, e) -> (* lambda needs a modified env *) (* TODO: see lambda in ljs_eval.ml *)
-       let rec get_new_env ids env =  match ids with
-         | [] -> env
+    | Lambda (p, xs, e) -> (* lambda needs a modified constpool *) (* TODO: see lambda in ljs_eval.ml *)
+       let rec get_new_constpool ids constpool =  match ids with
+         | [] -> constpool
          | id :: rest ->
-            let new_env = IdMap.remove id env in
-            get_new_env rest new_env 
+            let new_constpool = IdMap.remove id constpool in
+            get_new_constpool rest new_constpool 
        in 
-       let new_env = get_new_env xs env in
-       Lambda (p, xs, (substitute_eval e new_env))
+       let new_constpool = get_new_constpool xs constpool in
+       Lambda (p, xs, (substitute_eval e new_constpool))
 
     | Eval (p, e, bindings) ->
-       let new_e = substitute_eval e env in
-       let new_bindings = substitute_eval bindings env in
+       let new_e = substitute_eval e constpool in
+       let new_bindings = substitute_eval bindings constpool in
        Eval (p, new_e, new_bindings)
     | Hint (p, id, e) ->
-       Hint (p, id, (substitute_eval e env)) 
+       Hint (p, id, (substitute_eval e constpool)) 
   in
-  let result = substitute_eval e empty_env in
+  let result = substitute_eval e empty_constpool in
   result, !modified
 

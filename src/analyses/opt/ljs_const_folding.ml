@@ -13,6 +13,7 @@ module EV = Exp_val
 
 (* to check if the value of an constant expression is true. 
    if the argument passed in is not a const, return None
+TODO: what about lambda and object
 *)
 let is_true (e : exp) : bool option =
   match e with
@@ -22,7 +23,6 @@ let is_true (e : exp) : bool option =
   | True _ -> Some true
   | String (_, s) -> Some (not (String.length s = 0))
   | Num (_, x) -> Some (not (x == nan || x = 0.0 || x = -0.0))
-  | Lambda (_, _, _) -> Some true
   | _ -> None
 
 (* try to simplify the op1, 
@@ -36,6 +36,7 @@ let const_folding_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp opti
   EV.apply_op2 p op e1 e2
 
 
+(* function for extracting property of one field *)
 let rec get_obj_field (name : string) (obj_fields : (string * prop) list) : prop option = 
   match obj_fields with 
   | (fld_name, p) :: rest -> 
@@ -44,13 +45,22 @@ let rec get_obj_field (name : string) (obj_fields : (string * prop) list) : prop
      else get_obj_field name rest  
   | [] -> None 
 
+
 (* if object is a const object and field name is a const, 
-   try to get the field and then its attr *)
+   try to get the field and then its attr. to make sure the
+   result code not bigger, only const folding should only apply to 
+   a const attr.
+
+   partially evaluate exp GetAttr. This optimization can shink the code
+   only if the `obj` is an Object appearing only once in the code. substitute_const 
+   will do that.
+
+   *)
 let const_folding_getattr pos pattr obj field : exp = 
-  (* helper function for extracting property of one field *)
   let exp_bool (b : bool) : exp = match b with
     | true -> True pos
     | false -> False pos in
+
   match obj, field with 
   | Object (_, attrs, strprop), String (_, name) -> 
      (* get field and its property *)
@@ -59,26 +69,30 @@ let const_folding_getattr pos pattr obj field : exp =
         begin
           match pattr, prop with 
           | Value, Data ({value = v; writable=_}, _, _) -> v
-          (*| Getter, Accessor ({getter = gv; setter=_}, _, _) -> gv*)
-          (*| Setter, Accessor ({getter = _; setter=sv}, _, _) -> sv*)
-          | Config, Data (_, _, config) -> exp_bool config
-          (*| Config, Accessor (_, _, config) -> exp_bool config*)
           | Writable, Data({value=_; writable=w}, _, _) -> exp_bool w
           | Enum, Data(_, enum, _) -> exp_bool enum
-          (*| Enum, Accessor (_, enum, _) -> exp_bool enum *)
+          | Config, Data (_, _, config) -> exp_bool config
           | _ -> GetAttr(pos, pattr, obj, field) (* no optimization in other situations *)
         end
      | None -> GetAttr(pos, pattr, obj, field) (* if field is not in the object. don't optimize. *)
      end
   | _ -> GetAttr(pos, pattr, obj, field)
  
-(* TODO: maybe we can do more on this? *)
-(* partially evaluate exp GetObjAttr *)
+(* partially evaluate exp GetObjAttr. This optimization can shink the code
+   only if the `o` is an Object appearing only once in the code. substitute_const 
+   will do that.
+
+TODO: maybe we can do more on this? since o is Object, maybe we can get all attr directly.
+ *)
 let const_folding_getobjattr pos (oattr : oattr) o : exp =
   match oattr, o with 
-  | Klass, Object (_, {klass=klass}, _) -> String(pos, klass)
-  | Code, Object (_, {code=None}, _) -> Null(pos)
+  | Klass, Object (_, {klass=klass}, _) -> String (pos, klass)
+  | Code, Object (_, {code=None}, _) -> Null pos
   | Code, Object (_, {code=Some code}, _) -> code
+  | Extensible, Object (_, {extensible=ext},_) ->
+     if ext then True pos else False pos
+  | Proto, Object (_, {proto=Some proto}, _) -> proto
+  | Proto, Object (_, {proto=None}, _) -> Null pos
   | _ -> GetObjAttr(pos, oattr, o)
 
 let rec const_folding (e : exp) : exp =
@@ -134,26 +148,21 @@ let rec const_folding (e : exp) : exp =
      SetObjAttr (p, oattr, o, attr)
 
   | GetField (pos, obj, fld, args) -> 
-     (* if the object is a constant, which means no getter and setter on it,
-        get the value of the field *)
      let o = const_folding obj in
      let f = const_folding fld in
      let a = const_folding args in
-     if (EV.is_constant o && EV.is_constant f) then
-       begin
-         match o, f with
-         | Object (_, _, strprop), String (_, fld) ->
-            begin
+     begin
+       match o, f with
+       | Object (_, _, strprop), String (_, fld) ->
+          begin
             let p = get_obj_field fld strprop in 
             match p with
-            | None -> GetField (pos, o, f, a)
+            | None -> Undefined pos
             | Some (Data ({value=v; writable=_},_,_)) -> v
             | _ -> failwith "opt on field containing accessors are not implemented"
-            end
-         | _ -> GetField (pos, o, f, a)
-       end
-     else GetField (pos, o, f, a)
-
+          end
+       | _ -> GetField (pos, o, f, a)
+     end
   | SetField (p, obj, fld, newval, args) ->
      let o = const_folding obj in
      let f = const_folding fld in
@@ -166,8 +175,9 @@ let rec const_folding (e : exp) : exp =
      let f = const_folding fld in
      DeleteField (p, o, f)
 
-  | OwnFieldNames (p, obj) -> (* TODO: opt this *)
-     OwnFieldNames (p, (const_folding obj))
+  | OwnFieldNames (p, obj) -> (* TODO: opt this to what? *)
+     let o = const_folding obj in
+     OwnFieldNames (p, o)
 
   | SetBang (p, x, e) ->
      SetBang (p, x, (const_folding e))
