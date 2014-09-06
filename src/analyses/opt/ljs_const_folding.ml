@@ -11,20 +11,6 @@ module EV = Exp_val
    to check the op1 args has the right type for op1.
  *)
 
-(* to check if the value of an constant expression is true. 
-   if the argument passed in is not a const, return None
-TODO: what about lambda and object
-*)
-let is_true (e : exp) : bool option =
-  match e with
-  | Undefined _ -> Some false
-  | Null _ -> Some false
-  | False _ -> Some false
-  | True _ -> Some true
-  | String (_, s) -> Some (not (String.length s = 0))
-  | Num (_, x) -> Some (not (x == nan || x = 0.0 || x = -0.0))
-  | _ -> None
-
 (* try to simplify the op1, 
  * return new exp in option on success, None otherwise.
  * Note: the e should be a simplified exp.
@@ -202,15 +188,21 @@ let rec const_folding (e : exp) : exp =
   | If (p, cond, thn, els) ->
      let c_val = const_folding cond in
      begin
-       match (is_true c_val) with
-       | Some (v) ->
-          if v 
-          then const_folding thn
-          else const_folding els
-       | None -> (* cannot fold *)
-          let t = const_folding thn in
-          let e = const_folding els in
-          If (p, c_val, t, e)
+       match c_val with
+       | True _ -> const_folding thn
+       | False _ 
+       | Null _
+       | Undefined _
+       | Num (_,_)
+       | String (_,_)
+       | Lambda (_,_,_)
+       | Object (_,_,_) -> const_folding els 
+       | _ -> 
+          begin
+            let t = const_folding thn in
+            let e = const_folding els in
+            If (p, c_val, t, e)
+          end 
      end 
   | App (p, func, args) ->
      let f = const_folding func in
