@@ -108,11 +108,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
        begin
          try 
            match IdMap.find x constpool with
-           | (x_v, true) -> 
-              begin 
-                Printf.printf "replace %s with " x; Ljs_pretty.exp x_v Format.std_formatter; print_newline();
-                x_v
-              end
+           | (x_v, true) -> x_v
            | (x_v, false) -> e
          with Not_found -> e 
        end

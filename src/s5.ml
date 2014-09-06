@@ -392,6 +392,17 @@ module S5 = struct
     let new_ljs = const_propagation ljs in
     push_ljs new_ljs
 
+  let count_nodes cmd () =
+    let rec count (e : exp) : int =
+      match e with
+      | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
+    let ljs = pop_ljs cmd in
+    let n = count ljs in 
+      begin
+        printf "%d" n; print_newline();
+        push_ljs ljs
+      end
+    
   (* Main *)
 
   let command spec optName func desc = (optName, spec (func optName), desc)
@@ -491,6 +502,8 @@ module S5 = struct
           "perform partial evaluation by substitution on s5";
         unitCmd "-opt-const-propagation" opt_const_propation
           "perform constant propagation on s5";
+        unitCmd "-count-nodes" count_nodes
+          "count the nodes of S5"
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"
