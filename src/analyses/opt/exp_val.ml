@@ -6,8 +6,6 @@ module V = Ljs_values
 exception ExpValError of string
 type constpool = (S.exp * bool) IdMap.t
 
-(* TODO: move is_constant of ljs_substitute_eval here *)
-
 let exp_to_value (e : S.exp) : V.value = 
   match e with 
   | S.Null _ -> V.Null
@@ -82,7 +80,7 @@ let rec is_constant (e : S.exp) constpool : bool = match e with
  *)
 and is_object_constant (e : S.exp) constpool : bool = match e with
   | S.Object (_, attr, strprop) ->
-     let { S.primval=primval;S.proto=proto;S.code=_;S.extensible = ext;S.klass=_ } = attr in
+     let { S.primval=primval;S.proto=proto;S.code=code;S.extensible = ext;S.klass=_ } = attr in
      let const_primval = match primval with
        | Some e -> is_constant e constpool
        | None -> true 
@@ -91,7 +89,11 @@ and is_object_constant (e : S.exp) constpool : bool = match e with
        | Some e -> is_constant e constpool
        | None -> true
      in
-     if (not const_primval || not const_proto || ext = true) then
+     let const_code = match code with
+       | Some e -> is_constant e constpool
+       | None -> true
+     in 
+     if (not const_primval || not const_proto || not const_code || ext = true) then
        false
      else begin 
          let const_prop (p : string * S.prop) = match p with

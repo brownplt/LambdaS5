@@ -10,7 +10,7 @@ if [ ! -f init.heap    -o ../obj/s5.d.byte -nt init.heap \
 
 echo "optimization_save_snapshots.sh: Rebuilding heap snapshots"
 
-echo "___takeS5Snapshot()" | ./s5 stdin -count-nodes -count-nodes -eval-s5 -save init.heap
+echo "___takeS5Snapshot()" | ./s5 stdin -count-nodes -opt-const-propagation -count-nodes -eval-s5 -save init.heap
 
 #(cat ses/es-lab-tests/initSESPlus.js; echo "___takeS5Snapshot();") | ./s5 stdin -count-nodes -opt-const-propagation -count-nodes -eval-s5 -save ses.heap
 
