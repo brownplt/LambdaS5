@@ -3,7 +3,7 @@
 PASSED=0
 FAILED=0
 
-source save_snapshots.sh
+source optimization_save_snapshots.sh
 
 for file in `ls unit-tests/*.js`; do
   STR1=`../obj/s5.d.byte -load init.heap -desugar $file -print-string "optimize $file" -count-nodes -opt-const-propagation -count-nodes -print-string "end $file" -continue-s5-eval`

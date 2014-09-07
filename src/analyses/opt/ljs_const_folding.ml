@@ -75,8 +75,8 @@ let const_folding_getobjattr pos (oattr : oattr) o : exp =
   | Klass, Object (_, {klass=klass}, _) -> String (pos, klass)
   | Code, Object (_, {code=None}, _) -> Null pos
   | Code, Object (_, {code=Some code}, _) -> code
-  | Extensible, Object (_, {extensible=ext},_) ->
-     if ext then True pos else False pos
+  | Extensible, Object (_, {extensible=true},_) -> True pos
+  | Extensible, Object (_, {extensible=false},_) -> False pos
   | Proto, Object (_, {proto=Some proto}, _) -> proto
   | Proto, Object (_, {proto=None}, _) -> Null pos
   | Primval, Object (_, {primval=Some primval},_) -> primval
