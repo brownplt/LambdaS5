@@ -126,28 +126,12 @@ let assert_equal optfunc (from : string) (expected : string) : bool=
     Ljs_eval.eval_expr e dummy_desugar true
   in
   if (equal_exp expected_ljs to_ljs) then
-    try
-    begin
-      match (eval to_ljs), (eval expected_ljs) with
-      | Ljs_eval.Answer(_, to_v, _, _), 
-        Ljs_eval.Answer(_, expected_v, _, _) ->
-         if (to_v = expected_v) then
-           succeed()
-         else begin
-             printf "\nGot: \n";
-             print_ljs to_ljs; printf "\nexpected: "; print_ljs expected_ljs;
-             failwith "optimized code produce different value"
-           end 
-      | _ -> begin
-             printf "\nGot: \n";
-             print_ljs to_ljs; printf "\nexpected: "; print_ljs expected_ljs;
-             failwith "optimized code produce different value"
-           end
-    end
-    with _ -> fail "eval error"; 
+    let to_ljs_val = try eval to_ljs with _ -> failwith "eval optimized code error" in
+    let expected_val = try eval expected_ljs with _ -> failwith "eval expected code error; you write incorrect code." in
+    succeed()
   else begin
     fail from;
     printf "\nGot: \n";
-    print_ljs to_ljs; printf "\nexpected: "; print_ljs expected_ljs;
-    failwith "optimized code does not meet expectations"
+    print_ljs to_ljs; printf "\nexpected: \n"; print_ljs expected_ljs;
+    failwith "3. optimized code does not meet expectations"
   end

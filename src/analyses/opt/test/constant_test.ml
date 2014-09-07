@@ -4,17 +4,25 @@ open Exp_val
 open Prelude
 
 let constants = [
+  "const";
   "null";
   "undefined";
   "'string'";
   "1"; "1.3";
   "true"; "false";
+  "{[#extensible: false]}";
   "{[#proto: null, #extensible: false]
     'field1': {#value 0, #writable false, #configurable false}}";
+
   "func(x, y) { prim('+', x, y) }";
   "func(x,y,z) {1}";
+
   "{[#proto: const, #extensible: false]
     'field1': {#value 0, #writable false, #configurable false}}";
+
+  "{[#code: func(x) {x}, #extensible: false]
+    'field1': {#value 0, #writable false, #configurable false}}";
+
   "{[#proto: null, #extensible: false]
     'field1': {#value const, #writable false, #configurable false}}";
 ]
@@ -48,7 +56,7 @@ let _ =
   let check_const (s : string) =
     let e = parse s in
     let env = IdMap.empty in
-    let env = IdMap.add "const" ((parse "{[#extensible: false]}"), true) env in
+    let env = IdMap.add "const" ((parse "1"), true, true) env in
     if is_constant e env then succeed ()
     else fail s; ()
   in

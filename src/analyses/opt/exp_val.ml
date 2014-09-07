@@ -4,7 +4,10 @@ module S = Ljs_syntax
 module V = Ljs_values
 
 exception ExpValError of string
-type constpool = (S.exp * bool) IdMap.t
+type pool = (S.exp * bool * bool) IdMap.t
+
+let print_ljs ljs =
+  Ljs_pretty.exp ljs Format.std_formatter; print_newline()
 
 let exp_to_value (e : S.exp) : V.value = 
   match e with 
@@ -63,14 +66,20 @@ let rec is_bound (x : S.exp) (body : S.exp) : bool =
   match x, body with 
   | S.Id (_, var1), S.Let (_, var2, xexp, body) -> var1 = var2 || is_bound x xexp || is_bound x body
   | S.Id (_, var1), S.Rec (_, var2, xexp, body) -> var1 = var2 || is_bound x xexp || is_bound x body
+  | S.Id (_, var1), S.Lambda (_, xs, body) ->
+    List.mem var1 xs || is_bound x body
+  | S.Id (_, var1), S.SetBang (_, var2, e) -> var1 = var2 || is_bound x e
   | _ -> List.exists (fun(e)->is_bound x e) (S.child_exps body)
                                                       
-let rec is_constant (e : S.exp) constpool : bool = match e with
-  | S.Object(_,_,_) -> is_object_constant e constpool
+let is_Id (x : S.exp) : bool = match x with
+  | S.Id (_, _) -> true
+  | _ -> false
+
+let rec is_constant (e : S.exp) pool : bool = match e with
+  | S.Object(_,_,_) -> is_object_constant e pool
   | S.Lambda(_,_,_) -> is_lambda_constant e 
-  | S.Id (_, _) -> is_const_var e constpool
+  | S.Id (_, _) -> is_const_var e pool
   | _ -> is_scalar_constant e
- 
 (* an const object requires extensible is false, all fields have configurable
    and writable set to false.
 
@@ -78,27 +87,27 @@ let rec is_constant (e : S.exp) constpool : bool = match e with
         the syntax. So there is no such an object that getter and setter and configurable attr
         are both initially constant.
  *)
-and is_object_constant (e : S.exp) constpool : bool = match e with
+and is_object_constant (e : S.exp) pool : bool = match e with
   | S.Object (_, attr, strprop) ->
      let { S.primval=primval;S.proto=proto;S.code=code;S.extensible = ext;S.klass=_ } = attr in
      let const_primval = match primval with
-       | Some e -> is_constant e constpool
+       | Some x -> is_constant x pool
        | None -> true 
      in
      let const_proto = match proto with
-       | Some e -> is_constant e constpool
+       | Some x -> is_constant x pool
        | None -> true
      in
      let const_code = match code with
-       | Some e -> is_constant e constpool
+       | Some x -> is_constant x pool
        | None -> true
      in 
      if (not const_primval || not const_proto || not const_code || ext = true) then
-       false
+       false 
      else begin 
          let const_prop (p : string * S.prop) = match p with
            | (s, S.Data ({S.value = value; S.writable=false}, _, false)) -> 
-              is_constant value constpool
+              is_constant value pool
            | _ -> false
          in
          let is_const_property = List.for_all const_prop strprop in
@@ -126,8 +135,11 @@ and is_scalar_constant (e : S.exp) : bool = match e with
   | S.False _ -> true
   | _ -> false
 
-and is_const_var (e : S.exp)  (constpool : constpool) : bool = match e with
-  | S.Id (_, id) ->  (* constpool is a const pool *)
-     IdMap.mem id constpool
+and is_const_var (e : S.exp)  (pool : pool) : bool = match e with
+  | S.Id (_, id) -> 
+     begin
+       try let (_, const, subst) = IdMap.find id pool in const 
+       with _ -> false
+     end
   | _ -> false
        

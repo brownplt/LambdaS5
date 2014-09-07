@@ -175,7 +175,29 @@ let test_substitute_const () =
      cmp "let (x = {[#extensible: true]})
           let (y = x) y"
          "let (x = {[#extensible: true]})
-          let (y = x) y";
+          x";
+
+     cmp "let (x = {[#extensible: true]})
+          let (y = x) {x:=2 ;y}"
+         "let (x = {[#extensible: true]})
+          let (y=x) { x:=2; y}";
+
+     cmp "let (x = {[#extensible: true]})
+          let (y = x) {
+           func(x){y}
+          }"
+         "let (x = {[#extensible: true]})
+          let (y=x) { 
+           func(x){y} 
+          }";
+
+     cmp "let (x = {[#extensible: true]})
+          let (y = x) {
+             func(t, y) {y}
+          }"
+         "let (x = {[#extensible: true]})
+             func(t, y) {y}
+          ";
 
      cmp "let (x = {[#extensible: false]})
           let (y = x) y"
