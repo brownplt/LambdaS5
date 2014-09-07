@@ -8,13 +8,14 @@ class TestCase:
         self.name = name
         self.pre = pre
         self.after = after
+        self.saving = (float(pre)-float(after))/float(pre)
         if result:
             self.result = result
         else:
             self.result = "passed"
         
     def as_one_line(self):
-        print "%40s %10s %10s %10s" % (self.name, self.pre, self.after, self.result)
+        print "%40s %10s %15s %10s %10s" % (self.name, self.pre, self.after, "%.3f" % self.saving, self.result)
 
 if __name__ == '__main__':
     name = "log"
