@@ -60,7 +60,12 @@ let apply_op2 p op e1 e2 : S.exp option =
       Some (value_to_exp result p)
     with _ -> None
 
-
+(* TODO *)
+let rec is_bound (x : S.exp) (body : S.exp) : bool =
+  match x, body with 
+  | S.Id (_, var1), S.Let (_, var2, xexp, body) -> var1 = var2 || is_bound x xexp || is_bound x body
+  | S.Id (_, var1), S.Rec (_, var2, xexp, body) -> var1 = var2 || is_bound x xexp || is_bound x body
+  | _ -> List.exists (fun(e)->is_bound x e) (S.child_exps body)
                                                       
 let rec is_constant (e : S.exp) constpool : bool = match e with
   | S.Object(_,_,_) -> is_object_constant e constpool

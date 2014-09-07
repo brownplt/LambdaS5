@@ -31,12 +31,15 @@ let test_const_folding () =
     cmp "if ({[]})"
      *)
 
-    cmp "if (prim('+',1,2)) {1} else {2}" "1";
-
+    cmp "if (prim('+',1,2)) {1} else {2}" "2";
+    cmp "if (func(s){s}) {1} else {2}" "2";
+    cmp "if ({[]}) {1} else {2}" "2";
+    cmp "if ('') {1} else {2}" "2";
+    cmp "if (1) {1} else {2}" "2";
+    cmp "if (0) {1} else {2}" "2";
+    cmp "if (prim('pretty', 1)) {1} else {2}" "if (prim('pretty', 1)) {1} else {2}";
     cmp "let (x=1) prim('+', x, 1)" "let (x=1) prim('+', x, 1)";
     
-    
-            
   end
 
 let _ = 

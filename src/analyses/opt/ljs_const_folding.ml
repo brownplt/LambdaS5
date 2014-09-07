@@ -79,6 +79,8 @@ let const_folding_getobjattr pos (oattr : oattr) o : exp =
      if ext then True pos else False pos
   | Proto, Object (_, {proto=Some proto}, _) -> proto
   | Proto, Object (_, {proto=None}, _) -> Null pos
+  | Primval, Object (_, {primval=Some primval},_) -> primval
+  | Primval, Object (_, {primval=None},_) -> Null pos
   | _ -> GetObjAttr(pos, oattr, o)
 
 let rec const_folding (e : exp) : exp =
@@ -105,7 +107,7 @@ let rec const_folding (e : exp) : exp =
      let handle_prop p = match p with 
        | (s, Data (data, b1, b2)) ->
           s, Data ({value = const_folding data.value; 
-                      writable = data.writable}, b1, b2)
+                    writable = data.writable}, b1, b2)
        | (s, Accessor (acc, b1, b2)) -> 
           s, Accessor ({getter = const_folding acc.getter; 
                         setter = const_folding acc.setter},
@@ -212,20 +214,25 @@ let rec const_folding (e : exp) : exp =
      let new_e1 = const_folding e1 in
      let new_e2 = const_folding e2 in
      Seq (p, new_e1, new_e2)
+
   | Let (p, x, e, body) ->
      let new_e = const_folding e in
      let new_body = const_folding body in
      Let (p, x, new_e, new_body)
+
   | Rec (p, x, e, body) ->
      let new_e = const_folding e in
      let new_body = const_folding body in
      Rec (p, x, new_e, new_body)
+
   | Label (p, l, e) ->
      let new_e = const_folding e in
      Label (p, l, new_e)
+
   | Break (p, l, e) ->
      let new_e = const_folding e in
      Break (p, l, new_e)
+
   | TryCatch (p, body, catch) ->
      let b = const_folding body in
      let c = const_folding catch in

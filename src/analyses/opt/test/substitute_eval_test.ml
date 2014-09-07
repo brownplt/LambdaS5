@@ -45,21 +45,6 @@ let test_multiple_usages (prog : string) (expected : bool) =
   if ((multiple_usages "x" ljs) = expected) then succeed()
   else fail prog
 
-let can_drop_test_true = [
-]
-
-let can_drop_test_false = [
-  "let (x = {[#extensible: true]})
-   let (y = x) y";
-
-  "let (x = {[#extensible: false]})
-   {x; x}";
-
-  "let (x=1)
-   x := 2";
-   
-]
-
 let test_substitute_const () =
   let optfunc (e : exp) : exp =
     let result, modified = substitute_const e in result
@@ -72,6 +57,72 @@ let test_substitute_const () =
              "1.";
      cmp "let (x=1) {x;x}" 
              "{1.;1.}";
+     
+     cmp "let (x=1)
+          let (y=x)
+          let (x=2)
+            y"
+         "1";
+
+     cmp "let (x={[#extensible: false]})
+          {x;x;x;
+            let (y=x)
+             {y;y;
+               let (x = {[#extensible: true]}) {
+                 {y;x}
+               }
+             }
+          }"
+         "let (x={[#extensible: false]})
+          {x;x;x;
+             let (y=x) 
+             {y;y;
+                let (x = {[#extensible: true]})
+                 {y;x}
+             }
+          }";           
+
+     cmp "let (x={[#extensible: false]})
+          {x;x;x;
+            let (y=x)
+             {y;y;
+               let (x = 1) {
+                 y;x
+               }
+             }
+          }"
+         (* using substitute_eval optimize it again can opt more *)
+         "let (x={[#extensible: false]})
+          {x;x;x;
+             let (y=x) 
+             {y;y;
+                 y;1
+             }
+          }";           
+     
+     cmp "let (x={[#extensible: false]})
+          {x;x;x;
+            let (y=x)
+             {y;y;
+               let (x = {[#extensible: false]}) {
+                 y;x;x;x
+               };
+               let (z = y) {
+                  z;z;z
+               }
+             }
+          }"
+         (* using substitute_eval optimize it again can opt more *)
+         "let (x={[#extensible: false]})
+          {x;x;x;
+            let (y=x)
+             {y;y;
+               let (x = {[#extensible: false]}) {
+                 y;x;x;x
+               };
+                  y;y;y
+             }
+          }";
 
      (* x is not a constant *)
      cmp "let (x={[]}) {x}" 

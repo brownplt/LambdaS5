@@ -194,16 +194,16 @@ let rec substitute_const (e : exp) : (exp * bool) =
 
     | Let (p, x, exp, body) ->
        let x_v = substitute_eval exp constpool in
-       let nonconst_bound() =
+       let del_x_from_pool_continue() =
          let new_constpool = IdMap.remove x constpool in
          let new_body = substitute_eval body new_constpool in 
-         Let (p, x, x_v, new_body) in
-
-       if mutate_var x body then nonconst_bound()
+         Let (p, x, x_v, new_body) 
+       in 
+       if mutate_var x body then del_x_from_pool_continue()
        else
-         (* no mutation *)
+         (* no mutation, decide if it is constant *)
          let is_const = EV.is_constant x_v constpool in
-         if not is_const then nonconst_bound()
+         if not is_const then del_x_from_pool_continue()
          else
            (* is constant, decide the substitute *)
            let substitute = 
@@ -212,10 +212,19 @@ let rec substitute_const (e : exp) : (exp * bool) =
                   not (multiple_usages x body)) 
            in
            let new_constpool = IdMap.add x (x_v, substitute) constpool in
+           (* get the substitution, decide if let should be dropped *)
            if substitute then
-             begin
-               modified := true;
-               substitute_eval body new_constpool
+             begin 
+               if (EV.is_bound x_v body) then 
+                 (* if x_v is Id and is bound later. let (x=x_v) should be kept, and 
+                      x should be substituted *)
+                 let new_constpool = IdMap.add x (x_v, false) constpool in
+                 Let (p, x, x_v, (substitute_eval body new_constpool))
+               else
+                 begin
+                   modified := true;
+                   substitute_eval body new_constpool
+                 end
              end
            else
              let new_body = substitute_eval body new_constpool in
@@ -223,16 +232,16 @@ let rec substitute_const (e : exp) : (exp * bool) =
              
     | Rec (p, x, exp, body) ->  
        let x_v = substitute_eval exp constpool in
-       let nonconst_bound() =
+       let del_x_from_pool_continue() =
          let new_constpool = IdMap.remove x constpool in
          let new_body = substitute_eval body new_constpool in 
          Rec (p, x, x_v, new_body) in
 
-       if mutate_var x body then nonconst_bound()
+       if mutate_var x body then del_x_from_pool_continue()
        else
          (* no mutation *)
          let is_const = EV.is_constant x_v constpool in
-         if not is_const then nonconst_bound()
+         if not is_const then del_x_from_pool_continue()
          else
            (* is constant, decide the substitute, const lambda exp can be substitute
               if the lambda is used once *)
