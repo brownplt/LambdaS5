@@ -12,7 +12,7 @@ let print_ljs ljs =
 let exp_to_value (e : S.exp) : V.value = 
   match e with 
   | S.Null _ -> V.Null
-  | S.Undefined _ -> V.Null
+  | S.Undefined _ -> V.Undefined
   | S.Num (_, n) -> V.Num n
   | S.String (_, s) -> V.String s
   | S.True _ -> V.True
