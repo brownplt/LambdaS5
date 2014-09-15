@@ -28,17 +28,18 @@ compare: debug
 # ../ is forbidden in -Is. The simplest way to make and run optimization test is writing
 # targets in this top-level makefile
 TEST_SRC = $(wildcard optimization/test/*.ml)
-TEST_BYTE = $(addprefix ../obj/,$(subst .ml,.d.byte,$(TEST_SRC)))
+#TEST_BYTE = $(addprefix ../obj/,$(subst .ml,.d.byte,$(TEST_SRC)))
+TEST_BYTE = $(subst .ml,.d.byte,$(TEST_SRC))
 OPT_BUILD = ocamlbuild -build-dir ../obj -Is util,ljs,js,exprjs,optimization -use-ocamlfind -pkgs ounit,unix,str -lflags -I,../lib 
 
 opt: debug $(TEST_BYTE)
 
-$(TEST_BYTE): ../obj/%.d.byte: %.ml
-	$(OPT_BUILD) $<
+$(TEST_BYTE): %.d.byte: %.ml
+	$(OPT_BUILD) $@
 
 opttest: opt
 	#$(foreach p,$(TEST_BYTE),$(p) -no-output-file -no-cache-filename;)
 	for p in $(TEST_BYTE); do  \
 		echo "Running $$p"; \
-		$$p -no-output-file -no-cache-filename; \
+		../obj/$$p -no-output-file -no-cache-filename; \
 	done

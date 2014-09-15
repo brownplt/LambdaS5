@@ -61,7 +61,6 @@ let apply_op2 p op e1 e2 : S.exp option =
       Some (value_to_exp result p)
     with _ -> None
 
-(* TODO *)
 let rec is_bound (x : S.exp) (body : S.exp) : bool =
   match x, body with 
   | S.Id (_, var1), S.Let (_, var2, xexp, body) -> var1 = var2 || is_bound x xexp || is_bound x body

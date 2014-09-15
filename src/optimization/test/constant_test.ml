@@ -64,8 +64,8 @@ let suite =
     let e = U.parse s in
     assert_equal (is_constant e IdMap.empty) false
   in
-  let test1 () = List.iter check_const constants in
-  let test2 () = List.iter check_nonconst non_constants in
+  let test1 test_ctxt = List.iter check_const constants in
+  let test2 test_ctxt = List.iter check_nonconst non_constants in
   "const">:::
     ["check constant" >:: test1;
      "check nonconst" >:: test2]

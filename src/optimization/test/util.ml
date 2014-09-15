@@ -22,16 +22,8 @@ let parse str =
                        (lexeme lexbuf)
                        str)
 
-let succeed () = 
-  Printf.printf "passed\n"; 
-  true
-
-let fail msg = 
-  Printf.printf "failed %s\n" msg; 
-  false
-
-let print_ljs ljs =
-  Ljs_pretty.exp ljs Format.std_formatter; print_newline()
+let ljs_str ljs =
+  Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
 
 let rec equal_exp (e1 : exp) (e2 : exp) =
   let equal_exp_option e1 e2 =
@@ -116,6 +108,7 @@ let rec count (e : exp) : int =
   match e with
   | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e)))
 
+(*
 (* assert optfunc(from) equals to expected *)
 let assert_equal optfunc (from : string) (expected : string) : bool=
   let from_ljs = parse from in
@@ -135,3 +128,10 @@ let assert_equal optfunc (from : string) (expected : string) : bool=
     print_ljs to_ljs; printf "\nexpected: \n"; print_ljs expected_ljs; false
     (*failwith "3. optimized code does not meet expectations"*)
   end
+ *)
+
+(* before, if optimized by opt, should be equal to after *)
+let cmp (before : string) (opt : exp->exp) (after : string)  =
+  let e = parse after in
+  let opte = opt (parse before) in
+  equal_exp opte e
