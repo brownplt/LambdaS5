@@ -243,8 +243,8 @@ let rec const_folding (e : exp) : exp =
      TryFinally (p, b, f)
   | Throw (p, e) ->
      Throw (p, (const_folding e))
-  | Lambda (p, xs, e) ->
-     Lambda (p, xs, (const_folding e))
+  | Lambda (p, xs, body) ->
+     Lambda (p, xs, (const_folding body))
   | Eval (p, e, bindings) ->
      let new_e = const_folding e in
      let new_bindings = const_folding bindings in

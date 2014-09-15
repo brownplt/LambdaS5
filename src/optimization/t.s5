@@ -1,0 +1,4 @@
+let (f = func(x) { prim('prim->bool', x) })
+          let (f1 = f)
+          let (f2 = f1)
+          let (t = 1) {f(t); f(t); f2(t); f2(t)}

@@ -18,6 +18,15 @@ module EV = Exp_val
  *)
 type pool = (exp * bool * bool) IdMap.t
 
+(* pool may contain id x ->id y mapping, this function can follow the id y and get
+   the final exp *)
+let rec follow_until_const_nonid e pool : exp =
+  match e with
+  | Id (_, id) -> 
+     let (exp, const, _) = IdMap.find id pool in 
+     if const then follow_until_const_nonid exp pool else failwith "follow id failed"
+  | _ -> e
+
 (* decide if `id` appears more than once.
    NOTE: This function doesn't build control flow graph, so simply
          issue error on SetBang.
@@ -60,28 +69,7 @@ let multiple_usages (var_id : id) (e : exp) : bool =
     | _ -> List.exists (fun x->x) (map (fun exp->multiple_usages_rec var_id exp) (child_exps e))
   in multiple_usages_rec var_id e
 
-(* decide if x is mutated in e *)
-let rec mutate_var (x : id) (e : exp) : bool = match e with
-  | SetBang (_, var, target) -> x = var || mutate_var x target
-  | Let (_, var, defn, body) ->
-     if (mutate_var x defn) then (* look at the def first *)
-       true
-     else
-       if (var = x) then (* previous scope is over *)
-         false
-       else (* continue search in body *)
-         mutate_var x body
-  | Rec (_, var, defn, body) ->
-     if (mutate_var x defn) then true
-     else
-       if (var = x) then false
-       else mutate_var x body
-  | Lambda (_, vars, body) ->
-     if (List.mem x vars) then (* x is shadowed in lambda *)
-       false
-     else
-       mutate_var x body
-  | _ -> List.exists (fun x->x) (map (fun exp-> mutate_var x exp) (child_exps e))
+          
 
 (* NOTE: xexp should be an optimized one
 
@@ -97,6 +85,42 @@ let rec substitute_const (e : exp) : (exp * bool) =
     let rec substitute_eval_option opt pool = match opt with
       | Some (e) -> Some (substitute_eval e pool)
       | None -> None in
+    let rec app_eval p lambda args pool =
+      (* TODO: some prim needs to convert object, which will failwith something *)
+      (* if f is a constant lambda and args are constants, evaluate to get the result *)
+      let rec get_const e pool = 
+        if EV.is_object_constant e pool || EV.is_lambda_constant e ||
+             EV.is_scalar_constant e 
+        then Some e
+        else match e with
+             | Id (_, id) ->
+                begin
+                  try 
+                    let (exp, const, _) = IdMap.find id pool in
+                    if const then 
+                      get_const exp pool
+                    else None
+                  with _ -> None
+                end 
+             | _ -> None
+      in 
+      let are_const_args = List.for_all (fun(x)->EV.is_constant x pool) args in 
+      let const_lambda = get_const lambda pool in 
+      match are_const_args, const_lambda with
+      | true, Some Lambda (_, xs, body) ->
+         let const_args = List.map (fun e->follow_until_const_nonid e pool) args in
+         let rec addbind xs args pool = match xs, args with
+           | [], [] -> pool
+           | x :: xrest, arg :: argrest ->
+              addbind xrest argrest (IdMap.add x (arg, true, true) pool)
+           | _ -> failwith "args has non-consistant length"
+         in 
+         let new_pool = addbind xs const_args pool in 
+         substitute_eval body new_pool
+      | _ -> App (p, lambda, args)
+    in 
+  
+
     match e with
     | Undefined _ -> e
     | Null _ -> e
@@ -185,7 +209,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
     | App (p, func, args) ->
        let f = substitute_eval func pool in
        let a = List.map (fun x->substitute_eval x pool) args in
-       App (p, f, a)
+       app_eval p f a pool
 
     | Seq (p, e1, e2) ->
        let new_e1 = substitute_eval e1 pool in
@@ -199,7 +223,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
          let new_body = substitute_eval body new_pool in 
          Let (p, x, x_v, new_body) 
        in 
-       if mutate_var x body then 
+       if EV.mutate_var x body then 
          del_x_from_pool_continue pool
        else
          (* no mutation, decide if it is constant *)
@@ -251,7 +275,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
          let new_body = substitute_eval body new_pool in 
          Rec (p, x, x_v, new_body) in
 
-       if mutate_var x body then del_x_from_pool_continue()
+       if EV.mutate_var x body then del_x_from_pool_continue()
        else
          (* no mutation *)
          let is_const = EV.is_constant x_v pool in

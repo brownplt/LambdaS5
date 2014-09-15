@@ -1,7 +1,8 @@
 open Ljs_syntax
-open Util
 open Exp_val
 open Prelude
+open OUnit2
+module U = Util
 
 let constants = [
   "const";
@@ -52,19 +53,23 @@ let non_constants = [
   (* TODO: getter and setter *)
 ]
 
-let _ =
+let suite =
   let check_const (s : string) =
-    let e = parse s in
+    let e = U.parse s in
     let env = IdMap.empty in
-    let env = IdMap.add "const" ((parse "1"), true, true) env in
-    if is_constant e env then succeed ()
-    else fail s; ()
+    let env = IdMap.add "const" ((U.parse "1"), true, true) env in
+    assert_equal (is_constant e env) true
   in
   let check_nonconst (s: string) =
-    let e = parse s in
-    if not (is_constant e IdMap.empty) then succeed ()
-    else fail s; ()
+    let e = U.parse s in
+    assert_equal (is_constant e IdMap.empty) false
   in
-  List.iter check_const constants;
-  List.iter check_nonconst non_constants;
+  let test1 () = List.iter check_const constants in
+  let test2 () = List.iter check_nonconst non_constants in
+  "const">:::
+    ["check constant" >:: test1;
+     "check nonconst" >:: test2]
 
+
+let _ =
+  run_test_tt_main suite

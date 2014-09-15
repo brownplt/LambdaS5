@@ -143,3 +143,28 @@ and is_const_var (e : S.exp)  (pool : pool) : bool = match e with
      end
   | _ -> false
        
+(* decide if x is mutated in e *)
+let rec mutate_var (x : id) (e : S.exp) : bool = match e with
+  | S.SetBang (_, var, target) -> x = var || mutate_var x target
+  | S.Let (_, var, defn, body) ->
+     if (mutate_var x defn) then (* look at the def first *)
+       true
+     else
+       if (var = x) then (* previous scope is over *)
+         false
+       else (* continue search in body *)
+         mutate_var x body
+  | S.Rec (_, var, defn, body) ->
+     if (mutate_var x defn) then true
+     else
+       if (var = x) then false
+       else mutate_var x body
+  | S.Lambda (_, vars, body) ->
+     if (List.mem x vars) then (* x is shadowed in lambda *)
+       false
+     else
+       mutate_var x body
+  | _ -> List.exists (fun x->x) (map (fun exp-> mutate_var x exp) (S.child_exps e))
+
+let print_ljs ljs =
+  Ljs_pretty.exp ljs Format.std_formatter; print_newline()

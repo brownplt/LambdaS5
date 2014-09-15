@@ -132,6 +132,6 @@ let assert_equal optfunc (from : string) (expected : string) : bool=
   else begin
     fail from;
     printf "\nGot: \n";
-    print_ljs to_ljs; printf "\nexpected: \n"; print_ljs expected_ljs;
-    failwith "3. optimized code does not meet expectations"
+    print_ljs to_ljs; printf "\nexpected: \n"; print_ljs expected_ljs; false
+    (*failwith "3. optimized code does not meet expectations"*)
   end
