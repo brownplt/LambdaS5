@@ -4,6 +4,56 @@ module EV = Exp_val
 
 type env = exp IdMap.t
 
+let rec has_side_effect (e : exp) : bool = match e with
+  | Null _
+  | Undefined _
+  | String (_,_)
+  | Num (_,_)
+  | True _
+  | False _
+  | Id (_,_) 
+  | GetAttr (_, _, _, _) 
+  | GetObjAttr (_, _, _)
+  | OwnFieldNames (_,_) 
+  | Op2 (_,_,_,_) 
+    -> false
+  | Object (_,_,_) ->
+     List.exists has_side_effect (child_exps e)
+  | Op1 (_,op,_) ->
+     EV.op_has_side_effect op
+  | If (_, cond, thn, els) ->
+     List.exists has_side_effect [cond; thn; els]
+  | Seq (_, e1, e2) ->
+     has_side_effect e1 || has_side_effect e2
+  | Let (_, x, x_v, body) ->
+     let se = has_side_effect body in
+     if se then true
+     else 
+       begin
+         match x_v with 
+         | Lambda (_, _, _) -> false
+         | _ -> has_side_effect x_v 
+       end 
+  | Rec (_, x, x_v, body) ->
+     has_side_effect body
+  | Lambda (_, _, body) -> has_side_effect body
+  | Label (_, _, e) -> has_side_effect e
+  | Break (_, _, e) -> has_side_effect e
+  | SetAttr (_,_,_,_,_)
+  | SetObjAttr (_,_,_,_)
+  | GetField (_,_,_,_)
+  | SetField (_,_,_,_,_)
+  | DeleteField (_,_,_)
+  | SetBang (_,_,_) 
+  | App (_,_,_)           (* any f(x) is assumed to have side effect *)
+  | TryCatch (_, _, _)    (* any try...catch is assumed to throw out uncatched error *)
+  | TryFinally (_, _, _)  (* any try...finally is assumed to throw out uncached error *)
+  | Throw (_,_)
+  | Eval (_,_,_)
+  | Hint (_,_,_)
+    -> true
+
+
 let eliminate_ids (exp : exp) : exp =
   let rec eliminate_ids_rec (e : exp) (ids : IdSet.t) : (exp * IdSet.t) = 
     let rec handle_option (opt : exp option) ids : exp option * IdSet.t = 
@@ -24,7 +74,7 @@ let eliminate_ids (exp : exp) : exp =
     | Object (p, attrs, strprop) ->
      let primval, ids = handle_option attrs.primval ids in
      let code, ids = handle_option attrs.code ids in
-     let proto, ids = handle_option attrs.code ids in
+     let proto, ids = handle_option attrs.proto ids in
      let new_attrs = { primval = primval; code = code;
                        proto = proto; klass = attrs.klass;
                        extensible = attrs.extensible } in
@@ -124,16 +174,19 @@ let eliminate_ids (exp : exp) : exp =
     | Seq (p, e1, e2) ->
        let new_e1, ids = eliminate_ids_rec e1 ids in
        let new_e2, ids = eliminate_ids_rec e2 ids in
-       if EV.is_scalar_constant new_e1
-       then 
-         new_e2, ids
-       else 
          Seq (p, new_e1, new_e2), ids
                                     
+    (* to retain this let,
+       1. x is used in body, or
+       2. x_v will be evaluated to have side effect
+       NOTE: this means that if x_v is lambda(or x_v has no side effect), and x is
+       not used in body, this let should be eliminated 
+     *)
     | Let (p, x, x_v, body) ->
-       (* check whether x is used in body *)
+       let xv_is_lambda = match x_v with Lambda (_,_,_) -> true | _ -> false in
        let new_body, body_ids = eliminate_ids_rec body ids in
-       if not (IdSet.mem x body_ids) then
+       if not (IdSet.mem x body_ids) && (xv_is_lambda || not (has_side_effect x_v))
+       then
          new_body, body_ids
        else 
          let new_x_v, v_ids = eliminate_ids_rec x_v IdSet.empty in
