@@ -3,11 +3,12 @@ open Util
 open OUnit2
 open Ljs_deadcode_elimination
 
-let suite =
+(* tips: do everything in function test instead of in cmp *)
+let unused_id_test =
   let cmp before after = 
     let test test_ctx =
       let dest = parse after in
-      let opted = eliminate_ids (parse before) in
+      let opted = deadcode_elimination (parse before) in 
       assert_equal 
         ~printer:ljs_str
         ~cmp:equal_exp
@@ -16,7 +17,7 @@ let suite =
     test
   in 
   let no_change code = cmp code code in
-  "Test Unused id elimination" >:::
+  "Test Unused Id Elimination" >:::
     ["unused at all" >:: 
        (cmp "let (x=1)
              let (y=x)
@@ -41,22 +42,20 @@ let suite =
        (cmp "let (x=1)
              let (y={let (z = x)
                      x})
-             let (z=1)
-             {z;y}"
+             let (z=y)
+             y"
             "let (x=1)
              let (y=x)
-             let (z=1)
-             {z;y}");
+             y");
 
      "let contains other lets with side-effect" >::
        (cmp "let (x=1)
              let (y={let(z=10) x:=z})
              let (x=3)
-             {x; y}"
+             y"
             "let (x=1)
              let (y={let(z=10) x:=z})
-             let (x=3)
-             {x; y}");
+             y");
 
      (* binding shadows *)
      "let shadow" >::
@@ -82,6 +81,41 @@ let suite =
              y(2)"
             "let (y=func(x){prim('+',x,1)})
              y(2)");
+     "test lambda" >::
+       (cmp "let (x=1)
+             let (y=2)
+             let (z=3)
+             let (t=4)
+             z := func(x,y) {f(x);f(y);f(t)}"
+            "let (z=3)
+             let (t=4)
+             z := func(x,y) {f(x);f(y);f(t)}");
+
+     "test lambda 2" >::
+       (cmp "let (x=1)
+             let (y=2)
+             let (z=3)
+             let (t=4) {
+                f(x); 
+                z := func(x,y) {f(x);f(y);f(t)}
+             }"
+            "let (x=1)
+             let (z=3)
+             let (t=4) {
+                f(x);
+                z := func(x,y) {f(x);f(y);f(t)}
+             }");
+
+     "let lambda 3" >::
+       (no_change "let (mm = undefined)
+             let (fp = {[]})
+             let (ftostr = {[#proto:fp, #code: null]})
+             {
+                let (newval = ftostr) fp['toString' = newval];
+                fp['toString'<#enumerable>=false];
+                {mm := func() {2};
+                 1}}");
+
 
      "id collection should also be performed in lambda body 1" >::
        (cmp "let (x = 1)
@@ -145,11 +179,23 @@ let suite =
        (no_change "let (y = o['field1'])
                    x");
 
-         
+
+     "eliminate sequence" >::
+       (cmp "let (x = 1)
+             {x;x;x;x;x}"
+            "let (x=1)
+             x");
+
+     "test sequence" >::
+       (cmp "f['field' = true]; f['field'<#enumerable>=false]"
+            "f['field' = true]; f['field'<#enumerable>=false]");
+
+     "test object field" >::
+       (no_change "let (%ObjectProto = {[#proto: null]})
+                   let (%global = {[#proto: %ObjectProto]})
+                   %global")
     ]
 
-       
-
 let _ =
-  run_test_tt_main suite
+  run_test_tt_main unused_id_test
     

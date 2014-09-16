@@ -9,6 +9,7 @@ open Reachability
 open Ljs_const_folding
 open Ljs_substitute_eval
 open Ljs_const_propagation
+open Ljs_deadcode_elimination
 
 type node =
   | Js of Js_syntax.program
@@ -392,16 +393,21 @@ module S5 = struct
     let new_ljs = const_propagation ljs in
     push_ljs new_ljs
 
-  let count_nodes cmd () =
+  let opt_deadcode_elimination cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = deadcode_elimination ljs in
+    push_ljs new_ljs
+
+  let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
       | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
     let ljs = pop_ljs cmd in
     let n = count ljs in 
-      begin
-        printf "%d" n; print_newline();
-        push_ljs ljs
-      end
+    begin
+      print_string str; printf ": %d\n" n;
+      push_ljs ljs;
+    end
     
   (* Main *)
 
@@ -502,7 +508,9 @@ module S5 = struct
           "perform partial evaluation by substitution on s5";
         unitCmd "-opt-const-propagation" opt_const_propation
           "perform constant propagation on s5";
-        unitCmd "-count-nodes" count_nodes
+        unitCmd "-opt-deadcode-elimination" opt_deadcode_elimination
+          "perform dead code elimination on s5";
+        strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]
       (load_ljs "-s5")

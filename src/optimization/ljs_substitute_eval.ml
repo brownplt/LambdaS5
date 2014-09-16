@@ -233,7 +233,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
              (* if x_v is not constant, decide if x_v is an id and that id is not bound
                 again in body. If so, x->(x_v, not constant, can be substituted) should  
                 be added to pool *)
-             if (EV.is_Id x_v && not (EV.is_bound x_v body)) then
+             if (EV.is_Id x_v && not (EV.is_bound x_v body)) then (* NOTE: both x and x_v should not be mutated *)
                let newpool = IdMap.add x (x_v, false, true) pool in
                begin
                  modified := true;
