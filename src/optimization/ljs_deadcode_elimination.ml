@@ -53,7 +53,7 @@ let rec has_side_effect (e : exp) : bool = match e with
      has_side_effect body
   | Lambda (_, _, body) -> has_side_effect body
   | Label (_, _, e) -> has_side_effect e
-  | Break (_, _, e) -> has_side_effect e
+  | Break (_, _, _)
   | SetAttr (_,_,_,_,_)
   | SetObjAttr (_,_,_,_)
   | GetField (_,_,_,_)
@@ -188,6 +188,7 @@ let deadcode_elimination (exp : exp) : exp =
        let args, ids = handle_args args ids in
        App (p, f, args), ids
 
+(*
     | Seq (p, e1, e2) ->
        (* sequence can either first visit e1 or e2 *)
        (* if e1 is lambda or has no side effect, e1 can be eliminated *)
@@ -198,6 +199,29 @@ let deadcode_elimination (exp : exp) : exp =
        else 
          let new_e2, ids = eliminate_ids_rec e2 e1_ids in
          Seq (p, new_e1, new_e2), ids
+ *)
+
+    | Seq (p, e1, e2) ->
+       let new_e2, e2_ids = eliminate_ids_rec e2 ids in
+       let new_e1, e1_ids = eliminate_ids_rec e1 ids in
+       let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
+       if e1_is_lambda || not (has_side_effect new_e1) then
+         new_e2, e2_ids
+       else 
+         Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
+     
+
+(*
+    | Seq (p, e1, e2) ->
+       let new_e2, e2_ids = eliminate_ids_rec e2 ids in
+       let new_e1, e1_ids = eliminate_ids_rec e1 ids in
+       let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
+       if (e1_is_lambda || not (has_side_effect new_e1)) then
+         new_e2, e2_ids
+       else 
+         Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
+ *)     
+       
     (* to retain this let,
        1. x is used in body, or
        2. x_v will be evaluated to have side effect
