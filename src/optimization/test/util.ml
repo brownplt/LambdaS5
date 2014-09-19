@@ -1,6 +1,7 @@
 open Prelude
 open Ljs_syntax
 open Lexing
+module OU = OUnit2
 
 (* parse a string to produce ljs *)
 let parse str =
@@ -108,30 +109,18 @@ let rec count (e : exp) : int =
   match e with
   | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e)))
 
-(*
-(* assert optfunc(from) equals to expected *)
-let assert_equal optfunc (from : string) (expected : string) : bool=
-  let from_ljs = parse from in
-  let expected_ljs = parse expected in
-  let to_ljs = optfunc from_ljs in
-  let eval (e : exp) = 
-    let dummy_desugar = fun (s) -> Null Pos.dummy in
-    Ljs_eval.eval_expr e dummy_desugar true
+(* tips: do everything in function test instead of in cmp *)
+let cmp (before : string) (func : exp->exp) (after : string) = 
+  let test test_ctx =
+    let dest = parse after in
+    let opted = func (parse before) in 
+    OU.assert_equal 
+      ~printer:ljs_str
+      ~cmp:equal_exp
+      dest opted
   in
-  if (equal_exp expected_ljs to_ljs) then
-    let to_ljs_val = try eval to_ljs with _ -> failwith "eval optimized code error" in
-    let expected_val = try eval expected_ljs with _ -> failwith "eval expected code error; you write incorrect code." in
-    succeed()
-  else begin
-    fail from;
-    printf "\nGot: \n";
-    print_ljs to_ljs; printf "\nexpected: \n"; print_ljs expected_ljs; false
-    (*failwith "3. optimized code does not meet expectations"*)
-  end
- *)
+  test
 
-(* before, if optimized by opt, should be equal to after *)
-let cmp (before : string) (opt : exp->exp) (after : string)  =
-  let e = parse after in
-  let opte = opt (parse before) in
-  equal_exp opte e
+let no_change (code : string) =
+  let iden a = a in
+  cmp code iden code

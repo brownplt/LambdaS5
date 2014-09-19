@@ -2,21 +2,11 @@ open Prelude
 open Util
 open OUnit2
 open Ljs_deadcode_elimination
+module S = Ljs_syntax
 
-(* tips: do everything in function test instead of in cmp *)
+ 
 let unused_id_test =
-  let cmp before after = 
-    let test test_ctx =
-      let dest = parse after in
-      let opted = deadcode_elimination (parse before) in 
-      assert_equal 
-        ~printer:ljs_str
-        ~cmp:equal_exp
-        dest opted
-    in
-    test
-  in 
-  let no_change code = cmp code code in
+  let cmp before after = cmp before deadcode_elimination after in
   "Test Unused Id Elimination" >:::
     ["unused at all" >:: 
        (cmp "let (x=1)
@@ -41,7 +31,7 @@ let unused_id_test =
      "let contains other lets" >::
        (cmp "let (x=1)
              let (y={let (z = x)
-                     x})
+             x})
              let (z=y)
              y"
             "let (x=1)
@@ -96,52 +86,52 @@ let unused_id_test =
              let (y=2)
              let (z=3)
              let (t=4) {
-                f(x); 
-                z := func(x,y) {f(x);f(y);f(t)}
+             f(x); 
+             z := func(x,y) {f(x);f(y);f(t)}
              }"
             "let (x=1)
              let (z=3)
              let (t=4) {
-                f(x);
-                z := func(x,y) {f(x);f(y);f(t)}
+             f(x);
+             z := func(x,y) {f(x);f(y);f(t)}
              }");
 
      "let lambda 3" >::
        (no_change "let (mm = undefined)
-             let (fp = {[]})
-             let (ftostr = {[#proto:fp, #code: null]})
-             {
-                let (newval = ftostr) fp['toString' = newval];
-                fp['toString'<#enumerable>=false];
-                {mm := func() {2};
-                 1}}");
+                   let (fp = {[]})
+                   let (ftostr = {[#proto:fp, #code: null]})
+                   {
+                   let (newval = ftostr) fp['toString' = newval];
+                   fp['toString'<#enumerable>=false];
+                   {mm := func() {2};
+                   1}}");
 
 
      "id collection should also be performed in lambda body 1" >::
        (cmp "let (x = 1)
              let (y = func(s) {
-                          x := s
-                      })
-                 y"
+             x := s
+             })
+             y"
             "let (x = 1)
              let (y = func(s) {
-                          x := s
-                      })
-                 y");
+             x := s
+             })
+             y");
 
      "id collection should also be performed in lambda body 2" >::
        (cmp "let (x = 1)
              let (y = func(s) {
-                        let (x = 1)
-                          x := s
-                      })
-                 y"
+             let (x = 1)
+             x := s
+             })
+             y"
             "let (y = func(s) {
-                        let (x = 1)
-                          x := s
-                      })
-                 y");
-            
+             let (x = 1)
+             x := s
+             })
+             y");
+     
      (* side effect *)
      "side effect test 0" >::
        (no_change "let (x = 1)
@@ -151,7 +141,7 @@ let unused_id_test =
      "side effect test 1" >::
        (no_change "let (x = 1)
                    let (y = {[] 
-                             'fld': {#value prim('print', x), #writable true}})
+                   'fld': {#value prim('print', x), #writable true}})
                    x");
 
      "side effect test 2" >::
@@ -198,4 +188,4 @@ let unused_id_test =
 
 let _ =
   run_test_tt_main unused_id_test
-    
+                   
