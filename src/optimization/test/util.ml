@@ -49,7 +49,7 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
   | Num (_, n1), Num(_, n2) -> n1 = n2
   | Let (_, x1, xexp1, body1), Let (_, x2, xexp2, body2) ->
      x1 = x2 && equal_exp xexp1 xexp2 && equal_exp body1 body2
-  | Rec (_, x1, xexp1, body1), Let (_, x2, xexp2, body2) ->
+  | Rec (_, x1, xexp1, body1), Rec (_, x2, xexp2, body2) ->
      x1 = x2 && equal_exp xexp1 xexp2 && equal_exp body1 body2
 
   | Seq (_, e1, e2), Seq (_, e3, e4) -> equal_exp e1 e3 && equal_exp e2 e4
@@ -85,12 +85,18 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
      equal_exp o1 o2
   | SetBang (_, x1, e1), SetBang (_, x2, e2) ->
      x1 = x2 && equal_exp e1 e2
-  | Op1 (_, op1, e1), Op1 (_, op2, e2) -> op1 = op2 && equal_exp e1 e2
-  | Op2 (_, op1, e1, e2), Op2(_, op2, e3, e4) -> op1 = op2 && equal_exp e1 e3 && equal_exp e2 e4
-  | If (_, c1, t1, e1), If (_, c2, t2, e2) -> equal_exp c1 c2 && equal_exp t1 t2 && equal_exp e1 e2
-  | App (_, f1, arg1), App (_, f2, arg2) -> equal_exp f1 f2 && List.for_all2 equal_exp arg1 arg2
+  | Op1 (_, op1, e1), Op1 (_, op2, e2) -> 
+     op1 = op2 && equal_exp e1 e2
+  | Op2 (_, op1, e1, e2), Op2(_, op2, e3, e4) -> 
+     op1 = op2 && equal_exp e1 e3 && equal_exp e2 e4
+  | If (_, c1, t1, e1), If (_, c2, t2, e2) -> 
+     equal_exp c1 c2 && equal_exp t1 t2 && equal_exp e1 e2
+  | App (_, f1, arg1), App (_, f2, arg2) -> 
+     equal_exp f1 f2 && List.for_all2 equal_exp arg1 arg2
   | Label (_, l1, e1), Label (_, l2, e2) ->
      l1 = l2 && equal_exp e1 e2
+  | Break (_, i1, e1), Break (_, i2, e2) ->
+     i1 = i2 && equal_exp e1 e2
   | TryCatch (_, b1, c1), TryCatch (_, b2, c2) ->
      equal_exp b1 b2 && equal_exp c1 c2
   | TryFinally (_, b1, f1), TryFinally (_, b2, f2) ->
@@ -103,7 +109,7 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
      equal_exp e1 e2 && equal_exp b1 b2
   | Hint (_, x1, e1), Hint(_, x2, e2) ->
      x1 = x2 && equal_exp e1 e2
-  | _ ->  false (*failwith "not implemented" *)
+  | _ ->  failwith "not implemented"
 
 let rec count (e : exp) : int =
   match e with
