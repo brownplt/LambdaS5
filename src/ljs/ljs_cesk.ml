@@ -78,7 +78,7 @@ let rec eval_cesk desugar clo store kont i =
     if i mod gc_instr_count = 0 then
       match count store with
       | obj_count, val_count ->
-        if obj_count > store_gc_size or val_count > store_gc_size then
+        if obj_count > store_gc_size || val_count > store_gc_size then
           Ljs_gc.collect_garbage store (LocSet.union (C.locs_of_clos clo) (K.locs_of_kont kont))
         else store
     else store in
