@@ -5,6 +5,7 @@ open Ljs_prim_propagation
 
 let suite = 
   let cmp before after = cmp before prim_propagation after in
+  let no_change code = no_change code prim_propagation in
   "Test Prim Propagation" >:::
     [
       "propagate number" >::
@@ -78,6 +79,16 @@ let suite =
               let (y=1)
               let (t = func(x,y) {prim('+',x,y)})
               t(1,1)");
+
+      "lambda argument" >::
+        (cmp "let (x=1)
+              let (y=x)
+              let (t = func(x) {prim('+',x,y)})
+              t(y)"
+             "let (x=1)
+              let (y=1)
+              let (t = func(x) {prim('+',x,1)})
+              t(1)");
 
     ]
 

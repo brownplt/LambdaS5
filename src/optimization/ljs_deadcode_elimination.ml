@@ -1,73 +1,11 @@
 open Prelude
 open Ljs_syntax
-module EV = Exp_val
+module EU = Exp_util
 
 type env = exp IdMap.t
 
 let ljs_str ljs =
   Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
-
-(*
- * this function will check whether exp `e' has side effect *when it is evaluated*.
- * NOTE(junsong): The subtle point is
- * let (x = func(){ y:=1} ) {x} does not have side effect
- * let (x = func(){ y:=1} ) {x()} has side effect.
- *
- * this function makes strong assertion on app(): any app has side effect
- *)
-let rec has_side_effect (e : exp) : bool = match e with
-  | Null _
-  | Undefined _
-  | String (_,_)
-  | Num (_,_)
-  | True _
-  | False _
-  | Id (_,_) 
-    -> false
-  | GetAttr (_, _,obj, flds) ->
-     has_side_effect obj || has_side_effect flds
-  | GetObjAttr (_, _, obj) ->
-     has_side_effect obj
-  | OwnFieldNames (_, obj) ->
-     has_side_effect obj
-  | Op2 (_,_,e1,e2) ->
-     has_side_effect e1 || has_side_effect e2
-  | Op1 (_,op,e1) ->
-     EV.op_has_side_effect op || has_side_effect e1
-  | Object (_,_,_) ->
-     List.exists has_side_effect (child_exps e)
-  | If (_, cond, thn, els) ->
-     List.exists has_side_effect [cond; thn; els]
-  | Seq (_, e1, e2) ->
-     has_side_effect e1 || has_side_effect e2
-  | Let (_, x, x_v, body) ->
-     let se = has_side_effect body in
-     if se then true
-     else 
-       begin
-         match x_v with 
-         | Lambda (_, _, _) -> false
-         | _ -> has_side_effect x_v 
-       end 
-  | Rec (_, x, x_v, body) ->
-     has_side_effect body
-  | Lambda (_, _, body) -> has_side_effect body
-  | Label (_, _, e) -> has_side_effect e
-  | Break (_, _, _)
-  | SetAttr (_,_,_,_,_)
-  | SetObjAttr (_,_,_,_)
-  | GetField (_,_,_,_)
-  | SetField (_,_,_,_,_)
-  | DeleteField (_,_,_)
-  | SetBang (_,_,_) 
-  | App (_,_,_)           (* any f(x) is assumed to have side effect *)
-  | TryCatch (_, _, _)    (* any try...catch is assumed to throw out uncatched error *)
-  | TryFinally (_, _, _)  (* any try...finally is assumed to throw out uncached error *)
-  | Throw (_,_)
-  | Eval (_,_,_)
-  | Hint (_,_,_)
-    -> true
-
 
 (* eliminate unused ids, sequence *)
 let deadcode_elimination (exp : exp) : exp =
@@ -194,7 +132,7 @@ let deadcode_elimination (exp : exp) : exp =
        (* if e1 is lambda or has no side effect, e1 can be eliminated *)
        let new_e1, e1_ids = eliminate_ids_rec e1 ids in
        let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
-       if (e1_is_lambda || not (has_side_effect new_e1)) then
+       if (e1_is_lambda || not (EU.has_side_effect new_e1)) then
          eliminate_ids_rec e2 e1_ids
        else 
          let new_e2, ids = eliminate_ids_rec e2 e1_ids in
@@ -205,7 +143,7 @@ let deadcode_elimination (exp : exp) : exp =
        let new_e2, e2_ids = eliminate_ids_rec e2 ids in
        let new_e1, e1_ids = eliminate_ids_rec e1 ids in
        let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
-       if e1_is_lambda || not (has_side_effect new_e1) then
+       if e1_is_lambda || not (EU.has_side_effect new_e1) then
          new_e2, e2_ids
        else 
          Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
@@ -216,7 +154,7 @@ let deadcode_elimination (exp : exp) : exp =
        let new_e2, e2_ids = eliminate_ids_rec e2 ids in
        let new_e1, e1_ids = eliminate_ids_rec e1 ids in
        let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
-       if (e1_is_lambda || not (has_side_effect new_e1)) then
+       if (e1_is_lambda || not (EU.has_side_effect new_e1)) then
          new_e2, e2_ids
        else 
          Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
@@ -231,7 +169,7 @@ let deadcode_elimination (exp : exp) : exp =
     | Let (p, x, x_v, body) -> 
        let xv_is_lambda = match x_v with Lambda (_,_,_) -> true | _ -> false in
        let new_body, body_ids = eliminate_ids_rec body ids in
-       if not (IdSet.mem x body_ids) && (xv_is_lambda || not (has_side_effect x_v))
+       if not (IdSet.mem x body_ids) && (xv_is_lambda || not (EU.has_side_effect x_v))
        then begin
            (*printf "not include [%s] collect ids:" x;
          IdSet.iter (fun s->printf "%s," s) body_ids; print_newline();*)

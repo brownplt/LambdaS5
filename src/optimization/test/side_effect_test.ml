@@ -1,7 +1,7 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_deadcode_elimination
+open Exp_util
 
 (* tips: do everything in function test instead of in cmp *)
 let side_effect_test = 

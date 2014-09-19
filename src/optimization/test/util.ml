@@ -109,7 +109,7 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
      equal_exp e1 e2 && equal_exp b1 b2
   | Hint (_, x1, e1), Hint(_, x2, e2) ->
      x1 = x2 && equal_exp e1 e2
-  | _ ->  failwith "not implemented"
+  | _ ->  false (*failwith "not implemented"*)
 
 let rec count (e : exp) : int =
   match e with
@@ -127,6 +127,5 @@ let cmp (before : string) (func : exp->exp) (after : string) =
   in
   test
 
-let no_change (code : string) =
-  let iden a = a in
-  cmp code iden code
+let no_change (code : string) (func : exp->exp) =
+  cmp code func code

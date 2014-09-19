@@ -7,6 +7,7 @@ module S = Ljs_syntax
  
 let unused_id_test =
   let cmp before after = cmp before deadcode_elimination after in
+  let no_change code = no_change code deadcode_elimination in
   "Test Unused Id Elimination" >:::
     ["unused at all" >:: 
        (cmp "let (x=1)

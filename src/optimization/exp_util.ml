@@ -168,3 +168,65 @@ let rec mutate_var (x : id) (e : S.exp) : bool = match e with
 
 let print_ljs ljs =
   Ljs_pretty.exp ljs Format.std_formatter; print_newline()
+
+
+(*
+ * this function will check whether exp `e' has side effect *when it is evaluated*.
+ * NOTE(junsong): The subtle point is
+ * let (x = func(){ y:=1} ) {x} does not have side effect
+ * let (x = func(){ y:=1} ) {x()} has side effect.
+ *
+ * this function makes strong assertion on app(): any app has side effect
+ *)
+let rec has_side_effect (e : S.exp) : bool = match e with
+  | S.Null _
+  | S.Undefined _
+  | S.String (_,_)
+  | S.Num (_,_)
+  | S.True _
+  | S.False _
+  | S.Id (_,_) 
+    -> false
+  | S.GetAttr (_, _,obj, flds) ->
+     has_side_effect obj || has_side_effect flds
+  | S.GetObjAttr (_, _, obj) ->
+     has_side_effect obj
+  | S.OwnFieldNames (_, obj) ->
+     has_side_effect obj
+  | S.Op2 (_,_,e1,e2) ->
+     has_side_effect e1 || has_side_effect e2
+  | S.Op1 (_,op,e1) ->
+     op_has_side_effect op || has_side_effect e1
+  | S.Object (_,_,_) ->
+     List.exists has_side_effect (S.child_exps e)
+  | S.If (_, cond, thn, els) ->
+     List.exists has_side_effect [cond; thn; els]
+  | S.Seq (_, e1, e2) ->
+     has_side_effect e1 || has_side_effect e2
+  | S.Let (_, x, x_v, body) ->
+     let se = has_side_effect body in
+     if se then true
+     else 
+       begin
+         match x_v with 
+         | S.Lambda (_, _, _) -> false
+         | _ -> has_side_effect x_v 
+       end 
+  | S.Rec (_, x, x_v, body) ->
+     has_side_effect body
+  | S.Lambda (_, _, body) -> has_side_effect body
+  | S.Label (_, _, e) -> has_side_effect e
+  | S.Break (_, _, _)
+  | S.SetAttr (_,_,_,_,_)
+  | S.SetObjAttr (_,_,_,_)
+  | S.GetField (_,_,_,_)
+  | S.SetField (_,_,_,_,_)
+  | S.DeleteField (_,_,_)
+  | S.SetBang (_,_,_) 
+  | S.App (_,_,_)           (* any f(x) is assumed to have side effect *)
+  | S.TryCatch (_, _, _)    (* any try...catch is assumed to throw out uncatched error *)
+  | S.TryFinally (_, _, _)  (* any try...finally is assumed to throw out uncached error *)
+  | S.Throw (_,_)
+  | S.Eval (_,_,_)
+  | S.Hint (_,_,_)
+    -> true
