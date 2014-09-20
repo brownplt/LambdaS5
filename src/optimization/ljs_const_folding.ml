@@ -125,6 +125,11 @@ let rec const_folding_getfield pos o f a =
   | _ -> GetField (pos, o, f, a)
 
 
+type env = exp IdMap.t
+
+let rec const_folding_app pos lambda args =
+  Null pos
+  
 let rec const_folding (e : exp) : exp =
   match e with
   | Undefined _ 
@@ -199,6 +204,13 @@ let rec const_folding (e : exp) : exp =
             If (p, c_val, t, e)
           end 
      end 
+  | App (p, func, args) ->
+     let f = const_folding func in
+     let args = List.map const_folding args in
+     if EU.valid_for_folding f && (List.for_all EU.valid_for_folding args) then
+       const_folding_app p f args
+     else 
+       App (p, f, args)
   | Object (_,_,_) 
   | SetAttr (_,_,_,_,_)
   | SetObjAttr (_,_,_,_)
@@ -207,7 +219,6 @@ let rec const_folding (e : exp) : exp =
   | OwnFieldNames (_,_)
   | SetBang (_,_,_)
   | Lambda (_,_,_)
-  | App (_,_,_) 
   | Seq (_,_,_) 
   | Let (_,_,_,_)
   | Rec (_,_,_,_)

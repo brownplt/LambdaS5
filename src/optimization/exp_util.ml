@@ -82,7 +82,7 @@ let rec has_side_effect (e : S.exp) : bool = match e with
        end 
   | S.Rec (_, x, x_v, body) ->
      has_side_effect body
-  | S.Lambda (_, _, body) -> has_side_effect body
+  | S.Lambda (_, _, body) -> false(*has_side_effect body*)
   | S.Label (_, _, e) -> has_side_effect e
   | S.Break (_, _, _)
   | S.SetAttr (_,_,_,_,_)

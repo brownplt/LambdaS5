@@ -13,10 +13,10 @@ let side_effect_test =
   in 
   "Test side effect" >:::
     [
-      "lambda body has side effect" >::
-        (checkse "func(s) {prim('print',s)}" true);
+      "lambda is closure. It has no side effect" >::
+        (checkse "func(s) {prim('print',s)}" false);
 
-      "lambda body has no side effect" >::
+      "lambda is closure. It has no side effect" >::
         (checkse "func(s) {prim('+',s, 1)}" false);
 
       "set field" >::
@@ -60,6 +60,9 @@ let side_effect_test =
       "test application" >::
         (checkse "let (f = func(s) {x:=1})
                   f(1)" true);
+
+      "any application has side effect" >::
+        (checkse "func(s) {1}(1)" true);
 
       "seq" >::
         (checkse "1; s:=1" true)

@@ -6,7 +6,7 @@ open Ljs_function_inlining
 let suite = 
   let cmp before after = cmp before function_inlining after in
   let no_change code = no_change code function_inlining in 
-  "Test Prim Propagation" >:::
+  "Test Function Inlining Test" >:::
     [
       "simple inlining" >::
         (cmp "let (a = func(){1})

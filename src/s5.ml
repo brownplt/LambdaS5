@@ -390,7 +390,7 @@ module S5 = struct
     let new_ljs, modified = substitute_const ljs in
     push_ljs new_ljs
 
-  let opt_const_propation cmd () =
+  let opt_const_propagation cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = const_propagation ljs in
     push_ljs new_ljs
@@ -518,7 +518,7 @@ module S5 = struct
           "perform constant folding on s5";
         unitCmd "-opt-substitute-const" opt_substitute_const
           "perform partial evaluation by substitution on s5";
-        unitCmd "-opt-const-propagation" opt_const_propation
+        unitCmd "-opt-const-propagation" opt_const_propagation
           "perform constant propagation on s5";
         unitCmd "-opt-deadcode-elimination" opt_deadcode_elimination
           "perform dead code elimination on s5";

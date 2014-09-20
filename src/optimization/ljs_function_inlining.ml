@@ -20,7 +20,7 @@ let rec function_inlining (e : exp) : exp =
     | Id (p, x) ->
        begin 
          try 
-           IdMap.find x env 
+           IdMap.find x env
          with _ -> e
        end 
     | App (p, func, args) ->

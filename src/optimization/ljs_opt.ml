@@ -35,7 +35,7 @@ let rec optimize (optimizer : exp->exp) (e : exp) : exp =
   | Num (_,_)
   | True _
   | False _ 
-  | Id _ -> optimizer e
+  | Id _ -> e
   | Object (p, attrs, props) ->
      let new_attrs = apply_to_attr optimizer attrs in
      let new_props = apply_to_props optimizer props in
