@@ -75,6 +75,8 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
      attr1 = attr2 && equal_exp obj1 obj2 && equal_exp field1 field2 && equal_exp newval1 newval2
   | GetObjAttr (_, a1, obj1), GetObjAttr(_, a2, obj2) ->
      a1 = a2 && equal_exp obj1 obj2
+  | SetObjAttr (_, a1, obj1, arg1), SetObjAttr(_, a2, obj2, arg2) ->
+     a1 = a2 && equal_exp obj1 obj2 && equal_exp arg1 arg2
   | SetField (_, o1, f1, v1, arg1), SetField (_, o2, f2, v2, arg2) ->
      equal_exp o1 o2 && equal_exp f1 f2 && equal_exp v1 v2 && equal_exp arg1 arg2 
   | GetField (_, o1, f1, v1), GetField (_, o2, f2, v2) ->

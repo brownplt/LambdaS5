@@ -125,45 +125,6 @@ let rec const_folding_getfield pos o f a =
   | _ -> GetField (pos, o, f, a)
 
 
-let rec valid_for_folding (e : exp) : bool = 
-  match e with
-  | Null _ 
-  | Undefined _
-  | String (_,_)
-  | Num (_,_)
-  | True _
-  | False _ -> true
-  | Id (_,_) -> false
-  | Object (_, attr, strprop) ->
-     let { primval=primval;proto=proto;code=code;extensible = ext;klass=_ } = attr in
-     let const_primval = match primval with
-       | Some x -> valid_for_folding x && not (EU.has_side_effect x)
-       | None -> true 
-     in
-     let const_proto = match proto with 
-       | Some x -> valid_for_folding x && not (EU.has_side_effect x)
-       | None -> true
-     in
-     let const_code = match code with
-       | Some x -> valid_for_folding x && not (EU.has_side_effect x) 
-       | None -> true
-     in 
-     if (not const_primval || not const_proto || not const_code || ext = true) then
-       begin 
-       false 
-       end 
-     else 
-         let const_prop (p : string * prop) = match p with
-           | (s, Data ({value = value; writable=false}, _, false)) -> 
-              valid_for_folding value && not (EU.has_side_effect value)
-           | (s, Accessor ({getter=_; setter=_},_,_)) -> true
-           | _ -> false
-         in
-         List.for_all const_prop strprop 
-  | Lambda (_, xs, body) ->
-     IdSet.is_empty (free_vars e) && not (EU.has_side_effect body)
-  | _ -> List.for_all valid_for_folding (child_exps e) && not (EU.has_side_effect e)
-
 let rec const_folding (e : exp) : exp =
   match e with
   | Undefined _ 
@@ -177,14 +138,14 @@ let rec const_folding (e : exp) : exp =
   | GetAttr (p, pattr, obj, field) -> 
      let o = const_folding obj in
      let f = const_folding field in
-     if valid_for_folding o && valid_for_folding f then
+     if EU.valid_for_folding o && EU.valid_for_folding f then
        const_folding_getattr p pattr o f
      else
        GetAttr (p, pattr, o, f)
 
   | GetObjAttr (p, oattr, obj) -> 
      let o = const_folding obj in
-     if valid_for_folding o then
+     if EU.valid_for_folding o then
        const_folding_getobjattr p oattr o
      else 
        GetObjAttr (p, oattr, o)
@@ -193,7 +154,7 @@ let rec const_folding (e : exp) : exp =
      let o = const_folding obj in
      let f = const_folding fld in
      let a = const_folding args in
-     if valid_for_folding o && valid_for_folding f then
+     if EU.valid_for_folding o && EU.valid_for_folding f then
        const_folding_getfield pos o f a
      else  
        GetField (pos, o, f, a)

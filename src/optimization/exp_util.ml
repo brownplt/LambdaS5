@@ -38,6 +38,68 @@ let op_has_side_effect (op : string) : bool = match op with
   | "current-utc-millis" -> true
   | _ -> false 
 
+(*
+ * this function will check whether exp `e' has side effect *when it is evaluated*.
+ * NOTE(junsong): The subtle point is
+ * let (x = func(){ y:=1} ) {x} does not have side effect
+ * let (x = func(){ y:=1} ) {x()} has side effect.
+ *
+ * this function makes strong assertion on app(): any app has side effect
+ *)
+let rec has_side_effect (e : S.exp) : bool = match e with
+  | S.Null _
+  | S.Undefined _
+  | S.String (_,_)
+  | S.Num (_,_)
+  | S.True _
+  | S.False _
+  | S.Id (_,_) 
+    -> false
+  | S.GetAttr (_, _,obj, flds) ->
+     has_side_effect obj || has_side_effect flds
+  | S.GetObjAttr (_, _, obj) ->
+     has_side_effect obj
+  | S.OwnFieldNames (_, obj) ->
+     has_side_effect obj
+  | S.Op2 (_,_,e1,e2) ->
+     has_side_effect e1 || has_side_effect e2
+  | S.Op1 (_,op,e1) ->
+     op_has_side_effect op || has_side_effect e1
+  | S.Object (_,_,_) ->
+     List.exists has_side_effect (S.child_exps e)
+  | S.If (_, cond, thn, els) ->
+     List.exists has_side_effect [cond; thn; els]
+  | S.Seq (_, e1, e2) ->
+     has_side_effect e1 || has_side_effect e2
+  | S.Let (_, x, x_v, body) ->
+     let se = has_side_effect body in
+     if se then true
+     else 
+       begin
+         match x_v with 
+         | S.Lambda (_, _, _) -> false
+         | _ -> has_side_effect x_v 
+       end 
+  | S.Rec (_, x, x_v, body) ->
+     has_side_effect body
+  | S.Lambda (_, _, body) -> has_side_effect body
+  | S.Label (_, _, e) -> has_side_effect e
+  | S.Break (_, _, _)
+  | S.SetAttr (_,_,_,_,_)
+  | S.SetObjAttr (_,_,_,_)
+  | S.GetField (_,_,_,_)
+  | S.SetField (_,_,_,_,_)
+  | S.DeleteField (_,_,_)
+  | S.SetBang (_,_,_) 
+  | S.App (_,_,_)           (* any f(x) is assumed to have side effect *)
+(* TODO: what about rec (f = func(){...})? f() can be used in function body *)
+  | S.TryCatch (_, _, _)    (* any try...catch is assumed to throw out uncatched error *)
+  | S.TryFinally (_, _, _)  (* any try...finally is assumed to throw out uncached error *)
+  | S.Throw (_,_)
+  | S.Eval (_,_,_)
+  | S.Hint (_,_,_)
+    -> true
+
 let apply_op1 p (op : string) e : S.exp option = 
   if (op_has_side_effect op) then
     None
@@ -114,15 +176,10 @@ and is_object_constant (e : S.exp) pool : bool = match e with
        end
   | _ -> false
 
-(* a lambda is a constant if no free vars in the body.
- NOTE: it is safe to have the side effect in the lambda body, since the shrink-optimization will
-       only be performed when the lambda is used once.
-*)
-(* WRONG! check side effect *)
+(* a lambda is a constant if no free vars and no side effect in the body *)
 and is_lambda_constant (e: S.exp) : bool = match e with
   | S.Lambda (_, ids, body) ->
-     let free_vars = S.free_vars e in 
-     IdSet.is_empty free_vars
+     IdSet.is_empty (S.free_vars e) && not (has_side_effect body)
   | _ -> false
 
 (* NOTE(junsong): this predicate can only be used for non-lambda and non-object non-id exp *)
@@ -170,63 +227,89 @@ let print_ljs ljs =
   Ljs_pretty.exp ljs Format.std_formatter; print_newline()
 
 
-(*
- * this function will check whether exp `e' has side effect *when it is evaluated*.
- * NOTE(junsong): The subtle point is
- * let (x = func(){ y:=1} ) {x} does not have side effect
- * let (x = func(){ y:=1} ) {x()} has side effect.
- *
- * this function makes strong assertion on app(): any app has side effect
- *)
-let rec has_side_effect (e : S.exp) : bool = match e with
-  | S.Null _
+let rec valid_for_folding (e : S.exp) : bool = 
+  match e with
+  | S.Null _ 
   | S.Undefined _
   | S.String (_,_)
   | S.Num (_,_)
   | S.True _
-  | S.False _
-  | S.Id (_,_) 
-    -> false
-  | S.GetAttr (_, _,obj, flds) ->
-     has_side_effect obj || has_side_effect flds
-  | S.GetObjAttr (_, _, obj) ->
-     has_side_effect obj
-  | S.OwnFieldNames (_, obj) ->
-     has_side_effect obj
-  | S.Op2 (_,_,e1,e2) ->
-     has_side_effect e1 || has_side_effect e2
-  | S.Op1 (_,op,e1) ->
-     op_has_side_effect op || has_side_effect e1
-  | S.Object (_,_,_) ->
-     List.exists has_side_effect (S.child_exps e)
-  | S.If (_, cond, thn, els) ->
-     List.exists has_side_effect [cond; thn; els]
-  | S.Seq (_, e1, e2) ->
-     has_side_effect e1 || has_side_effect e2
-  | S.Let (_, x, x_v, body) ->
-     let se = has_side_effect body in
-     if se then true
-     else 
-       begin
-         match x_v with 
-         | S.Lambda (_, _, _) -> false
-         | _ -> has_side_effect x_v 
+  | S.False _ -> true
+  | S.Id (_,_) -> false
+  | S.Object (_, attr, strprop) ->
+     let { S.primval=primval;
+           S.proto=proto;
+           S.code=code;
+           S.extensible = ext; S.klass=_ } = attr in
+     let const_primval = match primval with
+       | Some x -> valid_for_folding x && not (has_side_effect x)
+       | None -> true 
+     in
+     let const_proto = match proto with 
+       | Some x -> valid_for_folding x && not (has_side_effect x)
+       | None -> true
+     in
+     let const_code = match code with
+       | Some x -> valid_for_folding x && not (has_side_effect x) 
+       | None -> true
+     in 
+     if (not const_primval || not const_proto || not const_code || ext = true) then
+       begin 
+       false 
        end 
-  | S.Rec (_, x, x_v, body) ->
-     has_side_effect body
-  | S.Lambda (_, _, body) -> has_side_effect body
-  | S.Label (_, _, e) -> has_side_effect e
-  | S.Break (_, _, _)
-  | S.SetAttr (_,_,_,_,_)
-  | S.SetObjAttr (_,_,_,_)
-  | S.GetField (_,_,_,_)
-  | S.SetField (_,_,_,_,_)
-  | S.DeleteField (_,_,_)
-  | S.SetBang (_,_,_) 
-  | S.App (_,_,_)           (* any f(x) is assumed to have side effect *)
-  | S.TryCatch (_, _, _)    (* any try...catch is assumed to throw out uncatched error *)
-  | S.TryFinally (_, _, _)  (* any try...finally is assumed to throw out uncached error *)
-  | S.Throw (_,_)
-  | S.Eval (_,_,_)
-  | S.Hint (_,_,_)
-    -> true
+     else 
+         let const_prop (p : string * S.prop) = match p with
+           | (s, S.Data ({S.value = value; S.writable=false}, _, false)) -> 
+              valid_for_folding value && not (has_side_effect value)
+           (*?*)| (s, S.Accessor ({S.getter=_; S.setter=_},_,_)) -> true
+           | _ -> false
+         in
+         List.for_all const_prop strprop 
+  | S.Lambda (_, xs, body) ->
+     IdSet.is_empty (S.free_vars e) && not (has_side_effect body)
+  | _ -> List.for_all valid_for_folding (S.child_exps e) && not (has_side_effect e)
+
+
+(* decide if `id` appears more than once.
+   NOTE: This function doesn't build control flow graph, so simply
+         issue error on SetBang.
+*)
+let multiple_usages (var_id : id) (e : S.exp) : bool =
+  let use = (ref 0) in
+  let result() = !use >= 2 in
+  let rec multiple_usages_rec (var_id : id) (e : S.exp) : bool = 
+    match e with
+    | S.Id (p, x) ->
+       if (x = var_id) then 
+         begin
+           use := !use + 1;
+           result()
+         end
+       else false
+    | S.Let (_, x, xexp, body) ->
+       if (multiple_usages_rec var_id xexp) then true
+       else begin
+           if (x = var_id) then (* previous x scope is over. *)
+             result()
+           else
+             multiple_usages_rec var_id body
+         end
+    | S.SetBang (_, x, vexp) -> 
+       if (x = var_id) then failwith "should not reach here"
+       else multiple_usages_rec var_id vexp
+    | S.Rec (_, x, xexp, body) ->
+       if (multiple_usages_rec var_id xexp) then true
+       else begin
+           if (x = var_id) then (* previous x scope is over. *)
+             result()
+           else
+             multiple_usages_rec var_id body
+         end
+    | S.Lambda (_, xs, body) -> 
+       if (List.mem var_id xs) then false (* don't search body *)
+       else 
+         multiple_usages_rec var_id body
+    | _ -> List.exists (fun x->x) (map (fun exp->multiple_usages_rec var_id exp) (S.child_exps e))
+  in multiple_usages_rec var_id e
+
+          

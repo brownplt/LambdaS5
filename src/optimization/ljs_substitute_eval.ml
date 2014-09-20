@@ -27,49 +27,6 @@ let rec follow_until_const_nonid e pool : exp =
      if const then follow_until_const_nonid exp pool else failwith "follow id failed"
   | _ -> e
 
-(* decide if `id` appears more than once.
-   NOTE: This function doesn't build control flow graph, so simply
-         issue error on SetBang.
-*)
-let multiple_usages (var_id : id) (e : exp) : bool =
-  let use = (ref 0) in
-  let result() = !use >= 2 in
-  let rec multiple_usages_rec (var_id : id) (e : exp) : bool = 
-    match e with
-    | Id (p, x) ->
-       if (x = var_id) then 
-         begin
-           use := !use + 1;
-           result()
-         end
-       else false
-    | Let (_, x, xexp, body) ->
-       if (multiple_usages_rec var_id xexp) then true
-       else begin
-           if (x = var_id) then (* previous x scope is over. *)
-             result()
-           else
-             multiple_usages_rec var_id body
-         end
-    | SetBang (_, x, vexp) -> 
-       if (x = var_id) then failwith "should not reach here"
-       else multiple_usages_rec var_id vexp
-    | Rec (_, x, xexp, body) ->
-       if (multiple_usages_rec var_id xexp) then true
-       else begin
-           if (x = var_id) then (* previous x scope is over. *)
-             result()
-           else
-             multiple_usages_rec var_id body
-         end
-    | Lambda (_, xs, body) -> 
-       if (List.mem var_id xs) then false (* don't search body *)
-       else 
-         multiple_usages_rec var_id body
-    | _ -> List.exists (fun x->x) (map (fun exp->multiple_usages_rec var_id exp) (child_exps e))
-  in multiple_usages_rec var_id e
-
-          
 
 (* NOTE: xexp should be an optimized one
 
@@ -247,7 +204,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
            let substitute = 
              EV.is_scalar_constant x_v || EV.is_const_var x_v pool ||
                ((EV.is_object_constant x_v pool || EV.is_lambda_constant x_v) && 
-                  not (multiple_usages x body)) 
+                  not (EU.multiple_usages x body)) 
            in
            let new_pool = IdMap.add x (x_v, true, substitute) pool in
            (* get the substitution, decide if let should be dropped *)
@@ -283,7 +240,7 @@ let rec substitute_const (e : exp) : (exp * bool) =
          else
            (* is constant, decide the substitute, const lambda exp can be substitute
               if the lambda is used once *)
-           let substitute =  not (multiple_usages x body) in
+           let substitute =  not (EU.multiple_usages x body) in
            let new_pool = IdMap.add x (x_v, true, substitute) pool in
            if substitute then
              begin
