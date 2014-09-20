@@ -5,22 +5,8 @@ module EU = Exp_util
 
 type env = exp IdMap.t
 
-(*
-let is_constant e : bool = match e with
-  | Undefined _
-  | Null _
-  | String (_,_)
-  | Num (_,_)
-  | True _
-  | False _ -> true
-  | Id (_,_) -> false
-  | Lambda (_,_,_) -> EU.is_lambda_constant e
-  | Object (_,_,_) -> is_constant_object e
-  | _ -> false     
- *)
-
-(* inline a function is to benefit folding. Side effect will prevent
-folding an expression.*)
+(* inline a function is to benefit folding, but it is hard to decide when to inline a function.
+   Side effect will prevent folding an expression.*)
 let rec function_inlining (e : exp) : exp =
   let empty_env = IdMap.empty in
   let rec inlining_rec e env =

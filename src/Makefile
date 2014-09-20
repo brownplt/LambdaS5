@@ -2,7 +2,7 @@
 
 INCLUDES = analyses/cfg,analyses/cps,analyses/sym,analyses/ses,js,exprjs,ljs,util,experimental,test,optimization
 
-OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix,str,graph -lflags -I,../lib -Is $(INCLUDES) -cflags -annot -cflags -I,../lib -Is $(INCLUDES) 
+OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix,str,graph -lflags -I,../lib -Is $(INCLUDES) -cflags -annot -cflags -I,../lib -Is $(INCLUDES) -cflags -g 
 
 debug: builddir
 	@rm -f s5.d.byte
@@ -30,7 +30,7 @@ compare: debug
 TEST_SRC = $(wildcard optimization/test/*.ml)
 #TEST_BYTE = $(addprefix ../obj/,$(subst .ml,.d.byte,$(TEST_SRC)))
 TEST_BYTE = $(subst .ml,.d.byte,$(TEST_SRC))
-OPT_BUILD = ocamlbuild -build-dir ../obj -Is util,ljs,js,exprjs,optimization -use-ocamlfind -pkgs ounit,unix,str -lflags -I,../lib 
+OPT_BUILD = ocamlbuild -build-dir ../obj -Is util,ljs,js,exprjs,optimization -use-ocamlfind -pkgs ounit,unix,str -lflags -I,../lib -cflags -g
 
 opt: debug $(TEST_BYTE)
 

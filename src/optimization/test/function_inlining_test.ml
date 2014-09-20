@@ -117,7 +117,8 @@ let suite =
       "constant lambda applies to non-constant vars many times" >::
         (no_change "let (x=func(t){t}) {
                     x(var1); x(var2); x(var3)}");
-                   
+
+      (* tests below have side effect and uses x twice. *)
       "lambda has side effect app()" >::
         (no_change "rec (x=func(t){t()})
                     {x();x()}");
