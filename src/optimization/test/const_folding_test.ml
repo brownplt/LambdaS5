@@ -54,7 +54,7 @@ let suite =
       (* ---------------------------- *)
       "op1" >::
         (cmp "prim('typeof', 1)"
-             "number");
+             "'number'");
 
       "op1 given invalid argument" >::
         (no_change "prim('object-to-string', 1)");
@@ -83,6 +83,17 @@ let suite =
       "if" >::
         (no_change "let (x=1) prim('+', x, 1)");
 
+      (* ------------------------------ *)
+      "look through proto" >::
+        (cmp "{[#extensible: false, 
+                #proto: {[#extensible: false,
+                          #proto: {[#extensible: false,
+                                    #proto: {[#extensible: false,
+                                              #proto: {[#extensible: false]}]}]
+                                    'fld1': {#value 1, #writable false}}]
+                          'fld2': {#value 2, #writable false}}]
+               'fld3': {#value 3, #writable false}}['fld1']"
+             "1");
                       
     ]
 
