@@ -9,6 +9,9 @@ fi
 PASSED=0
 FAILED=0
 
+DIR=`dirname $0`
+cd $DIR/..
+
 for file in `ls unit-tests/*.js`
 do
     echo "$file"
