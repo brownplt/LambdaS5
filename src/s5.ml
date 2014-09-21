@@ -408,7 +408,16 @@ module S5 = struct
       print_string str; printf ": %d\n" n;
       push_ljs ljs;
     end
+
+  let marshal_s5_to_file cmd (filename : string) =
+    let ljs = pop_ljs cmd in
+    push_ljs ljs;
+    Marshal.to_channel (open_out_bin filename) ljs []
     
+  let load_s5_from_marshal cmd (filename : string) =
+    let ljs = Marshal.from_channel (open_in_bin filename) in
+    push_ljs ljs
+
   (* Main *)
 
   let command spec optName func desc = (optName, spec (func optName), desc)
@@ -502,6 +511,10 @@ module S5 = struct
         unitCmd "-sym-eval-raw" ljs_sym_eval_raw
           "evaluate code symbolically and print raw OCaml results";
         (* optimization *)
+        strCmd "-marshal-s5-to-file" marshal_s5_to_file
+          "save s5 code to file as sequence of bytes";
+        strCmd "-load-s5-from-marshal" load_s5_from_marshal
+          "load s5 from marshalled file";
         unitCmd "-opt-const-folding" opt_constant_folding
           "perform constant folding on s5";
         unitCmd "-opt-const-propagation" opt_const_propagation
