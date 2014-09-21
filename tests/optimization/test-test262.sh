@@ -20,8 +20,10 @@ mkdir -p $base
 for t in $chs
 do
     echo "$t" >> $log
-    $testscript nonstrict $t $base/$t "$@" > $base/$t-nonstrict.txt
+    dir=$base/$t-nonstrict
+    $testscript nonstrict $t $dir "$@" > $base/$t-nonstrict.txt
 
     echo "strict $t" >> $log
-    $testscript strict $t $base/$t "$@" > $base/$t-strict.txt
+    dir=$base/$t-strict
+    $testscript strict $t $dir "$@" > $base/$t-strict.txt
 done
