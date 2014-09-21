@@ -54,6 +54,7 @@ let rec has_side_effect (e : S.exp) : bool = match e with
   | S.True _
   | S.False _
   | S.Id (_,_) 
+  | S.Lambda (_, _, _)  (* lambda always has no side effect *)
     -> false
   | S.GetAttr (_, _,obj, flds) ->
      has_side_effect obj || has_side_effect flds
@@ -82,7 +83,6 @@ let rec has_side_effect (e : S.exp) : bool = match e with
        end 
   | S.Rec (_, x, x_v, body) ->
      has_side_effect body
-  | S.Lambda (_, _, body) -> false(*has_side_effect body*)
   | S.Label (_, _, e) -> has_side_effect e
   | S.Break (_, _, _)
   | S.SetAttr (_,_,_,_,_)
@@ -92,7 +92,6 @@ let rec has_side_effect (e : S.exp) : bool = match e with
   | S.DeleteField (_,_,_)
   | S.SetBang (_,_,_) 
   | S.App (_,_,_)           (* any f(x) is assumed to have side effect *)
-(* TODO: what about rec (f = func(){...})? f() can be used in function body *)
   | S.TryCatch (_, _, _)    (* any try...catch is assumed to throw out uncatched error *)
   | S.TryFinally (_, _, _)  (* any try...finally is assumed to throw out uncached error *)
   | S.Throw (_,_)

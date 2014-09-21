@@ -1,5 +1,5 @@
 open Ljs_syntax
-open Exp_val
+open Exp_util
 open Prelude
 open OUnit2
 module U = Util

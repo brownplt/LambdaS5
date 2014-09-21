@@ -7,10 +7,8 @@ open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
 open Ljs_const_folding
-open Ljs_substitute_eval
 open Ljs_const_propagation
 open Ljs_deadcode_elimination
-open Ljs_function_inlining
 open Ljs_alias_elimination
 
 type node =
@@ -385,11 +383,6 @@ module S5 = struct
     (*Ljs_pretty.exp ljs std_formatter; 
     print_newline ()*)
 
-  let opt_substitute_const cmd () = 
-    let ljs = pop_ljs cmd in
-    let new_ljs, modified = substitute_const ljs in
-    push_ljs new_ljs
-
   let opt_const_propagation cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = const_propagation ljs in
@@ -398,11 +391,6 @@ module S5 = struct
   let opt_deadcode_elimination cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = deadcode_elimination ljs in
-    push_ljs new_ljs
-
-  let opt_function_inlining cmd () =
-    let ljs = pop_ljs cmd in
-    let new_ljs = function_inlining ljs in
     push_ljs new_ljs
 
   let opt_alias_elimination cmd () =
@@ -516,14 +504,10 @@ module S5 = struct
         (* optimization *)
         unitCmd "-opt-const-folding" opt_constant_folding
           "perform constant folding on s5";
-        unitCmd "-opt-substitute-const" opt_substitute_const
-          "perform partial evaluation by substitution on s5";
         unitCmd "-opt-const-propagation" opt_const_propagation
           "perform constant propagation on s5";
         unitCmd "-opt-deadcode-elimination" opt_deadcode_elimination
           "perform dead code elimination on s5";
-        unitCmd "-opt-function-inlining" opt_function_inlining
-          "perform function inlining on s5";
         unitCmd "-opt-alias-elimination" opt_alias_elimination
           "perform alias elimination on s5";
         strCmd "-count-nodes" count_nodes
