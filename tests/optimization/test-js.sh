@@ -7,9 +7,9 @@
 echo "get arguments:" 
 echo "$0 $@"
 
-if [ $# -lt 2 ]
+if [ $# -lt 3 ]
 then
-    echo "$0 <jsfile> <s5-options>"
+    echo "$0 <jsfile> <dir> <s5-options>"
     exit 1
 fi
 
@@ -18,7 +18,10 @@ cd $DIR/..
 
 marshalled=`mktemp -t s5.XXXXXX`
 jsfile=$1
-shift 1 # to get <s5-options>
+dir=$2
+mkdir -p $dir
+
+shift 2 # to get <s5-options>
 options="$@"
 
 
@@ -36,7 +39,7 @@ ocamlrun ../obj/s5.d.byte \
   -internal-env env-vars -apply \
   -env ../envs/es5.env -apply \
   "$@" \
-  -save-s5 $marshalled > optimization/id_$esid.optimizeinfo
+  -save-s5 $marshalled > $dir/id_$esid.optimizeinfo
 
 # load the marshalled file and do evaluation
 ocamlrun ../obj/s5.d.byte \

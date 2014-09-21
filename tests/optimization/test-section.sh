@@ -8,9 +8,9 @@
 
 # the file is located in tests/optimization
 # always suppose the running directory is in tests
-if [ -x $2 ]
+if [ -x $4 ]
 then
-    echo "$0 <strict|nonstrict> <ch07|ch08..|ch15> <s5-options>"
+    echo "$0 <strict|nonstrict> <ch07|ch08..|ch15> <result-dir> <s5-options>"
     exit 1
 fi
 
@@ -29,7 +29,9 @@ else
 fi
 
 section=$2
-shift 2
+dir=$3
+mkdir -p $dir
+shift 3
 options="$@"
 
 # s5 script that will accept js filename and 
@@ -37,7 +39,7 @@ options="$@"
 
 runs5_script=optimization/test-js.sh
 
-cmd="$runs5_script {{path}} $@"
+cmd="$runs5_script {{path}} $dir $@"
 
 python test262/test262/tools/packaging/test262.py \
   --command "$cmd" \
