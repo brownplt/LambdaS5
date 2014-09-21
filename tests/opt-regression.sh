@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if [ -x $1 ]
+then
+    echo "$0 <opt-options>"
+    exit 1
+fi
+
 PASSED=0
 FAILED=0
 
@@ -15,11 +21,9 @@ do
       -desugar ../lib/json/json2.js -to-env -apply \
       -internal-env env-vars -apply \
       -env ../envs/es5.env -apply \
-      -print-string "optimize $file" \
-      -count-nodes \
-      -opt-const-propagation \
-      -count-nodes \
-      -print-string "end $file" \
+      -count-nodes "$file non-optimized" \
+      $1 \
+      -count-nodes "$file optimized" \
       -eval`
 
     STR1=`echo "$RUN" | grep "passed\|Passed"`
