@@ -66,6 +66,13 @@ and is_const_var (e : exp)  (newenv : newenv) : bool = match e with
   | Id (_, id) -> IdMap.mem id newenv 
   | _ -> false
 
+let get_subst (e : exp) (newenv : newenv) : bool = match e with
+  | Id (_, id) -> 
+     begin
+       try let (_, subst) = IdMap.find id newenv in subst
+       with _ -> failwith "exp should be in env"
+     end 
+  | _ -> false
 
 let rec const_propagation (e : exp) : exp =
   let empty_newenv = IdMap.empty in
@@ -88,16 +95,26 @@ let rec const_propagation (e : exp) : exp =
     | Let (p, x, x_v, body) ->
        let x_v = propagation_rec x_v newenv in
        let is_const = is_constant x_v newenv in 
+       let rec decide_subst e newenv : bool =
+         if is_prim_constant e ||
+              ((is_object_constant e newenv || is_lambda_constant e) &&
+                 not (EU.multiple_usages x body))
+         then true
+         else 
+           (* if e maps from one id to another id, follow to that id
+              until a non-id exp, get the subst of that exp *)
+           if is_const_var e newenv
+           then 
+             get_subst e newenv
+           else 
+             false
+       in 
        (* if x will be mutated or x_v is not constant *)
        if EU.mutate_var x body || not is_const then
          let newenv = IdMap.remove x newenv in
          Let (p,x,x_v, propagation_rec body newenv)
        else 
-         let substitute =
-           is_prim_constant x_v || is_const_var x_v newenv ||
-             ((is_object_constant x_v newenv || is_lambda_constant x_v) &&
-                not (EU.multiple_usages x body))
-         in 
+         let substitute = decide_subst x_v newenv in
          let newenv = IdMap.add x (x_v, substitute) newenv in
          Let (p, x, x_v, propagation_rec body newenv)
     | Rec (p, x, x_v, body) ->

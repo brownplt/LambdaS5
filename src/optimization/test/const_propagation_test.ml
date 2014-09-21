@@ -52,7 +52,7 @@ let suite =
              "let (a = {[#extensible: false]})
               let (b = a)
               let (c = a)
-              a");
+              c");
 
       "propagate function" >::
         (cmp "let (a = func(x) {prim('typeof',1)})
@@ -95,6 +95,13 @@ let suite =
               let (x=2){
               x := 3; x
               }");
+
+      "let shadow 2" >::
+        (no_change "let (t = {[#extensible: false]})
+                    let (a = t)
+                    let (b = t)
+                    let (t = 1)
+                    a;b");
 
       "rec shadow" >::
         (cmp "let (x=1)
