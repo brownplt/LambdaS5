@@ -3,10 +3,13 @@
 # the file is located in tests/optimization
 # always suppose the running directory is in tests
 
-echo "get argument $@"
-if [ -x $2 ]
+# to see what's passed in, look at
+echo "get arguments:" 
+echo "$0 $@"
+
+if [ $# -lt 2 ]
 then
-    echo "$0 <jsfile> <optimization>"
+    echo "$0 <jsfile> <s5-options>"
     exit 1
 fi
 
@@ -15,15 +18,16 @@ cd $DIR/..
 
 marshalled=`mktemp -t s5.XXXXXX`
 jsfile=$1
-shift 2
-rest=$@
+shift 1 # to get <s5-options>
+options="$@"
 
 
 # get the es5id
-cat $jsfile
-esid=`grep 'es5id' $jsfile | sed -n 's/es5id: \(.*\)$/\1/p'`
-echo "esid: $esid"
-
+esid=`grep 'es5id' $jsfile | head -n 1 | sed -n 's/.*es5id:[ ]*\(.*\)$/\1/p'`
+if [ $esid = "" ]
+then
+    esid="unknownid"
+fi
 
 # run through optimization phases and collect nodes.
 # marshal the optimized s5 code to a file for performance.
@@ -31,8 +35,8 @@ ocamlrun ../obj/s5.d.byte \
   -desugar $jsfile \
   -internal-env env-vars -apply \
   -env ../envs/es5.env -apply \
-  $rest \
-  -save-s5 $marshalled > $esid.output
+  "$@" \
+  -save-s5 $marshalled > optimization/id_$esid.optimizeinfo
 
 # load the marshalled file and do evaluation
 ocamlrun ../obj/s5.d.byte \
@@ -40,6 +44,6 @@ ocamlrun ../obj/s5.d.byte \
   -eval-s5
 
 EX=$?
-rm $TMP
+rm -f $marshalled
 
 exit $EX
