@@ -34,17 +34,20 @@ fi
 
 # run through optimization phases and collect nodes.
 # marshal the optimized s5 code to a file for performance.
+echo "
 ocamlrun ../obj/s5.d.byte \
   -desugar $jsfile \
   -internal-env env-vars -apply \
   -env ../envs/es5.env -apply \
-  "$@" \
-  -save-s5 $marshalled > $dir/id_$esid.optimizeinfo
-
-# load the marshalled file and do evaluation
+  $@ \
+  -eval-s5 > $dir/id_$esid.optimizeinfo
+"
 ocamlrun ../obj/s5.d.byte \
-  -load-s5  $marshalled\
-  -eval-s5
+  -desugar $jsfile \
+  -internal-env env-vars -apply \
+  -env ../envs/es5.env -apply \
+  $@ \
+  -eval-s5 > $dir/id_$esid.optimizeinfo
 
 EX=$?
 rm -f $marshalled
