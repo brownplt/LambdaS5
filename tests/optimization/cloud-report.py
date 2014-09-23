@@ -55,10 +55,31 @@ def analyze(file, analyzedir, basedir):
             base_status = passed(base_content)
     return (analyze_status, base_status, analyze_status == base_status)
 
+def parse_opt_info(filepath):
+    """return [(phase name, count), (phase name2, count2)...]"""
+    result = []
+    with open(filepath) as f:
+        contents = f.readlines()
+        for line in contents:
+            if line.strip() == "":
+                continue
+            try:
+                name, opt = line.strip().split(':')
+                result.append([name.strip(), opt.strip()])
+            except:
+                pass
+    return result
+
 def analyze_files(file_list):
     """return info for each file in a list that
       if it passed in analyzedir? passed in basedir? the results are the same?"""
     result = map(lambda f: (f,)+analyze(f, analyzedir, basedir), file_list)
+    return result
+
+def parse_opt_files(file_list):
+    """result [filename, [[phase1, count], [phase2, count], ...]]"""
+    file_list = map(lambda f: path.join(analyzedir, f), file_list)
+    result = map(lambda f: [f, parse_opt_info(f)], file_list)
     return result
 
 # example
@@ -66,13 +87,19 @@ def analyze_files(file_list):
 # resultfiles:
 #   [['file1', 'passed', 'passed', true],
 #    ['file2', 'passed', 'NotFound, false]],
-def walk(printer, dir):
+def walk_result(printer, dir):
     for dpath, dnames, fname in os.walk(dir):
         if dnames == []:
             ch = path.basename(dpath)
             resultfiles = [path.join(ch, f) for f in fname if f.endswith('result')]
-            optinfofiles = [path.join(ch,f) for f in fname if f.endswith('optimizeinfo')]
             printer(ch, analyze_files(resultfiles))
+
+def walk_optimizeinfo(printer, dir):
+    for dpath, dnames, fname in os.walk(dir):
+        if dnames == []:
+            ch = path.basename(dpath)
+            opt_files = [path.join(ch, f) for f in fname if f.endswith('optimizeinfo')]
+            printer(ch, parse_opt_files(opt_files))
 
 # generate report
 def status_printer(ch, status):
@@ -96,4 +123,60 @@ def status_printer(ch, status):
     if notthesame != 0:
         print "%s results are not the same" % nothesame
 
-walk(status_printer, analyzedir)
+def opt_info_printer(ch, files):
+    def print_config(contents):
+        args = filter(lambda arg: arg.startswith('-count-nodes') or 
+                                    arg.startswith('-opt-'), contents.strip().split(' '))
+        index = 1
+        phase = []
+        for arg in args:
+            arg = arg.strip()
+            if arg == "-count-nodes":
+                print "phase %d:" % index,
+                if phase == []:
+                    print "no optimization"
+                else:
+                    print " ".join(phase)
+                phase = []
+                index += 1
+            else:
+                phase.append(arg)
+        print ""
+            
+    
+    # print config file
+    config = path.join(analyzedir, 'config.txt')
+    assert(path.exists(config))
+
+    
+    with open(config) as f:
+        print "config:"
+        print_config(f.read())
+
+    print "\nsection: %s" % ch
+    if files == []:
+        print "empty"
+        return
+
+    # print title
+    file, phases = files[0]
+    print "%20s " % "file",
+    for index, (name, count) in enumerate(phases):
+        print "%10s " % ("phase " + str(index+1)),
+    print "%10s" % "improve",
+    print ""
+    
+    # print file info
+    for info in files:
+        file, phases = info
+        print "%20s" % path.splitext(path.basename(file))[0],
+        phases = map(lambda x: x[1], phases)
+        for phase in phases:
+            print "%10s " % phase,
+        print "%10s%%" % round(((int(phases[0])-int(phases[-1]))/float(phases[0])) * 100, 1)
+        print ""
+        
+    print "\n\n"
+
+#walk_result(status_printer, analyzedir)
+walk_optimizeinfo(opt_info_printer, analyzedir)
