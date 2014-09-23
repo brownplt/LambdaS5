@@ -64,7 +64,8 @@ optargs=`cat $configpath | head -n 1`
 # working directory is in tests/
 cd $BASE
 filename=$(basename $filepath)
-filename=${filename%.js}
+#  NOTE: filename should contains .js. S8.4-A1
+#  will test A1, A10, A11, A1*
 chapter=`echo $filepath | grep -o 'ch[0-9][0-9]'`
 [ -z $chapter ] && echo "chapter is empty" && exit 1
 # start testing the strict mode
