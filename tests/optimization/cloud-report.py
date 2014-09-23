@@ -153,9 +153,10 @@ def opt_info_printer(ch, files):
         print "config:"
         print_config(f.read())
 
-    print "\nsection: %s" % ch
+    print "section: %s\n" % ch
     if files == []:
-        print "empty"
+        print "%s is empty. Those tests may be only for either strict or nonstrict mode\n\n" % ch
+        print "-----\n\n"
         return
 
     # print title
@@ -173,10 +174,13 @@ def opt_info_printer(ch, files):
         phases = map(lambda x: x[1], phases)
         for phase in phases:
             print "%10s " % phase,
-        print "%10s%%" % round(((int(phases[0])-int(phases[-1]))/float(phases[0])) * 100, 1)
+        if phases == []:
+            print ""
+            continue
+        print "%10s%%" % round(((int(phases[0])-int(phases[-1]))/float(phases[0])) * 100, 1),
         print ""
         
-    print "\n\n"
+    print "-----\n\n"
 
 #walk_result(status_printer, analyzedir)
 walk_optimizeinfo(opt_info_printer, analyzedir)
