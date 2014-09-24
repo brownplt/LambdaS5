@@ -184,7 +184,13 @@ let unused_id_test =
      "test object field" >::
        (no_change "let (%ObjectProto = {[#proto: null]})
                    let (%global = {[#proto: %ObjectProto]})
-                   %global")
+                   %global");
+
+     "rec" >::
+       (no_change "let (r = 1)
+                   rec (r = func(t) { r(prim('-',t,1))})
+                   r(x)");
+
     ]
 
 let _ =

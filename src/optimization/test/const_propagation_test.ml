@@ -133,6 +133,12 @@ let suite =
               let (t = func(x) {prim('+',x,1)})
               func(x){prim('+',x,1)}(1)");
 
+      "rec" >::
+        (no_change
+           "let (r = 1)
+              rec (r = func(t) { r(prim('-',t,1))})
+                  r(x)");
+
     ]
 
 let _ =

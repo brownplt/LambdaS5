@@ -100,6 +100,13 @@ let suite =
              "let(b=a)
               let(c=func(x){let (a=x) a:=1})
               a");
+
+      "rec" >::
+        (no_change "let (a=1)
+                    let (r = a)
+                    rec (r = func(t) { r(prim('-',t,1))})
+                    r(x)");
+
         
     ]
 

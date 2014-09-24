@@ -83,6 +83,11 @@ let suite =
       "if" >::
         (no_change "let (x=1) prim('+', x, 1)");
 
+      "rec" >::
+        (no_change "let (r = 1)
+                    rec (r = func(t) { r(prim('-',t,1))})
+                    r(x)");
+
       (* ------------------------------ *)
       "look through proto" >::
         (cmp "{[#extensible: false, 

@@ -8,142 +8,296 @@ let suite =
   let no_change code = no_change code function_inlining in 
   "Test Function Inlining Test" >:::
     [
-      "simple inlining" >::
-        (cmp "let (a = func(){1})
-              a(1)"
-             "let (a = func(){1})
-              func(){1}(1)");
+      "inlining for prim arg" >::
+        (cmp "let (a = func(x){prim('+', x, 1)})
+              a(2)"
+             "let (a = func(x){prim('+', x, 1)})
+              prim('+', 2, 1)");
 
-      "simple inlining 2" >::
-        (cmp "let (a = func(){1})
-              let (b = a)
-              let (c = b)
-              c"
-             "let (a = func(){1})
-              let (b = func(){1})
-              let (c = func(){1})
-              func(){1}");
+      "inlining for const function" >::
+        (cmp "let (a = func(x){prim('+', x, 1)})
+              a(func(x){x})"
+             "let (a = func(x){prim('+', x, 1)})
+              prim('+', func(x){x}, 1)");
 
-      "deeply inline" >::
-        (cmp "let (a = func(){1})
-              let (b = {[] 'fld': {#getter a, #setter a}})
-              b"
-             "let (a = func(){1})
-              let (b = {[] 'fld': {#getter func(){1}, #setter func(){1}}})
-              b");
+      "inlining for const objects" >::
+        (cmp "let (a = func(x){prim('+', x, 1)})
+              let (b=1)
+              a({[#extensible: false] 'fld':{#value b, #writable false}})"
+             "let (a = func(x){prim('+', x, 1)})
+              prim('+', {[#extensible: false] 'fld':{#value b, #writable false}}, 1)");
+
+      "function inlining is not propagation" >::
+        (no_change "let (a = func(t){1})
+                    let (b = a)
+                    let (c = b)
+                    c(2)");
+
+      "argument is constant variable" >::
+        (cmp "let (a = func(t){t})
+              let (b = func(x){x;x})
+              b(a)"
+             "let (a = func(t){t})
+              let (b = func(x){x;x})
+              {a;a}");
+
+      "argument is const variable" >::
+        (cmp "let (a = func(x){prim('+', x, 1)})
+              let (b=1)
+              let (c={[#extensible: false] 'fld':{#value b, #writable false}})
+              a(c)"
+             "let (a = func(x){prim('+', x, 1)})
+              let (b=1)
+              let (c={[#extensible: false] 'fld':{#value b, #writable false}})
+              prim('+', c, 1)");
+
+      "argument is constant variable that gets rebound" >::
+        (cmp "let (a = func(t){t})
+              let (b = func(x){x;x})
+              let (a = 1)
+              b(a)"
+             "let (a = func(t){t})
+              let (b = func(x){x;x})
+              let (a = 1)
+              {a;a}");
+
+      "argument is nonconstant variable" >::
+        (cmp "let (a = func(t){t})
+              let (b = func(x){x;x})
+              let (a = {[]})
+              b(a)"
+             "let (a = func(t){t})
+              let (b = func(x){x;x})
+              let (a = {[]})
+              {a;a}");
+
+      "it is fine that argument is nonconstant variable" >::
+        (cmp "let (x=func(t){prim('typeof', t)})
+              x(other_var)"
+             "let (x=func(t){t})
+              prim('typeof', other_var)");
+
+      (* tests below: side effect occurs in lambda, argument is constant  *)
+      "lambda has side effect app()" >::
+        (no_change "rec (x=func(t){t()})
+                    let (t=func(a){a})
+                    x(a)");
+
+      "lambda has side effect objsetattr" >::
+        (no_change "let (x=func(t){t[<#extensible>=true]})
+                    let (a = {[#extensible: false]})
+                    {x(a)}");
+
+      "lambda has side effect objset fieldattr" >::
+        (no_change "let (x=func(t){t['t'<#writable>=true]})
+                    let (a = {[#extensible: false]})
+                    {x(a)}");
+
+      "lambda has side effect objset delete field" >::
+        (no_change "let (x=func(t){t[delete 't']})
+                    let (a = {[#extensible: false]})
+                    {x(a)}");
+
+      "lambda has side effect objset get field" >::
+        (no_change "let (x=func(t){t['t']})
+                    let (a = {[#extensible: false]})
+                    {x(a)}");
+
+
+              
+
+      "don't inline if free vars exists" >::
+        (no_change "let (a = func(x) { prim('+',x,t) })
+                    let (t=2) {
+                    a(t)
+                    }");
 
       "mutation" >::
-        (no_change "let (a = func(){1})
-                    let (b = a) {
-                    a := 12;
-                    b
+        (no_change "let (a = func(x){1}){
+                    a := func(x){2};
+                    a
+                    }");
+
+
+      "don't inline if side effect will occur" >::
+        (no_change "let (a = func(x) { let (t = 1) {x:=t}})
+                    let (t=2) {
+                    a(t);
+                    prim('pretty', t)
+                    }");
+      (*  it is bad to be inlined to:
+              let (a = func(x) { let (t = 1) {x:=t}})
+              let (t=2) {
+                let (%alpha_t=1)
+                  {t:=%alpha_t};
+                prim('pretty', t)
+              } *)
+
+      "don't inline if side effect will occur" >::
+        (no_change "rec (a = func(x) { let (t = 1) x[<#extensible>=false]})
+                    let (t=2) {
+                    a(t);
+                    prim('pretty', t)
+                    }");
+
+      "don't inline if side effect will occur" >::
+        (no_change "rec (a = func(x) { let (t = 1) x(t) })
+                    let (t=func(x){x:=1}) {
+                    a(t)
                     }");
       
-      "let shadow" >::
-        (cmp "let (x=func(){1})
+      "let rebind" >::
+        (cmp "let (x=func(x){1})
               let (y=x)
-              let (x=2) {
-              x := 3; x
+              let (x=func(x){2}) {
+              x(1)
               }"
-             "let (x=func(){1})
-              let (y=func(){1})
-              let (x=2){
-              x := 3; x
+             "let (x=func(x){1})
+              let (y=x)
+              let (x=func(x){2}) {
+              2
+              }");
+
+      "rec rebind" >::
+        (cmp "let (x=func(x){1})
+              let (y=x)
+              rec (x=func(x){2}) {
+              x(1)
+              }"
+             "let (x=func(x){1})
+              let (y=x)
+              rec (x=func(x){2}) {
+              2
+              }");
+
+      (* y is an alias of a const function but still y points to an identifier.
+         doing constant propagation and then function inlining will work *)
+      "do nothing if alias is used" >::
+        (no_change "let (x=func(x){1})
+              let (y=x)
+              let (x=func(x){2}) {
+              y(1)
               }");
 
       "rec shadow" >::
-        (cmp "let (x=func(){1})
+        (cmp "let (x=func(a){a})
               let (y=x)
-              rec (x = func(t) {t})
-              x"
+              rec (x = func(t) {t;t})
+                x({[#extensible: false]})"
              "let (x=func(){1})
-              let (y=func(){1})
-              rec (x = func(t) {t})
-              func(t){t}");
-
-      "lambda argument" >::
-        (cmp "let (x=func(){1})
               let (y=x)
-              let (t = func(x,y) {prim('+',x,y)})
-              t(x, y)"
-             "let (x=func(){1})
-              let (y=func(){1})
-              let (t = func(x,y) {prim('+',x,y)})
-              func(x,y){prim('+',x,y)}(func(){1},func(){1})");
+              rec (x = func(t) {t;t}) {
+                {[#extensible: false]}; {[#extensible: false]}}");
 
-      "lambda argument 2" >::
-        (cmp "let (x=func(){1})
-              let (y=x)
-              let (t = func(x) {prim('+',x,y)})
-              t(y)"
-             "let (x=func(){1})
-              let (y=func(){1})
-              let (t = func(x) {prim('+',x,func(){1})})
-              func(x){prim('+',x,func(){1})}(func(){1})");
+      "if side effect does not occur in the body of recursive function, do inlining" >::
+        (cmp  "let (x=func(o){1})
+               let (y=x)
+               rec (x = func(t) { x(prim('-', t, 1) )})
+               x(1)"
+              "let (x=func(o){1})
+               let (y=x)
+               rec (x = func(t) { x(prim('-', t, 1))})
+               x(prim('-', 1, 1))");
 
-      "non-freevars lambda has side effect and used many time" >::
-        (no_change "let (x=func(x){prim('pretty', x)})
-                    {x(1); x(2); x(3)}");
+      "if side effect occurs in the body of recursive function, do not do inlining" >::
+        (no_change  "let (x=func(o){1})
+                     let (y=x)
+                     rec (x = func(t) { x(prim('-', t, 1)); t()})
+                     x(1)");
 
-      "non-freevars lambda has side effect but used once" >::
-        (cmp "let (x=func(x){prim('pretty', x)})
-              x(1)"
-             "let (x=func(x){prim('pretty', x)})
-              func(x){prim('pretty', x)}(1)");
+      "if side effect occurs in the body of recursive function, do not do inlining" >::
+        (no_change  "let (x=func(o){1})
+                     let (y=x)
+                     rec (x = func(t) { x(prim('-', t['fld1'], 1))})
+                     x(1)");
 
-      "lambda has free vars used once" >::
-        (no_change "let (x=func(){y})
-                    let (y=1)
-                    x()");
+      "if side effect occurs in the body of recursive function, do not do inlining" >::
+        (no_change  "let (x=func(o){1})
+                     let (y=x)
+                     rec (x = func(t) { x(prim('-', t['fld1'='3'], 1))})
+                     x(1)");
 
-      "lambda has free vars used many times" >::
-        (no_change "let (x=func(){y})
-                    let (y=1) {
-                    x();x();x()
-                    }");
-             
-      "constant lambda applies to non-constant vars only once" >::
-        (cmp "let (x=func(t){t})
-              x(other_var)"
-             "let (x=func(t){t})
-              func(t){t}(other_var)");
-      
+      "if side effect occurs in the body of recursive function, do not do inlining" >::
+        (no_change  "let (x=func(o){1})
+                     let (y=x)
+                     rec (x = func(t) { x(prim('-', t[<#extensible>=true], 1))})
+                     x(1)");
+
       "recursive function" >::
         (cmp "rec (x=func(t){x(prim('-',t,1))})
               x(5)"
              "rec (x=func(t){x(prim('-',t,1))})
-              x(5)");
+              x(prim('-', 5, 1))");
 
-      "constant lambda applies to non-constant vars many times" >::
-        (no_change "let (x=func(t){t}) {
-                    x(var1); x(var2); x(var3)}");
+      (* ======================= test alpha conversion =================== *)
 
-      (* tests below have side effect and uses x twice. *)
-      "lambda has side effect app()" >::
-        (no_change "rec (x=func(t){t()})
-                    {x();x()}");
+      (* x->t in env: t in env should be renamed to %alphaconvN *)
+      "alpha conversion" >::
+        (cmp "let (a = func(x) { let (t = 1) t})
+              let (t=2) {
+               a(t)
+              }"
+             "let (a = func(x) { let (t = 1) t})
+              let (t=2) {
+                {let (%alphaconv1=1)
+                  %alphaconv1}
+              }"); 
+      "alpha conversion 2" >::
+        (cmp "let (f=
+              func(x) { let (a=3) {
+                          prim('+', x, a);
+                          let (a = 2) {
+                            prim('+', x, a)
+                          };
+                          prim('+', x, a)
+                      }})
+              let (a=1)
+              f(a)"
+             "let (f=
+              func(x) { let (a=3) {
+                          prim('+', x, a);
+                          let (a = 2) {
+                            prim('+', x, a)
+                          };
+                          prim('+', x, a)
+                      }})
+              let (a=1)
+              { 
+                let (%alphaconv1=3) {
+                   prim('+', a, %alphaconv1);
+                   let (%alphaconv2 = 2) {
+                      prim('+', a, %alphaconv2)
+                   };
+                   prim('+', a, %alphaconv1)
+                 }
+              }");
 
-      "lambda has side effect app()" >::
-        (no_change "let (x=func(t){t()})
-                    {x();x()}");
 
-      "lambda has side effect objsetattr" >::
-        (no_change "let (x=func(t){t[<#extensible>=true]})
-                    {x;x}");
-
-      "lambda has side effect objset fieldattr" >::
-        (no_change "let (x=func(t){t['t'<#writable>=true]})
-                    {x;x}");
-
-      "lambda has side effect objset delete field" >::
-        (no_change "let (x=func(t){t[delete 't']})
-                    {x;x}");
-
-      "lambda has side effect objset get field" >::
-        (no_change "let (x=func(t){t['t']})
-                    {x;x}");
+      "conversion of rec" >::
+        (cmp "let (f=
+              func(x) {
+                let (r = 1)
+                rec (r = func(t) { r(prim('-',t,1))})
+                  r(x)
+              })
+              let (r = {[#extensible: false]})
+              f(r)"
 
 
+             "let (f=
+              func(x) {
+                let (r = 1)
+                rec (r = func(t) { r(prim('-',t,1))})
+                  r(x)
+              })
+              let (r = {[#extensible: false]})
+              {
+                let (%alpha1 = 1)
+                rec (%alpha2 = func(t) { %alpha2(prim('-', t, 1))})
+                  %alpha2(r)
+              }
+              ");           
+                        
     ]
 
 let _ =

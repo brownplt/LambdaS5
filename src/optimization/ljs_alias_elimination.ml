@@ -46,8 +46,8 @@ let alias_elimination (e : exp) : exp =
        | _ -> Let (p, x, x_v, elimination_rec body env)
        end 
     | Rec (p, x, xexp, body) ->
-       let x_v = elimination_rec xexp env in
        let env = IdMap.remove x env in
+       let x_v = elimination_rec xexp env in
        let env = remove_id_value x env in
        Rec (p, x, x_v, elimination_rec body env)
     | Lambda (p,xs,body) ->
