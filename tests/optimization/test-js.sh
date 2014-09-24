@@ -4,8 +4,8 @@
 # always suppose the running directory is in tests
 
 # to see what's passed in, look at
-echo "get arguments:" 
-echo "$0 $@"
+#echo "get arguments:" 
+#echo "$0 $@"
 
 if [ $# -lt 3 ]
 then
@@ -34,14 +34,7 @@ fi
 
 # run through optimization phases and collect nodes.
 # marshal the optimized s5 code to a file for performance.
-echo "
-ocamlrun ../obj/s5.d.byte \
-  -desugar $jsfile \
-  -internal-env env-vars -apply \
-  -env ../envs/es5.env -apply \
-  $@ \
-  -eval-s5 > $dir/id_$esid.optimizeinfo
-"
+# NOTE: don't use "$@" (quoted $@) below.
 ocamlrun ../obj/s5.d.byte \
   -desugar $jsfile \
   -internal-env env-vars -apply \
