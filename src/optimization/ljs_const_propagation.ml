@@ -118,7 +118,7 @@ let rec const_propagation (e : exp) : exp =
          let env = IdMap.add x (x_v, substitute) env in
          Let (p, x, x_v, propagation_rec body env)
     | Rec (p, x, x_v, body) ->
-       let x_v = propagation_rec x_v env in
+       let x_v = propagation_rec x_v (IdMap.remove x env) in
        let is_const = is_constant x_v env in 
        (* if x will be mutated or x_v is not constant *)
        if EU.mutate_var x body || not is_const then
