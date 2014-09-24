@@ -20,11 +20,16 @@ let suite =
              "let (a = func(x){prim('+', x, 1)})
               prim('+', func(x){x}, 1)");
 
+      "inlining for lambda" >::
+        (cmp "func(x){prim('+', x, 1)}(2)"
+             "prim('+', 2, 1)");
+
       "inlining for const objects" >::
         (cmp "let (a = func(x){prim('+', x, 1)})
               let (b=1)
               a({[#extensible: false] 'fld':{#value b, #writable false}})"
              "let (a = func(x){prim('+', x, 1)})
+              let (b=1)
               prim('+', {[#extensible: false] 'fld':{#value b, #writable false}}, 1)");
 
       "function inlining is not propagation" >::
@@ -61,6 +66,11 @@ let suite =
               let (a = 1)
               {a;a}");
 
+      (* even if we can inline in this situation, but the inlined result is 
+         not be able to simplified by other phases
+       *)
+      (* 
+
       "argument is nonconstant variable" >::
         (cmp "let (a = func(t){t})
               let (b = func(x){x;x})
@@ -71,11 +81,12 @@ let suite =
               let (a = {[]})
               {a;a}");
 
-      "it is fine that argument is nonconstant variable" >::
+        "it is fine that argument is nonconstant variable" >::
         (cmp "let (x=func(t){prim('typeof', t)})
               x(other_var)"
              "let (x=func(t){t})
               prim('typeof', other_var)");
+       *)
 
       (* tests below: side effect occurs in lambda, argument is constant  *)
       "lambda has side effect app()" >::
@@ -171,7 +182,8 @@ let suite =
               }");
 
       (* y is an alias of a const function but still y points to an identifier.
-         doing constant propagation and then function inlining will work *)
+         doing constant propagation and then function inlining will work.
+         not considering alias is for simplifying the scope problem like below*)
       "do nothing if alias is used" >::
         (no_change "let (x=func(x){1})
               let (y=x)
@@ -184,7 +196,7 @@ let suite =
               let (y=x)
               rec (x = func(t) {t;t})
                 x({[#extensible: false]})"
-             "let (x=func(){1})
+             "let (x=func(a){a})
               let (y=x)
               rec (x = func(t) {t;t}) {
                 {[#extensible: false]}; {[#extensible: false]}}");
@@ -298,6 +310,10 @@ let suite =
               }
               ");           
                         
+      "unable to inline invalid code" >::
+        (no_change "func(x, y) {x;y}(1)");
+
+
     ]
 
 let _ =

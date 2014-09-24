@@ -73,7 +73,9 @@ let rec get_lambda e env : exp option = match e with
      begin
        try
          let v = IdMap.find id env in
-         get_lambda v env
+         match v with 
+         | Lambda (_,_,_) -> Some (v)
+         | _ -> None
        with _ -> None
      end 
   | Lambda (_,_,_) -> Some e
@@ -97,6 +99,7 @@ let rec function_inlining (e : exp) : exp =
        let are_const_args lst = List.for_all (fun e-> is_constant e env) lst in
        begin
          match f, are_const_args args with
+         (*| Some (e), false -> printf "\nget one:"; printf "%s" (ljs_str e); printf "\nargs: "; List.iter (fun(x)->printf "%s," (ljs_str x)) args; App (p, func, args)*)
          | Some (e), true -> inline_lambda p e args
          | _ -> App (p, func, args)
        end 

@@ -46,7 +46,7 @@ let op_has_side_effect (op : string) : bool = match op with
  *
  * this function makes strong assertion on app(): any app has side effect
  *)
-let rec has_side_effect (e : S.exp) : bool = match e with
+let rec has_side_effect ?(env=IdMap.empty) (e : S.exp) : bool = match e with
   | S.Null _
   | S.Undefined _
   | S.String (_,_)
@@ -57,33 +57,33 @@ let rec has_side_effect (e : S.exp) : bool = match e with
   | S.Lambda (_, _, _)  (* lambda always has no side effect *)
     -> false
   | S.GetAttr (_, _,obj, flds) ->
-     has_side_effect obj || has_side_effect flds
+     has_side_effect ~env obj || has_side_effect ~env flds
   | S.GetObjAttr (_, _, obj) ->
-     has_side_effect obj
+     has_side_effect ~env obj
   | S.OwnFieldNames (_, obj) ->
-     has_side_effect obj
+     has_side_effect ~env obj
   | S.Op2 (_,_,e1,e2) ->
-     has_side_effect e1 || has_side_effect e2
+     has_side_effect ~env e1 || has_side_effect ~env e2
   | S.Op1 (_,op,e1) ->
-     op_has_side_effect op || has_side_effect e1
+     op_has_side_effect op || has_side_effect ~env e1
   | S.Object (_,_,_) ->
-     List.exists has_side_effect (S.child_exps e)
+     List.exists (fun (e)->has_side_effect ~env e) (S.child_exps e)
   | S.If (_, cond, thn, els) ->
-     List.exists has_side_effect [cond; thn; els]
+     List.exists (fun(e)->has_side_effect ~env e) [cond; thn; els]
   | S.Seq (_, e1, e2) ->
-     has_side_effect e1 || has_side_effect e2
+     has_side_effect ~env e1|| has_side_effect ~env e2
   | S.Let (_, x, x_v, body) ->
-     let se = has_side_effect body in
+     let se = has_side_effect ~env body in
      if se then true
      else 
        begin
          match x_v with 
          | S.Lambda (_, _, _) -> false
-         | _ -> has_side_effect x_v 
+         | _ -> has_side_effect ~env x_v
        end 
   | S.Rec (_, x, x_v, body) ->
-     has_side_effect body
-  | S.Label (_, _, e) -> has_side_effect e
+     has_side_effect ~env body
+  | S.Label (_, _, e) -> has_side_effect ~env e
   | S.Break (_, _, _)
   | S.SetAttr (_,_,_,_,_)
   | S.SetObjAttr (_,_,_,_)

@@ -65,7 +65,13 @@ let side_effect_test =
         (checkse "func(s) {1}(1)" true);
 
       "seq" >::
-        (checkse "1; s:=1" true)
+        (checkse "1; s:=1" true);
+
+      "rec side effect test" >::
+        (checkse "rec (f = func(x, y) {
+                       if (x === 1) {y} else {f(prim('-', x, 1), prim('+', y, 1))}})
+                    f(3, 0)"
+                 false);
 
     ]
 

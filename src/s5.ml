@@ -10,6 +10,7 @@ open Ljs_const_folding
 open Ljs_const_propagation
 open Ljs_deadcode_elimination
 open Ljs_alias_elimination
+open Ljs_function_inlining
 
 type node =
   | Js of Js_syntax.program
@@ -398,6 +399,11 @@ module S5 = struct
     let new_ljs = alias_elimination ljs in
     push_ljs new_ljs
 
+  let opt_function_inlining cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = function_inlining ljs in
+    push_ljs new_ljs
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -523,6 +529,8 @@ module S5 = struct
           "perform dead code elimination on s5";
         unitCmd "-opt-alias-elimination" opt_alias_elimination
           "perform alias elimination on s5";
+        unitCmd "-opt-function-inlining" opt_function_inlining
+          "perform function inlining on s5";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]
