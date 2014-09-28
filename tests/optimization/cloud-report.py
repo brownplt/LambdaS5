@@ -161,7 +161,7 @@ def opt_info_printer(ch, files):
 
     # print title
     file, phases = files[0]
-    print "%20s " % "file",
+    print "%25s " % "file",
     for index, (name, count) in enumerate(phases):
         print "%10s " % ("phase " + str(index+1)),
     print "%10s" % "improve",
@@ -170,7 +170,7 @@ def opt_info_printer(ch, files):
     # print file info
     for info in files:
         file, phases = info
-        print "%20s" % path.splitext(path.basename(file))[0],
+        print "%25s" % path.splitext(path.basename(file))[0],
         phases = map(lambda x: x[1], phases)
         for phase in phases:
             print "%10s " % phase,
