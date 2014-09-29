@@ -30,7 +30,7 @@ compare: debug
 TEST_SRC = $(wildcard optimization/test/*.ml)
 #TEST_BYTE = $(addprefix ../obj/,$(subst .ml,.d.byte,$(TEST_SRC)))
 TEST_BYTE = $(subst .ml,.d.byte,$(TEST_SRC))
-OPT_BUILD = ocamlbuild -build-dir ../obj -Is util,ljs,js,exprjs,optimization -use-ocamlfind -pkgs ounit,unix,str -lflags -I,../lib -cflags -g
+OPT_BUILD = ocamlbuild -build-dir ../obj -Is util,ljs,js,exprjs,optimization -use-ocamlfind -pkgs oUnit,unix,str -lflags -I,../lib -cflags -g
 
 opt: debug $(TEST_BYTE)
 

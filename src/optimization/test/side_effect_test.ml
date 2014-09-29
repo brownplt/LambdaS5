@@ -54,24 +54,47 @@ let side_effect_test =
                  true);
                                 
       "test let binding an unused function" >::
-        (checkse "let (f = func(s) {x:=1})
+        (checkse "let (f = func(s) {s:=1})
                   f" false);
 
       "test application" >::
-        (checkse "let (f = func(s) {x:=1})
+        (checkse "let (f = func(s) {s:=1})
                   f(1)" true);
 
-      "any application has side effect" >::
-        (checkse "func(s) {1}(1)" true);
+      "not every application has side effect" >::
+        (checkse "func(s) {1}(1)" false);
+
+      "this application has side effect 1" >::
+        (checkse "func(s) {print('pretty', s)}(1)" true);
+
+      "this application should be assumed to have side effect" >::
+        (checkse "f(2)" true);
+
+      "this application has side effect 2" >::
+        (checkse "func(s){ func(t) {prim('pretty', t)}}(2)(2)" true);
 
       "seq" >::
         (checkse "1; s:=1" true);
 
-      "rec side effect test" >::
+      "rec does not have side effect" >::
         (checkse "rec (f = func(x, y) {
                        if (x === 1) {y} else {f(prim('-', x, 1), prim('+', y, 1))}})
                     f(3, 0)"
                  false);
+
+      "rec has side effect" >::
+        (checkse "rec (f = func(x, y) {
+                       if (x === 1) {prim('pretty',y); y} 
+                       else {f(prim('-', x, 1), prim('+', y, 1))}})
+                    f(3, 0)"
+                 true);
+
+      "rec has side effect" >::
+        (checkse "rec (f = func(x, y) {
+                       if (x === 1) {y} 
+                       else {f({prim('pretty', x);prim('-', x, 1)}, prim('+', y, 1))}})
+                    f(3, 0)"
+                 true);
 
     ]
 

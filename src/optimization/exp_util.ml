@@ -44,7 +44,7 @@ let op_has_side_effect (op : string) : bool = match op with
  * let (x = func(){ y:=1} ) {x} does not have side effect
  * let (x = func(){ y:=1} ) {x()} has side effect.
  *
- * this function makes strong assertion on app(): any app has side effect
+ * env contains id that does not have side effect.
  *)
 let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.Null _
@@ -75,12 +75,12 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.Let (_, x, x_v, body) ->
      begin
        match x_v with 
-       | S.Lambda (_, xs, body) -> (* check the body of lambda and return false*)
+       | S.Lambda (_, xs, lmd_body) -> (* check the body of lambda and return false*)
           let newset = IdSet.filter (fun(x)->not (List.mem x xs)) env in
-          let se_lambda = has_side_effect ~env:newset body in
+          let se_lambda = has_side_effect ~env:newset lmd_body in
           let newenv = match se_lambda with 
-            | true -> IdSet.add x env 
-            | false -> IdSet.remove x env
+            | true -> IdSet.remove x env 
+            | false -> IdSet.add x env
           in 
           has_side_effect ~env:newenv body
        | _ -> 
@@ -95,12 +95,12 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
      let env = IdSet.add x env in
      begin
      match x_v with 
-     | S.Lambda (_, xs, body) ->
+     | S.Lambda (_, xs, lmd_body) ->
         let env = IdSet.filter (fun(x)->not (List.mem x xs)) env in
-        let se_lambda = has_side_effect ~env:env body in
+        let se_lambda = has_side_effect ~env:env lmd_body in
         let env = match se_lambda with
-          | true -> IdSet.add x env
-          | false -> IdSet.remove x env
+          | true -> IdSet.remove x env
+          | false -> IdSet.add x env
         in 
         has_side_effect ~env:env body
      | _ -> failwith "optimizer gets syntax error!"
@@ -108,8 +108,13 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.App (_, f, args) ->          (* check if f(x) has side effect *)
      let se_f =  match f with
      | S.Id(_, id) -> 
-        IdSet.mem id env 
-     | _ -> has_side_effect ~env f in
+        not (IdSet.mem id env)
+     | S.Lambda (_, xs, lmd_body) -> 
+        let env = IdSet.filter (fun(x)->not(List.mem x xs)) env in
+        has_side_effect ~env lmd_body
+     | _ ->
+        has_side_effect ~env f
+     in
      se_f || List.exists (fun(arg)->has_side_effect ~env arg) args
   | S.Label (_, _, e) -> has_side_effect ~env e
   | S.Break (_, _, _)

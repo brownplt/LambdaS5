@@ -304,9 +304,9 @@ let suite =
               })
               let (r = {[#extensible: false]})
               {
-                let (%alpha1 = 1)
-                rec (%alpha2 = func(t) { %alpha2(prim('-', t, 1))})
-                  %alpha2(r)
+                let (%alphaconv1 = 1)
+                rec (%alphaconv2 = func(t) { %alphaconv2(prim('-', t, 1))})
+                  %alphaconv2(r)
               }
               ");           
                         

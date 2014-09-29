@@ -49,9 +49,13 @@ and is_object_constant (e : exp) env : bool = match e with
 
 (* a lambda is a constant if no free vars and side effect should not occur in body
    the requirement is different with that of constant propagation *)
-and is_lambda_constant (e: exp) : bool = match e with
+and is_lambda_constant ?(rec_id : string option) (e: exp) : bool = match e with
   | Lambda (_, ids, body) ->
-     IdSet.is_empty (free_vars e) && not (EU.has_side_effect body)
+     let rec_set = match rec_id with
+       | Some (s) -> IdSet.singleton s 
+       | None -> IdSet.empty 
+     in
+     IdSet.equal (free_vars e) rec_set && not (EU.has_side_effect ~env:rec_set body)
   | _ -> false
 
 (* NOTE(junsong): this predicate can only be used for non-lambda and non-object non-id exp *)
@@ -115,7 +119,8 @@ let rec function_inlining (e : exp) : exp =
 
     | Rec (p, x, xexp, body) ->
        let x_v = inlining_rec xexp env in
-       let is_const = is_constant x_v env in
+       let is_const = is_lambda_constant ~rec_id:x x_v ||
+                        is_constant x_v env in
        if EU.mutate_var x body || not is_const then
          let env = IdMap.remove x env in
          Rec (p, x, x_v, inlining_rec body env)
