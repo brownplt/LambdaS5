@@ -73,6 +73,14 @@ let side_effect_test =
       "this application has side effect 2" >::
         (checkse "func(s){ func(t) {prim('pretty', t)}}(2)(2)" true);
 
+      "this application will be assumed to have side effect" >::
+        (checkse "let (t = func(s){func(t) {prim('+', 1, t)}})
+                  t(2)(2)" true);
+
+      "this application will be assumed to have side effect" >::
+        (checkse "{1; func(s){func(t) {prim('+', 1, t)}}}(2)(2)"
+                  true);
+
       "seq" >::
         (checkse "1; s:=1" true);
 

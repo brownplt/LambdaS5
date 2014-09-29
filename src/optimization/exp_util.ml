@@ -112,6 +112,11 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
      | S.Lambda (_, xs, lmd_body) -> 
         let env = IdSet.filter (fun(x)->not(List.mem x xs)) env in
         has_side_effect ~env lmd_body
+     | S.App (_,_,_) -> 
+       (*NOTE(junsong): I don't know what to do with this situation
+                        f(){f(){print}}()()
+       *)
+       true 
      | _ ->
         has_side_effect ~env f
      in
