@@ -78,4 +78,4 @@ let env_var p s =
   then S.Id (Pos.synth p, s)
   else failwith ("[desugar] Attempted to use unbound id " ^ s ^
                  " in env_var.  Add it to env_free_vars.ml")
-
+let dummy_env exp = S.Seq (Pos.dummy, S.Undefined Pos.dummy, exp)
