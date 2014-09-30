@@ -100,6 +100,21 @@ let suite =
                'fld3': {#value 3, #writable false}}['fld1']"
              "1");
                       
+      "label and break" >::
+      (cmp "label ret : {
+            break ret {[]} }"
+           "{[]}");
+
+
+      "label and break" >::
+      (no_change "label ret : {
+                  if (t === 3) {
+                     break ret {[]} 
+                  } else {
+                     break ret 1
+                  }}");
+
+
     ]
 
 let _ =

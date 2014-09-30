@@ -211,6 +211,15 @@ let rec const_folding (e : exp) : exp =
        const_folding_app p f args
      else 
        App (p, f, args)
+  | Label (p,l,lbody) ->
+    begin match lbody with
+      | Break (_, l', brk) -> 
+        if l = l' then const_folding brk
+        else Label (p, l, const_folding lbody)
+      | _ -> Label (p, l, const_folding lbody)
+    end 
+
+
   | Object (_,_,_) 
   | SetAttr (_,_,_,_,_)
   | SetObjAttr (_,_,_,_)
@@ -222,7 +231,6 @@ let rec const_folding (e : exp) : exp =
   | Seq (_,_,_) 
   | Let (_,_,_,_)
   | Rec (_,_,_,_)
-  | Label (_,_,_)
   | Break (_,_,_)
   | TryCatch (_,_,_)
   | TryFinally (_,_,_)
