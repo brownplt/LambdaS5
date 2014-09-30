@@ -8,9 +8,12 @@ path = os.path
 
 parser = argparse.ArgumentParser(description='generate report of test262 results')
 parser.add_argument('--analyze', metavar='dir', type=str, nargs=1,
-                   help='which directory will be analyzed')
+                    required=True, help='which directory will be analyzed(required)')
 parser.add_argument('--base', metavar='dir', type=str, nargs=1,
-                   help='compared with which directory')
+                    required=True, help='compared with which directory(required)')
+parser.add_argument('--status', action='store_true', help='generate pass/fail report')
+parser.add_argument('--performance', action='store_true', help='generate optimization performance report')
+
 
 args = parser.parse_args()
 curdir = path.abspath(path.curdir)
@@ -83,7 +86,7 @@ def parse_opt_files(file_list):
     return result
 
 # example
-# ch: 'ch07-nonstrict' : 
+# ch: 'ch07-nonstrict' :
 # resultfiles:
 #   [['file1', 'passed', 'passed', true],
 #    ['file2', 'passed', 'NotFound, false]],
@@ -106,13 +109,13 @@ def status_printer(ch, status):
     print "\n\nsection: %s" % ch
     analyze_passed = len(filter(lambda x: x[1] == "passed", status))
     analyze_failed = len(filter(lambda x: x[1] == "failed", status))
-    
+
     base_passed = len(filter(lambda x: x[2] == "passed", status))
     base_failed = len(filter(lambda x: x[2] == "failed", status))
     base_notfound = len(filter(lambda x: [2] == "NotFound", status))
-    
+
     notthesame = len(filter(lambda x: [3] == False, status))
-    
+
     analyzename = path.basename(analyzedir)
     basename = path.basename(basedir)
     print "%10s %15s %30s" % ("", analyzename, basename)
@@ -125,7 +128,7 @@ def status_printer(ch, status):
 
 def opt_info_printer(ch, files):
     def print_config(contents):
-        args = filter(lambda arg: arg.startswith('-count-nodes') or 
+        args = filter(lambda arg: arg.startswith('-count-nodes') or
                                     arg.startswith('-opt-'), contents.strip().split(' '))
         index = 1
         phase = []
@@ -142,13 +145,13 @@ def opt_info_printer(ch, files):
             else:
                 phase.append(arg)
         print ""
-            
-    
+
+
     # print config file
     config = path.join(analyzedir, 'config.txt')
     assert(path.exists(config))
 
-    
+
     with open(config) as f:
         print "config:"
         print_config(f.read())
@@ -166,7 +169,7 @@ def opt_info_printer(ch, files):
         print "%10s " % ("phase " + str(index+1)),
     print "%10s" % "improve",
     print ""
-    
+
     # print file info
     for info in files:
         file, phases = info
@@ -179,8 +182,11 @@ def opt_info_printer(ch, files):
             continue
         print "%10s%%" % round(((int(phases[0])-int(phases[-1]))/float(phases[0])) * 100, 1),
         print ""
-        
+
     print "-----\n\n"
 
-#walk_result(status_printer, analyzedir)
-walk_optimizeinfo(opt_info_printer, analyzedir)
+if args.status:
+    walk_result(status_printer, analyzedir)
+
+if args.performance:    
+    walk_optimizeinfo(opt_info_printer, analyzedir)
