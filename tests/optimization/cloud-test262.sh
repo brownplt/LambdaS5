@@ -4,7 +4,6 @@
 #
 #
 BASE="/home/lijunsong/github/LambdaS5/tests/"
-export PATH="/local/projects/ocaml/recent/build/bin/:$PATH"
 
 get_usage () {
 echo "to use this script, create an directory and put two files in it.
