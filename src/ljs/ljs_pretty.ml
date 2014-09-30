@@ -89,8 +89,6 @@ let rec exp_helper exprec e = match e with
   | Lambda (p, xs, e) ->
     vert [squish [text "func"; parens (horz (intersperse (text ",") (map text xs)))];
           braces (exprec e)]
-  | Eval (p, s, obj) -> 
-      squish [text "@eval"; parens (horz [exprec s; text ","; exprec obj])]
   | Hint (p, hint, e) ->
       parens (vert [squish [text "/*: "; text hint; text "*/"];
 	                 exprec e])

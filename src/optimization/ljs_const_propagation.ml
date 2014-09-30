@@ -153,6 +153,5 @@ let rec const_propagation (e : exp) : exp =
     | TryCatch (_,_,_)
     | TryFinally (_,_,_)
     | Throw (_,_)
-    | Eval (_,_,_)
     | Hint (_,_,_) -> optimize propagate e in
   propagation_rec e empty_env

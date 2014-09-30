@@ -107,8 +107,6 @@ let rec equal_exp (e1 : exp) (e2 : exp) =
      equal_exp e1 e2
   | Lambda (_, xs1, e1), Lambda (_, xs2, e2) ->
      xs1 = xs2 && equal_exp e1 e2
-  | Eval (_, e1, b1), Eval (_, e2, b2) ->
-     equal_exp e1 e2 && equal_exp b1 b2
   | Hint (_, x1, e1), Hint(_, x2, e2) ->
      x1 = x2 && equal_exp e1 e2
   | _ ->  false (*failwith "not implemented"*)

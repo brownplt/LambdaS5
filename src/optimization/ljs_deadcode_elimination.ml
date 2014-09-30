@@ -218,11 +218,6 @@ let deadcode_elimination (exp : exp) : exp =
        let new_body, _ = eliminate_ids_rec body ids in
        Lambda (p, xs, new_body), IdSet.union freevars ids
 
-    | Eval (p, e, bindings) ->
-       let new_e, ids = eliminate_ids_rec e ids in
-       let new_bindings, ids = eliminate_ids_rec bindings ids in
-       Eval (p, new_e, new_bindings), ids
-
     | Hint (p, id, e) ->
        let new_e, ids = eliminate_ids_rec e ids in
        Hint (p, id, new_e), ids

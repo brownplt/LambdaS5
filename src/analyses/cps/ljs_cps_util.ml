@@ -56,8 +56,8 @@ let no_free_vars exp (env : unit IdMap.t) : bool =
       && free_exn env exn
       && List.for_all (free_val env) (func::args)
     | C.AppRetCont(_, _,ret, arg) -> free_ret env ret && free_val env arg
-    | C.AppExnCont(_, _,exn, arg, label) -> free_exn env exn && List.for_all (free_val env) [arg;label]
-    | C.Eval(_,_, eval) -> true in
+    | C.AppExnCont(_, _,exn, arg, label) -> free_exn env exn && List.for_all (free_val env) [arg;label] 
+  in
   free_exp env exp
 
 
@@ -229,7 +229,6 @@ let alphatize allowUnbound (exp, env) =
       let (arg', env2) = alph_val (arg, env1) in
       let (label', env3) = alph_val (label, env2) in
       (C.AppExnCont(p,l,exn', arg', label'), env3)
-    | C.Eval(p,l, eval) -> (C.Eval(p,l, eval), env)
   in alph_exp (exp, env)
 
 

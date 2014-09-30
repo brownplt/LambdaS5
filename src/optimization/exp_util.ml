@@ -132,7 +132,6 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.TryCatch (_, _, _)    (* any try..catch is assumed to throw out uncatched error *)
   | S.TryFinally (_, _, _)  (* any try..finally is assumed to throw out uncached error *)
   | S.Throw (_,_)
-  | S.Eval (_,_,_)
   | S.Hint (_,_,_)
     -> true
 

@@ -157,7 +157,6 @@ let rec function_inlining (e : exp) : exp =
     | TryCatch (_,_,_)
     | TryFinally (_,_,_)
     | Throw (_,_)
-    | Eval (_,_,_)
     | Hint(_,_,_)
       -> optimize (fun x->inlining_rec x env) e
   in 
@@ -238,7 +237,6 @@ and inline_lambda p (f : exp) (args : exp list) : exp =
     | TryCatch (_,_,_)
     | TryFinally (_,_,_)
     | Throw (_,_)
-    | Eval (_,_,_)
     | Hint (_,_,_) -> optimize subst e in
   match f with 
   | Lambda (p, xs, body) ->

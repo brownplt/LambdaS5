@@ -140,11 +140,6 @@ let rec optimize (optimizer : exp->exp) (e : exp) : exp =
      let e = optimizer e in
      Lambda (p, xs, e)
 
-  | Eval (p, e, bindings) ->
-     let e = optimizer e in
-     let bindings = optimizer bindings in
-     Eval (p, e, bindings)
-
   | Hint (p, id, e) ->
      let e = optimizer e in
      Hint (p, id, e)

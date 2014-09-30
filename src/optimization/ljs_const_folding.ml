@@ -227,7 +227,6 @@ let rec const_folding (e : exp) : exp =
   | TryCatch (_,_,_)
   | TryFinally (_,_,_)
   | Throw (_,_)
-  | Eval (_,_,_)
   | Hint (_,_,_)
     -> optimize const_folding e
 

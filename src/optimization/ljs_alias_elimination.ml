@@ -77,7 +77,6 @@ let alias_elimination (e : exp) : exp =
     | TryCatch (_,_,_)
     | TryFinally (_,_,_)
     | Throw (_,_)
-    | Eval (_,_,_)
     | Hint (_,_,_)
       -> optimize eliminate e
 
