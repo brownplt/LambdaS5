@@ -4,8 +4,7 @@
 #
 #
 BASE="/home/lijunsong/github/LambdaS5/tests/"
-# if you use opam to install ocaml, the following line may be not necessary.
-# export PATH="/local/projects/ocaml/recent/build/bin/:$PATH"
+export PATH="/home/lijunsong/.opam/4.02.0/bin/:$PATH"
 
 get_usage () {
 echo "to use this script, create an directory and put one file in it:

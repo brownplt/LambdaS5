@@ -4,6 +4,7 @@
 #
 #
 BASE="/home/lijunsong/github/LambdaS5/tests/"
+export PATH="/home/lijunsong/.opam/4.02.0/bin/:$PATH"
 
 get_usage () {
 echo "to use this script, create an directory and put two files in it.
