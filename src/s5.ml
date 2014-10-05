@@ -11,6 +11,7 @@ open Ljs_const_propagation
 open Ljs_deadcode_elimination
 open Ljs_alias_elimination
 open Ljs_function_inlining
+open Ljs_preprocess
 
 type node =
   | Js of Js_syntax.program
@@ -408,6 +409,11 @@ module S5 = struct
     let new_ljs = function_inlining ljs in
     push_ljs new_ljs
 
+  let opt_preprocess cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = preprocess ljs in
+    push_ljs new_ljs
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -525,6 +531,8 @@ module S5 = struct
           "marshal s5 code to file as sequence of bytes";
         strCmd "-load-s5" load_s5
           "load s5 from marshalled file that created by -save-s5(use -s5 to load text form of s5 code)";
+        unitCmd "-opt-preprocess" opt_preprocess
+          "preprocess s5 code to make it more optimizable.";
         unitCmd "-opt-const-folding" opt_constant_folding
           "perform constant folding on s5";
         unitCmd "-opt-const-propagation" opt_const_propagation
