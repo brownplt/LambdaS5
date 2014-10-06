@@ -61,7 +61,7 @@ function f1(x) {var a = x};
 *)
 let recognize_new_context exp ctx : env =
   (* get_locals will get the local IdMaps for %a11 and %x12 *)
-  let get_locals_args exp = 
+  (*let get_locals_args exp = 
     let rec get_rec exp (locals : (string * exp) list) (args : (string * exp) list) : 
       ((string * exp) list * (string * exp) list) = 
     match exp with
@@ -81,7 +81,7 @@ let recognize_new_context exp ctx : env =
     in 
     let locals, args = get_rec exp [] [] in
     List.append locals args
-  in 
+  in *)
   let rec strip_let exp : exp =  match exp with
     | Let (_, _, _, body) -> strip_let body
     | _ -> exp
@@ -104,7 +104,7 @@ let recognize_new_context exp ctx : env =
     | Object (_, _, props) -> 
       List.fold_right recog_prop props ctx 
     | _ -> (* assume: obj follows let *)
-      Exp_util.print_ljs exp;
+      Exp_util.print_ljs exp; print_newline();
       failwith "[4]pattern assertion failed:"
   in 
   let obj = strip_let exp in
@@ -115,17 +115,17 @@ let recognize_new_context exp ctx : env =
    this phase must be the first phase before all optimizations.
 *)
 let preprocess (e : exp) : exp =
-  let in_lambda = ref false in
   let rec preprocess_rec (e : exp) (ctx : env) : exp = 
     match e with 
     | Seq (p, e1, e2) ->
-      let newe1 = preprocess_rec e1 ctx in
-      (match newe1 with
+      printf "got seqence\n%!";
+      (match e1 with
        | App (_, Id (_, "%defineGlobalVar"), [Id(_,_); String (_, id)]) ->
          let ctx = IdMap.add id (Undefined Pos.dummy) ctx in
          let newe2 = preprocess_rec e2 ctx in
          Let (p, id, Undefined Pos.dummy, newe2)
        | _ -> 
+         let newe1 = preprocess_rec e1 ctx in
          let newe2 = preprocess_rec e2 ctx in
          Seq (p, newe1, newe2))
     | GetField (pos, obj, fld, args) ->
@@ -134,9 +134,15 @@ let preprocess (e : exp) : exp =
       let a = preprocess_rec args ctx in
       (match o, f with
       | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
-        if IdMap.mem fldstr ctx 
-        then Id (pos, fldstr) (* XXX: any possibility that fld has getter on it? *)
-        else GetField (pos, o, f, a)
+        printf "match context['%s']\n%!" fldstr;
+        IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;
+        (try
+          match IdMap.find fldstr ctx with
+          | Undefined _ -> Id (Pos.dummy, fldstr)
+          | Id (_,_) as id -> id
+          | _ -> failwith "how could IdMap stores unrecognized exp"
+        with Not_found -> GetField (pos, o, f, a)
+        )
       | _ -> GetField (pos, o, f, a)
       )
     | SetField (pos, obj, fld, newval, args) ->
@@ -163,19 +169,28 @@ let preprocess (e : exp) : exp =
        | _ -> App (pos, f, args)
       )
     | Let (p, x, x_v, body) ->
-      printf "let bind %s to %s\n%!" x (Exp_util.ljs_str x_v);
-      if !in_lambda = true && x = "%context" then
-        let new_ctx = recognize_new_context x_v ctx in
-        IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) new_ctx;
-        Let (p, x, x_v, preprocess_rec body new_ctx)
-      else 
+      let x_v = preprocess_rec x_v ctx in
+      (try
+        if x = "%context" then 
+          let new_ctx = recognize_new_context x_v ctx in begin
+          IdMap.iter (fun k v->printf "%s -> %s\n%!" k (Exp_util.ljs_str v)) new_ctx; 
+          print_newline() ;
+          
+          Let (p, x, x_v, preprocess_rec body new_ctx) end
+        else 
+          Let (p, x, x_v, preprocess_rec body ctx)
+      with Failure e -> 
+        printf "fail %s\n%!" e;
         Let (p, x, x_v, preprocess_rec body ctx)
-    | Lambda (_, xs, body) ->
-      in_lambda := true;
-      List.iter (fun x->printf "id: %s\n%!" x) xs;
-      let result = preprocess_rec body ctx in
-      in_lambda := false;
-      result
+      )
+    | Lambda (p, xs, body) ->
+      printf "entering Lambda (%!";
+      List.iter (fun x->printf "%s,%!" x) xs; print_newline() ;
+      printf "the body is:\n %s" (Exp_util.ljs_str body);
+      print_endline "==================";
+      let result = preprocess_rec body ctx in begin
+      printf "leaving Lambda\n%!";
+      Lambda (p, xs, result) end
     | Undefined _ 
     | Null _ 
     | String (_, _)
