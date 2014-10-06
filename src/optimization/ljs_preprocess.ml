@@ -4,30 +4,6 @@ open Ljs_opt
 
 type env = exp IdMap.t
 
-let is_obj_context = function
-  | Id (_, id) -> id = "%context" || id = "%global" || id = "%globalContext"
-  | _ -> false
-
-let transform_GetField pos obj fld args =
-  let get_static_str_fld e : string option = match e with
-    | String (_, str) -> Some str
-    | _ -> None
-  in 
-  match is_obj_context obj, get_static_str_fld fld with
-  | true, Some(s) -> Id (pos, s)
-  | _ -> GetField (pos, obj, fld, args)
-
-(* %context["z" = fobj6, args] returns Some ("z", fobj6)
-*)
-let transform_SetField pos obj fld newval args : exp =
-  let get_static_str_fld e : string option = match e with
-    | String (_, str) -> Some str
-    | _ -> None
-  in 
-  match is_obj_context obj, get_static_str_fld fld with
-  | true, Some(s) -> SetBang (pos, s, newval)
-  | _ -> SetField (pos, obj, fld, newval, args)
-
 (* in function object #code attr, parent context is always shadowed,
    This function will recognize pattern of the new context and try to
    get 
@@ -129,6 +105,8 @@ the contextobject and results in
    body
 
 body is also returned as the second argument for convenience.
+
+todo: arguments keyword in function
 *)
 let get_localcontext (let_exp : exp) : exp option =
   let rec get_let let_exp : exp =
@@ -157,12 +135,19 @@ let replace_let_body let_exp new_body =
   
 (* this phase highly relies on the desugared patterns.
    this phase must be the first phase before all optimizations.
+
+   recognize the following pattern:
+   - %defineGlobalVar(%context, "x")
+   - %context["x"] if x in %context
+   - %context["x" = ..] if "x" in %context
+   - in function object: let {%context = {let..let..let { contextobj}} function-body}
+         remove the %context
+   - this.x (will be desugared to %PropAccessorCheck(%this), w
 *)
 let preprocess (e : exp) : exp =
   let rec preprocess_rec (e : exp) (ctx : env) : exp = 
     match e with 
     | Seq (p, e1, e2) ->
-      printf "got seqence\n%!";
       (match e1 with
        | App (_, Id (_, "%defineGlobalVar"), [Id(_,_); String (_, id)]) ->
          let ctx = IdMap.add id (Undefined Pos.dummy) ctx in
@@ -178,8 +163,8 @@ let preprocess (e : exp) : exp =
       let a = preprocess_rec args ctx in
       (match o, f with
       | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
-        printf "match context['%s']\n%!" fldstr;
-        IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;
+        (*printf "match context['%s']\n%!" fldstr;
+        IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;*)
         (try
           match IdMap.find fldstr ctx with
           | Undefined _ -> Id (Pos.dummy, fldstr)
@@ -225,7 +210,6 @@ let preprocess (e : exp) : exp =
         Let (p, x, x_v, preprocess_rec body ctx)
       | Some (new_let)->
         (try
-           printf "new let: %s\n%!" (Exp_util.ljs_str new_let);
            let new_ctx = recognize_new_context x_v ctx in 
            replace_let_body new_let (preprocess_rec body new_ctx)
          with Failure msg -> 
@@ -235,13 +219,8 @@ let preprocess (e : exp) : exp =
         )
       end 
     | Lambda (p, xs, body) ->
-      printf "entering Lambda (%!";
-      List.iter (fun x->printf "%s,%!" x) xs; print_newline() ;
-      printf "the body is:\n %s" (Exp_util.ljs_str body);
-      print_endline "==================";
-      let result = preprocess_rec body ctx in begin
-      printf "leaving Lambda\n%!";
-      Lambda (p, xs, result) end
+      let result = preprocess_rec body ctx in 
+      Lambda (p, xs, result)
     | Undefined _ 
     | Null _ 
     | String (_, _)
