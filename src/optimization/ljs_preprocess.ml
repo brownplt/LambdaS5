@@ -93,7 +93,7 @@ let recognize_new_context exp ctx : env =
     | Break (_, _, body) -> get_id_in_getter body
     | _ -> failwith "[5] pattern assertion failed: getter contains more complicated structure"
   in 
-  let rec recog_prop prop ctx : env = match prop with
+  let rec collect_fields prop ctx : env = match prop with
     | fld, Data ({value=value; writable=_},_,_) -> 
       IdMap.add fld value ctx
     | fld, Accessor ({getter=getter; setter=_},_,_) ->
@@ -102,7 +102,7 @@ let recognize_new_context exp ctx : env =
   let rec recog_field exp ctx : env = 
     match exp with 
     | Object (_, _, props) -> 
-      List.fold_right recog_prop props ctx 
+      List.fold_right collect_fields props ctx 
     | _ -> (* assume: obj follows let *)
       Exp_util.print_ljs exp; print_newline();
       failwith "[4]pattern assertion failed:"
@@ -110,7 +110,51 @@ let recognize_new_context exp ctx : env =
   let obj = strip_let exp in
   recog_field obj ctx
     
+(* local context has the pattern that
+ let (%context = {
+     let (local1=..)
+     let (local2=..)
+     let (arg1=..)
+     let (arg2=..)
+        contextobject})
+   body
 
+this function will recognize the pattern and return the option of an exp that takes out
+the contextobject and results in
+
+ let (local1=..)
+ let (local2=..)
+ let (arg1=..)
+ let (arg2=..)
+   body
+
+body is also returned as the second argument for convenience.
+*)
+let get_localcontext (let_exp : exp) : exp option =
+  let rec get_let let_exp : exp =
+    match let_exp with
+    | Let (p, x, x_v, letb) ->
+      Let (p, x, x_v, get_let letb)
+    | Object (_,_,_) -> Undefined Pos.dummy
+    | _ -> failwith "not context"
+  in
+  match let_exp with
+  | Let (p, "%context", x_v, body) ->
+    (try 
+      Some (get_let x_v)
+    with _ -> None
+    )
+  | _ -> None 
+      
+let replace_let_body let_exp new_body =
+  let rec traverse let_exp : exp = match let_exp with
+    | Let (p, x, x_v, body) ->
+      Let (p, x, x_v, traverse body)
+    | Undefined _ -> new_body 
+    | _ -> failwith "replace_let_body: should not reach here"
+  in 
+  traverse let_exp
+  
 (* this phase highly relies on the desugared patterns.
    this phase must be the first phase before all optimizations.
 *)
@@ -140,7 +184,7 @@ let preprocess (e : exp) : exp =
           match IdMap.find fldstr ctx with
           | Undefined _ -> Id (Pos.dummy, fldstr)
           | Id (_,_) as id -> id
-          | _ -> failwith "how could IdMap stores unrecognized exp"
+          | _ -> failwith "GetField: how could IdMap stores unrecognized exp"
         with Not_found -> GetField (pos, o, f, a)
         )
       | _ -> GetField (pos, o, f, a)
@@ -152,9 +196,12 @@ let preprocess (e : exp) : exp =
       let a = preprocess_rec args ctx in
       (match o, f with
        | Id (_, "%context"), String (_, fldstr) ->
-         if IdMap.mem fldstr ctx
-         then SetBang (pos, fldstr, v)
-         else SetField (pos, o, f, v, a)
+         (try match IdMap.find fldstr ctx with
+            | Undefined _ -> SetBang (pos, fldstr, v)
+            | Id (_, id) -> SetBang (pos, id, v)
+            | _ -> failwith "SetField: how could IdMap stores unrecognized exp"
+          with Not_found -> SetField (pos, o, f, v, a)
+         )
        | _ -> SetField (pos, o, f, v, a)
       )
     | App (pos, f, args) ->
@@ -163,26 +210,30 @@ let preprocess (e : exp) : exp =
       (match f, args with 
        | Id (_, "%EnvCheckAssign"),
          [Id (_, "%context"); String (_, id); v; _] ->
-         (* todo: %envcheckassign[context, 'a', 1] may appear at different blocks!
-            adding binding 'a'->1 is not enough! *)
-         SetBang (pos, id, v)
+         (try match IdMap.find id ctx with
+            | Undefined _ -> SetBang (pos, id, v)
+            | Id (_, actual_id) -> SetBang (pos, actual_id, v)
+            | _ -> failwith "EnvCheckAssign: how could IdMap stores unrecognized exp"
+          with Not_found -> App (pos, f, args)
+         )
        | _ -> App (pos, f, args)
       )
     | Let (p, x, x_v, body) ->
       let x_v = preprocess_rec x_v ctx in
-      (try
-        if x = "%context" then 
-          let new_ctx = recognize_new_context x_v ctx in begin
-          IdMap.iter (fun k v->printf "%s -> %s\n%!" k (Exp_util.ljs_str v)) new_ctx; 
-          print_newline() ;
-          
-          Let (p, x, x_v, preprocess_rec body new_ctx) end
-        else 
-          Let (p, x, x_v, preprocess_rec body ctx)
-      with Failure e -> 
-        printf "fail %s\n%!" e;
+      begin match get_localcontext e with
+      | None -> (* not a new context binding *)
         Let (p, x, x_v, preprocess_rec body ctx)
-      )
+      | Some (new_let)->
+        (try
+           printf "new let: %s\n%!" (Exp_util.ljs_str new_let);
+           let new_ctx = recognize_new_context x_v ctx in 
+           replace_let_body new_let (preprocess_rec body new_ctx)
+         with Failure msg -> 
+           (printf "fail %s\n%!" msg;
+            Let (p, x, x_v, preprocess_rec body ctx)
+           )
+        )
+      end 
     | Lambda (p, xs, body) ->
       printf "entering Lambda (%!";
       List.iter (fun x->printf "%s,%!" x) xs; print_newline() ;
