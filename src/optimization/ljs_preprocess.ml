@@ -131,7 +131,7 @@ let replace_let_body let_exp new_body =
     | Undefined _ -> new_body 
     | _ -> failwith "replace_let_body: should not reach here"
   in 
-  traverse let_exp
+  traverse let_exp 
   
 (* these function will check if the program contains assignment to "this" or "window".
    Such assignments will create new variables silently. To be more specific, this 
@@ -142,6 +142,7 @@ let replace_let_body let_exp new_body =
    4. string computation in field
 
    5. x++, x--, ++x, --x: this will be desugared to %PostIncrement(%context, "x"), we don't have corresponding operation on S5 identifiers.
+   6. with(o): code will make a new context, and we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
 
 todo: in strict mode
 *)
@@ -307,14 +308,19 @@ let preprocess (e : exp) : exp =
     | Let (p, x, x_v, body) ->
       let x_v = preprocess_rec ~in_lambda x_v ctx in
       begin match get_localcontext e with
-      | None -> (* not a new context binding *)
-        Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
+      | None -> (* not a new context binding in lambda *)
+        begin
+          if x = "%context" then  (* rebind x, ignore the whole body *)
+            e
+          else 
+            Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
+        end 
       | Some (new_let)->
         (try
            let new_ctx = recognize_new_context x_v ctx in 
            replace_let_body new_let (preprocess_rec ~in_lambda body new_ctx)
          with Failure msg -> 
-           (printf "fail %s\n%!" msg;
+           (printf "oops, pattern error: %s\n%!" msg;
             Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
            )
         )
