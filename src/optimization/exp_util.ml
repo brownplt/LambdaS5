@@ -261,6 +261,8 @@ let rec mutate_var (x : id) (e : S.exp) : bool = match e with
 let print_ljs ljs =
   Ljs_pretty.exp ljs Format.std_formatter; print_newline()
 
+let ljs_str ljs =
+  Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
 
 let rec valid_for_folding (e : S.exp) : bool = 
   match e with
