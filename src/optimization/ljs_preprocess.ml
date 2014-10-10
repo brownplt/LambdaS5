@@ -4,6 +4,10 @@ open Ljs_opt
 
 type env = exp IdMap.t
 
+let debug_on = false
+
+let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
+
 (* in function object #code attr, parent context is always shadowed,
    This function will recognize pattern of the new context and try to
    get 
@@ -168,12 +172,22 @@ let rec eligible_for_preprocess exp : bool =
   in *)
   let is_static_field fld = match fld with
     | String (_, _) -> true
-    | _ -> false
+    | _ -> 
+      dprint "not eligible: find static field: %s\n%!" (Exp_util.ljs_str fld);
+      false
   in 
   let rec pass_this_arg (args : exp list) = 
     (* pass "%this" as the function arguments *)
     let rec contain_this exp = match exp with
-      | Id (_, id) -> id = "%this"
+      | Id (_, id) -> 
+        let res = (id = "%this") in
+        if res then 
+          (dprint_string "not eligible: args contains %%this\nargs: ";
+           List.iter (fun l -> dprint_ljs l) args;
+           dprint_string "\n"
+          )
+        else ();
+        res
       | _ -> List.exists contain_this (child_exps exp)
     in 
     begin match args with
@@ -191,7 +205,9 @@ let rec eligible_for_preprocess exp : bool =
   | Id _ -> true
   | GetField (_, obj, fld, args) ->
     (match obj, fld with
-    | Id(_, "%context"), String(_, "window") -> false
+    | Id(_, "%context"), String(_, "window") -> 
+      dprint_string "not eligible: get window";
+      false
     | Id(_, "%context"), fld -> is_static_field fld
     | _ -> 
       eligible_for_preprocess obj &&
@@ -199,16 +215,21 @@ let rec eligible_for_preprocess exp : bool =
       eligible_for_preprocess args
     )
   | App (_, f, args) -> (match f, args with
-      | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> false
+      | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> 
+        false
         (* todo: we can translate this into s5! *)
       | Id (_, "%PostIncrement"), _ -> false
       | Id (_, "%PostDecrement"), _ -> false
       | Id (_, "%PrefixDecrement"), _ -> false
       | Id (_, "%PrefixIncrement"), _ -> false
+      (* don't check internal functions like %resolvethis *)
+      | Id (_, fname), args ->
+        if fname.[0] = '%' then true else    
+          List.for_all eligible_for_preprocess args  
       | _ -> 
         eligible_for_preprocess f && 
         List.for_all eligible_for_preprocess args &&
-        not (pass_this_arg args)
+        (pass_this_arg args)
     )
   | _ -> List.for_all eligible_for_preprocess (child_exps exp)
   
@@ -238,7 +259,8 @@ let preprocess (e : exp) : exp =
     match e with 
     | Seq (p, e1, e2) ->
       (match e1 with
-       | App (_, Id (_, "%defineGlobalVar"), [Id(_,_); String (_, id)]) ->
+       | App (_, Id (_, "%defineGlobalVar"), [Id(_,"%context"); String (_, id)]) ->
+         dprint "find defineGlobalVar %s\n" id;
          let ctx = IdMap.add id (Undefined Pos.dummy) ctx in
          let newe2 = preprocess_rec ~in_lambda e2 ctx in
          Let (p, id, Undefined Pos.dummy, newe2)
@@ -309,12 +331,10 @@ let preprocess (e : exp) : exp =
       let x_v = preprocess_rec ~in_lambda x_v ctx in
       begin match get_localcontext e with
       | None -> (* not a new context binding in lambda *)
-        begin
-          if x = "%context" then  (* rebind x, ignore the whole body *)
+        (if x = "%context" then  (* rebind x, ignore the whole body *)
             e
           else 
-            Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
-        end 
+            Let (p, x, x_v, preprocess_rec ~in_lambda body ctx))
       | Some (new_let)->
         (try
            let new_ctx = recognize_new_context x_v ctx in 
@@ -357,6 +377,14 @@ let preprocess (e : exp) : exp =
   in 
   if eligible_for_preprocess e then
     let env = IdMap.empty in
-    preprocess_rec e env
+    dprint_string "eligible for preprocess, start preprocessing...\n";
+    match e with 
+    | Let (_, "%context", Id (_, "%nonstrictContext"), body) ->
+      preprocess_rec body env
+    | _ -> 
+      dprint_string "the first expression is not let (%%context = ..)\n";
+      dprint_string "preprocess failed. return original program\n";
+      e
   else 
-    e
+    (dprint_string "not eligible for preprocess, return original one\n";
+     e)
