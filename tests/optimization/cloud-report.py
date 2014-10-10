@@ -95,6 +95,7 @@ def walk_result(printer, dir):
         if dnames == []:
             ch = path.basename(dpath)
             resultfiles = [path.join(ch, f) for f in fname if f.endswith('result')]
+            #list.sort(resultfiles)
             printer(ch, analyze_files(resultfiles))
 
 def walk_optimizeinfo(printer, dir):
@@ -102,6 +103,7 @@ def walk_optimizeinfo(printer, dir):
         if dnames == []:
             ch = path.basename(dpath)
             opt_files = [path.join(ch, f) for f in fname if f.endswith('optimizeinfo')]
+            #list.sort(opt_files)
             printer(ch, parse_opt_files(opt_files))
 
 # generate report
@@ -156,6 +158,7 @@ def opt_info_printer(ch, files):
         print "config:"
         print_config(f.read())
 
+    list.sort(files)
     print "section: %s\n" % ch
     if files == []:
         print "%s is empty. Those tests may be only for either strict or nonstrict mode\n\n" % ch
