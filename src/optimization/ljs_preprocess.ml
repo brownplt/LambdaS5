@@ -8,6 +8,28 @@ let debug_on = false
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
 
+(* 
+   This phase will try to undo the global variable wrapping, i.e. make %context['var'] 
+   to `var`. 
+
+   This phase needs to know all global variable names before the actual transformation.
+
+   this phase should only work in strict mode. In non-strict mode, code like
+   function(a) {this.x = a} will create x in global environment. 
+   Creating code silently makes this phase to lose track of global variables and to do 
+   transformation incorrectly. Consider the code in non-strict mode
+
+   var bar = 2
+   function foo() { this.bar = 1 }
+   foo();
+   bar;
+
+   this phase will turn the last bar as identifier `bar' but leaves the `this.bar = 1` as
+   it is, which is setting field `bar' of `this' object', something like 
+   %set-property(%this, "bar", 1)
+
+*)
+
 (* in function object #code attr, parent context is always shadowed,
    This function will recognize pattern of the new context and try to
    get 
@@ -146,7 +168,9 @@ let replace_let_body let_exp new_body =
    4. string computation in field
 
    5. x++, x--, ++x, --x: this will be desugared to %PostIncrement(%context, "x"), we don't have corresponding operation on S5 identifiers.
-   6. with(o): code will make a new context, and we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
+   
+   6. with(o): strict mode does not allow "with". But here is it: code will make a new context, and
+      we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
 
 todo: in strict mode
 *)
@@ -216,12 +240,16 @@ let rec eligible_for_preprocess exp : bool =
     )
   | App (_, f, args) -> (match f, args with
       | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> 
+        dprint_string "not eligible: make alias on %%this\n%!";
         false
         (* todo: we can translate this into s5! *)
-      | Id (_, "%PostIncrement"), _ -> false
-      | Id (_, "%PostDecrement"), _ -> false
-      | Id (_, "%PrefixDecrement"), _ -> false
-      | Id (_, "%PrefixIncrement"), _ -> false
+      | Id (_, "%PostIncrement"), _ 
+      | Id (_, "%PostDecrement"), _
+      | Id (_, "%PrefixDecrement"), _ 
+      | Id (_, "%PrefixIncrement"), _ 
+        -> 
+        dprint_string "not eligible: contains ++,--: not implemented the conversion";
+        false
       (* don't check internal functions like %resolvethis *)
       | Id (_, fname), args ->
         if fname.[0] = '%' then true else    
@@ -378,9 +406,11 @@ let preprocess (e : exp) : exp =
   if eligible_for_preprocess e then
     let env = IdMap.empty in
     dprint_string "eligible for preprocess, start preprocessing...\n";
+    (* todo: find let %context = strict or nonstrict binding and starts opt from there *)
     match e with 
-    | Let (_, "%context", Id (_, "%nonstrictContext"), body) ->
-      preprocess_rec body env
+    | Let (p, "%context", Id (p1, i), body) ->
+      let body = preprocess_rec body env in
+      Let (p, "%context", Id (p1, i), body)
     | _ -> 
       dprint_string "the first expression is not let (%%context = ..)\n";
       dprint_string "preprocess failed. return original program\n";
