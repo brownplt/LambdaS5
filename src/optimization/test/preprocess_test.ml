@@ -14,7 +14,6 @@ let desugar (s : string) : Ljs_syntax.exp =
   
 let suite = 
   (* eval to the same value *)
-  let eq before after = cmp before preprocess after in
   let eligible_test (jscode : string) (expected : bool) = 
     fun test_ctx ->
       let s5code = desugar jscode in
@@ -27,6 +26,23 @@ let suite =
         assert_equal expected (window_free s5code)
           ~printer: (fun x -> if x then "window free" else "not window free")
   in
+  let eq (jscode : string) (expected : string) =
+    (* this function will first assert the code is eligible for preprocessing.
+       and evaluate the jscode and expected, and compare the result with that of 
+       expected *)
+    fun text_ctx ->
+      let es5env = Ljs.parse_es5_env (open_in "../envs/es5.env") "../envs/es5.env" in
+      let s5code = desugar jscode in
+      let s5expected = desugar expected in
+      assert_equal true (eligible_for_preprocess s5code)
+        ~printer: (fun x -> if x then "eligible" else "not eligible");
+      let s5value = Ljs_eval.eval_expr (es5env s5code) desugar true in
+      let expectedv = Ljs_eval.eval_expr (es5env s5expected) desugar true in
+      match s5value, expectedv with
+      | Ljs_eval.Answer(_,value,_,_), Ljs_eval.Answer(_,value2,_,_) ->
+        assert_equal value2 value
+          ~printer: (Ljs_values.pretty_value)
+  in 
   let is_window_free (jscode : string) =
     window_free_test jscode true
   in
@@ -147,6 +163,14 @@ let suite =
         a = this['window'];
         a.x = 1;");
 
+    "tricky" >::
+    (not_eligible
+       "'use strict';
+         var o = {'a' : this; 'b' : 1};
+         var x = 2;
+         function foo(t) { t.a['x'] = 1 }     
+         foo(o); x");
+
     "not eligible passing window" >::
     (not_eligible 
        "'use strict';
@@ -243,16 +267,68 @@ let suite =
        var foo = bar['a'+'1'];
        foo");
 
-    "eligible: computation string field on global alias" >::
+    "not eligible: computation string field on global alias" >::
     (not_eligible 
       "'use strict';
        var bar = window;
        var foo = bar['a'+'1'];
        foo");
 
-     (* todo: use arguments keyword *)
+    (* todo: use arguments keyword *)
     (* todo: use ++, -- *)
+    (* todo: make preprocess works over environment *)
+
+    "test this" >::
+    (eq  "'use strict'; 
+          var x = 1; 
+          this.x = 2; x" "2");
     
+    "test this" >::
+    (eq "'use strict'; var x = 1; this['x'] = 3; x" "3");
+
+    "test global scope" >::
+    (eq "'use strict'; var x = 1; function foo(a) {return a + x}; foo(10)" "11");
+
+    "test global scope shadowed" >::
+    (eq "'use strict'; var x = 1; function foo(a) {var x = 100; return a + x;}; foo(10)" "110");
+
+    "process arguments" >::
+    (eq "'use strict'; function foo(a) {arguments[0] = 2; return a}; foo(1)" "1");
+
+    "computation on normal object" >::
+    (eq "'use strict';
+         var bar = {'a1' : 100};
+         var foo = bar['a'+'1'];
+         foo" "100");
+
+    "assignment through on top-level this" >::
+    (eq "'use strict';
+         var bar = 1;
+         var foo = this.bar;
+         foo" "1");
+
+    "computation field in function" >::
+    (eq "'use strict';
+         function foo() { this['b'+'ar'] = 1 };
+         var o = {'bar' : 2};
+         o.foo = foo;
+         o.foo(); o.bar" "1");
+
+    "redefine global variables" >::
+    (eq "'use strict';
+         var console = {'log' : 1};
+         console.log" "1");
+
+    "redefine global variables. testing context in function" >::
+    (eq "'use strict';
+         function foo() { return console.log };
+         var console = {'log' : 1 };
+         foo()" "1");
+
+    "redefine global variables in function" >::
+    (eq "'use strict';
+         function foo() { var console = {'log' : 1}; return console.log };
+         foo(); console.log" "console.log");
   ]       
   
 

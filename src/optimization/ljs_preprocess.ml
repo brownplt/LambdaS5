@@ -247,7 +247,7 @@ let rec eligible_for_preprocess exp : bool =
   let is_static_field fld = match fld with
     | String (_, _) -> true
     | _ -> 
-      dprint "not eligible: find static field: %s\n%!" (Exp_util.ljs_str fld);
+      dprint "not eligible: find non-static field: %s\n%!" (Exp_util.ljs_str fld);
       false
   in 
   let rec pass_this_as_arg (args_obj : exp) = 
@@ -267,12 +267,13 @@ let rec eligible_for_preprocess exp : bool =
     | Id _ -> true
     | GetField (_, obj, fld, args) ->
       let eligible_field obj fld = match obj with
-        (* when obj is this, only static field is allowed; computation fields
-           on other objects are fine. *)
+        (* when obj is `this` and it is on top-level, only static field is 
+           allowed; computation fields on other objects are fine. *)
         | App (_,Id(_,"%PropAccessorCheck"),[Id(_,"%this")]) -> is_static_field fld
         | _ -> true
       in 
       (* static field is not required in function *)
+      printf "getField [%s] toplevel: %B\n%!" (Exp_util.ljs_str exp) toplevel;
       is_eligible obj && is_eligible fld && is_eligible args &&
       (if toplevel then (eligible_field obj fld) else true)
     | App (_, f, args) -> (match f, args with
@@ -280,9 +281,9 @@ let rec eligible_for_preprocess exp : bool =
           dprint_string "not eligible: make alias on %this\n";
           false
         | Id (_, "%set-property"), [App(_, Id(_,"%ToObject"), [Id(_, "%this")]);
-                                    this_fld; _] ->
+                                    this_fld; arg] ->
           (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
-          is_static_field this_fld
+          is_eligible arg && (if toplevel then (is_static_field this_fld) else true)
         (* todo: we can translate this into s5! *)
         | Id (_, "%PostIncrement"), _ 
         | Id (_, "%PostDecrement"), _
