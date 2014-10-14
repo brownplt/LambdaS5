@@ -30,34 +30,44 @@ let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "p
 
 *)
 
-let global_bindings =
-  [("window", "%global");
-   ("print", "%print");
-   ("console", "%console");
-   ("Array", "%ArrayGlobalFuncObj");
-   ("String", "%StringGlobalFuncObj");
-   ("Object", "%ObjectGlobalFuncObj");
-   ("Number", "%NumberGlobalFuncObj");
-   ("Boolean", "%BooleanGlobalFuncObj");
-   ("Date", "%DateGlobalFuncObj");
-   ("isNaN", "%isNaN");
-   ("Math", "%Math");
-   ("parseInt", "%parseInt");
-   ("decodeURI", "%decodeURI");
-   ("decodeURIComponent", "%decodeURIComponent");
-   ("encodeURI", "%encodeURI");
-   ("encodeURIComponent", "%encodeURIComponent");
-   ("TypeError", "%TypeErrorGlobalFuncObj");
-   ("ReferenceError", "%ReferenceErrorGlobalFuncObj");
-   ("SyntaxError", "%SyntaxErrorGlobalFuncObj");
-   ("RangeError", "%RangeErrorGlobalFuncObj");
-   ("URIError", "%URIErrorGlobalFuncObj");
-   ("Error", "%ErrorGlobalFuncObj");
-   ("RegExp", "%RegExpGlobalFuncObj");
-   ("NaN", "NaN");
-   ("Infinity", "+inf");
-   ("undefined", "undefined");
-  ]
+let create_global_bindings () = 
+  let global_internals =
+    [("window", "%global");
+     ("print", "%print");
+     ("console", "%console");
+     ("Array", "%ArrayGlobalFuncObj");
+     ("String", "%StringGlobalFuncObj");
+     ("Object", "%ObjectGlobalFuncObj");
+     ("Number", "%NumberGlobalFuncObj");
+     ("Boolean", "%BooleanGlobalFuncObj");
+     ("Date", "%DateGlobalFuncObj");
+     ("isNaN", "%isNaN");
+     ("Math", "%Math");
+     ("parseInt", "%parseInt");
+     ("decodeURI", "%decodeURI");
+     ("decodeURIComponent", "%decodeURIComponent");
+     ("encodeURI", "%encodeURI");
+     ("encodeURIComponent", "%encodeURIComponent");
+     ("TypeError", "%TypeErrorGlobalFuncObj");
+     ("ReferenceError", "%ReferenceErrorGlobalFuncObj");
+     ("SyntaxError", "%SyntaxErrorGlobalFuncObj");
+     ("RangeError", "%RangeErrorGlobalFuncObj");
+     ("URIError", "%URIErrorGlobalFuncObj");
+     ("Error", "%ErrorGlobalFuncObj");
+     ("RegExp", "%RegExpGlobalFuncObj");
+     ("NaN", "NaN");
+     ("Infinity", "+inf");
+     ("undefined", "undefined");
+    ]
+  in  
+  let rec to_map maps internals = match internals with
+    | [] -> maps
+    | hd :: rest ->
+      to_map (IdMap.add (fst2 hd) (snd2 hd) maps) rest
+  in 
+  to_map IdMap.empty global_internals
+    
+let global_bindings = create_global_bindings ()
 
 (* in function object #code attr, parent context is always shadowed,
    This function will recognize pattern of the new context and try to
@@ -329,6 +339,13 @@ let preprocess (e : exp) : exp =
          let ctx = IdMap.add id (Undefined Pos.dummy) ctx in
          let newe2 = preprocess_rec ~in_lambda e2 ctx in
          Let (p, id, Undefined Pos.dummy, newe2)
+       | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 
+         when (IdMap.mem id global_bindings) ->
+         dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
+         let id_v = Id (Pos.dummy, IdMap.find id global_bindings) in
+         let ctx = IdMap.add id id_v ctx in
+         let newe2 = preprocess_rec ~in_lambda e2 ctx in
+         Let (p, id, id_v, newe2)
        | _ -> 
          let newe1 = preprocess_rec ~in_lambda e1 ctx in
          let newe2 = preprocess_rec ~in_lambda e2 ctx in
