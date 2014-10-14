@@ -192,18 +192,26 @@ let replace_let_body let_exp new_body =
 (* these functions will check if the program contains assignment to "this" or "window".
    Such assignments will create new variables silently. To be more specific, this 
    function will look for
+   0. strict mode
    1. %context["window"]: code may do bad things through window
    2. %EnvCheckAssign(_, _, %this, _): code may do bad things through the alias of 'this' 
    3. passing %this to a function: code may do something like `function z(a) {a.x = 1}; z(this)`
-   4. string computation in field
+   4. computation string field on top level. In function computation is fine.
 
    5. x++, x--, ++x, --x: this will be desugared to %PostIncrement(%context, "x"), we don't have corresponding operation on S5 identifiers.
    
-   6. with(o): strict mode does not allow "with". But here is it: code will make a new context, and
+   6. with(o): strict mode does not allow "with". But here is how it works: code will make a new context, and
       we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
 
-todo: in strict mode
 *)
+
+let rec all_in_strict exp : bool = match exp with
+  (* checking whether all functions are in strict mode does not work.
+     because 'with' expression can appear on top level.
+  *)
+  | Let (_, "#strict", False _, body) -> false
+  | _ -> List.for_all all_in_strict (child_exps exp)
+    
 let rec window_free ?(toplevel=true) exp : bool =
   (* distinct top-level window and in function window *)
   (* on top level, we should prohibit: this.window; this['window']; window  *)
@@ -233,68 +241,63 @@ let rec eligible_for_preprocess exp : bool =
       false
   in 
   let rec pass_this_as_arg (args_obj : exp) = 
-    (* pass "this" in jscode. `this` will be desugared to function call to
-       %mkArgsObj; internally produce %resolve(.., %this) is fine. *)
     match args_obj with
-     | Object (_, _, props) -> 
-       let rec prop_contains_this prop = match prop with
-         | fld, Data({value=Id(_, "%this"); writable=_}, _, _) -> 
-           dprint_string "the code pass this to a function\n";
-           true
-         | _ -> List.for_all eligible_for_preprocess (child_exps args_obj)
-       in 
-       (*dprint "check this in arg: %s" (Exp_util.ljs_str args_obj);*)
-       List.exists prop_contains_this props
-     | _ -> failwith "find none object in mkdArgsObj arguments"
+    | Id (_, "%this") -> true
+    | _ -> List.exists pass_this_as_arg (child_exps args_obj)
   in 
-  match exp with
-  | Undefined _
-  | Null _
-  | String (_,_)
-  | Num (_,_)
-  | True _
-  | False _ 
-  | Id _ -> true
-  | GetField (_, obj, fld, args) ->
-    (match obj, fld with
-    | _, String(_, "window") ->
-      dprint "not eligible: try to get window: %s\n" (Exp_util.ljs_str exp);
-      false
-    | Id(_, "%context"), fld -> is_static_field fld
-    | _ -> 
-      eligible_for_preprocess obj &&
-      eligible_for_preprocess fld &&
-      eligible_for_preprocess args
-    )
-  | App (_, f, args) -> (match f, args with
-      | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> 
-        dprint_string "not eligible: make alias on %%this\n";
-        false
-      | Id (_, "%set-property"), [App(_, Id(_,"%ToObject"), [Id(_, "%this")]);
-                                  this_fld; _] ->
-        (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
-        is_static_field this_fld
+  let rec is_eligible_rec ?(toplevel=true) exp : bool = 
+    let is_eligible exp = is_eligible_rec ~toplevel exp in
+    match exp with
+    | Undefined _
+    | Null _
+    | String (_,_)
+    | Num (_,_)
+    | True _
+    | False _ 
+    | Id _ -> true
+    | GetField (_, obj, fld, args) ->
+      let eligible_field obj fld = match obj with
+        (* when obj is this, only static field is allowed; computation fields
+           on other objects are fine. *)
+        | App (_,Id(_,"%PropAccessorCheck"),[Id(_,"%this")]) -> is_static_field fld
+        | _ -> true
+      in 
+      (* static field is not required in function *)
+      is_eligible obj && is_eligible fld && is_eligible args &&
+      (if toplevel then (eligible_field obj fld) else true)
+    | App (_, f, args) -> (match f, args with
+        | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> 
+          dprint_string "not eligible: make alias on %this\n";
+          false
+        | Id (_, "%set-property"), [App(_, Id(_,"%ToObject"), [Id(_, "%this")]);
+                                    this_fld; _] ->
+          (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
+          is_static_field this_fld
         (* todo: we can translate this into s5! *)
-      | Id (_, "%PostIncrement"), _ 
-      | Id (_, "%PostDecrement"), _
-      | Id (_, "%PrefixDecrement"), _ 
-      | Id (_, "%PrefixIncrement"), _ 
-        -> 
-        dprint_string "not eligible: contains ++,--: not implemented the conversion\n";
-        false
-      (* don't check internal functions like %resolvethis *)
-      | Id (_, fname), args ->
-        List.for_all eligible_for_preprocess args &&
-        (if fname = "%mkArgsObj" then 
-           (assert ((List.length args) = 1);
-            not (pass_this_as_arg (List.nth args 0)))
-         else true)
-      | _ -> 
-        eligible_for_preprocess f && 
-        List.for_all eligible_for_preprocess args
-    )
-  | _ -> List.for_all eligible_for_preprocess (child_exps exp)
-  
+        | Id (_, "%PostIncrement"), _ 
+        | Id (_, "%PostDecrement"), _
+        | Id (_, "%PrefixDecrement"), _ 
+        | Id (_, "%PrefixIncrement"), _ 
+          -> 
+          dprint_string "not eligible: contains ++,--: not implemented the conversion\n";
+          false
+        | Id (_, fname), args ->
+          List.for_all is_eligible args &&
+          (if fname = "%mkArgsObj" && toplevel then 
+                      (assert ((List.length args) = 1);
+                       not (pass_this_as_arg (List.nth args 0)))
+                    else true)
+        | _ -> 
+          is_eligible f && 
+          List.for_all is_eligible args
+      )
+    | Lambda (_, _, body) ->
+      is_eligible_rec ~toplevel:false body
+    | _ -> List.for_all is_eligible (child_exps exp)
+  in 
+  all_in_strict exp && window_free exp && is_eligible_rec exp
+
+             
 (* this phase highly relies on the desugared patterns.
    this phase must be the first phase before all optimizations.
 

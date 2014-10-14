@@ -72,6 +72,9 @@ let suite =
     "not window free: directly refer to window in functions" >::
     (not_window_free "function foo() { window.x = 1 }");
 
+    "not window free: passing window " >::
+    (not_window_free "function foo() { bar(window);}");
+
     "window free: window in functions" >::
     (is_window_free "function foo() { this.window }");
 
