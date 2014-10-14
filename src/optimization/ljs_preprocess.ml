@@ -4,7 +4,7 @@ open Ljs_opt
 
 type env = exp IdMap.t
 
-let debug_on = false
+let debug_on = true
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
 
@@ -29,6 +29,35 @@ let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "p
    %set-property(%this, "bar", 1)
 
 *)
+
+let global_bindings =
+  [("window", "%global");
+   ("print", "%print");
+   ("console", "%console");
+   ("Array", "%ArrayGlobalFuncObj");
+   ("String", "%StringGlobalFuncObj");
+   ("Object", "%ObjectGlobalFuncObj");
+   ("Number", "%NumberGlobalFuncObj");
+   ("Boolean", "%BooleanGlobalFuncObj");
+   ("Date", "%DateGlobalFuncObj");
+   ("isNaN", "%isNaN");
+   ("Math", "%Math");
+   ("parseInt", "%parseInt");
+   ("decodeURI", "%decodeURI");
+   ("decodeURIComponent", "%decodeURIComponent");
+   ("encodeURI", "%encodeURI");
+   ("encodeURIComponent", "%encodeURIComponent");
+   ("TypeError", "%TypeErrorGlobalFuncObj");
+   ("ReferenceError", "%ReferenceErrorGlobalFuncObj");
+   ("SyntaxError", "%SyntaxErrorGlobalFuncObj");
+   ("RangeError", "%RangeErrorGlobalFuncObj");
+   ("URIError", "%URIErrorGlobalFuncObj");
+   ("Error", "%ErrorGlobalFuncObj");
+   ("RegExp", "%RegExpGlobalFuncObj");
+   ("NaN", "NaN");
+   ("Infinity", "+inf");
+   ("undefined", "undefined");
+  ]
 
 (* in function object #code attr, parent context is always shadowed,
    This function will recognize pattern of the new context and try to
@@ -159,7 +188,8 @@ let replace_let_body let_exp new_body =
   in 
   traverse let_exp 
   
-(* these function will check if the program contains assignment to "this" or "window".
+
+(* these functions will check if the program contains assignment to "this" or "window".
    Such assignments will create new variables silently. To be more specific, this 
    function will look for
    1. %context["window"]: code may do bad things through window
@@ -174,50 +204,48 @@ let replace_let_body let_exp new_body =
 
 todo: in strict mode
 *)
+let rec window_free ?(toplevel=true) exp : bool =
+  (* distinct top-level window and in function window *)
+  (* on top level, we should prohibit: this.window; this['window']; window  *)
+  (* in function: we should only prohibit window variable. Because we also
+       prohibit passing this as argument, a['window'] works fine *)
+  match exp with
+  | GetField (_, obj, String(_, "window"), args) ->
+    window_free ~toplevel args && 
+    (match obj with
+     | Id (_, "%context") -> dprint_string "not eligible: reference to window variable\n";
+       false
+     | App (_, Id (_, "%PropAccessorCheck"), [Id (_, "%this")]) -> 
+       if toplevel then 
+         (dprint_string "not eligible: reference window through this in top-level\n";
+          false)
+       else true
+     | _ -> window_free ~toplevel obj)
+  | Lambda (_, _, body) ->
+    window_free ~toplevel:false body
+  | _ -> List.for_all (fun e -> window_free ~toplevel e) (child_exps exp)
+
 let rec eligible_for_preprocess exp : bool = 
-  (*let apply_to_attr (attr : attrs) = 
-    let apply_to_option (opt : exp option) : bool = match opt with
-      | Some(e) -> eligible_for_preprocess e
-      | None -> true
-    in 
-    apply_to_option attr.primval &&
-    apply_to_option attr.code &&
-    apply_to_option attr.proto 
-  in 
-  let rec apply_to_props (props : (string * prop) list) : bool =
-    let handle_prop p = match p with
-      | (_, Data (data, _, _)) -> 
-        eligible_for_preprocess data.value
-      | (_, Accessor (acc, _, _)) ->
-        eligible_for_preprocess acc.getter &&
-        eligible_for_preprocess acc.setter
-    in
-    List.for_all handle_prop props
-  in *)
   let is_static_field fld = match fld with
     | String (_, _) -> true
     | _ -> 
       dprint "not eligible: find static field: %s\n%!" (Exp_util.ljs_str fld);
       false
   in 
-  let rec pass_this_arg (args : exp list) = 
-    (* pass "%this" as the function arguments *)
-    let rec contain_this exp = match exp with
-      | Id (_, id) -> 
-        let res = (id = "%this") in
-        if res then 
-          (dprint_string "not eligible: args contains %%this\nargs: ";
-           List.iter (fun l -> dprint_ljs l) args;
-           dprint_string "\n"
-          )
-        else ();
-        res
-      | _ -> List.exists contain_this (child_exps exp)
-    in 
-    begin match args with
-    | [] -> false
-    | hd :: rest -> contain_this hd || pass_this_arg rest
-    end 
+  let rec pass_this_as_arg (args_obj : exp) = 
+    (* pass "this" in jscode. `this` will be desugared to function call to
+       %mkArgsObj; internally produce %resolve(.., %this) is fine. *)
+    match args_obj with
+     | Object (_, _, props) -> 
+       let rec prop_contains_this prop = match prop with
+         | fld, Data({value=Id(_, "%this"); writable=_}, _, _) -> 
+           dprint_string "the code pass this to a function\n";
+           true
+         | _ -> List.for_all eligible_for_preprocess (child_exps args_obj)
+       in 
+       (*dprint "check this in arg: %s" (Exp_util.ljs_str args_obj);*)
+       List.exists prop_contains_this props
+     | _ -> failwith "find none object in mkdArgsObj arguments"
   in 
   match exp with
   | Undefined _
@@ -229,8 +257,8 @@ let rec eligible_for_preprocess exp : bool =
   | Id _ -> true
   | GetField (_, obj, fld, args) ->
     (match obj, fld with
-    | Id(_, "%context"), String(_, "window") -> 
-      dprint_string "not eligible: get window";
+    | _, String(_, "window") ->
+      dprint "not eligible: try to get window: %s\n" (Exp_util.ljs_str exp);
       false
     | Id(_, "%context"), fld -> is_static_field fld
     | _ -> 
@@ -240,24 +268,30 @@ let rec eligible_for_preprocess exp : bool =
     )
   | App (_, f, args) -> (match f, args with
       | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> 
-        dprint_string "not eligible: make alias on %%this\n%!";
+        dprint_string "not eligible: make alias on %%this\n";
         false
+      | Id (_, "%set-property"), [App(_, Id(_,"%ToObject"), [Id(_, "%this")]);
+                                  this_fld; _] ->
+        (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
+        is_static_field this_fld
         (* todo: we can translate this into s5! *)
       | Id (_, "%PostIncrement"), _ 
       | Id (_, "%PostDecrement"), _
       | Id (_, "%PrefixDecrement"), _ 
       | Id (_, "%PrefixIncrement"), _ 
         -> 
-        dprint_string "not eligible: contains ++,--: not implemented the conversion";
+        dprint_string "not eligible: contains ++,--: not implemented the conversion\n";
         false
       (* don't check internal functions like %resolvethis *)
       | Id (_, fname), args ->
-        if fname.[0] = '%' then true else    
-          List.for_all eligible_for_preprocess args  
+        List.for_all eligible_for_preprocess args &&
+        (if fname = "%mkArgsObj" then 
+           (assert ((List.length args) = 1);
+            not (pass_this_as_arg (List.nth args 0)))
+         else true)
       | _ -> 
         eligible_for_preprocess f && 
-        List.for_all eligible_for_preprocess args &&
-        (pass_this_arg args)
+        List.for_all eligible_for_preprocess args
     )
   | _ -> List.for_all eligible_for_preprocess (child_exps exp)
   
