@@ -163,13 +163,40 @@ let suite =
         a = this['window'];
         a.x = 1;");
 
-    "tricky" >::
+    "getter and setter: o.x will create o.y" >::
+    (eligible
+      "'use strict'; var o = {get x() { this['y'] = 1}}; o.x");
+
+    "alias in the object field" >::
     (not_eligible
        "'use strict';
-         var o = {'a' : this; 'b' : 1};
+         var o = {'a' : this, 'b' : 1};
+         ");
+
+    "alias in the array field" >::
+    (not_eligible
+       "'use strict';
+         var o = [this];
+         ");
+
+    "eligible: alias in the object field in function" >::
+    (eligible
+       "'use strict';
+         function foo() {var o = {'a' : this, 'b' : 1};}
+         ");
+
+    "tricky alias this in the object field" >::
+    (not_eligible
+       "'use strict';
+         var o = {'a' : f(g(z(this))), 'b' : 1};
          var x = 2;
          function foo(t) { t.a['x'] = 1 }     
          foo(o); x");
+
+    "tricky checking" >::
+    (eligible
+       "'use strict';
+         var o = {'a' : function foo() { this.bar = 1 }, 'b' : 1};");
 
     "not eligible passing window" >::
     (not_eligible 
@@ -189,6 +216,14 @@ let suite =
        var x = 1;
        function foo(a) { a.x = 15; }
        foo(this)
+     ");
+
+    "eligible" >::
+    (eligible
+      "'use strict';
+       var x = 1;
+       function foo(a) { a.x = 15; }
+       foo(function(){this})
      ");
 
     "eligible passing this to a function in a function" >::
@@ -275,7 +310,6 @@ let suite =
        foo");
 
     (* todo: use arguments keyword *)
-    (* todo: use ++, -- *)
     (* todo: make preprocess works over environment *)
 
     "test this" >::
@@ -329,6 +363,41 @@ let suite =
     (eq "'use strict';
          function foo() { var console = {'log' : 1}; return console.log };
          foo(); console.log" "console.log");
+
+
+    (* test ++, -- *)
+    "test++" >::
+    (eq "'use strict'; var i = 1; var j = (i++); if (i == 2 && j == 1) {true} else {false}"
+        "true");
+
+    "test--" >::
+    (eq "'use strict'; var i = 1; var j = (i--); if (i == 0 && j == 1) {true} else {false}"
+        "true");
+
+    "test++" >::
+    (eq "'use strict'; var i = 1; var j = (++i); if (i == 2 && j == 2) {true} else {false}"
+        "true");
+
+    "test--" >::
+    (eq "'use strict'; var i = 1; var j = (--i); if (i == 0 && j == 0) {true} else {false}"
+        "true");
+
+    "test-- on non-number" >::
+    (eq "'use strict'; function foo(){}; var j = (--foo); if (isNaN(foo) && isNaN(j)) {true} else {false}"
+        "true");
+
+    "test-- on non-number" >::
+    (eq "'use strict'; function foo(){}; var j = (foo--); if (isNaN(foo) && isNaN(j)) {true} else {false}"
+        "true");
+
+    "test++ on non-number" >::
+    (eq "'use strict'; function foo(){}; var j = (++foo); if (isNaN(foo) && isNaN(j)) {true} else {false}"
+        "true");
+
+    "test++ on non-number" >::
+    (eq "'use strict'; function foo(){}; var j = (foo++); if (isNaN(foo) && isNaN(j)) {true} else {false}"
+        "true");
+    
   ]       
   
 

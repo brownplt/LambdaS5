@@ -4,7 +4,7 @@ open Ljs_opt
 
 type env = exp IdMap.t
 
-let debug_on = true
+let debug_on = false
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
 
@@ -170,8 +170,6 @@ the contextobject and results in
    body
 
 body is also returned as the second argument for convenience.
-
-todo: arguments keyword in function
 *)
 let get_localcontext (let_exp : exp) : exp option =
   let rec get_let let_exp : exp =
@@ -205,12 +203,11 @@ let replace_let_body let_exp new_body =
    0. strict mode
    1. %context["window"]: code may do bad things through window
    2. %EnvCheckAssign(_, _, %this, _): code may do bad things through the alias of 'this' 
+      %EnvCheckAssign(_, _, {object field as this}, _): code may do bad things through the alias of 'this' 
    3. passing %this to a function: code may do something like `function z(a) {a.x = 1}; z(this)`
    4. computation string field on top level. In function computation is fine.
 
-   5. x++, x--, ++x, --x: this will be desugared to %PostIncrement(%context, "x"), we don't have corresponding operation on S5 identifiers.
-   
-   6. with(o): strict mode does not allow "with". But here is how it works: code will make a new context, and
+   5. with(o): strict mode does not allow "with". But here is how it works: code will make a new context, and
       we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
 
 *)
@@ -250,10 +247,13 @@ let rec eligible_for_preprocess exp : bool =
       dprint "not eligible: find non-static field: %s\n%!" (Exp_util.ljs_str fld);
       false
   in 
-  let rec pass_this_as_arg (args_obj : exp) = 
+  let rec contain_this_keyword toplevel (args_obj : exp) = 
     match args_obj with
-    | Id (_, "%this") -> true
-    | _ -> List.exists pass_this_as_arg (child_exps args_obj)
+    | Id (_, "%this") -> let result = toplevel && true in
+      if result then (dprint_string "not eligible: make alias on %this\n"; true)
+      else false
+    | Lambda (_, _, body) -> contain_this_keyword false body
+    | _ -> List.exists (fun e ->  contain_this_keyword toplevel e) (child_exps args_obj)
   in 
   let rec is_eligible_rec ?(toplevel=true) exp : bool = 
     let is_eligible exp = is_eligible_rec ~toplevel exp in
@@ -273,30 +273,23 @@ let rec eligible_for_preprocess exp : bool =
         | _ -> true
       in 
       (* static field is not required in function *)
-      printf "getField [%s] toplevel: %B\n%!" (Exp_util.ljs_str exp) toplevel;
       is_eligible obj && is_eligible fld && is_eligible args &&
       (if toplevel then (eligible_field obj fld) else true)
     | App (_, f, args) -> (match f, args with
         | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> 
-          dprint_string "not eligible: make alias on %this\n";
           false
+        | Id (_, "%EnvCheckAssign"), [_;_; Object(_,_,_) as obj;_] -> 
+          not (List.exists (fun x->contain_this_keyword toplevel x) (child_exps obj)) &&
+          (List.for_all is_eligible args)
         | Id (_, "%set-property"), [App(_, Id(_,"%ToObject"), [Id(_, "%this")]);
                                     this_fld; arg] ->
           (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
           is_eligible arg && (if toplevel then (is_static_field this_fld) else true)
-        (* todo: we can translate this into s5! *)
-        | Id (_, "%PostIncrement"), _ 
-        | Id (_, "%PostDecrement"), _
-        | Id (_, "%PrefixDecrement"), _ 
-        | Id (_, "%PrefixIncrement"), _ 
-          -> 
-          dprint_string "not eligible: contains ++,--: not implemented the conversion\n";
-          false
         | Id (_, fname), args ->
           List.for_all is_eligible args &&
           (if fname = "%mkArgsObj" && toplevel then 
                       (assert ((List.length args) = 1);
-                       not (pass_this_as_arg (List.nth args 0)))
+                       not (contain_this_keyword toplevel (List.nth args 0)))
                     else true)
         | _ -> 
           is_eligible f && 
@@ -325,11 +318,27 @@ let rec eligible_for_preprocess exp : bool =
      => %context
      therefore, this.x, which will be desugared to %PropAccessorCheck(%this)["x"..], will be
      translated to %context["x"]
-
-
-todo: think about the pattern
-    %set-property(%context, "x", 1), maybe to %context["x"=1] and then x := 1?
 *)
+let pre_post_transform (op : string) (id : id) : exp option = 
+  let p = Pos.dummy in 
+  let make_prim op id = match op with
+    | "-" -> App (p, Id(p, "%PrimSub"), [App(p, Id (p,"%ToNumber"), [Id(p,id)]); Num(p,1.)])
+    | "+" -> App (p, Id(p, "%PrimAdd"), [App(p, Id (p,"%ToNumber"), [Id(p,id)]); Num(p,1.)])
+    | _ -> failwith "make_prim gets unexpected argument"
+  in 
+  match op with
+  | "%PrefixDecrement" -> (* --i => i := %PrimSub(%ToNumber(i), 1) *)
+    Some (SetBang (p, id, make_prim "-" id))
+  | "%PrefixIncrement" -> (* ++i => i := %PrimAdd(%ToNumber(i), 1) *)
+    Some (SetBang (p, id, make_prim "+" id))
+  | "%PostIncrement" -> (* i++ => let (post = i) {i := %PrimAdd(%ToNumber(i),1); post} *)
+    Some (Let (p, "post", Id(p, id),
+               Seq (p, SetBang(p,id,make_prim "+" id), Id (p, "post"))))
+  | "%PostDecrement" -> (* i-- => let (post = i) {i := %PrimSub(%ToNumber(i),1); post} *)
+    Some (Let (p, "post", Id(p, id),
+               Seq (p, SetBang(p,id,make_prim "-" id), Id (p, "post"))))
+  | _ -> None 
+  
 let preprocess (e : exp) : exp =
   let rec preprocess_rec ?(in_lambda=false) (e : exp) (ctx : env) : exp = 
     match e with 
@@ -408,6 +417,10 @@ let preprocess (e : exp) : exp =
             App (pos, f, args)
           | result, _ -> result
          )
+       | Id (pos, op), [Id(_, "%context"); String(_, id)] ->
+         (match pre_post_transform op id with
+          | Some (result) -> result
+          | None -> App (pos, f, args))
        | _ -> App (pos, f, args)
       )
     | Let (p, x, x_v, body) ->
