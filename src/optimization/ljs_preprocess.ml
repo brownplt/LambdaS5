@@ -301,7 +301,8 @@ let rec eligible_for_preprocess exp : bool =
   in 
   all_in_strict exp && window_free exp && is_eligible_rec exp
 
-             
+
+
 (* this phase highly relies on the desugared patterns.
    this phase must be the first phase before all optimizations.
 
@@ -471,18 +472,21 @@ let preprocess (e : exp) : exp =
     | Hint (_,_,_)
       -> optimize (fun e->preprocess_rec ~in_lambda e ctx) e
   in 
-  if eligible_for_preprocess e then
-    let env = IdMap.empty in
-    dprint_string "eligible for preprocess, start preprocessing...\n";
-    (* todo: find let %context = strict or nonstrict binding and starts opt from there *)
-    match e with 
-    | Let (p, "%context", Id (p1, i), body) ->
-      let body = preprocess_rec body env in
-      Let (p, "%context", Id (p1, i), body)
-    | _ -> 
-      dprint_string "the first expression is not let (%%context = ..)\n";
-      dprint_string "preprocess failed. return original program\n";
-      e
-  else 
-    (dprint_string "not eligible for preprocess, return original one\n";
-     e)
+  let rec jump_env (e : exp) : exp =
+    match e with
+    | Let (p, "%context", Id (p1, c), body) when c = "%strictContext" ->
+        if eligible_for_preprocess e then begin
+          let env = IdMap.empty in
+          dprint_string "eligible for preprocess, start preprocessing...\n";
+          let newbody = preprocess_rec body env in
+          Let (p, "%context", Id (p1, c), newbody)
+        end else 
+          (dprint_string "not eligible for preprocess, return original one\n";
+           e)
+    
+    | Let (p, "%context", Id (p1, c), body) when c = "%nonstrictContext" ->
+        dprint_string "find nonstrict context. not eligible for preprocessing...\n";
+        e
+    | _ -> optimize jump_env e
+  in
+  jump_env e
