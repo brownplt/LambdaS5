@@ -340,7 +340,7 @@ let pre_post_transform (op : string) (id : id) : exp option =
                Seq (p, SetBang(p,id,make_prim "-" id), Id (p, "post"))))
   | _ -> None 
   
-let preprocess (e : exp) : exp =
+let rec preprocess (e : exp) : exp =
   let rec preprocess_rec ?(in_lambda=false) (e : exp) (ctx : env) : exp = 
     match e with 
     | Seq (p, e1, e2) ->
@@ -479,7 +479,9 @@ let preprocess (e : exp) : exp =
           let env = IdMap.empty in
           dprint_string "eligible for preprocess, start preprocessing...\n";
           let newbody = preprocess_rec body env in
-          Let (p, "%context", Id (p1, c), newbody)
+	  (* after getting newbody, apply preprocess2 on the newbody *)
+	  let newbody2 = preprocess2 newbody in
+          Let (p, "%context", Id (p1, c), newbody2)
         end else 
           (dprint_string "not eligible for preprocess, return original one\n";
            e)
@@ -490,3 +492,27 @@ let preprocess (e : exp) : exp =
     | _ -> optimize jump_env e
   in
   jump_env e
+
+and preprocess2 exp : exp =
+  (* todo: what about recursive function *)
+  let js_func_pattern exp : exp * bool = match exp with
+    | Let (pos, tmp_name, func, SetBang(_, real_name, Id(_, tmp_name2)))
+      when tmp_name = tmp_name2 ->
+       Let (pos, real_name, func, Undefined Pos.dummy), true
+    | e -> e, false
+  in 
+  match exp with
+  | Seq (pos, e1, e2) -> 
+     (match js_func_pattern e1 with
+      | Let(pos,real_name,func,Undefined _), true ->
+	 let new_e2 = preprocess2 e2 in
+	 Rec(pos,real_name,func,new_e2)
+      | _ ->
+	 let new_e1 = preprocess2 e1 in
+	 let new_e2 = preprocess2 e2 in
+	 Seq (pos, new_e1, new_e2)
+
+     )
+  | _ -> optimize preprocess2 exp
+
+     
