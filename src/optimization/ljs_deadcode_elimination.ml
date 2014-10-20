@@ -166,6 +166,9 @@ let deadcode_elimination (exp : exp) : exp =
        NOTE: this means that if x_v is lambda(or x_v has no side effect), and x is
        not used in body, this let should be eliminated 
      *)
+    (* TODO: we can maintain a list to contains the internal function that does not have side effect,
+       so that we can eliminate more code like `let %this = %resolveThis(true, %this)...`
+    *)
     | Let (p, x, x_v, body) -> 
        let xv_is_lambda = match x_v with Lambda (_,_,_) -> true | _ -> false in
        let new_body, body_ids = eliminate_ids_rec body ids in
@@ -188,6 +191,8 @@ let deadcode_elimination (exp : exp) : exp =
          new_body, body_ids
        else 
          let new_lambda, v_ids = eliminate_ids_rec lambda IdSet.empty in
+         (* x is recursive function def, so remove x from v_ids *)
+         let v_ids = IdSet.remove x v_ids in 
          let new_ids = IdSet.union (IdSet.remove x body_ids) v_ids in
          Rec (p, x, new_lambda, new_body), new_ids
 

@@ -494,7 +494,6 @@ let rec preprocess (e : exp) : exp =
   jump_env e
 
 and preprocess2 exp : exp =
-  (* todo: what about recursive function *)
   let js_func_pattern exp : exp * bool = match exp with
     | Let (pos, tmp_name, func, SetBang(_, real_name, Id(_, tmp_name2)))
       when tmp_name = tmp_name2 ->
@@ -505,13 +504,12 @@ and preprocess2 exp : exp =
   | Seq (pos, e1, e2) -> 
      (match js_func_pattern e1 with
       | Let(pos,real_name,func,Undefined _), true ->
-	 let new_e2 = preprocess2 e2 in
-	 Rec(pos,real_name,func,new_e2)
+        (* use Rec for recursive function definition *)
+	    let new_e2 = preprocess2 e2 in Rec (pos,real_name,func,new_e2)
       | _ ->
-	 let new_e1 = preprocess2 e1 in
-	 let new_e2 = preprocess2 e2 in
-	 Seq (pos, new_e1, new_e2)
-
+	    let new_e1 = preprocess2 e1 in
+        let new_e2 = preprocess2 e2 in
+        Seq (pos, new_e1, new_e2)
      )
   | _ -> optimize preprocess2 exp
 

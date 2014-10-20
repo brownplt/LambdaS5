@@ -170,7 +170,7 @@ let unused_id_test =
        (no_change "let (y = o['field1'])
                    x");
 
-
+     (* elimination can be only applied on e1. e2 may be the return value *)
      "eliminate sequence" >::
        (cmp "let (x = 1)
              {x;x;x;x;x}"
@@ -186,10 +186,17 @@ let unused_id_test =
                    let (%global = {[#proto: %ObjectProto]})
                    %global");
 
-     "rec" >::
-       (no_change "let (r = 1)
-                   rec (r = func(t) { r(prim('-',t,1))})
-                   r(x)");
+     "recursive function scope: r is recursive" >::
+       (cmp "let (r = 1)
+             rec (r = func(t) { r(prim('-',t,1))})
+             r(x)"
+            "rec (r = func(t) { r(prim('-',t,1))})
+             r(x)"
+       );
+
+     "resursive function scope: r is not recursive anymore" >::
+       (no_change "let (r = 1) let (r = func(a) {a := r}) r(1)");
+
 
     ]
 
