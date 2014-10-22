@@ -126,20 +126,9 @@ let deadcode_elimination (exp : exp) : exp =
        let args, ids = handle_args args ids in
        App (p, f, args), ids
 
-(*
     | Seq (p, e1, e2) ->
-       (* sequence can either first visit e1 or e2 *)
-       (* if e1 is lambda or has no side effect, e1 can be eliminated *)
-       let new_e1, e1_ids = eliminate_ids_rec e1 ids in
-       let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
-       if (e1_is_lambda || not (EU.has_side_effect new_e1)) then
-         eliminate_ids_rec e2 e1_ids
-       else 
-         let new_e2, ids = eliminate_ids_rec e2 e1_ids in
-         Seq (p, new_e1, new_e2), ids
- *)
-
-    | Seq (p, e1, e2) ->
+       (* in this case, passing same ids to e1 and e2 is fine.
+          But it is not the case in env-clean *)
        let new_e2, e2_ids = eliminate_ids_rec e2 ids in
        let new_e1, e1_ids = eliminate_ids_rec e1 ids in
        let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
@@ -147,19 +136,7 @@ let deadcode_elimination (exp : exp) : exp =
          new_e2, e2_ids
        else 
          Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
-     
 
-(*
-    | Seq (p, e1, e2) ->
-       let new_e2, e2_ids = eliminate_ids_rec e2 ids in
-       let new_e1, e1_ids = eliminate_ids_rec e1 ids in
-       let e1_is_lambda = match new_e1 with Lambda (_,_,_) -> true | _ -> false in
-       if (e1_is_lambda || not (EU.has_side_effect new_e1)) then
-         new_e2, e2_ids
-       else 
-         Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
- *)     
-       
     (* to retain this let,
        1. x is used in body, or
        2. x_v will be evaluated to have side effect

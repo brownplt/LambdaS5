@@ -177,6 +177,11 @@ let unused_id_test =
             "let (x=1)
              x");
 
+     "eliminate sequence bug" >::
+       (no_change "let (x = 1)
+		   {%global['y'=x];
+		   1}");
+
      "test sequence" >::
        (cmp "f['field' = true]; f['field'<#enumerable>=false]"
             "f['field' = true]; f['field'<#enumerable>=false]");
