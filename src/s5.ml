@@ -12,6 +12,7 @@ open Ljs_deadcode_elimination
 open Ljs_alias_elimination
 open Ljs_function_inlining
 open Ljs_preprocess
+open Ljs_env_clean
 
 type node =
   | Js of Js_syntax.program
@@ -414,6 +415,11 @@ module S5 = struct
     let new_ljs = preprocess ljs in
     push_ljs new_ljs
 
+  let opt_env_clean cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = env_clean ljs in
+    push_ljs new_ljs
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -543,6 +549,8 @@ module S5 = struct
           "perform alias elimination on s5";
         unitCmd "-opt-function-inlining" opt_function_inlining
           "perform function inlining on s5";
+        unitCmd "-opt-env-clean" opt_env_clean
+          "clean unused env expression";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]

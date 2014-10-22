@@ -43,7 +43,7 @@ def passed(contents):
 def analyze(file, analyzedir, basedir):
     """return (passed in analyzedir?, passed in basedir?, the two are the same?)"""
     analyzefile = path.join(analyzedir, file)
-    basefile = path.join(analyzedir, file)
+    basefile = path.join(basedir, file)
     # check if two files passed or failed test, if the two have
     # different result, ??
     assert(os.path.exists(analyzefile))

@@ -107,7 +107,7 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
           | false -> IdSet.add x env
         in 
         has_side_effect ~env:env body
-     | _ -> failwith "optimizer gets syntax error!"
+     | _ -> failwith (sprintf "optimizer gets syntax error: rec (%s=%s)" x (ljs_str x_v))
      end 
   | S.App (_, f, args) ->          (* check if f(x) has side effect *)
      let se_f =  match f with

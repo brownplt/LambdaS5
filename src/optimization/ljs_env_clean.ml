@@ -48,10 +48,7 @@ let env_clean (exp : exp) : exp =
     | False _ -> (e, ids)
     | Id (_,id) ->
       dprint "add %s\n" id;
-      if id = "%context" then 
-        (e, IdSet.union (IdSet.from_list ["%global"; "%globalContext"; id]) ids)
-      else 
-        (e, IdSet.add id ids)
+      e, IdSet.add id ids
     | Object (p, attrs, strprop) ->
       let primval, ids = handle_option attrs.primval ids in
       let code, ids = handle_option attrs.code ids in
@@ -87,7 +84,7 @@ let env_clean (exp : exp) : exp =
     | SetAttr (p, attr, obj, field, newval) -> 
       begin match obj, field with
         | Id(_, proto), String(_, func_name) 
-          when not (IdSet.mem proto ids) || (internalProto proto && not (IdSet.mem func_name ids)) ->
+          when internalProto proto && not (IdSet.mem func_name ids) ->
           Undefined Pos.dummy, ids
         | _ ->
           let o, ids = env_clean_rec obj ids in
@@ -118,7 +115,7 @@ let env_clean (exp : exp) : exp =
     | SetField (p, obj, fld, newval, args) ->
       begin match obj, fld with
         | Id(_,proto), String (_, func_name)
-          when not (IdSet.mem proto ids) || (internalProto proto && not (IdSet.mem func_name ids)) ->
+          when internalProto proto && not (IdSet.mem func_name ids) ->
           (* when this proto is not used, or if it is used but its property is not used, clean it.*)
           dprint_set ids;
           dprint_string (sprintf "clean: %s[%s = ...]\n" proto func_name);
@@ -163,14 +160,14 @@ let env_clean (exp : exp) : exp =
     | App (p, f, args) ->
       begin match f, args with
         | Id(_, "%defineOwnProperty"), [Id(_, proto); String(_, func_name); Object(_,_,_)] 
-          when not (IdSet.mem proto ids) || (internalProto proto && not (IdSet.mem func_name ids)) ->
+          when internalProto proto && not (IdSet.mem func_name ids) ->
           Undefined Pos.dummy, ids
         | Id(_, "%defineNYIProperty"), [Id(_, proto); String(_, func_name)] 
-          when not (IdSet.mem proto ids) || (internalProto proto && not (IdSet.mem func_name ids)) ->
+          when internalProto proto && not (IdSet.mem func_name ids) ->
           (* when this proto is not used, or if it is used but its property is not used, clean it.*)
           Undefined Pos.dummy, ids
         | Id(_, "%define15Property"), [Id(_, proto); String(_, func_name);_] 
-          when not (IdSet.mem proto ids) || (internalProto proto && not (IdSet.mem func_name ids)) ->
+          when internalProto proto && not (IdSet.mem func_name ids) ->
           Undefined Pos.dummy, ids
         | _ ->
           let f, ids = env_clean_rec f ids in
