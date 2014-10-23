@@ -58,6 +58,7 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.False _
   | S.Id (_,_) 
   | S.Lambda (_, _, _)  (* lambda always has no side effect *)
+  | S.Hint (_,_,_)
     -> false
   | S.GetAttr (_, _,obj, flds) ->
      has_side_effect ~env obj || has_side_effect ~env flds
@@ -106,7 +107,7 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
           | false -> IdSet.add x env
         in 
         has_side_effect ~env:env body
-     | _ -> failwith "optimizer gets syntax error!"
+     | _ -> failwith (sprintf "optimizer gets syntax error: rec (%s=%s)" x (ljs_str x_v))
      end 
   | S.App (_, f, args) ->          (* check if f(x) has side effect *)
      let se_f =  match f with
@@ -135,7 +136,6 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.TryCatch (_, _, _)    (* any try..catch is assumed to throw out uncatched error *)
   | S.TryFinally (_, _, _)  (* any try..finally is assumed to throw out uncached error *)
   | S.Throw (_,_)
-  | S.Hint (_,_,_)
     -> true
 
 let apply_op1 p (op : string) e : S.exp option = 

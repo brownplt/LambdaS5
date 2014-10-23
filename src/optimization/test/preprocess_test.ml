@@ -36,7 +36,7 @@ let suite =
       let s5expected = desugar expected in
       assert_equal true (eligible_for_preprocess s5code)
         ~printer: (fun x -> if x then "eligible" else "not eligible");
-      let s5value = Ljs_eval.eval_expr (es5env s5code) desugar true in
+      let s5value = Ljs_eval.eval_expr (es5env (preprocess s5code)) desugar true in
       let expectedv = Ljs_eval.eval_expr (es5env s5expected) desugar true in
       match s5value, expectedv with
       | Ljs_eval.Answer(_,value,_,_), Ljs_eval.Answer(_,value2,_,_) ->
@@ -398,6 +398,20 @@ let suite =
     (eq "'use strict'; function foo(){}; var j = (foo++); if (isNaN(foo) && isNaN(j)) {true} else {false}"
         "true");
     
+    (* NaN and undefined are values, they are also defined in %global. careless substitution will return
+       in let (NaN = NaN)..., previous NaN is id, the latter is Num *)
+    "use NaN" >::
+    (eq "'use strict'; undefined" "undefined");
+    
+    "use undefined" >::
+    (eq "'use strict'; isNaN(NaN)" "true");
+
+    "assign to unwritable field" >::
+    (eq "'use strict'; NaN = 1; NaN" "NaN = 1");
+
+    "assign to unwritable field" >::
+    (eq "'use strict'; undefined = 1; undefined" "undefined=1");
+
   ]       
   
 

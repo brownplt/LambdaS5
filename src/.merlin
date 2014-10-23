@@ -10,4 +10,4 @@ S exprjs
 B ../obj/exprjs
 S util
 B ../obj/util
-PKG ounit
+PKG oUnit

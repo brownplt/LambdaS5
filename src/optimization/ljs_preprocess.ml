@@ -2,11 +2,6 @@ open Prelude
 open Ljs_syntax
 open Ljs_opt
 
-type env = exp IdMap.t
-
-let debug_on = false
-
-let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
 
 (* 
    This phase will try to undo the global variable wrapping, i.e. make %context['var'] 
@@ -29,6 +24,15 @@ let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "p
    %set-property(%this, "bar", 1)
 
 *)
+
+type env = exp IdMap.t
+
+let debug_on = false
+
+let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
+
+(* only apply the preprocess on code that is in strict mode *)
+let only_strict = false
 
 let create_global_bindings () = 
   let global_internals =
@@ -55,18 +59,19 @@ let create_global_bindings () =
      ("URIError", "%URIErrorGlobalFuncObj");
      ("Error", "%ErrorGlobalFuncObj");
      ("RegExp", "%RegExpGlobalFuncObj");
-     ("NaN", "NaN");
      ("Infinity", "+inf");
-     ("undefined", "undefined");
+     (* special case undefined and NaN *)
     ]
   in  
   let rec to_map maps internals = match internals with
     | [] -> maps
     | hd :: rest ->
-      to_map (IdMap.add (fst2 hd) (snd2 hd) maps) rest
+      to_map (IdMap.add (fst2 hd) (Id (Pos.dummy, snd2 hd)) maps) rest
   in 
-  to_map IdMap.empty global_internals
-    
+  let map = IdMap.from_list [("NaN", Num(Pos.dummy, nan));
+                             ("undefined", Undefined Pos.dummy)] in
+  to_map map global_internals
+
 let global_bindings = create_global_bindings ()
 
 (* in function object #code attr, parent context is always shadowed,
@@ -80,26 +85,26 @@ let global_bindings = create_global_bindings ()
    Note: parameter exp is the x_v part of Let(_,x,x_v,body), not the 
    whole Let expression.
 
-one good example is
+   one good example is
 
-let (%context = {
- let (%a11 = undefined) {
- let (%x12 = %args ["0" , null]) 
+   let (%context = {
+   let (%a11 = undefined) {
+   let (%x12 = %args ["0" , null]) 
    {[#proto: %parent, #class: "Object", #extensible: true,]
-    'arguments' : {#value (%args) , #writable true , #configurable false},
-    'x' : {#getter func (this , args) {%x12} ,
-           #setter func (this , args) {%x12 := args ["0" , {[#proto: %ArrayProto,
-                                                             #class: "Array",
-                                                             #extensible: true,]}]}},
+     'arguments' : {#value (%args) , #writable true , #configurable false},
+     'x' : {#getter func (this , args) {%x12} ,
+            #setter func (this , args) {%x12 := args ["0" , {[#proto: %ArrayProto,
+                                                              #class: "Array",
+                                                                      #extensible: true,]}]}},
     'a' : {#getter func (this , args) {%a11} ,
            #setter func (this , args) 
                    {%a11 := args["0",{[#proto:%ArrayProto,
-                                       #class:"Array",
-                                       #extensible: true,]}]}}}}}) {...}
-desugared from
-function f1(x) {var a = x};
+                                                #class:"Array",
+                                                       #extensible: true,]}]}}}}}) {...}
+   desugared from
+   function f1(x) {var a = x};
 
-*)
+                               *)
 let recognize_new_context exp ctx : env =
   (* get_locals will get the local IdMaps for %a11 and %x12 *)
   (*let get_locals_args exp = 
@@ -122,7 +127,7 @@ let recognize_new_context exp ctx : env =
     in 
     let locals, args = get_rec exp [] [] in
     List.append locals args
-  in *)
+    in *)
   let rec strip_let exp : exp =  match exp with
     | Let (_, _, _, body) -> strip_let body
     | _ -> exp
@@ -150,9 +155,9 @@ let recognize_new_context exp ctx : env =
   in 
   let obj = strip_let exp in
   recog_field obj ctx
-    
+
 (* local context has the pattern that
- let (%context = {
+   let (%context = {
      let (local1=..)
      let (local2=..)
      let (arg1=..)
@@ -160,16 +165,16 @@ let recognize_new_context exp ctx : env =
         contextobject})
    body
 
-this function will recognize the pattern and return the option of an exp that takes out
-the contextobject and results in
+   this function will recognize the pattern and return the option of an exp that takes out
+   the contextobject and results in
 
- let (local1=..)
- let (local2=..)
- let (arg1=..)
- let (arg2=..)
+   let (local1=..)
+   let (local2=..)
+   let (arg1=..)
+   let (arg2=..)
    body
 
-body is also returned as the second argument for convenience.
+   body is also returned as the second argument for convenience.
 *)
 let get_localcontext (let_exp : exp) : exp option =
   let rec get_let let_exp : exp =
@@ -182,11 +187,11 @@ let get_localcontext (let_exp : exp) : exp option =
   match let_exp with
   | Let (p, "%context", x_v, body) ->
     (try 
-      Some (get_let x_v)
-    with _ -> None
+       Some (get_let x_v)
+     with _ -> None
     )
   | _ -> None 
-      
+
 let replace_let_body let_exp new_body =
   let rec traverse let_exp : exp = match let_exp with
     | Let (p, x, x_v, body) ->
@@ -195,7 +200,7 @@ let replace_let_body let_exp new_body =
     | _ -> failwith "replace_let_body: should not reach here"
   in 
   traverse let_exp 
-  
+
 
 (* these functions will check if the program contains assignment to "this" or "window".
    Such assignments will create new variables silently. To be more specific, this 
@@ -218,7 +223,7 @@ let rec all_in_strict exp : bool = match exp with
   *)
   | Let (_, "#strict", False _, body) -> false
   | _ -> List.for_all all_in_strict (child_exps exp)
-    
+
 let rec window_free ?(toplevel=true) exp : bool =
   (* distinct top-level window and in function window *)
   (* on top level, we should prohibit: this.window; this['window']; window  *)
@@ -288,9 +293,9 @@ let rec eligible_for_preprocess exp : bool =
         | Id (_, fname), args ->
           List.for_all is_eligible args &&
           (if fname = "%mkArgsObj" && toplevel then 
-                      (assert ((List.length args) = 1);
-                       not (contain_this_keyword toplevel (List.nth args 0)))
-                    else true)
+             (assert ((List.length args) = 1);
+              not (contain_this_keyword toplevel (List.nth args 0)))
+           else true)
         | _ -> 
           is_eligible f && 
           List.for_all is_eligible args
@@ -298,10 +303,9 @@ let rec eligible_for_preprocess exp : bool =
     | Lambda (_, _, body) ->
       is_eligible_rec ~toplevel:false body
     | _ -> List.for_all is_eligible (child_exps exp)
-  in 
-  all_in_strict exp && window_free exp && is_eligible_rec exp
-
-
+  in
+  let check_strict = if only_strict then all_in_strict exp else true in
+  check_strict && window_free exp && is_eligible_rec exp
 
 (* this phase highly relies on the desugared patterns.
    this phase must be the first phase before all optimizations.
@@ -339,8 +343,8 @@ let pre_post_transform (op : string) (id : id) : exp option =
     Some (Let (p, "post", Id(p, id),
                Seq (p, SetBang(p,id,make_prim "-" id), Id (p, "post"))))
   | _ -> None 
-  
-let preprocess (e : exp) : exp =
+
+let rec preprocess (e : exp) : exp =
   let rec preprocess_rec ?(in_lambda=false) (e : exp) (ctx : env) : exp = 
     match e with 
     | Seq (p, e1, e2) ->
@@ -353,10 +357,9 @@ let preprocess (e : exp) : exp =
        | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 
          when (IdMap.mem id global_bindings) ->
          dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
-         let id_v = Id (Pos.dummy, IdMap.find id global_bindings) in
+         let id_v = IdMap.find id global_bindings in
          let ctx = IdMap.add id id_v ctx in
-         let newe2 = preprocess_rec ~in_lambda e2 ctx in
-         Let (p, id, id_v, newe2)
+         preprocess_rec ~in_lambda e2 ctx 
        | _ -> 
          let newe1 = preprocess_rec ~in_lambda e1 ctx in
          let newe2 = preprocess_rec ~in_lambda e2 ctx in
@@ -366,19 +369,22 @@ let preprocess (e : exp) : exp =
       let f = preprocess_rec ~in_lambda fld ctx in
       let a = preprocess_rec ~in_lambda args ctx in
       (match o, f with
-      | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
-        (*printf "match context['%s']\n%!" fldstr;
-        IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;*)
-        (try
-          match IdMap.find fldstr ctx with
-          | Undefined _ -> Id (Pos.dummy, fldstr)
-          | Id (_,_) as id -> id
-          | e -> 
-            (* printf "not expecting: %s\n%!" (Exp_util.ljs_str e); *)
-            e
-        with Not_found -> GetField (pos, o, f, a)
-        )
-      | _ -> GetField (pos, o, f, a)
+       | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
+         (*printf "match context['%s']\n%!" fldstr;
+           IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;*)
+         if fldstr = "undefined" then Undefined Pos.dummy
+         else begin
+           try
+            match IdMap.find fldstr ctx with
+            | Undefined _ -> Id (Pos.dummy, fldstr)
+            | Id (_,_) as id -> id
+            | Num (_,_) as n -> n
+            | e -> 
+              (*dprint "not expecting: %s\n%!" (Exp_util.ljs_str e);*)
+              e
+          with Not_found -> GetField (pos, o, f, a)
+         end 
+       | _ -> GetField (pos, o, f, a)
       )
     | SetField (pos, obj, fld, newval, args) ->
       let o = preprocess_rec ~in_lambda obj ctx in
@@ -412,12 +418,14 @@ let preprocess (e : exp) : exp =
            Id (pos, "%context")
        | Id (p1, "%set-property"), [Id (p2, "%context"); String (p3, id); v] ->
          let newexp = SetField (p1, Id(p2, "%context"), String(p3,id), v, Null Pos.dummy) in
-         (match preprocess_rec ~in_lambda newexp ctx, newexp with
-          | SetField(_,_,_,_,_), SetField(_,_,_,_,_) ->
+         (match preprocess_rec ~in_lambda newexp ctx with
+          | SetField(_,_,_,_,_) ->
             (* cannot translate, use the original set-property exp *)
             App (pos, f, args)
-          | result, _ -> result
+          | result -> result
          )
+       | Id (_, "%ToObject"), [Id(_, "%this")] when not in_lambda ->
+         Id (Pos.dummy, "%context")
        | Id (pos, op), [Id(_, "%context"); String(_, id)] ->
          (match pre_post_transform op id with
           | Some (result) -> result
@@ -427,20 +435,20 @@ let preprocess (e : exp) : exp =
     | Let (p, x, x_v, body) ->
       let x_v = preprocess_rec ~in_lambda x_v ctx in
       begin match get_localcontext e with
-      | None -> (* not a new context binding in lambda *)
-        (if x = "%context" then  (* rebind x, ignore the whole body *)
-            e
-          else 
-            Let (p, x, x_v, preprocess_rec ~in_lambda body ctx))
-      | Some (new_let)->
-        (try
-           let new_ctx = recognize_new_context x_v ctx in 
-           replace_let_body new_let (preprocess_rec ~in_lambda body new_ctx)
-         with Failure msg -> 
-           (printf "oops, pattern error: %s\n%!" msg;
-            Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
-           )
-        )
+        | None -> (* not a new context binding in lambda *)
+          (if x = "%context" then  (* rebind x, ignore the whole body *)
+             e
+           else 
+             Let (p, x, x_v, preprocess_rec ~in_lambda body ctx))
+        | Some (new_let)->
+          (try
+             let new_ctx = recognize_new_context x_v ctx in 
+             replace_let_body new_let (preprocess_rec ~in_lambda body new_ctx)
+           with Failure msg -> 
+             (printf "oops, pattern error: %s\n%!" msg;
+              Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
+             )
+          )
       end 
     | Lambda (p, xs, body) ->
       let result = preprocess_rec ~in_lambda:true body ctx in 
@@ -451,7 +459,7 @@ let preprocess (e : exp) : exp =
     | Num (_, _)
     | True _ 
     | False _ 
-    | Id (_, _)
+    | Id (_, _) 
     | Op1 (_,_,_)
     | Op2 (_,_,_,_)
     | If (_,_,_,_)
@@ -474,19 +482,49 @@ let preprocess (e : exp) : exp =
   in 
   let rec jump_env (e : exp) : exp =
     match e with
-    | Let (p, "%context", Id (p1, c), body) when c = "%strictContext" ->
-        if eligible_for_preprocess e then begin
-          let env = IdMap.empty in
-          dprint_string "eligible for preprocess, start preprocessing...\n";
-          let newbody = preprocess_rec body env in
-          Let (p, "%context", Id (p1, c), newbody)
-        end else 
-          (dprint_string "not eligible for preprocess, return original one\n";
-           e)
-    
-    | Let (p, "%context", Id (p1, c), body) when c = "%nonstrictContext" ->
-        dprint_string "find nonstrict context. not eligible for preprocessing...\n";
-        e
+    | Let (p, "%context", Id (p1, c), body) ->
+      if (only_strict && c = "%strictContext") || (not only_strict) then
+        begin 
+          if eligible_for_preprocess e then
+            begin
+              let env = IdMap.empty in
+              dprint_string "eligible for preprocess, start preprocessing...\n";
+              let newbody = preprocess_rec body env in
+              (* after getting newbody, apply preprocess2 on the newbody *)
+              (*let newbody = preprocess2 newbody in*)
+              Let (p, "%context", Id (p1, c), newbody)
+            end else 
+            (dprint_string "not eligible for preprocess, return original one\n";
+             e)
+        end
+      else
+        begin
+          dprint_string "find nonstrict context. not eligible for preprocessing...\n";
+          e
+        end 
     | _ -> optimize jump_env e
   in
   jump_env e
+
+and preprocess2 exp : exp =
+  let js_func_pattern exp : exp * bool = match exp with
+    | Let (pos, tmp_name, func, SetBang(_, real_name, Id(_, tmp_name2)))
+      when tmp_name = tmp_name2 ->
+      Let (pos, real_name, func, Undefined Pos.dummy), true
+    | e -> e, false
+  in 
+  match exp with
+  | Seq (pos, e1, e2) -> 
+    (match js_func_pattern e1 with
+     | Let(pos,real_name,func,Undefined _), true ->
+       (* todo: wrong: use Rec for recursive function definition. func here is not a Lambda exp *)
+       let new_e2 = preprocess2 e2 in 
+       Rec (pos,real_name,func,new_e2)
+     | _ ->
+       let new_e1 = preprocess2 e1 in
+       let new_e2 = preprocess2 e2 in
+       Seq (pos, new_e1, new_e2)
+    )
+  | _ -> optimize preprocess2 exp
+
+
