@@ -354,7 +354,14 @@ let rec preprocess (e : exp) : exp =
       (match e1 with
        | App (_, Id (_, "%defineGlobalVar"), [Id(_,"%context"); String (_, id)]) ->
          dprint "find defineGlobalVar %s\n" id;
-         let ctx = IdMap.add id (Undefined Pos.dummy) ctx in
+         (*toplevel define global var by %defineGlobalVar. if the id is NaN, undefined and Infinity etc
+           that are unwritable, stores they as Num (except undefined). Later when context['NaN'=1] appears in
+           toplevel, since NaN is a Number, assignment to NaN is turned to typeError.
+         *)
+         let ctx = if id = "NaN" || id = "undefined" || id = "Infinity" then
+             IdMap.add id (IdMap.find id global_bindings) ctx
+           else IdMap.add id (Undefined Pos.dummy) ctx 
+         in
          let newe2 = preprocess_rec ~in_lambda e2 ctx in
          Let (p, id, Undefined Pos.dummy, newe2)
        | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 

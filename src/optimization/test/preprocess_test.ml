@@ -370,6 +370,20 @@ let suite =
          var x = function() {}; typeof x"
         "'function'");
 
+    "global var scope" >::
+    (eq "'use strict';
+         var x = 1;
+         function foo() {var y = 2; x = y;}
+         foo();
+         x" "2");
+
+    "global var scope" >::
+    (eq "'use strict';
+         var x = 1;
+         function foo() {var x = 2; x = 3;}
+         foo();
+         x" "1");
+
     (* test ++, -- *)
     "test++" >::
     (eq "'use strict'; var i = 1; var j = (i++); if (i == 2 && j == 1) {true} else {false}"
@@ -415,10 +429,22 @@ let suite =
     (eq "'use strict'; try {NaN=1;false} catch (e) {e instanceof TypeError}" "true");
 
     "assign to unwritable field" >::
+    (eq "'use strict'; try {this.NaN=1;false} catch (e) {e instanceof TypeError}" "true");
+
+    "assign to unwritable field" >::
+    (eq "'use strict'; try {this['NaN']=1;false} catch (e) {e instanceof TypeError}" "true");
+
+    "assign to unwritable field" >::
     (eq "'use strict'; try {undefined=1;false} catch (e) {e instanceof TypeError}" "true");
 
     "assign to unwritable field" >::
     (eq "'use strict'; try {Infinity=1;false} catch (e) {e instanceof TypeError}" "true");
+
+    "reassign unwritable field" >::
+    (eq "'use strict'; try {var NaN=1;false} catch (e) {e instanceof TypeError}" "true");
+
+    "assign unwritable field in function" >::
+    (eq "'use strict'; function foo() {var NaN=1;return NaN}; try {foo()} catch (e) {false}" "1");
 
   ]       
   
