@@ -26,11 +26,13 @@ let suite =
         assert_equal expected (window_free s5code)
           ~printer: (fun x -> if x then "window free" else "not window free")
   in
-  let eq (jscode : string) (expected : string) =
+  let eq ?(nyi=false) (jscode : string) (expected : string) =
     (* this function will first assert the code is eligible for preprocessing.
        and evaluate the jscode and expected, and compare the result with that of 
        expected *)
     fun text_ctx ->
+      (if nyi then todo "not implemented"
+       else ());
       let es5env = Ljs.parse_es5_env (open_in "../envs/es5.env") "../envs/es5.env" in
       let s5code = desugar jscode in
       let s5expected = desugar expected in
@@ -247,11 +249,10 @@ let suite =
        foo(1, bar(zar(this)))");
 
     "not eligible nonstrict mode is not eligible" >::
-    (not_eligible 
-      "var bar = 2;
-        function foo() { this.bar = 1 }
-        foo();
-        bar");
+    (fun ctx ->
+       skip_if (Ljs_preprocess.only_strict = false) "only strict mode is off";
+       let s5code = desugar "var bar = 2; bar" in
+       assert_equal false (eligible_for_preprocess s5code));
 
     "not eligible: computation string field" >::
     (not_eligible 
@@ -364,6 +365,10 @@ let suite =
          function foo() { var console = {'log' : 1}; return console.log };
          foo(); console.log" "console.log");
 
+    "typeof desugar to typeof(context, id)" >::
+    (eq "'use strict';
+         var x = function() {}; typeof x"
+        "'function'");
 
     (* test ++, -- *)
     "test++" >::
@@ -407,10 +412,10 @@ let suite =
     (eq "'use strict'; isNaN(NaN)" "true");
 
     "assign to unwritable field" >::
-    (eq "'use strict'; NaN = 1; NaN" "NaN = 1");
+    (eq ~nyi:true "'use strict'; NaN = 1; NaN" "NaN = 1");
 
     "assign to unwritable field" >::
-    (eq "'use strict'; undefined = 1; undefined" "undefined=1");
+    (eq ~nyi:true "'use strict'; undefined = 1; undefined" "undefined=1");
 
   ]       
   

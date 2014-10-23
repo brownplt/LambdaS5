@@ -3,6 +3,7 @@
 import argparse
 import os
 import re
+import sys
 
 path = os.path
 
@@ -13,12 +14,20 @@ parser.add_argument('--base', metavar='dir', type=str, nargs=1,
                     required=True, help='compared with which directory(required)')
 parser.add_argument('--status', action='store_true', help='generate pass/fail report')
 parser.add_argument('--performance', action='store_true', help='generate optimization performance report')
+parser.add_argument('--cmpsection', metavar='sections', type=str, nargs=1, help='give details of comparison of the given section')
 
 
 args = parser.parse_args()
 curdir = path.abspath(path.curdir)
 analyzedir = path.abspath(path.join(curdir, args.analyze[0]))
 basedir = path.abspath(path.join(curdir, args.base[0]))
+if args.cmpsection:
+    compare = args.cmpsection[0]
+    section = map(lambda x: 'ch'+x+'-strict', ['08','09','10','11','12','13','14','15']) 
+    section += map(lambda x: 'ch'+x+'-nonstrict', ['08','09','10','11','12','13','14','15']) 
+    if compare not in section:
+        print 'bad section number'
+        sys.exit(2)
 
 print analyzedir
 print basedir
@@ -94,6 +103,8 @@ def walk_result(printer, dir):
     for dpath, dnames, fname in os.walk(dir):
         if dnames == []:
             ch = path.basename(dpath)
+            if args.cmpsection and ch != compare:
+                continue
             resultfiles = [path.join(ch, f) for f in fname if f.endswith('result')]
             #list.sort(resultfiles)
             printer(ch, analyze_files(resultfiles))
@@ -187,6 +198,20 @@ def opt_info_printer(ch, files):
         print ""
 
     print "-----\n\n"
+
+# generate detail report
+def section_printer(ch, status):
+    if ch != compare:
+        return
+    notthesame = filter(lambda x: x[3] == False, status)
+    print "\n\nsection: %s[%d different files]" % (ch, len(notthesame))
+
+    for f in notthesame:
+        filename = path.basename(f[0])
+        print "%-50s analyze:%-15s base:%-15s" % (filename, f[1], f[2])
+
+if args.cmpsection:
+    walk_result(section_printer, analyzedir)
 
 if args.status:
     walk_result(status_printer, analyzedir)

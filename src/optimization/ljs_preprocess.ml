@@ -409,6 +409,7 @@ let rec preprocess (e : exp) : exp =
          (try match IdMap.find id ctx with
             | Undefined _ -> SetBang (pos, id, v)
             | Id (_, actual_id) -> SetBang (pos, actual_id, v)
+                                     (* todo: what if NaN = 1, we need to check the writable field *)
             | _ -> failwith "EnvCheckAssign: how could IdMap stores unrecognized exp"
           with Not_found -> App (pos, f, args))
        | Id (_, "%PropAccessorCheck"), [Id (_, "%this")] ->
@@ -426,6 +427,18 @@ let rec preprocess (e : exp) : exp =
          )
        | Id (_, "%ToObject"), [Id(_, "%this")] when not in_lambda ->
          Id (Pos.dummy, "%context")
+       | Id (_, "%Typeof"), [Id(_, "%context"); String(_, id)] 
+         when IdMap.mem id ctx ->
+         let actual_var = match IdMap.find id ctx with
+           | Undefined _ when id <> "undefined" -> Id (Pos.dummy, id)
+           | Undefined _ as udf -> udf
+           | Id (_, actual_id) -> Id (Pos.dummy, actual_id)
+           | Num (_,_) as n -> n
+           | _ -> failwith "%Typeof: IdMap stores unrecognized exp"
+         in 
+         TryCatch (Pos.dummy,
+                   Op1(Pos.dummy, "typeof", actual_var),
+                   Lambda (Pos.dummy, ["e"], Undefined Pos.dummy))
        | Id (pos, op), [Id(_, "%context"); String(_, id)] ->
          (match pre_post_transform op id with
           | Some (result) -> result
