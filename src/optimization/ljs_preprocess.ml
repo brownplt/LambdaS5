@@ -59,17 +59,18 @@ let create_global_bindings () =
      ("URIError", "%URIErrorGlobalFuncObj");
      ("Error", "%ErrorGlobalFuncObj");
      ("RegExp", "%RegExpGlobalFuncObj");
-     ("NaN", "NaN");
      ("Infinity", "+inf");
-     ("undefined", "undefined");
+     (* special case undefined and NaN *)
     ]
   in  
   let rec to_map maps internals = match internals with
     | [] -> maps
     | hd :: rest ->
-      to_map (IdMap.add (fst2 hd) (snd2 hd) maps) rest
+      to_map (IdMap.add (fst2 hd) (Id (Pos.dummy, snd2 hd)) maps) rest
   in 
-  to_map IdMap.empty global_internals
+  let map = IdMap.from_list [("NaN", Num(Pos.dummy, nan));
+                             ("undefined", Undefined Pos.dummy)] in
+  to_map map global_internals
 
 let global_bindings = create_global_bindings ()
 
@@ -356,10 +357,9 @@ let rec preprocess (e : exp) : exp =
        | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 
          when (IdMap.mem id global_bindings) ->
          dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
-         let id_v = Id (Pos.dummy, IdMap.find id global_bindings) in
+         let id_v = IdMap.find id global_bindings in
          let ctx = IdMap.add id id_v ctx in
-         let newe2 = preprocess_rec ~in_lambda e2 ctx in
-         Let (p, id, id_v, newe2)
+         preprocess_rec ~in_lambda e2 ctx 
        | _ -> 
          let newe1 = preprocess_rec ~in_lambda e1 ctx in
          let newe2 = preprocess_rec ~in_lambda e2 ctx in
@@ -372,15 +372,18 @@ let rec preprocess (e : exp) : exp =
        | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
          (*printf "match context['%s']\n%!" fldstr;
            IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;*)
-         (try
+         if fldstr = "undefined" then Undefined Pos.dummy
+         else begin
+           try
             match IdMap.find fldstr ctx with
             | Undefined _ -> Id (Pos.dummy, fldstr)
             | Id (_,_) as id -> id
+            | Num (_,_) as n -> n
             | e -> 
-              (* printf "not expecting: %s\n%!" (Exp_util.ljs_str e); *)
+              (*dprint "not expecting: %s\n%!" (Exp_util.ljs_str e);*)
               e
           with Not_found -> GetField (pos, o, f, a)
-         )
+         end 
        | _ -> GetField (pos, o, f, a)
       )
     | SetField (pos, obj, fld, newval, args) ->
@@ -415,12 +418,14 @@ let rec preprocess (e : exp) : exp =
            Id (pos, "%context")
        | Id (p1, "%set-property"), [Id (p2, "%context"); String (p3, id); v] ->
          let newexp = SetField (p1, Id(p2, "%context"), String(p3,id), v, Null Pos.dummy) in
-         (match preprocess_rec ~in_lambda newexp ctx, newexp with
-          | SetField(_,_,_,_,_), SetField(_,_,_,_,_) ->
+         (match preprocess_rec ~in_lambda newexp ctx with
+          | SetField(_,_,_,_,_) ->
             (* cannot translate, use the original set-property exp *)
             App (pos, f, args)
-          | result, _ -> result
+          | result -> result
          )
+       | Id (_, "%ToObject"), [Id(_, "%this")] when not in_lambda ->
+         Id (Pos.dummy, "%context")
        | Id (pos, op), [Id(_, "%context"); String(_, id)] ->
          (match pre_post_transform op id with
           | Some (result) -> result
@@ -454,7 +459,7 @@ let rec preprocess (e : exp) : exp =
     | Num (_, _)
     | True _ 
     | False _ 
-    | Id (_, _)
+    | Id (_, _) 
     | Op1 (_,_,_)
     | Op2 (_,_,_,_)
     | If (_,_,_,_)

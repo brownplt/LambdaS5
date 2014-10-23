@@ -398,13 +398,20 @@ let suite =
     (eq "'use strict'; function foo(){}; var j = (foo++); if (isNaN(foo) && isNaN(j)) {true} else {false}"
         "true");
     
-    (* NaN and undefined are keyword, they are also defined in %global. careless substitution will return
-       in let (undefined = undefined)..., which will cause interp raise exception. *)
-    "use NaN keyword" >::
+    (* NaN and undefined are values, they are also defined in %global. careless substitution will return
+       in let (NaN = NaN)..., previous NaN is id, the latter is Num *)
+    "use NaN" >::
     (eq "'use strict'; undefined" "undefined");
     
-    "use undefined keyword" >::
+    "use undefined" >::
     (eq "'use strict'; isNaN(NaN)" "true");
+
+    "assign to unwritable field" >::
+    (eq "'use strict'; NaN = 1; NaN" "NaN = 1");
+
+    "assign to unwritable field" >::
+    (eq "'use strict'; undefined = 1; undefined" "undefined=1");
+
   ]       
   
 
