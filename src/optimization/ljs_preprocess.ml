@@ -344,6 +344,9 @@ let pre_post_transform (op : string) (id : id) : exp option =
                Seq (p, SetBang(p,id,make_prim "-" id), Id (p, "post"))))
   | _ -> None 
 
+let make_writable_error (msg : string) : exp =
+  App (Pos.dummy, Id(Pos.dummy, "%TypeError"), [String (Pos.dummy, msg)])
+
 let rec preprocess (e : exp) : exp =
   let rec preprocess_rec ?(in_lambda=false) (e : exp) (ctx : env) : exp = 
     match e with 
@@ -394,8 +397,10 @@ let rec preprocess (e : exp) : exp =
       (match o, f with
        | Id (_, "%context"), String (_, fldstr) ->
          (try match IdMap.find fldstr ctx with
-            | Undefined _ -> SetBang (pos, fldstr, v)
+            | Undefined _ when fldstr <> "undefined" -> SetBang (pos, fldstr, v)
             | Id (_, id) -> SetBang (pos, id, v)
+            | Undefined _
+            | Num (_,_) -> make_writable_error fldstr
             | _ -> failwith "SetField: how could IdMap stores unrecognized exp"
           with Not_found -> SetField (pos, o, f, v, a)
          )
@@ -407,9 +412,11 @@ let rec preprocess (e : exp) : exp =
       (match f, args with 
        | Id (_, "%EnvCheckAssign"), [Id (_, "%context"); String (_, id); v; _] ->
          (try match IdMap.find id ctx with
-            | Undefined _ -> SetBang (pos, id, v)
+            | Undefined _ when id <> "undefined" -> SetBang (pos, id, v)
             | Id (_, actual_id) -> SetBang (pos, actual_id, v)
-                                     (* todo: what if NaN = 1, we need to check the writable field *)
+            (* if NaN, undefined, Infinity, we need to check the writable field *)
+            | Undefined _
+            | Num (_,_) -> make_writable_error id
             | _ -> failwith "EnvCheckAssign: how could IdMap stores unrecognized exp"
           with Not_found -> App (pos, f, args))
        | Id (_, "%PropAccessorCheck"), [Id (_, "%this")] ->

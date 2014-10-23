@@ -412,10 +412,13 @@ let suite =
     (eq "'use strict'; isNaN(NaN)" "true");
 
     "assign to unwritable field" >::
-    (eq ~nyi:true "'use strict'; NaN = 1; NaN" "NaN = 1");
+    (eq "'use strict'; try {NaN=1;false} catch (e) {e instanceof TypeError}" "true");
 
     "assign to unwritable field" >::
-    (eq ~nyi:true "'use strict'; undefined = 1; undefined" "undefined=1");
+    (eq "'use strict'; try {undefined=1;false} catch (e) {e instanceof TypeError}" "true");
+
+    "assign to unwritable field" >::
+    (eq "'use strict'; try {Infinity=1;false} catch (e) {e instanceof TypeError}" "true");
 
   ]       
   
