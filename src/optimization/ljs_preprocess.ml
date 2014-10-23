@@ -59,7 +59,6 @@ let create_global_bindings () =
      ("URIError", "%URIErrorGlobalFuncObj");
      ("Error", "%ErrorGlobalFuncObj");
      ("RegExp", "%RegExpGlobalFuncObj");
-     ("Infinity", "+inf");
      (* special case undefined and NaN *)
     ]
   in  
@@ -69,6 +68,7 @@ let create_global_bindings () =
       to_map (IdMap.add (fst2 hd) (Id (Pos.dummy, snd2 hd)) maps) rest
   in 
   let map = IdMap.from_list [("NaN", Num(Pos.dummy, nan));
+                             ("Infinity", Num(Pos.dummy, infinity)); 
                              ("undefined", Undefined Pos.dummy)] in
   to_map map global_internals
 
@@ -372,11 +372,11 @@ let rec preprocess (e : exp) : exp =
        | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
          (*printf "match context['%s']\n%!" fldstr;
            IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;*)
-         if fldstr = "undefined" then Undefined Pos.dummy
-         else begin
+         begin 
            try
             match IdMap.find fldstr ctx with
-            | Undefined _ -> Id (Pos.dummy, fldstr)
+            | Undefined _ when fldstr <> "undefined" -> Id (Pos.dummy, fldstr)
+            | Undefined _ as udf -> udf
             | Id (_,_) as id -> id
             | Num (_,_) as n -> n
             | e -> 
