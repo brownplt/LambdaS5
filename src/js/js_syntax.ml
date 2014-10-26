@@ -240,7 +240,7 @@ let rec used_vars_sel (sel : srcElt list) : Prelude.IdSet.t =
     match s with
     | Block (_, sl) -> IdSet.unions (map used_vars_stmt sl)
     (* setters/getters for declared vars handled elsewhere *)
-    (*| Var _ -> IdSet.empty*)
+    (* | Var _ -> IdSet.empty*)
     | Var (_, decls) -> 
       IdSet.unions (map (fun var-> let VarDecl(_,e) = var in evars e) decls)
     | Empty _ -> IdSet.empty
