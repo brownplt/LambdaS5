@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_alias_elimination
+open Ljs_alias_propagation
 
 let suite = 
-  let cmp before after = cmp before alias_elimination after in
-  let no_change code = no_change code alias_elimination in
+  let cmp before after = cmp before alias_propagation after in
+  let no_change code = no_change code alias_propagation in
   "Test Alias Elimination" >:::
     [
       "simple" >::

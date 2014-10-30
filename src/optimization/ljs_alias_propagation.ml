@@ -14,9 +14,9 @@ let remove_id_value (id : id) (env : env) : env =
   in 
   IdMap.filter (fun _ v->not_the_id id v) env
 
-let alias_elimination (e : exp) : exp =
-  let rec elimination_rec (e : exp) (env : env) : exp =
-    let eliminate (e : exp) = elimination_rec e env in
+let alias_propagation (e : exp) : exp =
+  let rec propagation_rec (e : exp) (env : env) : exp =
+    let propagate (e : exp) = propagation_rec e env in
     match e with
     | Undefined _ 
     | Null _ 
@@ -26,7 +26,7 @@ let alias_elimination (e : exp) : exp =
     | False _ -> e
     | Id (_, id) -> begin try IdMap.find id env with _ -> e end
     | Let (p, x, xexp, body) ->
-       let x_v = elimination_rec xexp env in
+       let x_v = propagation_rec xexp env in
        (* env should change: 
             1. anything maps to x should be removed from env;
             2. anything that x maps to in env should be removed.
@@ -39,24 +39,24 @@ let alias_elimination (e : exp) : exp =
        | Id (_, v_id) -> 
           (* if x, or v_id gets mutated in body, x should not be replaced with v_id in body *)
           if EU.mutate_var x body || EU.mutate_var v_id body then
-            Let (p, x, x_v, elimination_rec body env)
+            Let (p, x, x_v, propagation_rec body env)
           else 
             let env = IdMap.add x x_v env in
-            Let (p, x, x_v, elimination_rec body env)
-       | _ -> Let (p, x, x_v, elimination_rec body env)
+            Let (p, x, x_v, propagation_rec body env)
+       | _ -> Let (p, x, x_v, propagation_rec body env)
        end 
     | Rec (p, x, xexp, body) ->
        let env = IdMap.remove x env in
-       let x_v = elimination_rec xexp env in
+       let x_v = propagation_rec xexp env in
        let env = remove_id_value x env in
-       Rec (p, x, x_v, elimination_rec body env)
+       Rec (p, x, x_v, propagation_rec body env)
     | Lambda (p,xs,body) ->
        let rec remove_list (lst : id list) env = match lst with
          | [] -> env
          | fst :: rest -> remove_list rest (remove_id_value fst env) in
        let env = remove_list xs env in
        let env = IdMap.filter (fun var _->not (List.mem var xs)) env in
-       Lambda (p, xs, elimination_rec body env)
+       Lambda (p, xs, propagation_rec body env)
     | Object (_,_,_) 
     | GetAttr (_, _, _, _)
     | GetObjAttr (_, _, _)
@@ -78,7 +78,7 @@ let alias_elimination (e : exp) : exp =
     | TryFinally (_,_,_)
     | Throw (_,_)
     | Hint (_,_,_)
-      -> optimize eliminate e
+      -> optimize propagate e
 
   in 
-  elimination_rec e IdMap.empty
+  propagation_rec e IdMap.empty

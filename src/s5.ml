@@ -9,10 +9,11 @@ open Reachability
 open Ljs_const_folding
 open Ljs_const_propagation
 open Ljs_deadcode_elimination
-open Ljs_alias_elimination
+open Ljs_alias_propagation
 open Ljs_function_inlining
 open Ljs_preprocess
 open Ljs_env_clean
+open Ljs_new_env_clean
 
 type node =
   | Js of Js_syntax.program
@@ -400,9 +401,9 @@ module S5 = struct
     let new_ljs = deadcode_elimination ljs in
     push_ljs new_ljs
 
-  let opt_alias_elimination cmd () =
+  let opt_alias_propagation cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = alias_elimination ljs in
+    let new_ljs = alias_propagation ljs in
     push_ljs new_ljs
 
   let opt_function_inlining cmd () =
@@ -418,6 +419,11 @@ module S5 = struct
   let opt_env_clean cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = env_clean ljs in
+    push_ljs new_ljs
+
+  let opt_new_env_clean cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = new_env_clean ljs in
     push_ljs new_ljs
 
   let count_nodes cmd (str : string) =
@@ -545,12 +551,14 @@ module S5 = struct
           "perform constant propagation on s5";
         unitCmd "-opt-deadcode-elimination" opt_deadcode_elimination
           "perform dead code elimination on s5";
-        unitCmd "-opt-alias-elimination" opt_alias_elimination
-          "perform alias elimination on s5";
+        unitCmd "-opt-alias-propagation" opt_alias_propagation
+          "propagate alias on s5";
         unitCmd "-opt-function-inlining" opt_function_inlining
           "perform function inlining on s5";
         unitCmd "-opt-env-clean" opt_env_clean
           "clean unused env expression";
+        unitCmd "-opt-new-env-clean" opt_new_env_clean
+          "[testing] clean unused env expression";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]

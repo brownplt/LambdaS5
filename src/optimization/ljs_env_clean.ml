@@ -7,25 +7,11 @@ type env = exp IdMap.t
 let ljs_str ljs =
   Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
 
-let debug_on = false
+let debug_on = true
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "env-clean"
 let dprint_set set =
   dprint "set {%s}\n" (String.concat ", " (IdSet.to_list set))
-
-let internalProto p = match p with
-  | "%global" 
-  | "%globalContext"
-  | "%ObjectProto" 
-  | "%NumberProto" 
-  | "%BooleanProto"
-  | "%StringProto" 
-  | "%RegExpProto" 
-  | "%DateProto" 
-  | "%ArrayProto" -> true
-  | _ -> false
-
-let nonside_effect_app = IdSet.from_list ["%NativeErrorConstructor";]
 
 (* get global accessed ids in user code. user defined ids are excluded *)
 let rec user_code_ids (exp : exp) : IdSet.t = 
@@ -181,7 +167,7 @@ let env_clean (exp : exp) : exp =
 
     | SetAttr (p, attr, obj, field, newval) -> 
       if useless_obj_set obj field ids then begin
-        dprint "clean: %s" (EU.ljs_str e);
+        dprint "clean SetAttr: %s\n" (EU.ljs_str e);
         Undefined Pos.dummy, ids
       end else 
         let o, ids = env_clean_rec obj ids in
@@ -215,7 +201,7 @@ let env_clean (exp : exp) : exp =
          %stringSlice["length" = 2] => check whether %stringSlice is used, it is not a prototype
       *)
       if useless_obj_set obj fld ids then begin
-        dprint "clean: %s" (EU.ljs_str e);
+        dprint "clean SetField: %s\n" (EU.ljs_str e);
         Undefined Pos.dummy, ids
       end 
       else
@@ -256,9 +242,10 @@ let env_clean (exp : exp) : exp =
       If (p, cond, thn, els), ids
 
     | App (p, f, args) ->
-      if useless_def_point f args ids then
+      if useless_def_point f args ids then begin
+        dprint "clean app: %s\n" (EU.ljs_str e);
         Undefined Pos.dummy, ids
-      else 
+      end else 
         let f, ids = env_clean_rec f ids in
         let rec handle_args args ids = match args with
           | [] -> args, ids
@@ -287,22 +274,26 @@ let env_clean (exp : exp) : exp =
           IdSet.iter (fun s->printf "%s," s) body_ids; print_newline();*)
         new_body, body_ids
       end else 
-        let new_x_v, v_ids = env_clean_rec x_v IdSet.empty in
+        (*let new_x_v, v_ids = env_clean_rec x_v IdSet.empty in*)
+        let xv_used_id = free_vars x_v in
+        let v_ids = IdSet.unions (map (fun i->id_dependencies i bindings) 
+                                    (IdSet.elements xv_used_id)) in
         let new_ids = IdSet.union (IdSet.remove x body_ids) v_ids in
         (*printf "include [%s]. collect ids:" x; 
           IdSet.iter (fun s->printf "%s," s) new_ids; print_newline();*)
-        Let (p, x, new_x_v, new_body), new_ids
+        Let (p, x, x_v, new_body), new_ids
 
     | Rec (p, x, lambda, body) ->
       let new_body, body_ids = env_clean_rec body ids in
       if not (IdSet.mem x body_ids) then
         new_body, body_ids
       else 
-        let new_lambda, v_ids = env_clean_rec lambda IdSet.empty in
-        (* x is recursive function def, so remove x from v_ids *)
-        let v_ids = IdSet.remove x v_ids in 
+        (* x is recursive function def, so remove x from lambda's ids *)
+        let lambda_ids = IdSet.remove x (free_vars lambda) in 
+        let v_ids = IdSet.unions (map (fun i->id_dependencies i bindings)
+                                    (IdSet.elements lambda_ids)) in
         let new_ids = IdSet.union (IdSet.remove x body_ids) v_ids in
-        Rec (p, x, new_lambda, new_body), new_ids
+        Rec (p, x, lambda, new_body), new_ids
 
     | Label (p, l, e) ->
       let new_e, ids = env_clean_rec e ids in
