@@ -14,6 +14,7 @@ open Ljs_function_inlining
 open Ljs_preprocess
 open Ljs_env_clean
 open Ljs_new_env_clean
+open Ljs_type_infer
 
 type node =
   | Js of Js_syntax.program
@@ -426,6 +427,11 @@ module S5 = struct
     let new_ljs = new_env_clean ljs in
     push_ljs new_ljs
 
+  let opt_type_infer cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = type_infer ljs in
+    push_ljs new_ljs
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -559,6 +565,8 @@ module S5 = struct
           "clean unused env expression";
         unitCmd "-opt-new-env-clean" opt_new_env_clean
           "[testing] clean unused env expression";
+        unitCmd "-opt-type-infer" opt_type_infer
+          "[testing] clean prim('typeof', obj)";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]

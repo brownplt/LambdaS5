@@ -39,13 +39,13 @@ let rec useless_def_point f args (env : env) (used_ids : IdSet.t) : bool =
     not (IdSet.mem func_name used_ids)
   | Id(_, "%defineNYIProperty"), [Id(_, proto); String(_, func_name)] ->
     (* proto is not used *)
-    not (IdSet.mem func_name used_ids)
+    not (IdSet.mem proto used_ids)
   | Id(_, "%define15Property"), [Id(_, obj); String(_, func_name);_] ->
     (* obj is not used *)
-    not (IdSet.mem func_name used_ids)
+    not (IdSet.mem obj used_ids)
   | Id(_, "%defineOwnProperty"), [Id(_, obj); String(_, func_name); _] ->
     (* obj is not used *)
-    not (IdSet.mem func_name used_ids)
+    not (IdSet.mem obj used_ids)
   | _ -> false
 
 let useless_obj_set obj field env used_ids : bool =
@@ -282,9 +282,12 @@ let new_env_clean (exp : exp) : exp =
       Throw(p, e), used_ids
 
     | Lambda (p, xs, body) ->
-      (* lambda is only for collecting free vars *)
-      let freevars = free_vars e in
-      e, IdSet.union freevars used_ids
+      (* lambda is only for collecting free vars. however,
+         `with` expression will be desugared to fun(e) and the
+         lambda contains variables like %context['TypeError']  *)
+      let body, used_ids = env_clean_rec body env used_ids in
+      let used_ids = IdSet.diff used_ids (IdSet.from_list xs) in
+      e, used_ids
 
     | Hint (p, id, e) ->
       let new_e, used_ids = env_clean_rec e env used_ids in
