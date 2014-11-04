@@ -2,6 +2,23 @@ open Prelude
 open Ljs_syntax
 module EU = Exp_util
 
+(* this optimize phase will try to convert mutation(SetBang in S5, x := 1 in S5 syntax) to let bindings.
+*)
+let debug_on = false
+
+let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "less_mutation"
+let dprint_set set =
+  dprint "set {%s}\n" (String.concat ", " (IdSet.to_list set))
+
+let set_str idset : string = 
+  let rec lst_str lst : string =
+    match lst with
+    | [] -> " )"
+    | hd :: [] -> sprintf "%s )" hd
+    | hd :: tl -> let rest = lst_str tl in sprintf "%s, %s" hd rest
+  in 
+  "( " ^ lst_str (IdSet.elements idset)
+
 let ljs_str ljs =
   Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
 
@@ -19,9 +36,12 @@ let get_setBang_id = function
   | SetBang (_, x, _) -> x
   | _ -> failwith "called on exp not setBang"
 
-(* eliminate unused ids, sequence *)
+type env = exp IdMap.t
+
+(*
+(* convert mutation to let bindings *)
 let less_mutation (exp : exp) : exp =
-  let rec less_rec (e : exp) (ids : IdSet.t) : (exp * IdSet.t) = 
+  let rec less_rec (e : exp) (env : env) (ids : IdSet.t) : (exp * IdSet.t) = 
     let rec handle_option (opt : exp option) ids : exp option * IdSet.t = 
       match opt with
       | Some (e) -> 
@@ -141,6 +161,9 @@ let less_mutation (exp : exp) : exp =
 
     | Seq (p, e1, e2) ->
       (* apply to e2 and then e1 *)
+      dprint "seq visiting %s. The id set is:\n" (ljs_str e1);
+      dprint_set ids;
+
       begin match e1 with
         | SetBang (p, x, x_v) when IdSet.mem x ids ->
           (* we haven't visit e2 yet, but used ids already contains x. That means
@@ -153,36 +176,52 @@ let less_mutation (exp : exp) : exp =
           let x_v, ids = less_rec x_v ids in
           let new_e2, ids = less_rec e2 ids in
           Let (p, x, x_v, new_e2), ids
-        | Let (pos, tmp_name, func, SetBang(_, real_name, Id(_, tmp_name2)))
+        | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
           when tmp_name = tmp_name2 && 
                not (IdSet.mem real_name ids) ->
-          (* js function desugared out *)
-          let func, ids = less_rec func ids in
-          let new_e2, ids = less_rec e2 ids in
-          Let (pos, real_name, func, new_e2), ids
+          (* desugared js function *)
+          let new_func, ids = less_rec func ids in
+          if IdSet.mem real_name ids then
+            (* if the func contains the real_name, this function definition is a recursive function.
+               We cannot do the transformation *)
+            let _ = dprint "recursive function %s. keep it as it was" real_name in
+            let new_e1 = Let(pos, tmp_name, new_func, SetBang(p1, real_name, Id(p2, tmp_name2))) in
+            let new_e2, ids = less_rec e2 ids in
+            Seq (p, new_e1, new_e2), ids
+          else
+            let new_e2, ids = less_rec e2 ids in
+            Let(pos, real_name, new_func, new_e2), IdSet.remove real_name ids
         | _ ->
           let new_e2, ids = less_rec e2 ids in
           let new_e1, ids = less_rec e1 ids in
           Seq (p, new_e1, new_e2), ids
       end 
 
-    | Let (pos, tmp_name, func, SetBang(_, real_name, Id(_, tmp_name2)))
+    | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
+      (* this exp is a standalone js function definition *)
       when tmp_name = tmp_name2 && 
            not (IdSet.mem real_name ids) ->
       let func, ids = less_rec func ids in
-      Let (pos, real_name, func, Undefined Pos.dummy), ids
+      if IdSet.mem real_name ids then
+        (* recursive, leave it as it was *)
+        Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2))),
+             IdSet.remove real_name ids
+      else 
+        Let (pos, real_name, func, Undefined Pos.dummy), ids
 
     | Let (p, x, x_v, body) -> 
-      let x_v, ids = less_rec x_v ids in
-      let ids = IdSet.add x ids in
+      (* let should visit body first, to prevent SetBang in x_v gets wrong transformation *)
+      let _ = dprint "about to visit body: %s\n; current set is\n" (ljs_str body) in
+      let _ = dprint_set ids in
       let body, ids = less_rec body ids in
-      Let (p, x, x_v, body), IdSet.remove x ids
+      let ids = IdSet.remove x ids in
+      let x_v, ids = less_rec x_v ids in
+      Let (p, x, x_v, body), ids
                                           
     | Rec (p, x, lambda, body) ->
-      let x_v, ids = less_rec lambda ids in
-      let ids = IdSet.add x ids in
       let body, ids = less_rec body ids in
-      Rec (p, x, x_v, body), IdSet.remove x ids
+      let lambda, ids = less_rec lambda ids in
+      Rec (p, x, lambda, body), IdSet.remove x ids
 
     | Label (p, l, e) ->
        let new_e, ids = less_rec e ids in
@@ -217,4 +256,254 @@ let less_mutation (exp : exp) : exp =
                               
   in 
   let new_exp, new_ids = less_rec exp IdSet.empty in
+  new_exp
+
+                   *)
+
+(* similar to env, but only app() will enlarge the used id set *)
+let rec related_ids id (env : env) (curr_used : IdSet.t) : IdSet.t =
+  try
+    if IdSet.mem id curr_used then
+      curr_used
+    else begin
+      let exp = IdMap.find id env in
+      let rest_ids = free_vars exp in
+      let curr_used = IdSet.add id curr_used in
+      IdSet.fold (fun elm old_set ->
+          related_ids elm env old_set)
+        rest_ids curr_used
+    end 
+  with _ -> IdSet.add id curr_used
+
+(**  new **)
+let less_mutation (exp : exp) : exp =
+  let rec less_rec (e : exp) (env : env) (used_ids : IdSet.t) : (exp * IdSet.t) = 
+    let rec handle_option (opt : exp option) env used_ids : exp option * IdSet.t = 
+      match opt with
+      | Some (e) -> 
+        let new_e, used_ids = less_rec e env used_ids in
+        Some (new_e), used_ids
+      | None -> None, used_ids
+    in 
+    match e with
+    | Null _ 
+    | Undefined _
+    | String (_,_)
+    | Num (_,_)
+    | True _
+    | False _ -> e, used_ids
+    | Id (_,id) -> e, IdSet.add id used_ids
+    | Object (p, attrs, strprop) ->
+      let primval, used_ids = handle_option attrs.primval env used_ids in
+      let code, used_ids = handle_option attrs.code env used_ids in
+      let proto, used_ids = handle_option attrs.proto env used_ids in
+      let new_attrs = { primval = primval; code = code;
+                        proto = proto; klass = attrs.klass;
+                        extensible = attrs.extensible } in
+      let handle_prop (p : 'a) env used_ids : ('a * IdSet.t) = match p with
+        | (s, Data(data, enum, config)) ->
+          let value, used_ids = less_rec data.value env used_ids in
+          (s, Data({value = value; writable = data.writable}, 
+                   enum, config)), used_ids
+        | (s, Accessor (acc, enum, config)) ->
+          let getter, used_ids = less_rec acc.getter env used_ids in
+          let setter, used_ids = less_rec acc.setter env used_ids in
+          (s, Accessor ({getter = getter; setter = setter}, 
+                        enum, config)), used_ids
+      in 
+      let rec handle_prop_list strprops env used_ids = match strprops with
+        | [] -> strprops, used_ids
+        | fst :: rest ->
+          let p, used_ids = handle_prop fst env used_ids in
+          let rest_p, used_ids = handle_prop_list rest env used_ids in
+          p :: rest_p, used_ids
+      in 
+      let prop_list, used_ids = handle_prop_list strprop env used_ids in
+      Object (p, new_attrs, prop_list), used_ids
+
+    | GetAttr (p, pattr, obj, field) ->
+      let o, used_ids= less_rec obj env used_ids in
+      let fld, used_ids = less_rec field env used_ids in
+      GetAttr (p, pattr, o, fld), used_ids
+
+    | SetAttr (p, attr, obj, field, newval) -> 
+        let o, used_ids = less_rec obj env used_ids in
+        let f, used_ids = less_rec field env used_ids in
+        let v, used_ids = less_rec newval env used_ids in
+        SetAttr (p, attr, o, f, v), used_ids
+
+    | GetObjAttr (p, oattr, obj) ->
+      let o, used_ids = less_rec obj env used_ids in
+      GetObjAttr(p, oattr, o), used_ids
+
+    | SetObjAttr (p, oattr, obj, attre) ->
+      let o, used_ids = less_rec obj env used_ids in
+      let attr, used_ids = less_rec attre env used_ids in
+      SetObjAttr (p, oattr, o, attr), used_ids
+
+    | GetField (p, obj, fld, args) ->
+      let o, used_ids = less_rec obj env used_ids in
+      let f, used_ids = less_rec fld env used_ids in
+      let a, used_ids = less_rec args env used_ids in
+      GetField (p, o, f, a), used_ids
+
+    | SetField (p, obj, fld, newval, args) ->
+        let o, used_ids = less_rec obj env used_ids in
+        let f, used_ids = less_rec fld env used_ids in
+        let v, used_ids = less_rec newval env used_ids in
+        let a, used_ids = less_rec args env used_ids in
+        SetField (p, o, f, v, a), used_ids
+        
+    | DeleteField (p, obj, fld) ->
+      let o, used_ids = less_rec obj env used_ids in
+      let f, used_ids = less_rec fld env used_ids in
+      DeleteField (p, o, f), used_ids
+
+    | OwnFieldNames (p, obj) -> 
+      let o, used_ids = less_rec obj env used_ids in
+      OwnFieldNames (p, o), used_ids
+
+    | SetBang (p, x, x_v) ->
+      let x_v, used_ids = less_rec x_v env used_ids in
+      let used_ids = IdSet.add x used_ids in
+      dprint "find usage point at SetBang %s\n" x;
+      SetBang (p, x, x_v), used_ids
+
+    | Op1 (p, op, e) ->
+      let e, used_ids = less_rec e env used_ids in
+      Op1 (p, op, e), used_ids
+
+    | Op2 (p, op, e1, e2) ->
+      let e1, used_ids = less_rec e1 env used_ids in
+      let e2, used_ids = less_rec e2 env used_ids in
+      Op2 (p, op, e1, e2), used_ids
+
+    | If (p, cond, thn, els) -> (* more optimization in constant folding *)
+      let cond, used_ids = less_rec cond env used_ids in
+      let thn, used_ids = less_rec thn env used_ids in
+      let els, used_ids = less_rec els env used_ids in
+      If (p, cond, thn, els), used_ids
+
+    | App (p, f, args) ->
+      let used_ids = match f with
+        | Id (_, id) ->  related_ids id env used_ids
+        | _ -> used_ids
+      in 
+      let f, used_ids = less_rec f env used_ids in
+      let rec handle_args args env used_ids = match args with
+        | [] -> args, used_ids
+        | fst :: rest ->
+          let v, used_ids = less_rec fst env used_ids in
+          let rest_v, used_ids = handle_args rest env used_ids in
+          v :: rest_v, used_ids
+      in 
+      let args, used_ids = handle_args args env used_ids in
+      App (p, f, args), used_ids
+
+    | Seq (p, e1, e2) ->
+      (* apply to e2 and then e1 *)
+      dprint "seq visiting %s. The id set is:\n" (ljs_str e1);
+      dprint_set used_ids;
+      begin match e1 with
+        | SetBang (p, x, x_v) when IdSet.mem x used_ids ->
+          let _ = dprint "%s of setBang is used elsewhere. no change\n" x in
+          (* we haven't visit e2 yet, but used used_ids already contains x. That means
+            x is used outside the execution path. we cannot do the transformation *)
+          let new_e2, used_ids = less_rec e2 env used_ids in
+          let new_e1, used_ids = less_rec e1 env used_ids in
+          Seq (p, e1, new_e2), used_ids
+        | SetBang (p, x, x_v) ->
+          let _ = dprint "transform %s" (ljs_str e1) in
+          (* x may only be used in e2, so transform it! *)
+          let x_v, used_ids = less_rec x_v env used_ids in
+          let new_e2, used_ids = less_rec e2 env used_ids in
+          Let (p, x, x_v, new_e2), used_ids
+        | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
+          when tmp_name = tmp_name2 && 
+               not (IdSet.mem real_name used_ids) ->
+          dprint_string "find js function pattern\n";
+          (* desugared js function *)
+          let new_func, used_ids = less_rec func env used_ids in
+          if IdSet.mem real_name used_ids then
+            (* if the func contains the real_name, this function definition is a recursive function.
+               We cannot do the transformation *)
+            let _ = dprint "recursive function %s. keep it as it was\n" real_name in
+            let new_e1 = Let(pos, tmp_name, new_func, SetBang(p1, real_name, Id(p2, tmp_name2))) in
+            let new_e2, used_ids = less_rec e2 env used_ids in
+            Seq (p, new_e1, new_e2), used_ids
+          else
+            let _ = dprint "convert js function def pattern %s to let\n" (ljs_str e1) in
+            let new_e2, used_ids = less_rec e2 env used_ids in
+            Let(pos, real_name, new_func, new_e2), IdSet.remove real_name used_ids
+        | _ ->
+          let _ = dprint_string "normal seq\n" in
+          let new_e2, used_ids = less_rec e2 env used_ids in
+          let new_e1, used_ids = less_rec e1 env used_ids in
+          Seq (p, new_e1, new_e2), used_ids
+      end 
+
+    | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
+      (* this exp is a standalone js function definition *)
+      when tmp_name = tmp_name2 && 
+           not (IdSet.mem real_name used_ids) ->
+      let func, used_ids = less_rec func env used_ids in
+      if IdSet.mem real_name used_ids then
+        (* recursive, leave it as it was *)
+        Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2))),
+             IdSet.remove real_name used_ids
+      else 
+        Let (pos, real_name, func, Undefined Pos.dummy), used_ids
+
+    | Let (p, x, x_v, body) ->
+      let new_env = IdMap.add x x_v env in
+      let new_body, used_ids = less_rec body new_env used_ids in
+      let used_ids = IdSet.remove x used_ids in
+      let x_v, used_ids = less_rec x_v env used_ids in
+      let used_ids = IdSet.remove x used_ids in
+      Let (p, x, x_v, new_body), used_ids
+
+    | Rec (p, x, lambda, body) ->
+      let new_env = IdMap.add x lambda env in
+      let new_body, used_ids = less_rec body new_env used_ids in
+      (* x is recursive function def, so remove x from lambda's env *)
+      let lambda, used_ids = less_rec lambda env used_ids in
+      let used_ids = IdSet.remove x used_ids in 
+      Rec (p, x, lambda, new_body), used_ids
+
+    | Label (p, l, e) ->
+      let new_e, used_ids = less_rec e env used_ids in
+      Label (p, l, new_e), used_ids
+
+    | Break (p, l, e) ->
+      let new_e, used_ids = less_rec e env used_ids in
+      Break (p, l, new_e), used_ids
+
+    | TryCatch (p, body, catch) ->
+      let b, used_ids = less_rec body env used_ids in
+      let c, used_ids = less_rec catch env used_ids in
+      TryCatch (p, b, c), used_ids
+
+    | TryFinally (p, body, fin) ->
+      let b, used_ids = less_rec body env used_ids in
+      let f, used_ids = less_rec fin env used_ids in
+      TryFinally (p, b, f), used_ids
+
+    | Throw (p, e) ->
+      let e, used_ids = less_rec e env used_ids in
+      Throw(p, e), used_ids
+
+    | Lambda (p, xs, body) ->
+      (* lambda is only for collecting free vars. however,
+         `with` expression will be desugared to fun(e) and the
+         lambda contains variables like %context['TypeError']  *)
+      let body, used_ids = less_rec body env used_ids in
+      let used_ids = IdSet.diff used_ids (IdSet.from_list xs) in
+      Lambda (p, xs, body), used_ids
+
+    | Hint (p, id, e) ->
+      let new_e, used_ids = less_rec e env used_ids in
+      Hint (p, id, new_e), used_ids
+
+  in 
+  let new_exp, new_ids = less_rec exp IdMap.empty IdSet.empty in
   new_exp

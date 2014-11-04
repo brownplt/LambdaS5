@@ -518,7 +518,7 @@ let rec preprocess (e : exp) : exp =
               dprint_string "eligible for preprocess, start preprocessing...\n";
               let newbody = preprocess_rec body env in
               (* after getting newbody, apply preprocess2 on the newbody *)
-              let newbody = preprocess2 newbody in
+              (*let newbody = preprocess2 newbody in*)
               Let (p, "%context", Id (p1, c), newbody)
             end else 
             (dprint_string "not eligible for preprocess, return original one\n";
@@ -533,13 +533,13 @@ let rec preprocess (e : exp) : exp =
   in
   jump_env e
 
-(* todo: make this function a separate phase to deal with nested function. and see test.js *) 
-and preprocess2 exp : exp =
+(*and preprocess2 exp : exp =
   (* recognize the desugared pattern of js function def 'function foo(){}' *)
   let js_func_pattern exp : exp * bool = match exp with
     | Let (pos, tmp_name, func, SetBang(_, real_name, Id(_, tmp_name2)))
       when tmp_name = tmp_name2 ->
       Let (pos, real_name, func, Undefined Pos.dummy), true
+    | SetBang
     | e -> e, false
   in 
   match exp with
@@ -554,5 +554,4 @@ and preprocess2 exp : exp =
        Seq (pos, new_e1, new_e2)
     )
   | _ -> optimize preprocess2 exp
-
-
+*)

@@ -287,7 +287,7 @@ let new_env_clean (exp : exp) : exp =
          lambda contains variables like %context['TypeError']  *)
       let body, used_ids = env_clean_rec body env used_ids in
       let used_ids = IdSet.diff used_ids (IdSet.from_list xs) in
-      e, used_ids
+      Lambda (p, xs, body), used_ids
 
     | Hint (p, id, e) ->
       let new_e, used_ids = env_clean_rec e env used_ids in

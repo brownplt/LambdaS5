@@ -15,6 +15,7 @@ open Ljs_preprocess
 open Ljs_env_clean
 open Ljs_new_env_clean
 open Ljs_type_infer
+open Ljs_less_mutation
 
 type node =
   | Js of Js_syntax.program
@@ -432,6 +433,11 @@ module S5 = struct
     let new_ljs = type_infer ljs in
     push_ljs new_ljs
 
+  let opt_less_mutation cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = less_mutation ljs in
+    push_ljs new_ljs
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -562,11 +568,13 @@ module S5 = struct
         unitCmd "-opt-function-inlining" opt_function_inlining
           "perform function inlining on s5";
         unitCmd "-opt-env-clean" opt_env_clean
-          "clean unused env expression";
+          "[obsolete] clean unused env expression";
         unitCmd "-opt-new-env-clean" opt_new_env_clean
-          "[testing] clean unused env expression";
+          "clean unused env expression";
         unitCmd "-opt-type-infer" opt_type_infer
-          "[testing] clean prim('typeof', obj)";
+          "clean prim('typeof', obj)";
+        unitCmd "-opt-less-mutation" opt_less_mutation
+          "convert mutation x:=1 to let bindings when possible";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]

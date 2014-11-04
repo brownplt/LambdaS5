@@ -23,6 +23,32 @@ let suite =
        }"
     );
 
+    "setbang x in let x_v" >::
+    (cmp
+       "let (x = {let (y = 3)
+          let (w = 4) 
+          let (z = {let (q = w) {T:=w; w}})
+            z})
+        {T := 12; T}"
+      "let (x = {let (y = 3)
+          let (w = 4) 
+          let (z = {let (q = w) {T:=w; w}})
+            z})
+       {let (T = 12) T}"
+    );
+
+    "setbang in function" >::
+    (no_change
+      "let (T = undefined)
+       let (bar = func() {T})
+       let (foo = func() { T:=3; undefined })
+       {
+         foo();
+         bar()
+       }"
+    );
+
+
     "let shadow" >::
     (cmp
        "let (x = undefined) {
@@ -34,7 +60,22 @@ let suite =
          {let (x = 3) x}
        }"
     );
-    
+
+    "js func pattern" >::
+    (cmp
+      "let (foo = undefined)
+         {let (#strict=true)
+          {'use strict';
+           {let (%fobj = {let (x = 1) x})
+              foo := %fobj};
+           use(foo)}}"
+      "let (foo = undefined)
+         {let (#strict=true)
+          {'use strict';
+           {let (foo = {let (x = 1) x})
+             use(foo)}}}"
+    );
+
     "js function pattern" >::
     (cmp "{let (fobj16 = {let (proto={[]})
                          let (parent=context)
@@ -52,6 +93,20 @@ let suite =
                             thisfunc15}})
            let (fun2 = foo)
            use(fun2)");
+
+    "js recursive function pattern" >::
+    (no_change
+       "{let (fobj16 = {let (proto={[]})
+                         let (parent=context)
+                         let (thisfunc15 = {[#code: func(this, args){
+                                  foo(undefined, mkargs())
+                            }]}) {
+                            proto['constructor' = thisfunc15];
+                            thisfunc15}})
+            foo := fobj16};
+          let (fun2 = foo)
+          use(fun2)"
+    );
 
     "js function patterns" >::
     (cmp "{let (fobj16 = {let (proto={[]})
