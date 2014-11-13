@@ -208,8 +208,8 @@ let pretty_config (path : path_t) =
   let args = List.filter (fun arg -> 
       (*Str.string_match (Str.regexp "^-count-nodes.*") arg 0 ||*)
       Str.string_match (Str.regexp "^-opt-.*") arg 0) args in
-  printf "0: no optimization\n";
-  let phases = List.mapi (fun i arg-> sprintf "%d: %s" (i+1) arg) args in
+  printf "p0: base AST nodes\n";
+  let phases = List.mapi (fun i arg-> sprintf "p%d: %s" (i+1) arg) args in
   List.iter (fun p->printf "%s\n" p) phases
 
 (* pretty print the hash table(filename -> optinfo_t) *)
@@ -223,7 +223,7 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
     let nums = List.mapi (fun i _ -> i) optinfo in
     printf "%25s      " " ";
     List.iter (fun n->printf "%7s" (sprintf "p%d" n)) nums;
-    printf " |";
+    printf " | ";
     List.iter2 (fun a b->printf "%8s"
                    (if a < b then
                      (sprintf "p%d->p%d" a b)
@@ -247,19 +247,17 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
       (* print env count *)
       printf "%25s env: " fname;
       List.iter (fun n->printf "%7d" n) env;
-      printf " | ";
+      printf " |";
       (* print env count saving *)
-      printf "  ";
-      List.iter (fun f->printf "%-8.1f" f) env_ratio;
+      List.iter (fun f->printf "%8.1f" f) env_ratio;
       printf "\n%!";
       
       (* print usr count *)
       printf "%25s usr: " fname;
       List.iter (fun n->printf "%7d" n) usr;
-      printf " | ";
-      printf "  ";
+      printf " |";
       (* print usr count saving *)
-      List.iter (fun f->printf "%-8.1f" f) usr_ratio;
+      List.iter (fun f->printf "%8.1f" f) usr_ratio;
       (* print end line *)
       printf "\n%25s\n%!" "--------------------"
     with _ -> failwith ("errors occur when processing " ^ fname)
