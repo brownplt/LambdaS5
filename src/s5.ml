@@ -441,11 +441,20 @@ module S5 = struct
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
-      | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
+      | _ ->
+        1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
+    let rec usercode_count (e : exp) : int = match e with
+      | Seq (_, Hint (_, "USER CODE BELOW", _), e2) -> 
+        let total = usercode_count e2 in
+        (* if this hint is the nearest to the user code, count e2 *)
+        if total = 0 then 1 + (count e2)
+        else total
+      | _ -> List.fold_left (+) 0 (List.map usercode_count (child_exps e)) in
     let ljs = pop_ljs cmd in
-    let n = count ljs in 
+    let usern = usercode_count ljs in
+    let envn = (count ljs) - usern in
     begin
-      print_string str; printf ": %d\n" n;
+      print_string str; printf ": env(%d);user(%d)\n" envn usern;
       push_ljs ljs;
     end
 
