@@ -113,8 +113,11 @@ let num_pass_fail (lst : (path_t * result_t) list) : (int * int) =
 
 let compare_section (section : name_t) : unit =
   assert ( List.mem section sections );
+  let analyze_result_hash = Hashtbl.create 7000 in
+  let base_result_hash = Hashtbl.create 7000 in
   get_section_result section !analyze_dir analyze_result_hash;
   get_base_result section !base_dir base_result_hash;
+  (* NOTE: here the two lists below may contains Empty(No test to run) files *)
   let analyze_result_list = hash_to_list analyze_result_hash in
   let base_result_list = hash_to_list base_result_hash in
   let analyze_pass, analyze_fail = num_pass_fail analyze_result_list in
@@ -269,9 +272,19 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
   end
 
 (* ========== CMD ========== *)
+let existing_sections () =
+  List.filter (fun sec ->
+      Sys.file_exists (Filename.concat !analyze_dir sec)) sections
+  
 let compare cmd (sec : string) =
   let _ = if !analyze_dir = "" || !base_dir= "" then
       raise (Arg.Bad "-set-analyze and -set-base is required") in
+  let sections = existing_sections () in
+  (*let rec compare_sec = function
+    | [] -> ()
+    | hd :: tl ->
+      let 
+  in*)
   match sec with
   | "all" ->
     List.iter (fun section -> compare_section section) sections
@@ -294,8 +307,7 @@ let performance cmd () =
       pretty_fileinfo fileinfo;
       pretty_sec tl
   in
-  let sections = List.filter (fun sec ->
-      Sys.file_exists (Filename.concat !analyze_dir sec)) sections in
+  let sections = existing_sections () in
   pretty_sec sections
 
 let cmpsection cmd (sec : string) =
