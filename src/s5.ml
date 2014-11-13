@@ -448,18 +448,19 @@ module S5 = struct
         when (Str.string_match usercode_regexp id 0) ->
         let total = usercode_count e2 in
         (* if this hint is the nearest to the user code, count e2 *)
-        if total = 0 then 1 + (count e2)
+        if total = 0 then (count e2)
         else total
       | _ -> List.fold_left (+) 0 (List.map usercode_count (child_exps e)) in
     let ljs = pop_ljs cmd in
+    let total = count ljs in
     let usercode_n = usercode_count ljs in
     let envn, usern = 
-      if usercode_n = 0 then
-        0, (count ljs) - usercode_n
+      if usercode_n = 0 then (* no env delimitor *)
+        0, total - usercode_n
       else
-        (count ljs) - usercode_n, usercode_n in
+        total - usercode_n, usercode_n in
     begin
-      print_string str; printf ": env(%d);user(%d)\n" envn usern;
+      print_string str; printf ": env(%d);usr(%d)\n" envn usern;
       push_ljs ljs;
     end
 

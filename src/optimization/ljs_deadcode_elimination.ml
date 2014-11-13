@@ -202,7 +202,10 @@ let deadcode_elimination (exp : exp) : exp =
 
     | Hint (p, id, e) ->
        let new_e, ids = eliminate_ids_rec e ids in
-       Hint (p, id, new_e), ids
+       if id = "USER CODE BELOW" then
+         Hint (p, id, new_e), ids
+       else
+         Undefined Pos.dummy, ids
                               
   in 
   let new_exp, new_ids = eliminate_ids_rec exp IdSet.empty in

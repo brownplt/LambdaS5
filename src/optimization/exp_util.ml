@@ -57,9 +57,8 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.True _
   | S.False _
   | S.Id (_,_) 
-  | S.Lambda (_, _, _)  (* lambda always has no side effect *)
-  | S.Hint (_,_,_)
-    -> false
+  | S.Lambda (_, _, _) -> (* lambda always has no side effect *)
+    false
   | S.GetAttr (_, _,obj, flds) ->
      has_side_effect ~env obj || has_side_effect ~env flds
   | S.GetObjAttr (_, _, obj) ->
@@ -136,6 +135,7 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.TryCatch (_, _, _)    (* any try..catch is assumed to throw out uncatched error *)
   | S.TryFinally (_, _, _)  (* any try..finally is assumed to throw out uncached error *)
   | S.Throw (_,_)
+  | S.Hint (_,_,_)
     -> true
 
 let apply_op1 p (op : string) e : S.exp option = 
