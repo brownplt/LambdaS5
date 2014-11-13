@@ -76,6 +76,18 @@ let suite =
              use(foo)}}}"
     );
 
+    "js func pattern 2: function with strict mode" >::
+    (cmp 
+      "let (foo = undefined)
+       {let (#strict=true)
+        {let (%fobj = {let (x = 1) x}) foo := %fobj};
+        use(foo)}"
+      "let (foo = undefined)
+       {let (#strict=true)
+        {let (foo = {let (x = 1) x})
+        use(foo)}}"
+    );
+
     "js function pattern" >::
     (cmp "{let (fobj16 = {let (proto={[]})
                          let (parent=context)
@@ -152,41 +164,43 @@ let suite =
           ");
 
     "js function patterns nested" >::
-    (cmp "{let (fobj16 = 
+    (cmp "let (foo = undefined){
+          {let (fobj16 = 
             {let (proto={[]})
              let (parent=context)
              let (thisfunc15 = {[#code: func(){
-
+                    let (bar = undefined){
                     {let (fobj17 = {let (proto={[]})
                          let (parent=context)
-                         let (thisfunc15 = {[#code: func(){1}]}) {
-                            proto['constructor' = thisfunc15];
-                            thisfunc15}})
+                         let (thisfunc16 = {[#code: func(){1}]}) {
+                            proto['constructor' = thisfunc16];
+                            thisfunc16}})
                      bar := fobj17};
-                     use(bar)
+                     use(bar)}
 
              }]})
              {proto['constructor' = thisfunc15]; thisfunc15}})
             foo := fobj16};
             let (fun2 = foo)
-            use(fun2)"
+            use(fun2)}"
 
-         "let (foo = 
+         "let (foo = undefined){
+          let (foo = 
             {let (proto={[]})
              let (parent=context)
              let (thisfunc15 = {[#code: func(){
-
+                    let (bar = undefined){
                     {let (bar = {let (proto={[]})
                          let (parent=context)
-                         let (thisfunc15 = {[#code: func(){1}]}) {
-                            proto['constructor' = thisfunc15];
-                            thisfunc15}})
-                     use(bar)}
+                         let (thisfunc16 = {[#code: func(){1}]}) {
+                            proto['constructor' = thisfunc16];
+                            thisfunc16}})
+                     use(bar)}}
 
              }]})
              {proto['constructor' = thisfunc15]; thisfunc15}})
             let (fun2 = foo)
-            use(fun2)"
+            use(fun2)}"
     );
     "js function patterns. function is defined but not used" >::
     (cmp 
@@ -203,6 +217,44 @@ let suite =
                             thisfunc15}})
         undefined"
     );
+    
+    (* a in b's scope is the top-level a *)
+    "variable scope" >::
+    (no_change
+      "let (a = 1) {
+        let (b = func() {a}) {
+        a := 2;
+        b();
+        a
+        } }");
+
+    "variable scope" >::
+    (no_change
+      "let (a = 1) {
+        let (b = func() {a:=2}) {
+        a := 3;
+        b();
+        a
+        } }");
+
+    "variable scope" >::
+    (cmp
+      "let (a = 1) let (f = undefined) {
+        {let (b = func() {a:=2}) f:=b};
+        a := 3;
+        f();
+        a
+        }"
+      "let (a = 1) let (f = undefined) {
+        let (f = func() {a:=2}) {
+        a := 3;
+        f();
+        a}
+        }"      
+    );
+
+
+
   ]
 
 let _ =

@@ -275,6 +275,33 @@ let rec related_ids id (env : env) (curr_used : IdSet.t) : IdSet.t =
     end 
   with _ -> IdSet.add id curr_used
 
+let id_used_in_env_lambda x env : bool =
+  let rec search_id ?(in_lambda=false) x exp : bool = 
+    match exp with
+    | Id (_, id) when in_lambda -> id = x
+    | SetBang (_, id, v) when in_lambda -> id = x || search_id ~in_lambda x v
+    | Lambda (_, xs, body) ->
+      if List.mem x xs then search_id ~in_lambda:false x body
+      else search_id ~in_lambda:true x body
+    | _ -> List.exists (fun e->search_id ~in_lambda x e)
+             (child_exps exp)
+  in
+  let used = ref false in
+  IdMap.iter (fun k v ->
+      if search_id x v then used := true
+    ) env;
+  ! used
+
+(* only collect free vars that are in lambda, excluding those bindings in exp *)
+let rec free_vars_in_lambda exp : IdSet.t =
+  match exp with
+  | Let (_, var, defn, body) ->
+    IdSet.union (free_vars_in_lambda defn) (IdSet.remove var (free_vars_in_lambda body))
+  | Rec (_, var, defn, body) ->
+    IdSet.remove var (IdSet.union (free_vars_in_lambda defn) (free_vars_in_lambda body))
+  | Lambda (_, _, _) -> free_vars exp
+  | exp -> List.fold_left IdSet.union IdSet.empty (map free_vars_in_lambda (child_exps exp))
+    
 (**  new **)
 let less_mutation (exp : exp) : exp =
   let rec less_rec (e : exp) (env : env) (used_ids : IdSet.t) : (exp * IdSet.t) = 
@@ -292,7 +319,7 @@ let less_mutation (exp : exp) : exp =
     | Num (_,_)
     | True _
     | False _ -> e, used_ids
-    | Id (_,id) -> e, IdSet.add id used_ids
+    | Id (_,id) -> e, related_ids id env used_ids (*IdSet.add id used_ids*)
     | Object (p, attrs, strprop) ->
       let primval, used_ids = handle_option attrs.primval env used_ids in
       let code, used_ids = handle_option attrs.code env used_ids in
@@ -385,10 +412,10 @@ let less_mutation (exp : exp) : exp =
       If (p, cond, thn, els), used_ids
 
     | App (p, f, args) ->
-      let used_ids = match f with
+      (*let used_ids = match f with
         | Id (_, id) ->  related_ids id env used_ids
         | _ -> used_ids
-      in 
+      in *)
       let f, used_ids = less_rec f env used_ids in
       let rec handle_args args env used_ids = match args with
         | [] -> args, used_ids
@@ -405,7 +432,7 @@ let less_mutation (exp : exp) : exp =
       dprint "seq visiting %s. The id set is:\n" (ljs_str e1);
       dprint_set used_ids;
       begin match e1 with
-        | SetBang (p, x, x_v) when IdSet.mem x used_ids ->
+        | SetBang (p, x, x_v) when IdSet.mem x used_ids || id_used_in_env_lambda x env ->
           let _ = dprint "%s of setBang is used elsewhere. no change\n" x in
           (* we haven't visit e2 yet, but used used_ids already contains x. That means
             x is used outside the execution path. we cannot do the transformation *)
@@ -418,9 +445,24 @@ let less_mutation (exp : exp) : exp =
           let x_v, used_ids = less_rec x_v env used_ids in
           let new_e2, used_ids = less_rec e2 env used_ids in
           Let (p, x, x_v, new_e2), used_ids
+        | Let (pos, "#strict", v, Let (p, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2))))
+          when tmp_name = tmp_name2 ->
+          dprint_string "find js function pattern\n";
+          (* desugared js function *)
+          let new_func, used_ids = less_rec func env used_ids in
+          if IdSet.mem real_name used_ids then
+            (* if the func contains the real_name, this function definition is a recursive function.
+               We cannot do the transformation *)
+            let _ = dprint "recursive function %s. keep it as it was\n" real_name in
+            let new_e1 = Let (pos, "#strict", v, Let(pos, tmp_name, new_func, SetBang(p1, real_name, Id(p2, tmp_name2)))) in
+            let new_e2, used_ids = less_rec e2 env used_ids in
+            Seq (p, new_e1, new_e2), used_ids
+          else
+            let _ = dprint "convert js function def pattern %s to let\n" (ljs_str e1) in
+            let new_e2, used_ids = less_rec e2 env used_ids in
+            Let (pos, "#strict", v, Let(pos, real_name, new_func, new_e2)), IdSet.remove real_name used_ids
         | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
-          when tmp_name = tmp_name2 && 
-               not (IdSet.mem real_name used_ids) ->
+          when tmp_name = tmp_name2 ->
           dprint_string "find js function pattern\n";
           (* desugared js function *)
           let new_func, used_ids = less_rec func env used_ids in
@@ -437,6 +479,7 @@ let less_mutation (exp : exp) : exp =
             Let(pos, real_name, new_func, new_e2), IdSet.remove real_name used_ids
         | _ ->
           let _ = dprint_string "normal seq\n" in
+          let used_ids = IdSet.union (free_vars_in_lambda e1) used_ids in
           let new_e2, used_ids = less_rec e2 env used_ids in
           let new_e1, used_ids = less_rec e1 env used_ids in
           Seq (p, new_e1, new_e2), used_ids
@@ -444,8 +487,7 @@ let less_mutation (exp : exp) : exp =
 
     | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
       (* this exp is a standalone js function definition *)
-      when tmp_name = tmp_name2 && 
-           not (IdSet.mem real_name used_ids) ->
+      when tmp_name = tmp_name2 ->
       let func, used_ids = less_rec func env used_ids in
       if IdSet.mem real_name used_ids then
         (* recursive, leave it as it was *)
@@ -456,8 +498,8 @@ let less_mutation (exp : exp) : exp =
 
     | Let (p, x, x_v, body) ->
       let new_env = IdMap.add x x_v env in
+      let used_ids = IdSet.union used_ids (free_vars_in_lambda x_v) in 
       let new_body, used_ids = less_rec body new_env used_ids in
-      let used_ids = IdSet.remove x used_ids in
       let x_v, used_ids = less_rec x_v env used_ids in
       let used_ids = IdSet.remove x used_ids in
       Let (p, x, x_v, new_body), used_ids
