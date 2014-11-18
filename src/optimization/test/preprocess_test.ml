@@ -254,6 +254,15 @@ let suite =
        let s5code = desugar "var bar = 2; bar" in
        assert_equal false (eligible_for_preprocess s5code));
 
+    "not eligible nonstrict mode is not eligible" >::
+    (fun ctx ->
+       todo "this case should not be thought as alias this";
+       let s5code = desugar "var f = function () {return 1}
+                             var o = {'v1' : this['f']()}
+                             o.v1" in
+       assert_equal true (eligible_for_preprocess s5code));
+
+
     "not eligible: computation string field" >::
     (not_eligible 
       "'use strict';
@@ -320,6 +329,10 @@ let suite =
     
     "test this" >::
     (eq "'use strict'; var x = 1; this['x'] = 3; x" "3");
+
+    (* this['f'] in this case will desugar to let(t=%this) ToObject(t)... *)
+    "test alias this" >::
+    (eq "'use strict'; var f = function () {return 1;}; this['f']()" "1");
 
     "test global scope" >::
     (eq "'use strict'; var x = 1; function foo(a) {return a + x}; foo(10)" "11");
