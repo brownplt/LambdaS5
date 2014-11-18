@@ -38,10 +38,15 @@ type cmp_t = Same | Diff | NotFound
 type name_t = string (* file name and directory name *)
 type path_t = string (* abs path or relative path *)
 
-let analyze_result_hash : (path_t, result_t) Hashtbl.t = Hashtbl.create 16000
-let base_result_hash : (path_t, result_t) Hashtbl.t = Hashtbl.create 16000
+let string_of_result = function
+  | Pass -> "Pass"
+  | Fail -> "Fail"
+  | Empty -> "Empty"
 
-let hash_to_list (hash : (path_t, result_t) Hashtbl.t) : (path_t * result_t) list =
+let analyze_result_hash : (name_t, result_t) Hashtbl.t = Hashtbl.create 16000
+let base_result_hash : (name_t, result_t) Hashtbl.t = Hashtbl.create 16000
+
+let hash_to_list (hash : (name_t, result_t) Hashtbl.t) : (path_t * result_t) list =
   Hashtbl.fold (fun k v lst -> (k,v) :: lst) hash []
 
 let get_section_files (section_mode : name_t) (path : path_t) : name_t list =
@@ -90,23 +95,22 @@ let get_file_result filepath : result_t =
     Empty
 
 let get_section_result (section_mode : name_t) (path : path_t) (result_hash : (path_t, result_t) Hashtbl.t) : unit =
-  let get_files_result (paths : path_t list) (result_hash : (path_t, result_t) Hashtbl.t) : unit =
-    List.iter (fun path ->
+  let get_files_result (fnames : name_t list) (result_hash : (name_t, result_t) Hashtbl.t) : unit =
+    List.iter (fun fname ->
+        let path = Filename.concat path (Filename.concat section_mode fname)in
         let result = get_file_result path in
-        Hashtbl.replace result_hash path result) 
-      paths
+        Hashtbl.replace result_hash fname result)
+      fnames
   in
   let files : name_t list = get_section_files section_mode path in
   let files : name_t list = List.filter (fun fname -> is_result_file fname) files in
-  let files : path_t list = List.map (fun fname ->
-      (Filename.concat path (Filename.concat section_mode fname))) files in
   get_files_result files result_hash
 
 (* get cache or call get_section_result *)
 let get_base_result (section_mode : name_t) (path : path_t) result_hash : unit =
   get_section_result section_mode path result_hash
 
-let num_pass_fail (lst : (path_t * result_t) list) : (int * int) =
+let num_pass_fail (lst : (name_t * result_t) list) : (int * int) =
   let passed = List.filter (fun (_, r) -> r = Pass) lst in
   let failed = List.filter (fun (_, r) -> r = Fail) lst in
   List.length passed, List.length failed
@@ -127,17 +131,6 @@ let compare_section (section : name_t) : unit =
   printf "%-10s%15d%30d\n" "PASS"  analyze_pass base_pass;
   printf "%-10s%15d%30d\n" "FAIL"  analyze_fail base_fail;
   printf "%!"
-
-  (*
-  let analyze_cmp_list : (path_t * cmp_t) list = List.map (fun (file, result) ->
-      try
-        let base_result = Hashtbl.find base_result_hash file in
-        (file, if base_result = result then Same else Diff)
-      with _ -> (file, NotFound)
-    ) analyze_result_list
-  in
-  List.sort (fun (p1,_) (p2,_) -> compare p1 p2) analyze_cmp_list
-*)
 
 (* ============================= produce performance ============================= *)
 type count_t = int * int
@@ -269,6 +262,36 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
     List.iter pretty_one_file fnames
   end
 
+let diff_section (section : name_t) : unit =
+  assert (List.mem section sections);
+  let analyze_result_hash = Hashtbl.create 7000 in
+  let base_result_hash = Hashtbl.create 7000 in
+  get_section_result section !analyze_dir analyze_result_hash;
+  get_base_result section !base_dir base_result_hash;
+  let diff : name_t list = Hashtbl.fold (fun fname result lst ->
+      try
+        if result <> Empty then begin
+          let analyze_result = Hashtbl.find analyze_result_hash fname in
+          if result <> analyze_result then
+            fname :: lst
+          else lst
+        end
+        else lst
+      with _ -> fname :: lst
+    ) base_result_hash []
+  in
+  printf "Section: %s[#diff: %d]\n" section (List.length diff);
+  (*List.iter (fun fname -> printf "%s\n%!" fname) diff;*)
+  List.iter (fun fname ->
+      let name = Filename.chop_extension
+          (Filename.basename fname) in
+      printf "%-30s base:%-10s analyze:%-10s\n"
+        name
+        (string_of_result (Hashtbl.find base_result_hash fname))
+        (string_of_result (Hashtbl.find analyze_result_hash fname)))
+    diff;
+  printf "\n%!"
+
 (* ========== CMD ========== *)
 let existing_sections () =
   List.filter (fun sec ->
@@ -308,8 +331,17 @@ let performance cmd () =
   let sections = existing_sections () in
   pretty_sec sections
 
-let cmpsection cmd (sec : string) =
-  ()
+let list_section_diff cmd (sec : string) =
+  let _ = if !analyze_dir = "" || !base_dir= "" then
+      raise (Arg.Bad "-set-analyze and -set-base is required") in
+  let sections = existing_sections () in
+  match sec with
+  | "all" ->
+    List.iter (fun section -> diff_section section) sections
+  | sec when (List.mem sec sections) ->
+    diff_section sec
+  | _ ->
+    raise (Arg.Bad (sprintf "section %s is not found" sec))
 
 
 let strCmd optName func desc =
@@ -329,7 +361,7 @@ let main () : unit =
         "<which section-strict>|<which-section-nonstrict>|<all> compare pass/fail results in section";
       unitCmd "-performance" performance
         "produce optimization performance(measured by AST node shrinkage) results";
-      strCmd "-cmpsection" cmpsection
+      strCmd "-list-section-diff" list_section_diff
         "list files that passed in base directory but failed in analyze directory";
     ]
     (fun s -> printf "anot: %s" s)
