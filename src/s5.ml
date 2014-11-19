@@ -464,6 +464,20 @@ module S5 = struct
       push_ljs ljs;
     end
 
+  let print_user_s5 cmd () =
+    let usercode_regexp = Str.regexp ".*USER CODE BELOW.*" in
+    let rec print (e : exp) : bool = match e with
+      | Seq (_, Hint(_, id, _), e2)
+        when (Str.string_match usercode_regexp id 0) ->
+        let already_printed = print e2 in
+        if already_printed then true
+        else (Ljs_pretty.exp e2 std_formatter; print_newline (); true)
+      | _ -> List.exists print (child_exps e)
+    in
+    match peek cmd with
+    | Ljs src -> ignore(print src)
+    | _ -> failwith "print-user-s5 only supports printing s5 code"
+
   let save_s5 cmd (filename : string) =
     let ljs = pop_ljs cmd in
     push_ljs ljs;
@@ -523,6 +537,8 @@ module S5 = struct
           "print the environment (id to store location mapping)";
         unitCmd "-print-src" print_src
           "pretty-print s5 or exprjs code";
+        unitCmd "-print-user-s5" print_user_s5
+          "pretty-user user code of the s5 code";
         unitCmd "-print-fvs" print_js_fvs
           "print JavaScript free variables";
         unitCmd "-print-heap" print_store

@@ -234,6 +234,22 @@ let suite =
        function foo(a) { return a(this); }
        foo(1)
      ");
+    
+    "not eligible delete field from this" >::
+    (not_eligible
+      "'use strict';
+        var x = 1;
+        function foo() {return delete this.x}
+        var o = {'x' : 1, 'f' : foo};
+        o.f()");
+
+    "not eligible delete field from this" >::
+    (not_eligible
+      "'use strict';
+        var x = 1;
+        function foo() {return delete this.x}
+        foo()");
+
 
     "not eligible passing this to a function" >::
     (not_eligible
@@ -348,6 +364,11 @@ let suite =
          var bar = {'a1' : 100};
          var foo = bar['a'+'1'];
          foo" "100");
+
+    "directly add variable in this" >::
+    (eq "'use strict';
+         this.count = 0;
+         ++count" "1");
 
     "assignment through on top-level this" >::
     (eq "'use strict';

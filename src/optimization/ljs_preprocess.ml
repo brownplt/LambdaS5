@@ -205,16 +205,17 @@ let replace_let_body let_exp new_body =
 (* these functions will check if the program contains assignment to "this" or "window".
    Such assignments will create new variables silently. To be more specific, this 
    function will look for
-   0. strict mode
+   0. strict mode: can be turned off.
    1. %context["window"]: code may do bad things through window
-   2. %EnvCheckAssign(_, _, %this, _): code may do bad things through the alias of 'this' 
-      %EnvCheckAssign(_, _, {object field as this}, _): code may do bad things through the alias of 'this' 
+   2. %EnvCheckAssign(_, _, %this, _): code may do bad things through the alias of 'this'
+      %EnvCheckAssign(_, _, {object field as this}, _): code may do bad things through the alias of 'this'.
+      the "this" alias should also prohibited in lambda, see 6)
    3. passing %this to a function: code may do something like `function z(a) {a.x = 1}; z(this)`
    4. computation string field on top level. In function computation is fine.
 
    5. with(o): strict mode does not allow "with". But here is how it works: code will make a new context, and
       we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
-
+   6. this[delete "x"]: try to delete variable from this(no matter in toplevel or lambda).
 *)
 
 let rec all_in_strict exp : bool = match exp with
@@ -290,6 +291,8 @@ let rec eligible_for_preprocess exp : bool =
                                     this_fld; arg] ->
           (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
           is_eligible arg && (if toplevel then (is_static_field this_fld) else true)
+        | Id (_, "%makeWithContext"), _ ->
+          false
         | Id (_, fname), args ->
           List.for_all is_eligible args &&
           (if fname = "%mkArgsObj" && toplevel then 
@@ -302,6 +305,9 @@ let rec eligible_for_preprocess exp : bool =
       )
     | Lambda (_, _, body) ->
       is_eligible_rec ~toplevel:false body
+    | DeleteField (_, Id(_, "%this"), v) ->
+      dprint_string (sprintf "deletefield: %s\n" (Exp_util.ljs_str v));
+      false
     | _ -> List.for_all is_eligible (child_exps exp)
   in
   let check_strict = if only_strict then all_in_strict exp else true in
@@ -325,10 +331,11 @@ let rec eligible_for_preprocess exp : bool =
      translated to %context["x"]
 *)
 let pre_post_transform (op : string) (id : id) : exp option = 
-  let p = Pos.dummy in 
+  let p = Pos.dummy in
+  let toNumber id : exp = App (Pos.dummy, Id (Pos.dummy, "%ToNumber"), [Id (Pos.dummy, id)]) in
   let make_prim op id = match op with
-    | "-" -> App (p, Id(p, "%PrimSub"), [App(p, Id (p,"%ToNumber"), [Id(p,id)]); Num(p,1.)])
-    | "+" -> App (p, Id(p, "%PrimAdd"), [App(p, Id (p,"%ToNumber"), [Id(p,id)]); Num(p,1.)])
+    | "-" -> App (p, Id(p, "%PrimSub"), [toNumber id; Num(p,1.)])
+    | "+" -> App (p, Id(p, "%PrimAdd"), [toNumber id; Num(p,1.)])
     | _ -> failwith "make_prim gets unexpected argument"
   in 
   match op with
@@ -336,15 +343,16 @@ let pre_post_transform (op : string) (id : id) : exp option =
     Some (SetBang (p, id, make_prim "-" id))
   | "%PrefixIncrement" -> (* ++i => i := %PrimAdd(%ToNumber(i), 1) *)
     Some (SetBang (p, id, make_prim "+" id))
-  | "%PostIncrement" -> (* i++ => let (post = i) {i := %PrimAdd(%ToNumber(i),1); post} *)
-    Some (Let (p, "post", Id(p, id),
-               Seq (p, SetBang(p,id,make_prim "+" id), Id (p, "post"))))
-  | "%PostDecrement" -> (* i-- => let (post = i) {i := %PrimSub(%ToNumber(i),1); post} *)
-    Some (Let (p, "post", Id(p, id),
-               Seq (p, SetBang(p,id,make_prim "-" id), Id (p, "post"))))
+  | "%PostIncrement" -> (* i++ => let (post = ToNumber(i)) {i := %PrimAdd(%ToNumber(i),1); post} *)
+    Some (Let (p, "post", toNumber id,
+               Seq (p, SetBang(p, id , make_prim "+" id), Id (p, "post"))))
+  | "%PostDecrement" -> (* i-- => let (post = ToNumber(i)) {i := %PrimSub(%ToNumber(i),1); post} *)
+    Some (Let (p, "post", toNumber id,
+               Seq (p, SetBang(p, id, make_prim "-" id), Id (p, "post"))))
   | _ -> None 
 
 let make_writable_error (msg : string) : exp =
+  let msg = msg ^ " not writable" in
   App (Pos.dummy, Id(Pos.dummy, "%TypeError"), [String (Pos.dummy, msg)])
 
 let rec preprocess (e : exp) : exp =
@@ -453,10 +461,19 @@ let rec preprocess (e : exp) : exp =
          TryCatch (Pos.dummy,
                    Op1(Pos.dummy, "typeof", actual_var),
                    Lambda (Pos.dummy, ["e"], Undefined Pos.dummy))
-       | Id (pos, op), [Id(_, "%context"); String(_, id)] ->
-         (match pre_post_transform op id with
-          | Some (result) -> result
-          | None -> App (pos, f, args))
+       | Id (pos, op), [Id(_, "%context"); String(_, id)]
+         when IdMap.mem id ctx ->
+         let transform var = match pre_post_transform op var with
+           | Some (result) -> result
+           | None -> App (pos, f, args)
+         in
+         begin match IdMap.find id ctx with
+           | Undefined _ when id <> "undefined" -> transform id
+           | Id (_, actual_id) -> transform actual_id
+           | Undefined _
+           | Num (_,_) -> make_writable_error id
+           | _ -> failwith (sprintf "%s: IdMap stores unrecognized exp" op)
+         end
        | _ -> App (pos, f, args)
       )
     | Let (p, x, x_v, body) ->
