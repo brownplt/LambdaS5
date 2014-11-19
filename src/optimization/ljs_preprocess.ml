@@ -104,30 +104,8 @@ let global_bindings = create_global_bindings ()
    desugared from
    function f1(x) {var a = x};
 
-                               *)
+                  *)
 let recognize_new_context exp ctx : env =
-  (* get_locals will get the local IdMaps for %a11 and %x12 *)
-  (*let get_locals_args exp = 
-    let rec get_rec exp (locals : (string * exp) list) (args : (string * exp) list) : 
-      ((string * exp) list * (string * exp) list) = 
-    match exp with
-    | Let (_, x, x_v, body) ->
-      (match x_v with
-       | Undefined _ -> 
-         let local, arg = get_rec body locals args in
-         (x, x_v) :: local, arg
-       | GetField (_, Id (_, id), String (_, num), _) ->
-         if id <> "%args" then failwith "[1]pattern assertion failed"
-         else 
-           let local, arg = get_rec body locals args in
-           local, (x, x_v) :: arg
-       | _ -> failwith "[2]pattern assertion failed"
-      )
-    | _ -> locals, args
-    in 
-    let locals, args = get_rec exp [] [] in
-    List.append locals args
-    in *)
   let rec strip_let exp : exp =  match exp with
     | Let (_, _, _, body) -> strip_let body
     | _ -> exp
@@ -216,6 +194,7 @@ let replace_let_body let_exp new_body =
    5. with(o): strict mode does not allow "with". But here is how it works: code will make a new context, and
       we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
    6. this[delete "x"]: try to delete variable from this(no matter in toplevel or lambda).
+   7. iterate through all property of top-level this
 *)
 
 let rec all_in_strict exp : bool = match exp with
@@ -271,6 +250,20 @@ let rec eligible_for_preprocess exp : bool =
     | True _
     | False _ 
     | Id _ -> true
+    | Object (_, attr, props) ->
+      let is_eligible_option ~toplevel (opt : exp option) = match opt with
+        | Some (e) -> is_eligible_rec ~toplevel e
+        | None -> true
+      in
+      let handle_prop prop = match prop with
+        | (s, Data(data, _, _)) -> is_eligible_rec ~toplevel data.value
+        | (s, Accessor(acc, _, _)) -> is_eligible_rec ~toplevel acc.getter && is_eligible_rec ~toplevel acc.setter
+      in
+      is_eligible_option ~toplevel attr.primval &&
+      is_eligible_option ~toplevel:false attr.code &&
+      is_eligible_option ~toplevel attr.proto &&
+      List.for_all handle_prop props
+
     | GetField (_, obj, fld, args) ->
       let eligible_field obj fld = match obj with
         (* when obj is `this` and it is on top-level, only static field is 
@@ -293,6 +286,8 @@ let rec eligible_for_preprocess exp : bool =
           is_eligible arg && (if toplevel then (is_static_field this_fld) else true)
         | Id (_, "%makeWithContext"), _ ->
           false
+        | Id (_, "%propertyNames"), [Id(_, "%this"); _] when toplevel ->
+          false
         | Id (_, fname), args ->
           List.for_all is_eligible args &&
           (if fname = "%mkArgsObj" && toplevel then 
@@ -304,7 +299,7 @@ let rec eligible_for_preprocess exp : bool =
           List.for_all is_eligible args
       )
     | Lambda (_, _, body) ->
-      is_eligible_rec ~toplevel:false body
+      is_eligible_rec ~toplevel body
     | DeleteField (_, Id(_, "%this"), v) ->
       dprint_string (sprintf "deletefield: %s\n" (Exp_util.ljs_str v));
       false
@@ -432,7 +427,9 @@ let rec preprocess (e : exp) : exp =
             (* if NaN, undefined, Infinity, we need to check the writable field *)
             | Undefined _
             | Num (_,_) -> make_writable_error id
-            | _ -> failwith "EnvCheckAssign: how could IdMap stores unrecognized exp"
+            | normal_exp ->
+              (* get normal exp, which means that id is somehow declared in contxt, use that id(see example of es5id: 12.14-1 *)
+              SetBang (pos, id, v)
           with Not_found -> App (pos, f, args))
        | Id (_, "%PropAccessorCheck"), [Id (_, "%this")] ->
          if in_lambda then
@@ -478,15 +475,16 @@ let rec preprocess (e : exp) : exp =
       )
     | Let (p, x, x_v, body) ->
       let x_v = preprocess_rec ~in_lambda x_v ctx in
+      (* first match with context patterns in lambda *)
       begin match get_localcontext e with
         | None -> (* not a new context binding in lambda *)
-          (if x = "%context" then  (* rebind x, ignore the whole body *)
-             e
-           else 
-             Let (p, x, x_v, preprocess_rec ~in_lambda body ctx))
-        | Some (new_let)->
+          (* in the desugared code, there is no place to bind %context to a non-obj *)
+          assert (x <> "%context");
+          Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
+        | Some (new_let) -> (* FIXME: 12.14-1 *)
+          dprint "new_let is %s\n" (Exp_util.ljs_str new_let);
           (try
-             let new_ctx = recognize_new_context x_v ctx in 
+             let new_ctx = recognize_new_context x_v ctx in
              replace_let_body new_let (preprocess_rec ~in_lambda body new_ctx)
            with Failure msg -> 
              (printf "oops, pattern error: %s\n%!" msg;

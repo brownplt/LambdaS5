@@ -263,6 +263,16 @@ let suite =
       "'use strict';
        function foo(a) {a.x = 15}
        foo(1, bar(zar(this)))");
+    
+    "not eligible: iterate through toplevel this keyword" >::
+    (not_eligible
+      "'use strict';
+       for (i in this) { i }");
+
+    "eligible: iterate through this keyword in function" >::
+    (eligible
+      "'use strict';
+       function foo() { for(i in this) {i}}");
 
     "not eligible nonstrict mode is not eligible" >::
     (fun ctx ->
