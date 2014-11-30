@@ -42,7 +42,12 @@ let op1 p op arg env : exp = match op with
     end 
   | _ -> Op1 (p, op, arg)
   
-(* this function is mainly for cleaning "prim("typeof", obj)" *)
+(* this function is mainly for cleaning
+    1. "prim("typeof", obj)"
+    2. IsObject
+    3. PropAccessorCheck
+    4. ToObject
+*)
 let type_infer (exp : exp) : exp =
   let rec clean_rec (exp : exp) (env : env) : exp =
     let clean e = clean_rec e env in
@@ -65,6 +70,7 @@ let type_infer (exp : exp) : exp =
       Lambda (p, xs, body)
     | App (p, f, args) ->
       let f = clean_rec f env in
+      let args = List.map clean args in
       begin match f, args with
       | Id (_, "%ToObject"), [Id (p1, id)] ->
         begin match get_type (Id (p1, id)) env with
@@ -72,6 +78,21 @@ let type_infer (exp : exp) : exp =
           | Some (String (_, "object")) -> Id (p1, id)
           | _ -> App (p, f, args)
         end 
+      | Id (_, "%IsObject"), [Id (p1, id)] ->
+        begin match get_type (Id (p1, id)) env with
+          | Some (String (_, "function"))
+          | Some (String (_, "object")) -> True Pos.dummy
+          | Some (_) -> False Pos.dummy
+          | None -> App (p, f, args)
+        end 
+      | Id (p0, "%PropAccessorCheck"), [Id (p1, id)] ->
+        begin match get_type (Id (p1, id)) env with
+          | Some (String (_, "Undefined")) -> App(p, f, args)
+          | Some (_) -> (* make it a ToObject expression *)
+            let new_app = App (p, Id(p0, "%ToObject"), [Id(p1, id)]) in
+            clean_rec new_app env
+          | None -> App (p, f, args)
+        end
       | _ -> App (p, f, args)
       end 
     | _ -> optimize clean exp
