@@ -218,8 +218,11 @@ let rec const_folding (e : exp) : exp =
         else Label (p, l, const_folding lbody)
       | _ -> Label (p, l, const_folding lbody)
     end 
-
-
+  | TryCatch (p,t,c) ->
+    if EU.valid_for_folding t then
+      const_folding t
+    else
+      TryCatch (p, const_folding t, const_folding c)
   | Object (_,_,_) 
   | SetAttr (_,_,_,_,_)
   | SetObjAttr (_,_,_,_)
@@ -232,7 +235,6 @@ let rec const_folding (e : exp) : exp =
   | Let (_,_,_,_)
   | Rec (_,_,_,_)
   | Break (_,_,_)
-  | TryCatch (_,_,_)
   | TryFinally (_,_,_)
   | Throw (_,_)
   | Hint (_,_,_)

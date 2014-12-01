@@ -169,7 +169,11 @@ let rec is_bound (x : S.exp) (body : S.exp) : bool =
     List.mem var1 xs || is_bound x body
   | S.Id (_, var1), S.SetBang (_, var2, e) -> var1 = var2 || is_bound x e
   | _ -> List.exists (fun(e)->is_bound x e) (S.child_exps body)
-                                                      
+
+let same_Id (s : string) (e : S.exp) = match e with
+  | S.Id (_, id) when id = s -> true
+  | _ -> false
+
 let is_Id (x : S.exp) : bool = match x with
   | S.Id (_, _) -> true
   | _ -> false
