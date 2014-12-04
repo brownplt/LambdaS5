@@ -56,7 +56,6 @@ and cps_exp =
   | AppFun of Pos.t * Label.t * cps_value * cps_ret * cps_exn * cps_value list
   | AppRetCont of Pos.t * Label.t * cps_ret * cps_value (* contName * argName *)
   | AppExnCont of Pos.t * Label.t * cps_exn * cps_value * cps_value (* contName * argName * labelName *)
-  | Eval of Pos.t * Label.t * cps_exp
 
 and cps_ret =
   | RetLam of Pos.t * Label.t * id * cps_exp  (* contName * argName * contBody * exp *)
@@ -107,7 +106,6 @@ let pos_of_exp (exp : cps_exp) = match exp with
 | AppFun (pos, _, _, _, _, _) -> pos
 | AppRetCont (pos, _, _, _) -> pos
 | AppExnCont (pos, _, _, _, _) -> pos
-| Eval (pos, _, _) -> pos
 let pos_of_prim (prim : cps_prim) = match prim with
 | GetAttr (pos, _, _, _, _) -> pos
 | SetAttr (pos, _, _, _, _, _) -> pos
@@ -139,7 +137,6 @@ let label_of_exp (exp : cps_exp) = match exp with
 | AppFun (_, label, _, _, _, _) -> label
 | AppRetCont (_, label, _, _) -> label
 | AppExnCont (_, label, _, _, _) -> label
-| Eval (_, label, _) -> label
 let label_of_prim (prim : cps_prim) = match prim with
 | GetAttr (_, label, _, _, _) -> label
 | SetAttr (_, label, _, _, _, _) -> label
@@ -571,11 +568,6 @@ let rec cps (exp : E.exp)
                  var, String(pos,Label.newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
-    | E.Eval (pos, broken, _) -> 
-      let var = newVar "dummy" in 
-      LetValue (Pos.synth pos, Label.newLabel(), var, Null (Pos.synth pos, Label.newLabel()), ret (Id(pos,Label.newLabel(),var))) 
-
-
 
 
 and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
@@ -800,12 +792,6 @@ and cps_tail (exp : E.exp) (exnName : id) (retName : cps_ret) : cps_exp =
 | E.Throw (pos, value) -> cps value exnName (fun var -> AppExnCont(Pos.synth pos, Label.newLabel(), ExnId(Pos.synth pos, Label.newLabel(),exnName), var, String(pos,Label.newLabel(),"##catchMe##")))
           (* make the exception continuation become the return continuation *)
 
-    | E.Eval (pos, broken, _) -> 
-      let var = newVar "dummy" in 
-      LetValue (Pos.synth pos, Label.newLabel(), var, Null (Pos.synth pos, Label.newLabel()), 
-                AppRetCont(Pos.synth pos, Label.newLabel(), retName, Id(pos,Label.newLabel(),var))) 
-
-
 
 
 
@@ -828,7 +814,6 @@ let rec de_cps (exp : cps_exp) : E.exp =
   | AppRetCont (pos, _, ret, argName) -> E.App(pos, de_ret ret, [de_cps_val argName])
   | AppExnCont (pos, _, exn, argName, labelName) -> E.App(pos, de_exn exn,
                                                      [de_cps_val argName; de_cps_val labelName])
-  | Eval (pos, _, body) -> E.Eval(pos, de_cps body, E.Undefined pos)
 and de_ret (ret : cps_ret) : E.exp =
   match ret with
   | RetId(pos, _, id) -> E.Id(pos, id)

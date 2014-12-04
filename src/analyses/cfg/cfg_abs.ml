@@ -130,7 +130,6 @@ let partition_vars e =
     | C.AppExnCont(_, l, e, a, lbl) ->
       part_exn curL e;      part_val curL a;      part_val curL lbl;
       LabelUF.union labelSets curL l
-    | C.Eval _ -> ()
   and part_ret curL r = match r with
     | C.RetId(_, l, _) -> LabelUF.union labelSets curL l
     | C.RetLam(_, l, arg, b) -> part_exp curL b; LabelUF.union labelSets curL l
@@ -201,7 +200,6 @@ let partition_vars e =
       List.fold_left (flip vars_at_val) (vars_at_val f (vars_at_ret r (vars_at_exn e acc))) args
     | C.AppRetCont (_, _, r, v) -> vars_at_val v (vars_at_ret r acc)
     | C.AppExnCont (_, _, e, a, l) -> vars_at_val l (vars_at_val a (vars_at_exn e acc))
-    | C.Eval _ -> acc
   and vars_at_ret r acc = match r with
     | C.RetId _ -> acc
     | C.RetLam(_, l, arg, b) -> vars_at_exp b (C.LabelMap.add l (IdSet.singleton arg) acc)
@@ -601,7 +599,6 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
     | C.AppFun (_, l, f, r, e, a) -> printf "%s %s(Ret XXX, Exn XXX; %s)\n" ("AppFun " ^ (C.Label.toString l))
       (Ljs_cps_pretty.cps_value_to_string f) (String.concat ", " (List.map Ljs_cps_pretty.cps_value_to_string a)); l
     | C.If(_, l, _, _, _) -> printf "%s" ("If " ^ (C.Label.toString l) ^ "\n"); l
-    | C.Eval(_, l, _) -> printf "%s" ("Eval " ^ (C.Label.toString l) ^ "\n"); l
     ) in
     print_abs_bindings label env store;
     match exp with
@@ -862,8 +859,6 @@ let eval (exp : C.cps_exp) : abstractEnv * abstractStore * C.Label.t =
         printAnsErr "After AppFun" (getBinding exitLab "%%ANSWER" e s) (getBinding exitLab "%%ERROR" e s);
         (e, s, m)
       end
-    | C.Eval _ ->
-      failwith "Not yet implemented"
 
   and eval_val (value : C.cps_value) (env : abstractEnv) (store : abstractStore)
       : D.ValueLattice.t = 
@@ -1301,7 +1296,7 @@ let build expr =
   | C.AppFun(pos,l, func, ret, exn, args) -> (g, entry)
   | C.AppRetCont(_,l,ret, arg) -> (g, entry)
   | C.AppExnCont(_,l,exn, arg, label) -> (g, entry)
-  | C.Eval(pos,l, eval) -> (g, entry) in
+  in
   fst (build_exp cfg IdMap.empty v expr)
 
 let cpsv_to_string cps_value =
@@ -1319,7 +1314,6 @@ module Display = struct
   | C.AppFun(pos,l, func, ret, exn, args) -> "App(" ^ (cpsv_to_string func) ^ ")"
   | C.AppRetCont(_,l,ret, arg) -> "Ret()"
   | C.AppExnCont(_,l,exn, arg, label) -> "Exn(" ^ (cpsv_to_string label) ^ ")"
-  | C.Eval(pos,l, eval) -> "Eval"
   let graph_attributes _ = []
   let default_vertex_attributes _ = []
   let vertex_attributes _ = []

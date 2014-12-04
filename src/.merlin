@@ -1,0 +1,13 @@
+S ljs
+B ../obj/ljs
+S optimization
+B ../obj/optimization
+S optimization/test
+B ../obj/optimization/test
+S js
+B ../obj/js
+S exprjs
+B ../obj/exprjs
+S util
+B ../obj/util
+PKG oUnit

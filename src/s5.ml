@@ -6,6 +6,16 @@ open Ljs_cesk
 open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
+open Ljs_const_folding
+open Ljs_const_propagation
+open Ljs_deadcode_elimination
+open Ljs_alias_propagation
+open Ljs_function_inlining
+open Ljs_preprocess
+open Ljs_env_clean
+open Ljs_new_env_clean
+open Ljs_type_infer
+open Ljs_less_mutation
 
 type node =
   | Js of Js_syntax.program
@@ -156,11 +166,15 @@ module S5 = struct
   let load_env cmd path =
     push_env (Ljs.parse_es5_env (open_in path) path)
 
-  let load_internal_env cmd name = match name with
+  (*let load_internal_env cmd name = match name with
     | "env-vars" ->
       push_env (Env_free_vars.vars_env)
-    | _ -> failwith ("Unknown internal environment " ^ name)
+    | _ -> failwith ("Unknown internal environment " ^ name)*)
 
+  let load_internal_env cmd name = match name with
+    | "env-vars" ->
+      push_env (Env_free_vars.dummy_env)
+    | _ -> failwith ("Unknown internal environment " ^ name)
 
   (* Conversion Commands *)
 
@@ -369,6 +383,109 @@ module S5 = struct
     output_value stdout results;
     print_newline()
 
+  (* optimization command *)
+
+  let opt_constant_folding cmd () = 
+    let ljs = pop_ljs cmd in
+    let new_ljs = const_folding ljs in
+    push_ljs new_ljs
+    (* print origin one for debug *)
+    (*Ljs_pretty.exp ljs std_formatter; 
+    print_newline ()*)
+
+  let opt_const_propagation cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = const_propagation ljs in
+    push_ljs new_ljs
+
+  let opt_deadcode_elimination cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = deadcode_elimination ljs in
+    push_ljs new_ljs
+
+  let opt_alias_propagation cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = alias_propagation ljs in
+    push_ljs new_ljs
+
+  let opt_function_inlining cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = function_inlining ljs in
+    push_ljs new_ljs
+
+  let opt_preprocess cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = preprocess ljs in
+    push_ljs new_ljs
+
+  let opt_env_clean cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = env_clean ljs in
+    push_ljs new_ljs
+
+  let opt_new_env_clean cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = new_env_clean ljs in
+    push_ljs new_ljs
+
+  let opt_type_infer cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = type_infer ljs in
+    push_ljs new_ljs
+
+  let opt_less_mutation cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = less_mutation ljs in
+    push_ljs new_ljs
+
+  let count_nodes cmd (str : string) =
+    let rec count (e : exp) : int =
+      match e with
+      | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
+    let usercode_regexp = Str.regexp ".*USER CODE BELOW.*" in
+    let rec usercode_count (e : exp) : int = match e with
+      | Seq (_, Hint (_, id, _), e2)
+        when (Str.string_match usercode_regexp id 0) ->
+        let total = usercode_count e2 in
+        (* if this hint is the nearest to the user code, count e2 *)
+        if total = 0 then (count e2)
+        else total
+      | _ -> List.fold_left (+) 0 (List.map usercode_count (child_exps e)) in
+    let ljs = pop_ljs cmd in
+    let total = count ljs in
+    let usercode_n = usercode_count ljs in
+    let envn, usern = 
+      if usercode_n = 0 then (* no env delimitor *)
+        0, total - usercode_n
+      else
+        total - usercode_n, usercode_n in
+    begin
+      print_string str; printf ": env(%d);usr(%d)\n" envn usern;
+      push_ljs ljs;
+    end
+
+  let print_user_s5 cmd () =
+    let usercode_regexp = Str.regexp ".*USER CODE BELOW.*" in
+    let rec print (e : exp) : bool = match e with
+      | Seq (_, Hint(_, id, _), e2)
+        when (Str.string_match usercode_regexp id 0) ->
+        let already_printed = print e2 in
+        if already_printed then true
+        else (Ljs_pretty.exp e2 std_formatter; print_newline (); true)
+      | _ -> List.exists print (child_exps e)
+    in
+    match peek cmd with
+    | Ljs src -> ignore(print src)
+    | _ -> failwith "print-user-s5 only supports printing s5 code"
+
+  let save_s5 cmd (filename : string) =
+    let ljs = pop_ljs cmd in
+    push_ljs ljs;
+    Marshal.to_channel (open_out_bin filename) ljs []
+    
+  let load_s5 cmd (filename : string) =
+    let ljs = Marshal.from_channel (open_in_bin filename) in
+    push_ljs ljs
 
   (* Main *)
 
@@ -420,6 +537,8 @@ module S5 = struct
           "print the environment (id to store location mapping)";
         unitCmd "-print-src" print_src
           "pretty-print s5 or exprjs code";
+        unitCmd "-print-user-s5" print_user_s5
+          "pretty-user user code of the s5 code";
         unitCmd "-print-fvs" print_js_fvs
           "print JavaScript free variables";
         unitCmd "-print-heap" print_store
@@ -462,6 +581,33 @@ module S5 = struct
           "evaluate code symbolically";
         unitCmd "-sym-eval-raw" ljs_sym_eval_raw
           "evaluate code symbolically and print raw OCaml results";
+        (* optimization *)
+        strCmd "-save-s5" save_s5
+          "marshal s5 code to file as sequence of bytes";
+        strCmd "-load-s5" load_s5
+          "load s5 from marshalled file that created by -save-s5(use -s5 to load text form of s5 code)";
+        unitCmd "-opt-preprocess" opt_preprocess
+          "preprocess s5 code to make it more optimizable.";
+        unitCmd "-opt-const-folding" opt_constant_folding
+          "perform constant folding on s5";
+        unitCmd "-opt-const-propagation" opt_const_propagation
+          "perform constant propagation on s5";
+        unitCmd "-opt-deadcode-elimination" opt_deadcode_elimination
+          "perform dead code elimination on s5";
+        unitCmd "-opt-alias-propagation" opt_alias_propagation
+          "propagate alias on s5";
+        unitCmd "-opt-function-inlining" opt_function_inlining
+          "perform function inlining on s5";
+        unitCmd "-opt-env-clean" opt_env_clean
+          "[obsolete] clean unused env expression";
+        unitCmd "-opt-new-env-clean" opt_new_env_clean
+          "clean unused env expression";
+        unitCmd "-opt-type-infer" opt_type_infer
+          "clean prim('typeof', obj)";
+        unitCmd "-opt-less-mutation" opt_less_mutation
+          "convert mutation x:=1 to let bindings when possible";
+        strCmd "-count-nodes" count_nodes
+          "count the nodes of S5"
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"

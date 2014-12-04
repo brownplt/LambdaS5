@@ -1,5 +1,6 @@
 open Prelude
 
+(* object attributes *)
 type oattr = 
   | Proto
   | Klass
@@ -14,6 +15,7 @@ let string_of_oattr oattr = match oattr with
   | Primval -> "#primval"
   | Code -> "#code"
 
+(* property attributes *)
 type pattr =
   | Value
   | Getter
@@ -64,7 +66,6 @@ type exp =
   | TryFinally of Pos.t * exp * exp
   | Throw of Pos.t * exp
   | Lambda of Pos.t * id list * exp
-  | Eval of Pos.t * exp * exp (* Pos.t, string to be evaled, env object  *)
   | Hint of Pos.t * string * exp
 and data =       
     {value : exp;
@@ -129,7 +130,6 @@ let pos_of exp = match exp with
   | TryFinally (pos, _, _) -> pos
   | Throw (pos, _) -> pos
   | Lambda (pos, _, _) -> pos
-  | Eval (pos, _, _) -> pos
   | Hint (pos, _, _) -> pos
 
 let child_exps (exp : exp) : exp list =
@@ -178,7 +178,6 @@ let child_exps (exp : exp) : exp list =
   | TryFinally (_, x, y) -> [x; y]
   | Throw (_, x) -> [x]
   | Lambda (_, _, x) -> [x]
-  | Eval (_, x, y) -> [x; y]
   | Hint (_, _, x) -> [x]
 
 let rec free_vars (exp : exp) : IdSet.t =
@@ -193,7 +192,5 @@ let rec free_vars (exp : exp) : IdSet.t =
     IdSet.remove var (IdSet.union (free_vars defn) (free_vars body))
   | Lambda (_, vars, body) ->
     List.fold_left (flip IdSet.remove) (free_vars body) vars
-  | Eval (_, str_exp, env_exp) ->
-    IdSet.union (free_vars str_exp) (free_vars env_exp)
   | exp ->
     List.fold_left IdSet.union IdSet.empty (map free_vars (child_exps exp))
