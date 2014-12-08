@@ -237,6 +237,14 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
       let env, usr = List.split optinfo in
       let env_ratio = get_ratio env in
       let usr_ratio = get_ratio usr in
+      let print_total_saving () =
+        let len = List.length env in
+        if len >= 1 then
+          let basen = (List.hd env) + (List.hd usr) in
+          let finaln = (List.nth env (len-1)) + (List.nth usr (len-1)) in
+          printf "%8.1f%%\n%!" ( 100.0 *. (float_of_int (basen - finaln))
+                                 /. (float_of_int basen))
+      in
       (* print env count *)
       printf "%25s env: " fname;
       List.iter (fun n->printf "%7d" n) env;
@@ -251,6 +259,7 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
       printf " |";
       (* print usr count saving *)
       List.iter (fun f->printf "%8.1f" f) usr_ratio;
+      print_total_saving();
       (* print end line *)
       printf "\n%25s\n%!" "--------------------"
     with _ -> failwith ("errors occur when processing " ^ fname)

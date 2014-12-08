@@ -7,8 +7,8 @@ BASE="/home/lijunsong/github/LambdaS5/tests/"
 export PATH="/local/bin:/home/lijunsong/.opam/4.02.0/bin/:$PATH"
 
 get_usage () {
-echo "to use this script, create an directory and put two files in it.
-  1. config.txt, which has one line to specifies s5 optimization arguments;
+echo "to use this script, create a directory and put two files in it.
+  1. config.txt, which has one line that specifies s5 optimization arguments;
   2. jslists.txt, which contains test262 js absolute file path.
   
   run qsub -t 1-100 cloud-test262.sh"
