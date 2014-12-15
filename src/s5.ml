@@ -17,6 +17,7 @@ open Ljs_new_env_clean
 open Ljs_type_infer
 open Ljs_less_mutation
 open Ljs_no_checks
+open Ljs_unwrap_lambda
 
 type node =
   | Js of Js_syntax.program
@@ -444,6 +445,11 @@ module S5 = struct
     let new_ljs = no_checks ljs in
     push_ljs new_ljs
 
+  let opt_unwrap_lambda cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = unwrap_lambda ljs in
+    push_ljs new_ljs
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -609,11 +615,13 @@ module S5 = struct
         unitCmd "-opt-new-env-clean" opt_new_env_clean
           "clean unused env expression";
         unitCmd "-opt-type-infer" opt_type_infer
-          "clean prim('typeof', obj)";
+          "clean prim('typeof', obj). alias-propagation may be needed before this optimization";
         unitCmd "-opt-less-mutation" opt_less_mutation
           "convert mutation x:=1 to let bindings when possible";
         unitCmd "-opt-no-checks" opt_no_checks
           "clean all static checks";
+        unitCmd "-opt-unwrap-lambda" opt_unwrap_lambda
+          "unwrap function object to s5 lambda";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]
