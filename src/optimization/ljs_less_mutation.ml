@@ -281,8 +281,10 @@ let id_used_in_env_lambda x env : bool =
     | Id (_, id) when in_lambda -> id = x
     | SetBang (_, id, v) when in_lambda -> id = x || search_id ~in_lambda x v
     | Lambda (_, xs, body) ->
-      if List.mem x xs then search_id ~in_lambda:false x body
+      if List.mem x xs then false
       else search_id ~in_lambda:true x body
+    | Let (_, letx, _, _) when letx = x -> false
+    | Rec (_, recx, _, _) when recx = x -> false
     | _ -> List.exists (fun e->search_id ~in_lambda x e)
              (child_exps exp)
   in

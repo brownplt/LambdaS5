@@ -14,6 +14,14 @@ let suite =
        "let (x = 2) let (y=x) y"
     );
 
+    "lift assignment" >::
+    (cmp
+      "let (x = 1)
+         {x := 2; x}"
+      "let (x = 1)
+         let (x = 2)
+           x");
+
     (* todo setbang and recursive function *)
     "setbang x and usage x are in different seq" >::
     (no_change
