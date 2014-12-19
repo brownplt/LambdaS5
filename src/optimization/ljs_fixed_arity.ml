@@ -76,10 +76,22 @@ let parse_args_obj (args : exp list) : exp list option =
   
 let fixed_arity (exp : exp) : exp =
   let rec fixed_formal_parameter (exp : exp) : exp =
+    (* clean related %args expression *)
+    let rec clean_args (fbody : exp) : exp =
+      let is_arg_delete (exp : exp) : bool = match exp with
+        (* match %args[delete "%new"] *)
+        | DeleteField(_, Id(_, "%args"), String (_, "%new")) -> true
+        | _ -> false
+      in
+      match fbody with
+      | Seq (_, e1, e2) when is_arg_delete e1 -> e2
+      | _ -> fbody
+    in
     match exp with
     | Lambda (pos, xs, body) ->
       let args, new_body = trim_args body in
       let new_xs = update_args xs args in
+      let new_body = clean_args new_body in
       Lambda (pos, new_xs, fixed_formal_parameter new_body)
     | _ ->
       optimize fixed_formal_parameter exp
