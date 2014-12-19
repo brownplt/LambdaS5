@@ -34,7 +34,7 @@ let trim_args (exp : exp) : id list * exp =
           args := (index, x) :: !args;
           trim body
         | None ->
-          Let (pos, x, xv, trim body)
+          Let (pos, x, trim xv, trim body)
       end
     | Lambda (_, _, _) -> exp
     | exp -> optimize trim exp
@@ -46,7 +46,34 @@ let update_args (old_xs : id list) (new_xs : id list) =
   | hd :: tl when hd = "%this" ->
     hd :: new_xs
   | _ -> old_xs
-           
+
+let parse_args_obj (args : exp list) : exp list option =
+  let get_field_values (obj : exp) : exp list option =
+    let rec get_values props = match props with
+      | [] -> []
+      | (s, Data({value=value}, _, _)) :: tl ->
+        value :: get_values tl
+      | (s, Accessor(_,_,_)) :: tl ->
+        failwith "ArgsObj should not contain Accessor"
+    in
+    match obj with
+    | Object (_, _, props) ->
+      begin try
+          Some (get_values props)
+        with
+          _ -> failwith (sprintf "ArgsObj pattern match failed: %s"
+                           (Exp_util.ljs_str obj))
+      end
+    | _ -> None
+  in
+  match args with
+  | match_this :: [App (_, Id (_, "%mkArgsObj"), [argobj])] ->
+    begin match get_field_values argobj with
+      | Some (lst) -> Some (match_this :: lst)
+      | None -> None
+    end
+  | _ -> None
+  
 let fixed_arity (exp : exp) : exp =
   let rec fixed_formal_parameter (exp : exp) : exp =
     match exp with
@@ -58,7 +85,17 @@ let fixed_arity (exp : exp) : exp =
       optimize fixed_formal_parameter exp
   in
   let rec fixed_call_site (exp : exp) : exp =
-    exp
+    match exp with
+    | App (p, f, args) ->
+      let f = fixed_call_site f in
+      begin match parse_args_obj args with
+      | Some (arg_list) ->
+        App (p, f, arg_list)
+      | None ->
+        let args = List.map fixed_call_site args in
+        App (p, f, args)
+      end
+    | _ -> optimize fixed_call_site exp
   in
   let e1 = fixed_formal_parameter exp in
   let e2 = fixed_call_site e1 in
