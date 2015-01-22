@@ -234,7 +234,7 @@ let rec eligible_for_preprocess exp : bool =
   in 
   let rec contain_this_keyword toplevel (args_obj : exp) = 
     match args_obj with
-    | Id (_, "%this") -> let result = toplevel && true in
+    | Id (_, "%this") -> let result = toplevel in
       if result then (dprint_string "not eligible: make alias on %this\n"; true)
       else false
     | Lambda (_, _, body) -> contain_this_keyword false body
@@ -275,7 +275,8 @@ let rec eligible_for_preprocess exp : bool =
       is_eligible obj && is_eligible fld && is_eligible args &&
       (if toplevel then (eligible_field obj fld) else true)
     | App (_, f, args) -> (match f, args with
-        | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] -> 
+        | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] when toplevel -> 
+          dprint_string "make alias of 'this'. not eligible";
           false
         | Id (_, "%EnvCheckAssign"), [_;_; Object(_,_,_) as obj;_] -> 
           not (List.exists (fun x->contain_this_keyword toplevel x) (child_exps obj)) &&
@@ -285,8 +286,10 @@ let rec eligible_for_preprocess exp : bool =
           (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
           is_eligible arg && (if toplevel then (is_static_field this_fld) else true)
         | Id (_, "%makeWithContext"), _ ->
+          dprint_string "Use 'with'. Not eligible";
           false
         | Id (_, "%propertyNames"), [Id(_, "%this"); _] when toplevel ->
+          dprint_string "get property from top-level this. Not eligible";
           false
         | Id (_, fname), args ->
           List.for_all is_eligible args &&

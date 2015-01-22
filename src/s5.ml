@@ -18,6 +18,7 @@ open Ljs_type_infer
 open Ljs_less_mutation
 open Ljs_no_checks
 open Ljs_unwrap_lambda
+open Ljs_fixed_arity
 
 type node =
   | Js of Js_syntax.program
@@ -450,6 +451,11 @@ module S5 = struct
     let new_ljs = unwrap_lambda ljs in
     push_ljs new_ljs
 
+  let opt_fixed_arity cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = fixed_arity ljs in
+    push_ljs new_ljs
+      
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -622,6 +628,8 @@ module S5 = struct
           "clean all static checks";
         unitCmd "-opt-unwrap-lambda" opt_unwrap_lambda
           "unwrap function object to s5 lambda";
+        unitCmd "-opt-fixed-arity" opt_fixed_arity
+          "disable variable function arity";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
       ]

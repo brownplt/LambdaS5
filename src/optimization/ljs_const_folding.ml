@@ -130,6 +130,10 @@ type env = exp IdMap.t
 let rec const_folding_app pos lambda args =
   Null pos
   
+let is_break e = match e with
+  | Break (_, _, _) -> true
+  | _ -> false
+
 let rec const_folding (e : exp) : exp =
   match e with
   | Undefined _ 
@@ -212,17 +216,19 @@ let rec const_folding (e : exp) : exp =
      else 
        App (p, f, args)
   | Label (p,l,lbody) ->
+    let lbody = const_folding lbody in
     begin match lbody with
       | Break (_, l', brk) -> 
         if l = l' then const_folding brk
-        else Label (p, l, const_folding lbody)
-      | _ -> Label (p, l, const_folding lbody)
+        else Label (p, l, lbody)
+      | _ -> Label (p, l, lbody)
     end 
   | TryCatch (p,t,c) ->
     if EU.valid_for_folding t then
       const_folding t
     else
       TryCatch (p, const_folding t, const_folding c)
+  | Seq (_, e1, e2) when is_break e1 -> e1
   | Object (_,_,_) 
   | SetAttr (_,_,_,_,_)
   | SetObjAttr (_,_,_,_)

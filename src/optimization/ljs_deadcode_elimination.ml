@@ -7,6 +7,13 @@ type env = exp IdMap.t
 let ljs_str ljs =
   Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
 
+(* any function name in this list is considered not having side effect *)
+let no_sideeffect_list = [
+  "%resolveThis"
+]
+
+let no_sideeffect_set = IdSet.from_list no_sideeffect_list
+
 (* eliminate unused ids, sequence *)
 let deadcode_elimination (exp : exp) : exp =
   let rec eliminate_ids_rec (e : exp) (ids : IdSet.t) : (exp * IdSet.t) = 
@@ -149,7 +156,7 @@ let deadcode_elimination (exp : exp) : exp =
     | Let (p, x, x_v, body) -> 
        let xv_is_lambda = match x_v with Lambda (_,_,_) -> true | _ -> false in
        let new_body, body_ids = eliminate_ids_rec body ids in
-       if not (IdSet.mem x body_ids) && (xv_is_lambda || not (EU.has_side_effect x_v))
+       if not (IdSet.mem x body_ids) && (xv_is_lambda || not (EU.has_side_effect ~env:no_sideeffect_set x_v))
        then begin
            (*printf "not include [%s] collect ids:" x;
          IdSet.iter (fun s->printf "%s," s) body_ids; print_newline();*)
