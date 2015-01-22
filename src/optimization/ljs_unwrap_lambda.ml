@@ -3,7 +3,6 @@ open Ljs_opt
 open Ljs_syntax
 open Debug
 open Exp_util
-open Ljs_escape
 
 
 (* if match successfully, this function will return
