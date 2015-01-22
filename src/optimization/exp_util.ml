@@ -351,3 +351,14 @@ let multiple_usages (var_id : id) (e : S.exp) : bool =
   in multiple_usages_rec var_id e
 
           
+let is_ctx_id exp = match exp with
+  | S.Id (_, "%context")
+  | S.Id (_, "%strictContext")
+  | S.Id (_, "%nonstrictContext")
+  | S.Id (_, "%globalContext")
+  | S.Id (_, "%global") -> true
+  | _ -> false
+
+let is_the_str (exp : S.exp) (s : string) = match exp with
+  | S.String (_, s1) -> s = s1
+  | _ -> false

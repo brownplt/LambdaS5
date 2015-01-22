@@ -47,27 +47,75 @@ let suite =
   in 
   "Test Preprocess" >:::
   [
-    (eligible "function foo(a) {return a}
-       foo(1)");
+    (* even if function arity does not match, it is fine for unwrapping lambda *)
+    (eligible "foo" "foo(1)");
 
+    (* get/set property from function object *)
+    (not_eligible "foo"
+       "foo.x = 1")
 
-    (* function arity does not match, but it is fine for unwrapping lambda *)
-    (eligible "function foo(a,b,c,d) {return a}
-       foo(1);");
-    
+    (not_eligible "foo"
+       "foo.x+1")
+
     (* use the function as constructor *)
-    (not_eligible "function foo(){}
-       var f = new foo()");
+    (not_eligible "foo"
+       "var f = new foo()");
+
+    (* use the function as constructor *)
+    (not_eligible "foo"
+       "function bar() { var f = new foo()}");
+
+    (* function is shadowed *)
+    (eligible "foo"
+       "function bar() {
+          function foo() {}
+          var f = new foo()
+       }
+       foo();");
 
     (* the function has alias *)
-    (not_eligible "function foo() {}
-       var f = foo;
+    (not_eligible "foo"
+       "var f = foo;
        var o = new f();");
-    
-    (* function is used as object property *)
-    (not_eligible "function foo() {}
-       var o = {'f' : foo};
+
+    (* the function has alias *)
+    (not_eligible "foo"
+       "var o = {};
+       o.x = foo");
+
+    (* the function has alias *)
+    (not_eligible "foo"
+       "function bar() {
+         var f = foo;
+         var o = new f()
+       }"
+    );
+
+    (* the function has alias *)
+    (not_eligible "foo"
+       "function bar() {
+         var f = foo;
+         var o = new f()
+       }
+       function foo() {}"
+    );
+
+    (* function is used as object property(alias) *)
+    (not_eligible "foo"
+       "var o = {'f' : foo};
        o.f()");
+
+    (* function is passed as an argument to another function*)
+    (not_eligible "foo"
+       "bar_fun(foo);");
+
+    (* we cannot test two cases here
+       1. in function definition, the function is used as an object
+          function foo() {return foo.caller}
+       2. function is used in closure before the definition
+          function foo() {return new bar()}
+          function bar() {}
+    *)
 
   ]  
 

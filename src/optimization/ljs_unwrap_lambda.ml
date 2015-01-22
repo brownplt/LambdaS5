@@ -2,10 +2,9 @@ open Prelude
 open Ljs_opt
 open Ljs_syntax
 open Debug
+open Exp_util
+open Ljs_escape
 
-
-let eligible_for_unwrap_lambda exp : bool =
-  true
 
 (* if match successfully, this function will return
   exp in #code field
