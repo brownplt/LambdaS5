@@ -485,8 +485,9 @@ let rec eval desugar exp env (store : store) : (value * store) =
     end
   | S.TryFinally (p, body, fin) -> begin
       try
-        let (_, store) = eval body env store in
-        eval fin env store
+        let (v, store) = eval body env store in
+        let (_, store') = eval fin env store in
+        (v, store')
       with
         | Throw (t, v, store) ->
           let (_, store) = eval fin env store in
