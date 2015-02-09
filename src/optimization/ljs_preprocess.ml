@@ -28,7 +28,7 @@ open Exp_util
 
 type env = exp IdMap.t
 
-let debug_on = true
+let debug_on = false
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
 
