@@ -205,7 +205,7 @@ let rec all_in_strict exp : bool = match exp with
   | Let (_, "#strict", False _, body) -> false
   | _ -> List.for_all all_in_strict (child_exps exp)
 
-(*
+
 let rec window_free ?(toplevel=true) exp : bool =
   (* distinct top-level window and in function window *)
   (* on top level, we should prohibit: this.window; this['window']; window  *)
@@ -226,8 +226,9 @@ let rec window_free ?(toplevel=true) exp : bool =
   | Lambda (_, _, body) ->
     window_free ~toplevel:false body
   | _ -> List.for_all (fun e -> window_free ~toplevel e) (child_exps exp)
-*)
 
+
+(*
 let by_pass_args func = match func with
   | Id (_, "%PropAccessorCheck") -> true
   | _ -> false
@@ -271,6 +272,7 @@ let rec window_free ?(toplevel=true) exp : bool =
     true
   | Lambda (_, _, body) -> window_free ~toplevel:false body
   | _ -> List.for_all (fun e -> window_free ~toplevel e) (child_exps exp)
+*)
 
 let rec eligible_for_preprocess exp : bool = 
   let is_static_field fld = match fld with

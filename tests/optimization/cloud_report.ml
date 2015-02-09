@@ -294,10 +294,17 @@ let diff_section (section : name_t) : unit =
   List.iter (fun fname ->
       let name = Filename.chop_extension
           (Filename.basename fname) in
-      printf "%-30s base:%-10s analyze:%-10s\n"
-        name
-        (string_of_result (Hashtbl.find base_result_hash fname))
-        (string_of_result (Hashtbl.find analyze_result_hash fname)))
+      let baseinfo =
+        try 
+          (string_of_result (Hashtbl.find base_result_hash fname))
+        with _ -> "x"
+      in
+      let analyzeinfo =
+        try 
+          (string_of_result (Hashtbl.find analyze_result_hash fname))
+        with _ -> "x"
+      in
+      printf "%-30s base:%-10s analyze:%-10s\n" name baseinfo analyzeinfo)
     diff;
   printf "\n%!"
 
