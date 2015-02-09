@@ -1,6 +1,7 @@
 open Prelude
 open Ljs_syntax
 open Ljs_opt
+open Exp_util
 
 
 (* 
@@ -27,7 +28,7 @@ open Ljs_opt
 
 type env = exp IdMap.t
 
-let debug_on = false
+let debug_on = true
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
 
@@ -249,7 +250,9 @@ let rec is_window_obj ~toplevel e =
   (* window object will be desugared to multiple patterns*)
   match e with
   | GetField (_, obj, String(_, "window"), _)
-    when is_context ~toplevel obj -> true
+    when is_context ~toplevel obj ->
+    dprint_string (sprintf "find window object in %s\n" (ljs_str e));
+    true
   | App (_, f, [arg]) when by_pass_args f ->
     is_window_obj ~toplevel arg
   | _ -> false
@@ -257,7 +260,12 @@ let rec is_window_obj ~toplevel e =
 let rec window_free ?(toplevel=true) exp : bool =
   match exp with
   | GetField (_, obj, String(_, "window"), args) ->
-    window_free ~toplevel args && (not (is_context ~toplevel obj))
+    let is_not_context () =
+      if not (is_context ~toplevel obj) then
+        true
+      else (dprint_string "get window from context\n"; false)
+    in
+    window_free ~toplevel args && is_not_context()
   | GetField (_, obj, _, _) when is_window_obj ~toplevel obj ->
     (* OK. use property of window. *)
     true

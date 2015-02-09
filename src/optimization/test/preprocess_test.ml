@@ -83,6 +83,9 @@ let suite =
     (is_window_free "window['x']");
 
     "is window free: use property of window" >::
+    (is_window_free "window['x']()");
+
+    "is window free: use property of window" >::
     (is_window_free "if (window.var == 1) {1} else {2}");
 
     "is window free: use property of window" >::
