@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_type_infer
+open Ljs_infer_types
 
 let suite =
-  let cmp before after = cmp before type_infer after in
-  let no_change code = no_change code type_infer in
+  let cmp before after = cmp before infer_types after in
+  let no_change code = no_change code infer_types in
   "Test Type Infer" >:::
   [
     "simple number" >::

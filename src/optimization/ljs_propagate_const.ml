@@ -74,10 +74,10 @@ let get_subst (e : exp) (env : env) : bool = match e with
      end 
   | _ -> false
 
-let rec const_propagation (e : exp) : exp =
+let rec propagate_const (e : exp) : exp =
   let empty_env = IdMap.empty in
-  let rec propagation_rec (e : exp) (env : env) : exp = 
-    let propagate exp = propagation_rec exp env in
+  let rec propagate_rec (e : exp) (env : env) : exp = 
+    let propagate exp = propagate_rec exp env in
     match e with 
     | Undefined _ 
     | Null _
@@ -93,7 +93,7 @@ let rec const_propagation (e : exp) : exp =
          with _ -> e
        end 
     | Let (p, x, x_v, body) ->
-       let x_v = propagation_rec x_v env in
+       let x_v = propagate_rec x_v env in
        let is_const = is_constant x_v env in 
        let rec decide_subst e env : bool =
          if is_prim_constant e ||
@@ -112,27 +112,27 @@ let rec const_propagation (e : exp) : exp =
        (* if x will be mutated or x_v is not constant *)
        if EU.mutate_var x body || not is_const then
          let env = IdMap.remove x env in
-         Let (p,x,x_v, propagation_rec body env)
+         Let (p,x,x_v, propagate_rec body env)
        else 
          let substitute = decide_subst x_v env in
          let env = IdMap.add x (x_v, substitute) env in
-         Let (p, x, x_v, propagation_rec body env)
+         Let (p, x, x_v, propagate_rec body env)
     | Rec (p, x, x_v, body) ->
-       let x_v = propagation_rec x_v (IdMap.remove x env) in
+       let x_v = propagate_rec x_v (IdMap.remove x env) in
        let is_const = is_constant x_v env in 
        (* if x will be mutated or x_v is not constant *)
        if EU.mutate_var x body || not is_const then
          let env = IdMap.remove x env in
-         Rec (p,x,x_v, propagation_rec body env)
+         Rec (p,x,x_v, propagate_rec body env)
        else 
          let substitute = not (EU.multiple_usages x body) in
          let env = IdMap.add x (x_v, substitute) env in
-         Rec (p, x, x_v, propagation_rec body env)
+         Rec (p, x, x_v, propagate_rec body env)
     | Lambda (p, xs, body) ->
        (* remove each x in xs from env *)
        let filtered_env = 
          IdMap.filter (fun x _->not (List.mem x xs) ) env in
-       Lambda (p, xs, propagation_rec body filtered_env)
+       Lambda (p, xs, propagate_rec body filtered_env)
     | Object (_, _, _) 
     | GetAttr (_, _, _, _) 
     | SetAttr (_, _, _, _, _) 
@@ -154,4 +154,4 @@ let rec const_propagation (e : exp) : exp =
     | TryFinally (_,_,_)
     | Throw (_,_)
     | Hint (_,_,_) -> optimize propagate e in
-  propagation_rec e empty_env
+  propagate_rec e empty_env

@@ -91,7 +91,7 @@ inline a function when
 1. lambda that has no free variables and has no side effect in the body
 2. function application's argument should be constants or `id`.
  *)
-let rec function_inlining (e : exp) : exp =
+let rec inline_function (e : exp) : exp =
   let empty_env = IdMap.empty in
   let rec inlining_rec e env =
     match e with

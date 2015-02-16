@@ -55,30 +55,30 @@ let op1 p op arg env : exp = match op with
     3. PropAccessorCheck
     4. ToObject
 *)
-let type_infer (exp : exp) : exp =
-  let rec clean_rec (exp : exp) (env : env) : exp =
-    let clean e = clean_rec e env in
+let infer_types (exp : exp) : exp =
+  let rec infer_rec (exp : exp) (env : env) : exp =
+    let infer e = infer_rec e env in
     match exp with
     | Op1 (p, op, arg) ->
-      let arg = clean_rec arg env in
+      let arg = infer_rec arg env in
       op1 p op arg env
     | Let (p, x, x_v, body) ->
-      let x_v = clean_rec x_v env in
+      let x_v = infer_rec x_v env in
       if (EU.same_Id x x_v) then
-        clean_rec body env
+        infer_rec body env
       else if (EU.mutate_var x body) then
         let env = IdMap.remove x env in
-        Let (p, x, x_v, clean_rec body env)
+        Let (p, x, x_v, infer_rec body env)
       else
         let env = IdMap.add x x_v env in
-        Let (p, x, x_v, clean_rec body env)
+        Let (p, x, x_v, infer_rec body env)
     | Lambda (p, xs, body) ->
       let env = IdMap.filter (fun k _->not (List.mem k xs)) env in
-      let body = clean_rec body env in
+      let body = infer_rec body env in
       Lambda (p, xs, body)
     | App (p, f, args) ->
-      let f = clean_rec f env in
-      let args = List.map clean args in
+      let f = infer_rec f env in
+      let args = List.map infer args in
       begin match f, args with
       | Id (_, "%ToObject"), [e] ->
         begin match get_type e env with
@@ -98,19 +98,19 @@ let type_infer (exp : exp) : exp =
           | Some (String (_, "Undefined")) -> App(p, f, args)
           | Some (_) -> (* make it a ToObject expression *)
             let new_app = App (p, Id(p0, "%ToObject"), [e]) in
-            clean_rec new_app env
+            infer_rec new_app env
           | None -> App (p, f, args)
         end
       | _ -> App (p, f, args)
       end 
     | If (p, tst, thn, els) ->
-      let tst = clean_rec tst env in
+      let tst = infer_rec tst env in
       begin match tst with
-        | True _ -> clean_rec thn env 
-        | False _ -> clean_rec els env
+        | True _ -> infer_rec thn env 
+        | False _ -> infer_rec els env
         | _ ->
-          If (p, tst, clean_rec thn env, clean_rec els env)
+          If (p, tst, infer_rec thn env, infer_rec els env)
       end
-    | _ -> optimize clean exp
+    | _ -> optimize infer exp
   in
-  clean_rec exp IdMap.empty
+  infer_rec exp IdMap.empty

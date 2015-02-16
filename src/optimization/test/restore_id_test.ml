@@ -1,7 +1,7 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_preprocess
+open Ljs_restore_id
 open Sys
 
 let jsparser_path = "../tests/jsparser.sh"
@@ -17,7 +17,7 @@ let suite =
   let eligible_test (jscode : string) (expected : bool) = 
     fun test_ctx ->
       let s5code = desugar jscode in
-      assert_equal expected (eligible_for_preprocess s5code)
+      assert_equal expected (eligible_for_restore s5code)
         ~printer: (fun x -> if x then ("eligible:\n" ^ jscode)
                     else ("not eligible:\n" ^ jscode))
   in 
@@ -29,7 +29,7 @@ let suite =
         ~printer: (fun x -> if x then "window free" else "not window free")
   in
   let eq ?(nyi=false) (jscode : string) (expected : string) =
-    (* this function will first assert the code is eligible for preprocessing.
+    (* this function will first assert the code is eligible for restoreing.
        and evaluate the jscode and expected, and compare the result with that of 
        expected *)
     fun text_ctx ->
@@ -38,9 +38,9 @@ let suite =
       let es5env = Ljs.parse_es5_env (open_in "../envs/es5.env") "../envs/es5.env" in
       let s5code = desugar jscode in
       let s5expected = desugar expected in
-      assert_equal true (eligible_for_preprocess s5code)
+      assert_equal true (eligible_for_restore s5code)
         ~printer: (fun x -> if x then "eligible" else "not eligible");
-      let s5value = Ljs_eval.eval_expr (es5env (preprocess s5code)) desugar true in
+      let s5value = Ljs_eval.eval_expr (es5env (restore_id s5code)) desugar true in
       let expectedv = Ljs_eval.eval_expr (es5env s5expected) desugar true in
       match s5value, expectedv with
       | Ljs_eval.Answer(_,value,_,_), Ljs_eval.Answer(_,value2,_,_) ->
@@ -59,7 +59,7 @@ let suite =
   let not_eligible (jscode : string) =
     eligible_test jscode false
   in 
-  "Test Preprocess" >:::
+  "Test Restore" >:::
   [
     (* ------- test window free ------- *)
     "not window free: window reference" >::
@@ -290,9 +290,9 @@ let suite =
 
     "not eligible nonstrict mode is not eligible" >::
     (fun ctx ->
-       skip_if (Ljs_preprocess.only_strict = false) "only strict mode is off";
+       skip_if (Ljs_restore_id.only_strict = false) "only strict mode is off";
        let s5code = desugar "var bar = 2; bar" in
-       assert_equal false (eligible_for_preprocess s5code));
+       assert_equal false (eligible_for_restore s5code));
 
     "not eligible nonstrict mode is not eligible" >::
     (fun ctx ->
@@ -300,7 +300,7 @@ let suite =
        let s5code = desugar "var f = function () {return 1}
                              var o = {'v1' : this['f']()}
                              o.v1" in
-       assert_equal true (eligible_for_preprocess s5code));
+       assert_equal true (eligible_for_restore s5code));
 
 
     "not eligible: computation string field" >::
@@ -361,7 +361,7 @@ let suite =
        foo");
 
     (* todo: use arguments keyword *)
-    (* todo: make preprocess works over environment *)
+    (* todo: make restore works over environment *)
 
     "test this" >::
     (eq  "'use strict'; 

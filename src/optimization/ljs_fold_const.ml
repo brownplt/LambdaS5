@@ -16,10 +16,10 @@ module EU = Exp_util
  * return new exp in option on success, None otherwise.
  * Note: the e should be a simplified exp.
  *)
-let const_folding_op1 (p : Pos.t) (op : string) (e : exp) : exp option =
+let fold_const_op1 (p : Pos.t) (op : string) (e : exp) : exp option =
   EU.apply_op1 p op e
 
-let const_folding_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp option = 
+let fold_const_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp option = 
   EU.apply_op2 p op e1 e2
 
 (* function for extracting property of one field *)
@@ -61,7 +61,7 @@ let rec get_obj_field (obj : exp) (name : string) (look_proto: bool) : prop opti
    will do that.
 
  *)
-let const_folding_getattr pos pattr obj field : exp = 
+let fold_const_getattr pos pattr obj field : exp = 
   let exp_bool (b : bool) : exp = match b with
     | true -> True pos
     | false -> False pos in
@@ -87,7 +87,7 @@ let const_folding_getattr pos pattr obj field : exp =
    1. o is Object and 
    2. TODO: o does not have side effect
  *)
-let const_folding_getobjattr pos (oattr : oattr) o : exp =
+let fold_const_getobjattr pos (oattr : oattr) o : exp =
   match oattr, o with 
   | Klass, Object (_, {klass=klass}, _) -> String (pos, klass)
   | Code, Object (_, {code=None}, _) -> Null pos
@@ -102,7 +102,7 @@ let const_folding_getobjattr pos (oattr : oattr) o : exp =
   | _ -> GetObjAttr(pos, oattr, o)
 
 
-let rec const_folding_getfield pos o f a = 
+let rec fold_const_getfield pos o f a = 
   match o, f with
   | Object (_, attr, strprop), String (_, fld) ->
      begin
@@ -114,7 +114,7 @@ let rec const_folding_getfield pos o f a =
             | {proto=Some proto} -> 
                begin 
                  match proto with 
-                 | Object (_,_,_) -> const_folding_getfield pos proto f a
+                 | Object (_,_,_) -> fold_const_getfield pos proto f a
                  | _ -> Undefined pos
                end 
             | _ -> Undefined pos
@@ -127,10 +127,10 @@ let rec const_folding_getfield pos o f a =
 
 type env = exp IdMap.t
 
-let rec const_folding_app pos lambda args =
+let rec fold_const_app pos lambda args =
   Null pos
   
-let rec const_folding (e : exp) : exp =
+let rec fold_const (e : exp) : exp =
   match e with
   | Undefined _ 
   | Null _ 
@@ -141,32 +141,32 @@ let rec const_folding (e : exp) : exp =
   | Id (_, _) -> e
 
   | GetAttr (p, pattr, obj, field) -> 
-     let o = const_folding obj in
-     let f = const_folding field in
+     let o = fold_const obj in
+     let f = fold_const field in
      if EU.valid_for_folding o && EU.valid_for_folding f then
-       const_folding_getattr p pattr o f
+       fold_const_getattr p pattr o f
      else
        GetAttr (p, pattr, o, f)
 
   | GetObjAttr (p, oattr, obj) -> 
-     let o = const_folding obj in
+     let o = fold_const obj in
      if EU.valid_for_folding o then
-       const_folding_getobjattr p oattr o
+       fold_const_getobjattr p oattr o
      else 
        GetObjAttr (p, oattr, o)
 
   | GetField (pos, obj, fld, args) -> 
-     let o = const_folding obj in
-     let f = const_folding fld in
-     let a = const_folding args in
+     let o = fold_const obj in
+     let f = fold_const fld in
+     let a = fold_const args in
      if EU.valid_for_folding o && EU.valid_for_folding f then
-       const_folding_getfield pos o f a
+       fold_const_getfield pos o f a
      else  
        GetField (pos, o, f, a)
 
   | Op1 (p, op, e) ->
-     let newe = const_folding e in
-     let v = const_folding_op1 p op newe in 
+     let newe = fold_const e in
+     let v = fold_const_op1 p op newe in 
      begin
        try 
          match v with
@@ -175,9 +175,9 @@ let rec const_folding (e : exp) : exp =
        with _ -> Op1 (p, op, newe)
      end 
   | Op2 (p, op, e1, e2) ->
-     let newe1 = const_folding e1 in
-     let newe2 = const_folding e2 in
-     let v = const_folding_op2 p op newe1 newe2 in
+     let newe1 = fold_const e1 in
+     let newe2 = fold_const e2 in
+     let v = fold_const_op2 p op newe1 newe2 in
      begin
        try 
          match v with
@@ -186,43 +186,43 @@ let rec const_folding (e : exp) : exp =
        with _ -> Op2 (p, op, newe1, newe2)
      end
   | If (p, cond, thn, els) ->
-     let c_val = const_folding cond in
+     let c_val = fold_const cond in
      begin
        match c_val with
-       | True _ -> const_folding thn
+       | True _ -> fold_const thn
        | False _ 
        | Null _
        | Undefined _
        | Num (_,_)
        | String (_,_)
        | Lambda (_,_,_)
-       | Object (_,_,_) -> const_folding els 
+       | Object (_,_,_) -> fold_const els 
        | _ -> 
           begin
-            let t = const_folding thn in
-            let e = const_folding els in
+            let t = fold_const thn in
+            let e = fold_const els in
             If (p, c_val, t, e)
           end 
      end 
   | App (p, func, args) ->
-     let f = const_folding func in
-     let args = List.map const_folding args in
+     let f = fold_const func in
+     let args = List.map fold_const args in
      if EU.valid_for_folding f && (List.for_all EU.valid_for_folding args) then
-       const_folding_app p f args
+       fold_const_app p f args
      else 
        App (p, f, args)
   | Label (p,l,lbody) ->
     begin match lbody with
       | Break (_, l', brk) -> 
-        if l = l' then const_folding brk
-        else Label (p, l, const_folding lbody)
-      | _ -> Label (p, l, const_folding lbody)
+        if l = l' then fold_const brk
+        else Label (p, l, fold_const lbody)
+      | _ -> Label (p, l, fold_const lbody)
     end 
   | TryCatch (p,t,c) ->
     if EU.valid_for_folding t then
-      const_folding t
+      fold_const t
     else
-      TryCatch (p, const_folding t, const_folding c)
+      TryCatch (p, fold_const t, fold_const c)
   | Object (_,_,_) 
   | SetAttr (_,_,_,_,_)
   | SetObjAttr (_,_,_,_)
@@ -238,5 +238,5 @@ let rec const_folding (e : exp) : exp =
   | TryFinally (_,_,_)
   | Throw (_,_)
   | Hint (_,_,_)
-    -> optimize const_folding e
+    -> optimize fold_const e
 

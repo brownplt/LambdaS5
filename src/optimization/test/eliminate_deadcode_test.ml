@@ -1,13 +1,13 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_deadcode_elimination
+open Ljs_eliminate_deadcode
 module S = Ljs_syntax
 
  
 let unused_id_test =
-  let cmp before after = cmp before deadcode_elimination after in
-  let no_change code = no_change code deadcode_elimination in
+  let cmp before after = cmp before eliminate_deadcode after in
+  let no_change code = no_change code eliminate_deadcode in
   "Test Unused Id Elimination" >:::
     ["unused at all" >:: 
        (cmp "let (x=1)

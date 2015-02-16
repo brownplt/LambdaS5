@@ -30,9 +30,9 @@ type env = exp IdMap.t
 
 let debug_on = false
 
-let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "preprocess"
+let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "restore"
 
-(* only apply the preprocess on code that is in strict mode *)
+(* only apply the restore on code that is in strict mode *)
 let only_strict = false
 
 let create_global_bindings () = 
@@ -274,7 +274,7 @@ let rec window_free ?(toplevel=true) exp : bool =
   | _ -> List.for_all (fun e -> window_free ~toplevel e) (child_exps exp)
 *)
 
-let rec eligible_for_preprocess exp : bool = 
+let rec eligible_for_restore exp : bool = 
   let is_static_field fld = match fld with
     | String (_, _) -> true
     | _ -> 
@@ -402,8 +402,8 @@ let make_writable_error (msg : string) : exp =
   let msg = msg ^ " not writable" in
   App (Pos.dummy, Id(Pos.dummy, "%TypeError"), [String (Pos.dummy, msg)])
 
-let rec preprocess (e : exp) : exp =
-  let rec preprocess_rec ?(in_lambda=false) (e : exp) (ctx : env) : exp = 
+let rec restore_id (e : exp) : exp =
+  let rec restore_rec ?(in_lambda=false) (e : exp) (ctx : env) : exp = 
     match e with 
     | Seq (p, e1, e2) ->
       (match e1 with
@@ -417,22 +417,22 @@ let rec preprocess (e : exp) : exp =
              IdMap.add id (IdMap.find id global_bindings) ctx
            else IdMap.add id (Undefined Pos.dummy) ctx 
          in
-         let newe2 = preprocess_rec ~in_lambda e2 ctx in
+         let newe2 = restore_rec ~in_lambda e2 ctx in
          Let (p, id, Undefined Pos.dummy, newe2)
        | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 
          when (IdMap.mem id global_bindings) ->
          dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
          let id_v = IdMap.find id global_bindings in
          let ctx = IdMap.add id id_v ctx in
-         preprocess_rec ~in_lambda e2 ctx 
+         restore_rec ~in_lambda e2 ctx 
        | _ -> 
-         let newe1 = preprocess_rec ~in_lambda e1 ctx in
-         let newe2 = preprocess_rec ~in_lambda e2 ctx in
+         let newe1 = restore_rec ~in_lambda e1 ctx in
+         let newe2 = restore_rec ~in_lambda e2 ctx in
          Seq (p, newe1, newe2))
     | GetField (pos, obj, fld, args) ->
-      let o = preprocess_rec ~in_lambda obj ctx in
-      let f = preprocess_rec ~in_lambda fld ctx in
-      let a = preprocess_rec ~in_lambda args ctx in
+      let o = restore_rec ~in_lambda obj ctx in
+      let f = restore_rec ~in_lambda fld ctx in
+      let a = restore_rec ~in_lambda args ctx in
       (match o, f with
        | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
          (*printf "match context['%s']\n%!" fldstr;
@@ -452,10 +452,10 @@ let rec preprocess (e : exp) : exp =
        | _ -> GetField (pos, o, f, a)
       )
     | SetField (pos, obj, fld, newval, args) ->
-      let o = preprocess_rec ~in_lambda obj ctx in
-      let f = preprocess_rec ~in_lambda fld ctx in
-      let v = preprocess_rec ~in_lambda newval ctx in
-      let a = preprocess_rec ~in_lambda args ctx in
+      let o = restore_rec ~in_lambda obj ctx in
+      let f = restore_rec ~in_lambda fld ctx in
+      let v = restore_rec ~in_lambda newval ctx in
+      let a = restore_rec ~in_lambda args ctx in
       (match o, f with
        | Id (_, "%context"), String (_, fldstr) ->
          (try match IdMap.find fldstr ctx with
@@ -469,8 +469,8 @@ let rec preprocess (e : exp) : exp =
        | _ -> SetField (pos, o, f, v, a)
       )
     | App (pos, f, args) ->
-      let f = preprocess_rec ~in_lambda f ctx in
-      let args = List.map (fun x->preprocess_rec ~in_lambda x ctx) args in
+      let f = restore_rec ~in_lambda f ctx in
+      let args = List.map (fun x->restore_rec ~in_lambda x ctx) args in
       (match f, args with 
        | Id (_, "%EnvCheckAssign"), [Id (_, "%context"); String (_, id); v; _] ->
          (try match IdMap.find id ctx with
@@ -490,7 +490,7 @@ let rec preprocess (e : exp) : exp =
            Id (pos, "%context")
        | Id (p1, "%set-property"), [Id (p2, "%context"); String (p3, id); v] ->
          let newexp = SetField (p1, Id(p2, "%context"), String(p3,id), v, Null Pos.dummy) in
-         (match preprocess_rec ~in_lambda newexp ctx with
+         (match restore_rec ~in_lambda newexp ctx with
           | SetField(_,_,_,_,_) ->
             (* cannot translate, use the original set-property exp *)
             App (pos, f, args)
@@ -526,26 +526,26 @@ let rec preprocess (e : exp) : exp =
        | _ -> App (pos, f, args)
       )
     | Let (p, x, x_v, body) ->
-      let x_v = preprocess_rec ~in_lambda x_v ctx in
+      let x_v = restore_rec ~in_lambda x_v ctx in
       (* first match with context patterns in lambda *)
       begin match get_localcontext e with
         | None -> (* not a new context binding in lambda *)
           (* in the desugared code, there is no place to bind %context to a non-obj *)
           assert (x <> "%context");
-          Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
+          Let (p, x, x_v, restore_rec ~in_lambda body ctx)
         | Some (new_let) -> (* FIXME: 12.14-1 *)
           dprint "new_let is %s\n" (Exp_util.ljs_str new_let);
           (try
              let new_ctx = recognize_new_context x_v ctx in
-             replace_let_body new_let (preprocess_rec ~in_lambda body new_ctx)
+             replace_let_body new_let (restore_rec ~in_lambda body new_ctx)
            with Failure msg -> 
              (printf "oops, pattern error: %s\n%!" msg;
-              Let (p, x, x_v, preprocess_rec ~in_lambda body ctx)
+              Let (p, x, x_v, restore_rec ~in_lambda body ctx)
              )
           )
       end 
     | Lambda (p, xs, body) ->
-      let result = preprocess_rec ~in_lambda:true body ctx in 
+      let result = restore_rec ~in_lambda:true body ctx in 
       Lambda (p, xs, result)
     | Undefined _ 
     | Null _ 
@@ -572,26 +572,26 @@ let rec preprocess (e : exp) : exp =
     | TryFinally (_,_,_)
     | Throw (_,_)
     | Hint (_,_,_)
-      -> optimize (fun e->preprocess_rec ~in_lambda e ctx) e
+      -> optimize (fun e->restore_rec ~in_lambda e ctx) e
   in 
   let rec jump_env (e : exp) : exp =
     match e with
     | Let (p, "%context", Id (p1, c), body) ->
       if (only_strict && c = "%strictContext") || (not only_strict) then
         begin 
-          if eligible_for_preprocess e then
+          if eligible_for_restore e then
             begin
               let env = IdMap.empty in
-              dprint_string "eligible for preprocess, start preprocessing...\n";
-              let newbody = preprocess_rec body env in
+              dprint_string "eligible for restore, start restore...\n";
+              let newbody = restore_rec body env in
               Let (p, "%context", Id (p1, c), newbody)
             end else 
-            (dprint_string "not eligible for preprocess, return original one\n";
+            (dprint_string "not eligible for restore, return original one\n";
              e)
         end
       else
         begin
-          dprint_string "find nonstrict context. not eligible for preprocessing...\n";
+          dprint_string "find nonstrict context. not eligible for restore...\n";
           e
         end 
     | _ -> optimize jump_env e

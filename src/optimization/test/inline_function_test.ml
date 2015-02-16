@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_function_inlining
+open Ljs_inline_function
 
 let suite = 
-  let cmp before after = cmp before function_inlining after in
-  let no_change code = no_change code function_inlining in 
+  let cmp before after = cmp before inline_function after in
+  let no_change code = no_change code inline_function in 
   "Test Function Inlining Test" >:::
     [
       "inlining for prim arg" >::

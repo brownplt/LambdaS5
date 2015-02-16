@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_const_folding
+open Ljs_fold_const
 
 let suite = 
-  let cmp before after = cmp before const_folding after in
-  let no_change code = no_change code const_folding in
+  let cmp before after = cmp before fold_const after in
+  let no_change code = no_change code fold_const in
   let obj = "{[#proto: null, #extensible: false, #class: 'Object']
              'fld1': {#value 1, #writable false},
              'fld2': {#getter func(this, arg) {1}, #setter func(t) {t}}}" 

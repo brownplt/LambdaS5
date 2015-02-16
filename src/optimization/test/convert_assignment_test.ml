@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_less_mutation
+open Ljs_convert_assignment
 
 let suite =
-  let cmp before after = cmp before less_mutation after in
-  let no_change code = no_change code less_mutation in
+  let cmp before after = cmp before convert_assignment after in
+  let no_change code = no_change code convert_assignment in
   "Test Less Mutation" >:::
   [
     "transform SetBang to Let" >::

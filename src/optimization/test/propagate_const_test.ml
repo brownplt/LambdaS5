@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_const_propagation
+open Ljs_propagate_const
 
 let suite = 
-  let cmp before after = cmp before const_propagation after in
-  let no_change code = no_change code const_propagation in
+  let cmp before after = cmp before propagate_const after in
+  let no_change code = no_change code propagate_const in
   "Test Const Propagation" >:::
     [
       "propagate number" >::

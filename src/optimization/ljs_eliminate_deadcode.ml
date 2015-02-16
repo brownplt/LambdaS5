@@ -15,7 +15,7 @@ let no_sideeffect_list = [
 let no_sideeffect_set = IdSet.from_list no_sideeffect_list
 
 (* eliminate unused ids, sequence *)
-let deadcode_elimination (exp : exp) : exp =
+let eliminate_deadcode (exp : exp) : exp =
   let rec eliminate_ids_rec (e : exp) (ids : IdSet.t) : (exp * IdSet.t) = 
     let rec handle_option (opt : exp option) ids : exp option * IdSet.t = 
       match opt with
