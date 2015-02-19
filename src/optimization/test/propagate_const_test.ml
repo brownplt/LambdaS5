@@ -36,23 +36,11 @@ let suite =
               let (b = {[#proto: null] 'fld': {#value false, #writable true}})
               b");
 
-      "propagate object" >::
-        (cmp "let (a = {[#extensible: false]})
-              let (b = a)
-              b"
-             "let (a = {[#extensible: false]})
-              let (b = {[#extensible: false]})
-              {[#extensible: false]}");
-
-      "don't propagate object" >::
-        (cmp "let (a = {[#extensible: false]})
-              let (b = a)
-              let (c = a)
-              c"
-             "let (a = {[#extensible: false]})
-              let (b = a)
-              let (c = a)
-              c");
+      "do not propagate object(because such an object does not exist in desugared code)" >::
+      (no_change
+         "let (a = {[#extensible: false]})
+          let (b = a)
+          b");
 
       "propagate function" >::
         (cmp "let (a = func(x) {prim('typeof',1)})
@@ -60,7 +48,7 @@ let suite =
              "let (a = func(x) {prim('typeof',1)})
               {[#code: func(x) {prim('typeof',1)}]}");
 
-      "propagate function" >::
+      "propagate function that has side effect" >::
         (cmp "let (a = func(x) {prim('pretty',1)})
               {[#code: a]}"
              "let (a = func(x) {prim('pretty',1)})
@@ -96,8 +84,8 @@ let suite =
               x := 3; x
               }");
 
-      "let shadow 2" >::
-        (no_change "let (t = {[#extensible: false]})
+      "let shadow 2. the function is used twice" >::
+        (no_change "let (t = func(){1})
                     let (a = t)
                     let (b = t)
                     let (t = 1)
@@ -113,7 +101,7 @@ let suite =
               rec (x = func(t) {t})
               func(t){t}");
 
-      "lambda argument" >::
+      "lambda argument shadow" >::
         (cmp "let (x=1)
               let (y=x)
               let (t = func(x,y) {prim('+',x,y)})
@@ -126,12 +114,12 @@ let suite =
       "lambda argument" >::
         (cmp "let (x=1)
               let (y=x)
-              let (t = func(x) {prim('+',x,y)})
+              let (t = func(x) {prim('+',x,2)})
               t(y)"
              "let (x=1)
               let (y=1)
-              let (t = func(x) {prim('+',x,1)})
-              func(x){prim('+',x,1)}(1)");
+              let (t = func(x) {prim('+',x,2)})
+              func(x){prim('+',x,2)}(1)");
 
       "rec" >::
         (no_change
