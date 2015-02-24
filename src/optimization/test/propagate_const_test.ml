@@ -66,6 +66,18 @@ let suite =
                     a := 12;
                     b
                     }");
+
+      "const functions" >::
+      (cmp "let (f = func(x) { x := 1 })
+              let (a = 2) {
+                f(a);
+                a
+              }"
+         "let (f = func(x) { x := 1 })
+            let (a = 2) {
+              func(x){x:=1}(2);
+              2
+          }");
       
       "deeply embeded mutation" >::
         (no_change "let (a = 1)

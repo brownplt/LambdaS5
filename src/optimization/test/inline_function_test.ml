@@ -20,17 +20,72 @@ let suite =
              "let (a = func(x){prim('+', x, 1)})
               prim('+', func(x){x}, 1)");
 
+      "const functions that cannot be inlined" >::
+      (no_change "let (f = func(x) { x := 1 })
+              let (a = 2) {
+                f(a);
+                a
+              }");
+
+      "function without def to formal parameter: is inlinable" >::
+      (assert_true true
+         (is_inlinable_lambda
+            (parse
+              "func(x, y, z) {
+                 let (t = 1) t:=2}
+              ")));
+      
+      "inlinable: function without def to formal parameters" >::
+      (assert_true true
+         (is_inlinable_lambda
+            (parse
+               "func(x, y, z) {
+                 let (x = 1) x:=2
+               }")));
+
+      "inlinable: function without def to formal parameters" >::
+      (assert_true true
+         (is_inlinable_lambda
+            (parse
+              "func(x, y, z){
+                let (f = func(x,y){x:=1;y:=1})
+                   f(z)
+              }")));
+
+      "not inlinable: function has def to formal parameters">::
+      (assert_true false
+         (is_inlinable_lambda
+            (parse
+              "func(x, y, z) {
+                let (f = func(x){x:=1; y:=2}
+                  f(z)")));
+
+      "not inlinable: function has def to formal parameters">::
+      (assert_true false
+         (is_inlinable_lambda
+            (parse
+              "func(x, y, z) {
+               let (x = 1) y := 2
+              }")));
+      "not inlinable:">::
+      (assert false
+        (is_inlinable_lambda
+           (parse
+             "func(x, y) {
+                let (x = func(){x:=1})
+                  x")));
+      
+      "inlinable[compared with the previous test]" >::
+      (assert false
+        (is_inlinable_lambda
+           (parse
+             "func(x, y) {
+                rec (x = func(){x:=1})
+                   x")));
+
       "inlining for lambda" >::
         (cmp "func(x){prim('+', x, 1)}(2)"
              "prim('+', 2, 1)");
-
-      "inlining for const objects" >::
-        (cmp "let (a = func(x){prim('+', x, 1)})
-              let (b=1)
-              a({[#extensible: false] 'fld':{#value b, #writable false}})"
-             "let (a = func(x){prim('+', x, 1)})
-              let (b=1)
-              prim('+', {[#extensible: false] 'fld':{#value b, #writable false}}, 1)");
 
       "function inlining is not propagation" >::
         (no_change "let (a = func(t){1})
@@ -156,6 +211,11 @@ let suite =
                     let (t=func(x){x:=1}) {
                     a(t)
                     }");
+
+      (*todo:
+        "don't inline if argument is not const"
+      *)
+      
       
       "let rebind" >::
         (cmp "let (x=func(x){1})
@@ -190,16 +250,6 @@ let suite =
               let (x=func(x){2}) {
               y(1)
               }");
-
-      "rec shadow" >::
-        (cmp "let (x=func(a){a})
-              let (y=x)
-              rec (x = func(t) {t;t})
-                x({[#extensible: false]})"
-             "let (x=func(a){a})
-              let (y=x)
-              rec (x = func(t) {t;t}) {
-                {[#extensible: false]}; {[#extensible: false]}}");
 
       "if side effect does not occur in the body of recursive function, do inlining" >::
         (cmp  "let (x=func(o){1})
