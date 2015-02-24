@@ -9,168 +9,114 @@ let suite =
   "Test Function Inlining Test" >:::
     [
       "inlining for prim arg" >::
-        (cmp "let (a = func(x){prim('+', x, 1)})
-              a(2)"
-             "let (a = func(x){prim('+', x, 1)})
-              prim('+', 2, 1)");
-
-      "inlining for const function" >::
-        (cmp "let (a = func(x){prim('+', x, 1)})
-              a(func(x){x})"
-             "let (a = func(x){prim('+', x, 1)})
-              prim('+', func(x){x}, 1)");
+        (cmp "func(x){prim('+', x, 1)}(2)"
+             "prim('+', 2, 1)");
 
       "const functions that cannot be inlined" >::
-      (no_change "let (f = func(x) { x := 1 })
-              let (a = 2) {
-                f(a);
-                a
-              }");
+      (no_change
+         "let (a = 2) {
+          func(x) { x := 1 }(a);
+          a
+          }");
 
       "function without def to formal parameter: is inlinable" >::
-      (assert_true true
-         (is_inlinable_lambda
-            (parse
-              "func(x, y, z) {
-                 let (t = 1) t:=2}
-              ")));
+      (fun _ ->
+         (assert_equal true
+            (is_inlinable_lambda
+               (parse
+                  "func(x, y, z) {
+                   let (t = 1) t:=2}
+              "))));
       
       "inlinable: function without def to formal parameters" >::
-      (assert_true true
-         (is_inlinable_lambda
-            (parse
-               "func(x, y, z) {
-                 let (x = 1) x:=2
-               }")));
+      (fun _ ->
+         (assert_equal true
+            (is_inlinable_lambda
+               (parse
+                  "func(x, y, z) {
+                   let (x = 1) x:=2
+               }"))));
 
       "inlinable: function without def to formal parameters" >::
-      (assert_true true
+      (fun _ ->
+      (assert_equal true
          (is_inlinable_lambda
             (parse
               "func(x, y, z){
                 let (f = func(x,y){x:=1;y:=1})
-                   f(z)
-              }")));
+                   f(1, z)
+              }"))));
 
       "not inlinable: function has def to formal parameters">::
-      (assert_true false
+      (fun _ ->
+      (assert_equal false
          (is_inlinable_lambda
             (parse
               "func(x, y, z) {
-                let (f = func(x){x:=1; y:=2}
-                  f(z)")));
+                let (f = func(x){x:=1; y:=2})
+                  f(z)}"))));
 
       "not inlinable: function has def to formal parameters">::
-      (assert_true false
+      (fun _ ->
+      (assert_equal false
          (is_inlinable_lambda
             (parse
               "func(x, y, z) {
                let (x = 1) y := 2
-              }")));
+              }"))));
+      
       "not inlinable:">::
-      (assert false
+      (fun _ ->
+      (assert_equal false
         (is_inlinable_lambda
            (parse
              "func(x, y) {
                 let (x = func(){x:=1})
-                  x")));
+                  x}"))));
       
       "inlinable[compared with the previous test]" >::
-      (assert false
+      (fun _ ->
+      (assert_equal true
         (is_inlinable_lambda
            (parse
              "func(x, y) {
                 rec (x = func(){x:=1})
-                   x")));
+                   x}"))));
 
       "inlining for lambda" >::
         (cmp "func(x){prim('+', x, 1)}(2)"
              "prim('+', 2, 1)");
 
-      "function inlining is not propagation" >::
+      "Only inline function that has been propagated" >::
         (no_change "let (a = func(t){1})
-                    let (b = a)
-                    let (c = b)
-                    c(2)");
+                    a(2)");
+
+      "Only inline function that has been propagated" >::
+      (cmp "func(t){1}(2)" "1");
 
       "argument is constant variable" >::
         (cmp "let (a = func(t){t})
-              let (b = func(x){x;x})
-              b(a)"
+              func(x){x;x}(a)"
              "let (a = func(t){t})
-              let (b = func(x){x;x})
               {a;a}");
 
-      "argument is const variable" >::
-        (cmp "let (a = func(x){prim('+', x, 1)})
-              let (b=1)
-              let (c={[#extensible: false] 'fld':{#value b, #writable false}})
-              a(c)"
-             "let (a = func(x){prim('+', x, 1)})
-              let (b=1)
-              let (c={[#extensible: false] 'fld':{#value b, #writable false}})
-              prim('+', c, 1)");
-
-      "argument is constant variable that gets rebound" >::
-        (cmp "let (a = func(t){t})
-              let (b = func(x){x;x})
-              let (a = 1)
-              b(a)"
-             "let (a = func(t){t})
-              let (b = func(x){x;x})
-              let (a = 1)
-              {a;a}");
-
-      (* even if we can inline in this situation, but the inlined result is 
-         not be able to simplified by other phases
-       *)
-      (* 
-
-      "argument is nonconstant variable" >::
-        (cmp "let (a = func(t){t})
-              let (b = func(x){x;x})
-              let (a = {[]})
-              b(a)"
-             "let (a = func(t){t})
-              let (b = func(x){x;x})
-              let (a = {[]})
-              {a;a}");
-
-        "it is fine that argument is nonconstant variable" >::
-        (cmp "let (x=func(t){prim('typeof', t)})
-              x(other_var)"
-             "let (x=func(t){t})
-              prim('typeof', other_var)");
-       *)
+      "argument can be any variabe" >::
+        (cmp "let (b={[]})
+              func(x){prim('+', x, 1)}(b)"
+             "let (b={[]})
+              prim('+', b, 1)");
 
       (* tests below: side effect occurs in lambda, argument is constant  *)
       "lambda has side effect app()" >::
-        (no_change "rec (x=func(t){t()})
-                    let (t=func(a){a})
-                    x(a)");
+        (cmp "func(t){t()}(a)"
+             "a()");
 
       "lambda has side effect objsetattr" >::
-        (no_change "let (x=func(t){t[<#extensible>=true]})
-                    let (a = {[#extensible: false]})
-                    {x(a)}");
-
-      "lambda has side effect objset fieldattr" >::
-        (no_change "let (x=func(t){t['t'<#writable>=true]})
-                    let (a = {[#extensible: false]})
-                    {x(a)}");
-
-      "lambda has side effect objset delete field" >::
-        (no_change "let (x=func(t){t[delete 't']})
-                    let (a = {[#extensible: false]})
-                    {x(a)}");
-
-      "lambda has side effect objset get field" >::
-        (no_change "let (x=func(t){t['t']})
-                    let (a = {[#extensible: false]})
-                    {x(a)}");
-
-
-              
+        (cmp "let (a = {[#extensible: false]})
+              func(t){t[<#extensible>=true]}(a)"
+           "let (a = {[#extensible: false]})
+              a[<#extensible>=true]"
+        );
 
       "don't inline if free vars exists" >::
         (no_change "let (a = func(x) { prim('+',x,t) })
@@ -179,13 +125,16 @@ let suite =
                     }");
 
       "mutation" >::
-        (no_change "let (a = func(x){1}){
+      (* one of the reason why inline function only applies to
+         function in place
+      *)
+      (no_change "let (a = func(x){1}){
                     a := func(x){2};
-                    a
+                    a(2)
                     }");
 
 
-      "don't inline if side effect will occur" >::
+      "don't inline if argument is assigned again" >::
         (no_change "let (a = func(x) { let (t = 1) {x:=t}})
                     let (t=2) {
                     a(t);
@@ -199,131 +148,47 @@ let suite =
                 prim('pretty', t)
               } *)
 
-      "don't inline if side effect will occur" >::
-        (no_change "rec (a = func(x) { let (t = 1) x[<#extensible>=false]})
-                    let (t=2) {
-                    a(t);
-                    prim('pretty', t)
-                    }");
 
-      "don't inline if side effect will occur" >::
-        (no_change "rec (a = func(x) { let (t = 1) x(t) })
-                    let (t=func(x){x:=1}) {
-                    a(t)
-                    }");
-
-      (*todo:
-        "don't inline if argument is not const"
-      *)
-      
-      
-      "let rebind" >::
-        (cmp "let (x=func(x){1})
-              let (y=x)
-              let (x=func(x){2}) {
-              x(1)
+      "inline even if side effect will occur" >::
+        (cmp "let (t=func(x){x:=1}) {
+                func(x) { let (t = 1) x(t) }(t)
               }"
-             "let (x=func(x){1})
-              let (y=x)
-              let (x=func(x){2}) {
-              2
-              }");
+              "{let (t = func(x) {x := 1.})
+                 {let (%alphaconv1 = 1.)
+                     t(%alphaconv1)}}"
+        );
 
-      "rec rebind" >::
-        (cmp "let (x=func(x){1})
-              let (y=x)
-              rec (x=func(x){2}) {
-              x(1)
-              }"
-             "let (x=func(x){1})
-              let (y=x)
-              rec (x=func(x){2}) {
-              2
-              }");
+      "don't inline: arguments are not consts or ids" >::
+        (no_change "func(x,y){1}({[]}, 1)");
 
-      (* y is an alias of a const function but still y points to an identifier.
-         doing constant propagation and then function inlining will work.
-         not considering alias is for simplifying the scope problem like below*)
-      "do nothing if alias is used" >::
-        (no_change "let (x=func(x){1})
-              let (y=x)
-              let (x=func(x){2}) {
-              y(1)
-              }");
+      "do nothing if the function is not propagated before being used" >::
+        (no_change "let (x=func(x){1}) x(1)");
 
-      "if side effect does not occur in the body of recursive function, do inlining" >::
-        (cmp  "let (x=func(o){1})
-               let (y=x)
-               rec (x = func(t) { x(prim('-', t, 1) )})
-               x(1)"
-              "let (x=func(o){1})
-               let (y=x)
-               rec (x = func(t) { x(prim('-', t, 1))})
-               x(prim('-', 1, 1))");
-
-      "if side effect occurs in the body of recursive function, do not do inlining" >::
-        (no_change  "let (x=func(o){1})
-                     let (y=x)
-                     rec (x = func(t) { x(prim('-', t, 1)); t()})
-                     x(1)");
-
-      "if side effect occurs in the body of recursive function, do not do inlining" >::
-        (no_change  "let (x=func(o){1})
-                     let (y=x)
-                     rec (x = func(t) { x(prim('-', t['fld1'], 1))})
-                     x(1)");
-
-      "if side effect occurs in the body of recursive function, do not do inlining" >::
-        (no_change  "let (x=func(o){1})
-                     let (y=x)
-                     rec (x = func(t) { x(prim('-', t['fld1'='3'], 1))})
-                     x(1)");
-
-      "if side effect occurs in the body of recursive function, do not do inlining" >::
-        (no_change  "let (x=func(o){1})
-                     let (y=x)
-                     rec (x = func(t) { x(prim('-', t[<#extensible>=true], 1))})
-                     x(1)");
-
-      "recursive function" >::
-        (cmp "rec (x=func(t){x(prim('-',t,1))})
-              x(5)"
-             "rec (x=func(t){x(prim('-',t,1))})
-              x(prim('-', 5, 1))");
+      "recursive function cannot be propagated so cannot be inlined " >::
+        (no_change "rec (x=func(t){x(prim('-',t,1))})
+              x(5)");
 
       (* ======================= test alpha conversion =================== *)
 
       (* x->t in env: t in env should be renamed to %alphaconvN *)
       "alpha conversion" >::
-        (cmp "let (a = func(x) { let (t = 1) t})
-              let (t=2) {
-               a(t)
+        (cmp "let (t=2) {
+               func(x) { let (t = 1) t}(t)
               }"
-             "let (a = func(x) { let (t = 1) t})
-              let (t=2) {
+             "let (t=2) {
                 {let (%alphaconv1=1)
                   %alphaconv1}
               }"); 
       "alpha conversion 2" >::
-        (cmp "let (f=
+        (cmp "let (a = 1)
               func(x) { let (a=3) {
                           prim('+', x, a);
                           let (a = 2) {
                             prim('+', x, a)
                           };
                           prim('+', x, a)
-                      }})
-              let (a=1)
-              f(a)"
-             "let (f=
-              func(x) { let (a=3) {
-                          prim('+', x, a);
-                          let (a = 2) {
-                            prim('+', x, a)
-                          };
-                          prim('+', x, a)
-                      }})
-              let (a=1)
+                      }}(a)"
+              "let (a=1)
               { 
                 let (%alphaconv1=3) {
                    prim('+', a, %alphaconv1);
@@ -336,23 +201,15 @@ let suite =
 
 
       "conversion of rec" >::
-        (cmp "let (f=
+        (cmp "let (r = {[#extensible: false]})
               func(x) {
                 let (r = 1)
                 rec (r = func(t) { r(prim('-',t,1))})
                   r(x)
-              })
-              let (r = {[#extensible: false]})
-              f(r)"
+              }(r)"
 
 
-             "let (f=
-              func(x) {
-                let (r = 1)
-                rec (r = func(t) { r(prim('-',t,1))})
-                  r(x)
-              })
-              let (r = {[#extensible: false]})
+             "let (r = {[#extensible: false]})
               {
                 let (%alphaconv1 = 1)
                 rec (%alphaconv2 = func(t) { %alphaconv2(prim('-', t, 1))})

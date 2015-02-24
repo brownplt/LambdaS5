@@ -54,6 +54,15 @@ let suite =
              "let (a = func(x) {prim('pretty',1)})
               {[#code: func(x) {prim('pretty',1)}]}");
 
+      "lambda has side effect objset fieldattr" >::
+        (cmp "let (x=func(t){t['t'<#writable>=true]})
+                let (a = {[]})
+                  {x(a)}"
+             "let (x=func(t){t['t'<#writable>=true]})
+                let (a = {[]})
+                  {func(t){t['t'<#writable>=true]}(a)}"
+        );
+      
       "don't propagate function(used a too many times)" >::
         (cmp "let (a = func(x) {prim('typeof',1)})
               {[#code: a, #proto: a]}"
