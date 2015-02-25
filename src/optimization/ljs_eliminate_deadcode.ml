@@ -182,13 +182,18 @@ let eliminate_deadcode (exp : exp) : exp =
 
     | Label (p, l, e) ->
        let new_e, ids = eliminate_ids_rec e ids in
-       Label (p, l, new_e), ids
+       begin match new_e with
+         | Break (_, l', brk) when l = l' ->
+           brk, ids 
+         | _ ->  Label (p, l, new_e), ids
+       end
 
     | Break (p, l, e) ->
        let new_e, ids = eliminate_ids_rec e ids in
        Break (p, l, new_e), ids
 
     | TryCatch (p, body, catch) ->
+      (* TODO: elimiante body that will not through error *)
        let b, ids = eliminate_ids_rec body ids in
        let c, ids = eliminate_ids_rec catch ids in
        TryCatch (p, b, c), ids
