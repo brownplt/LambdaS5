@@ -48,6 +48,10 @@ let unused_id_test =
              let (y={let(z=10) x:=z})
              y");
 
+     "self copy" >::
+     (cmp "let (y=1) let (y = y) y"
+          "let (y=1) y");
+           
      (* binding shadows *)
      "let shadow" >::
        (cmp "let (x=1)

@@ -144,6 +144,10 @@ let eliminate_deadcode (exp : exp) : exp =
        else 
          Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
 
+    | Let (p, x, x_v, body) when EU.same_Id x x_v ->
+      (* clean pattern: let (x = x) *)
+      eliminate_ids_rec body ids
+
     (* to retain this let,
        1. x is used in body, or
        2. x_v will be evaluated to have side effect
