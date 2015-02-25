@@ -6,7 +6,7 @@ open Ljs_propagate_copy
 let suite = 
   let cmp before after = cmp before propagate_copy after in
   let no_change code = no_change code propagate_copy in
-  "Test Alias Elimination" >:::
+  "Test Copy Elimination" >:::
     [
       "simple" >::
         (cmp "let (b=a) b" "let (b=a) a");
@@ -18,6 +18,14 @@ let suite =
              "let(a=b)
               let(a=c)
               c");
+      
+      "simple3" >::
+      (cmp "let (a=b)
+            let (c=a)
+            c"
+           "let (a=b)
+            let (c=b)
+            b");
 
       "mutation 1" >::
         (no_change "let (b=a) {
@@ -71,13 +79,13 @@ let suite =
                     rec (a=func(){1})
                     a");
 
-      "alias in lambda" >::
+      "copy in lambda" >::
         (cmp "let (a=b)
               let (f=func(x){a}) f"
              "let (a=b)
               let (f=func(x){b}) f");
 
-      "lambda argument shadow alias" >::
+      "lambda argument shadow copy" >::
         (cmp "let (a=b)
               func(a){a:=1}(a)"
              "let (a=b)
@@ -106,8 +114,38 @@ let suite =
                     let (r = a)
                     rec (r = func(t) { r(prim('-',t,1))})
                     r(x)");
-
         
+      "self copy" >::
+      (cmp
+         "let (a=x)
+          let (b=a)
+          let (b=b)
+            b"
+         "let (a=x)
+          let (b=x)
+          let (b=x)
+            x");
+
+      "self copy 2" >::
+      (cmp
+         "let (a=1)
+          let (b=a)
+          let (b=b)
+            b"
+         "let (a=1)
+          let (b=a)
+          let (b=a)
+            a");
+
+      "assignment" >::
+      (no_change
+         "let (b=1)
+          let (f=func(){b:=2})
+          let (a=b) {
+            f();
+            a
+          }");
+
     ]
 
 let _ =
