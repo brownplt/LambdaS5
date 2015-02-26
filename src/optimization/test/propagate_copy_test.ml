@@ -36,7 +36,87 @@ let suite =
         (no_change "let (b=a) {
                     a:=1;
                     b}");
+
+      "mutation 3" >::
+        (cmp
+           "let (b=a) {
+            a:=1;
+            let (a=2)
+            let (b=a)
+            b}"
+           "let (b=a) {
+            a:=1;
+            let (a=2)
+            let (b=a)
+            a}");
+
+      "mutation 4" >::
+        (cmp
+           "let(a=1)let (b=a) {
+            a:=1;
+            rec (a=func(){1})
+            let (b=a)
+            b}"
+           "let (a=1)let (b=a) {
+            a:=1;
+            rec (a=func(){1})
+            let (b=a)
+            a}");
+
+      "mutation 5 in rec body" >::
+        (no_change
+           "let(a=1)let (b=a) {
+              a:=1;
+              rec (a=func(){a:=2}) {
+                a();
+                let (b=a)
+                  b
+              }
+            }");
+
+      "mutation 5 in rec body" >::
+        (cmp
+           "let(a=1)let (b=a) {
+              a:=1;
+              rec (a=func(){let (x=a) x}) {
+                a();
+                let (b=a)
+                  b
+              }
+            }"
+           "let(a=1)let (b=a) {
+              a:=1;
+              rec (a=func(){let (x=a) a}) {
+                a();
+                let (b=a)
+                  a
+              }
+            }");
              
+      "mutation and then copy in lambda" >::
+      (cmp
+         "let (b=1)
+          let (f=func(){b:=2})
+          let (f1=func(b){let (x=b) x})
+          let (a=b) {
+            f();
+            a}"
+         "let (b=1)
+          let (f=func(){b:=2})
+          let (f1=func(b){let (x=b) b})
+          let (a=b) {
+            f();
+            a}");
+
+      "mutation and then copy in lambda 2" >::
+      (no_change
+         "let (b=1)
+          let (f=func(){b:=2})
+          let (f1=func(b){let (x=b) {b:=3;x}})
+          let (a=b) {
+            f();
+            a}");
+                    
       "potential mutation 3" >::
         (no_change "let (b=a) 
                     let (t = func(x) {b:=x})
