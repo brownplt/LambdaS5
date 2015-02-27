@@ -48,6 +48,10 @@ let unused_id_test =
              let (y={let(z=10) x:=z})
              y");
 
+     "self copy" >::
+     (cmp "let (y=1) let (y = y) y"
+          "let (y=1) y");
+           
      (* binding shadows *)
      "let shadow" >::
        (cmp "let (x=1)
@@ -202,6 +206,21 @@ let unused_id_test =
      "resursive function scope: r is not recursive anymore" >::
        (no_change "let (r = 1) let (r = func(a) {a := r}) r(1)");
 
+      "label and break" >::
+      (cmp "label ret : {
+            break ret {[]} }"
+           "{[]}");
+
+
+      "label and break" >::
+      (no_change "label ret : {
+                  if (t === 3) {
+                     break ret {[]} 
+                  } else {
+                     break ret 1
+                  }}");
+
+     (* todo: write try catch *)
 
     ]
 

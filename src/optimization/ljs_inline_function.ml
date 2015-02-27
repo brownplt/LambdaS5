@@ -6,60 +6,36 @@ module EU = Exp_util
 type env = exp IdMap.t
 
 
-let rec is_constant (e : exp) env : bool = match e with
-  | Object(_,_,_) -> is_object_constant e env
-  | Lambda(_,_,_) -> is_lambda_constant e 
-  | Id (_, _) -> is_const_var e env
-  | _ -> is_prim_constant e
+(* given a set of ids, check whether the exp has modified one of them *)
+let rec no_def_of_para (ids : IdSet.t) (exp : exp) =
+  if IdSet.is_empty ids then true
+  else 
+    begin match exp with
+      | SetBang(_, x, _) when IdSet.mem x ids -> false
+      | Let (_, x, x_v, body) ->
+        let new_ids = IdSet.diff ids (IdSet.singleton x) in
+        no_def_of_para ids x_v && no_def_of_para new_ids body
+      | Rec (_, x, x_v, body) ->
+        let new_ids = IdSet.diff ids (IdSet.singleton x) in
+        (* slightly different with let *)
+        no_def_of_para new_ids x_v && no_def_of_para new_ids body
+      | Lambda (_, xs, body) ->
+          let new_ids = IdSet.diff ids (IdSet.from_list xs) in
+          no_def_of_para new_ids body
+      | exp ->
+        List.for_all (fun e -> no_def_of_para ids e) (child_exps exp)
+    end
 
-(* an const object requires extensible is false, all fields have configurable
-   and writable set to false.
-
-   XXX: it seems that when getter and setter are present, configurable cannot be set from 
-        the syntax. So there is no such an object that getter and setter and configurable attr
-        are both initially constant.
- *)
-and is_object_constant (e : exp) env : bool = match e with
-  | Object (_, attr, strprop) ->
-     let { primval=primval;proto=proto;code=code;extensible = ext;klass=_ } = attr in
-     let const_primval = match primval with
-       | Some x -> is_constant x env && not (EU.has_side_effect x)
-       | None -> true 
-     in
-     let const_proto = match proto with
-       | Some x -> is_constant x env && not (EU.has_side_effect x)
-       | None -> true
-     in
-     let const_code = match code with
-       | Some x -> is_constant x env && not (EU.has_side_effect x)
-       | None -> true
-     in 
-     if (not const_primval || not const_proto || not const_code || ext = true) then
-       false 
-     else begin 
-         let const_prop (p : string * prop) = match p with
-           | (s, Data ({value = value; writable=false}, _, false)) -> 
-              is_constant value env && not (EU.has_side_effect value)
-           | _ -> false
-         in
-         let is_const_property = List.for_all const_prop strprop in
-         is_const_property
-       end
-  | _ -> false
-
-(* a lambda is a constant if no free vars and side effect should not occur in body
-   the requirement is different with that of constant propagation *)
-and is_lambda_constant ?(rec_id : string option) (e: exp) : bool = match e with
+(* an inlinable lambda has no free variables and its formal parameters
+   are not assigned in the body *)
+let is_inlinable_lambda (e : exp) : bool =
+  match e with
   | Lambda (_, ids, body) ->
-     let rec_set = match rec_id with
-       | Some (s) -> IdSet.singleton s 
-       | None -> IdSet.empty 
-     in
-     IdSet.equal (free_vars e) rec_set && not (EU.has_side_effect ~env:rec_set body)
+    IdSet.is_empty (free_vars e) && no_def_of_para (IdSet.from_list ids) body
   | _ -> false
 
-(* NOTE(junsong): this predicate can only be used for non-lambda and non-object non-id exp *)
-and is_prim_constant (e : exp) : bool = match e with
+
+let is_prim_constant (e : exp) : bool = match e with
   | Null _
   | Undefined _
   | Num (_, _)
@@ -68,76 +44,62 @@ and is_prim_constant (e : exp) : bool = match e with
   | False _ -> true
   | _ -> false
 
-and is_const_var (e : exp)  (env : 'a IdMap.t) : bool = match e with
-  | Id (_, id) -> IdMap.mem id env 
-  | _ -> false
+(* given a list of expressions, check whether all of them are either an
+   id or a primitive constant value. If so, it is an inlinable argument list.
+*)
+let rec are_inlinable_arguments (e : exp list) : bool =
+  let is_id = function
+    | Id (_, _) -> true
+    | _ -> false
+  in
+  let rec is_inlinable_argument exp =
+    is_id exp || is_prim_constant exp
+  in
+  match e with
+  | [] -> true
+  | hd :: tl ->
+    if is_inlinable_argument hd then
+      are_inlinable_arguments tl
+    else
+      false
 
-let rec get_lambda e env : exp option = match e with
-  | Id (_, id) -> 
-     begin
-       try
-         let v = IdMap.find id env in
-         match v with 
-         | Lambda (_,_,_) -> Some (v)
-         | _ -> None
-       with _ -> None
-     end 
-  | Lambda (_,_,_) -> Some e
+let rec get_lambda e : exp option = match e with
+  | Lambda (_,_,_) when is_inlinable_lambda e-> Some e
   | _ -> None
   
 
 (*
-inline a function when
-1. lambda that has no free variables and has no side effect in the body
-2. function application's argument should be constants or `id`.
+  inline a function when
+   1. the function has been propagated to the call site
+   2. the function is inlinable
+   3. function application's argument are constants or `id`.
  *)
 let rec inline_function (e : exp) : exp =
   let empty_env = IdMap.empty in
   let rec inlining_rec e env =
     match e with
     | App (p, func, args) ->
-       (* if args are all constant and func is constant, do function inlining here, *)
        let func = inlining_rec func env in
        let args = List.map (fun x->inlining_rec x env) args in
-       let f = get_lambda func env in
-       let are_const_args lst = List.for_all (fun e-> is_constant e env) lst in
+       let f = get_lambda func in
        begin
-         match f, are_const_args args with
-         (*| Some (e), false -> printf "\nget one:"; printf "%s" (ljs_str e); printf "\nargs: "; List.iter (fun(x)->printf "%s," (ljs_str x)) args; App (p, func, args)*)
+         match f, are_inlinable_arguments args with
+         (*| Some (e), false -> printf "\nget one:"; 
+             printf "%s" (ljs_str e); 
+             printf "\nargs: "; 
+             List.iter (fun(x)->printf "%s," (ljs_str x)) args; App (p, func, args)*)
          | Some (e), true -> inline_lambda p e args
          | _ -> App (p, func, args)
        end 
-    | Let (p, x, xexp, body) ->
-       let x_v = inlining_rec xexp env in
-       let is_const = is_constant x_v env in
-       if EU.mutate_var x body ||  not is_const then
-         let env = IdMap.remove x env in
-         Let (p, x, x_v, inlining_rec body env)
-       else 
-         let env = IdMap.add x x_v env in 
-         Let (p, x, x_v, (inlining_rec body env))
-
-    | Rec (p, x, xexp, body) ->
-       let x_v = inlining_rec xexp env in
-       let is_const = is_lambda_constant ~rec_id:x x_v ||
-                        is_constant x_v env in
-       if EU.mutate_var x body || not is_const then
-         let env = IdMap.remove x env in
-         Rec (p, x, x_v, inlining_rec body env)
-       else 
-         let new_env = IdMap.add x x_v env in 
-         Rec (p, x, x_v, inlining_rec body new_env)
-    | Lambda (p,xs,body) ->
-       let filtered_env = 
-         IdMap.filter (fun x _->not (List.mem x xs)) env in
-       Lambda (p, xs, inlining_rec body filtered_env)
     | Undefined _
     | Null _ 
     | String (_, _) 
     | Num (_, _) 
-    | True _ 
+    | True _
+    | Id (_, _)        
     | False _ -> e
-    | Id (p, x) -> e
+    | Let (_, _, _, _)
+    | Rec (_, _, _, _)
     | Object (_, _, _) 
     | GetAttr (_, _, _, _) 
     | SetAttr (_, _, _, _, _)
@@ -151,6 +113,7 @@ let rec inline_function (e : exp) : exp =
     | Op2 (_, _, _, _) 
     | If (_, _, _, _) 
     | SetBang(_,_,_)
+    | Lambda (_, _, _)
     | Seq (_,_,_)
     | Label (_,_,_)
     | Break (_,_,_)
@@ -168,7 +131,7 @@ and inline_lambda p (f : exp) (args : exp list) : exp =
     | k :: rst_k, v :: rst_v ->
        build_env rst_k rst_v (IdMap.add k v env)
     | _ -> None
-  in 
+  in
   let name_creator () : unit->string = 
     let idx = ref 0 in
     let creator () : string= 

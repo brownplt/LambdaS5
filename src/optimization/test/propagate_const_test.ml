@@ -54,6 +54,15 @@ let suite =
              "let (a = func(x) {prim('pretty',1)})
               {[#code: func(x) {prim('pretty',1)}]}");
 
+      "lambda has side effect objset fieldattr" >::
+        (cmp "let (x=func(t){t['t'<#writable>=true]})
+                let (a = {[]})
+                  {x(a)}"
+             "let (x=func(t){t['t'<#writable>=true]})
+                let (a = {[]})
+                  {func(t){t['t'<#writable>=true]}(a)}"
+        );
+      
       "don't propagate function(used a too many times)" >::
         (cmp "let (a = func(x) {prim('typeof',1)})
               {[#code: a, #proto: a]}"
@@ -66,6 +75,18 @@ let suite =
                     a := 12;
                     b
                     }");
+
+      "const functions" >::
+      (cmp "let (f = func(x) { x := 1 })
+              let (a = 2) {
+                f(a);
+                a
+              }"
+         "let (f = func(x) { x := 1 })
+            let (a = 2) {
+              func(x){x:=1}(2);
+              2
+          }");
       
       "deeply embeded mutation" >::
         (no_change "let (a = 1)
