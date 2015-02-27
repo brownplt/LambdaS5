@@ -14,9 +14,14 @@ let remove_id_value (id : id) (env : env) : env =
   in 
   IdMap.filter (fun _ v->not_the_id id v) env
 
+(* def_set stores the identifiers that are modified by assignment
+   somewhere in their scopes, so any identifier that maps to such an
+   id should not be appied copy propagation. This is a really
+   conservative approximation.
+*)
 let propagate_copy (e : exp) : exp =
-  let rec propagate_rec (e : exp) (env : env) : exp =
-    let propagate (e : exp) = propagate_rec e env in
+  let rec propagate_rec (e : exp) (env : env) (def_set : IdSet.t) : exp =
+    let propagate (e : exp) = propagate_rec e env def_set in
     match e with
     | Undefined _ 
     | Null _ 
@@ -26,37 +31,76 @@ let propagate_copy (e : exp) : exp =
     | False _ -> e
     | Id (_, id) -> begin try IdMap.find id env with _ -> e end
     | Let (p, x, xexp, body) ->
-       let x_v = propagate_rec xexp env in
+       let x_v = propagate_rec xexp env def_set in
        (* env should change: 
             1. anything maps to x should be removed from env;
             2. anything that x maps to in env should be removed.
         *)
        let env = IdMap.remove x env in
        let env = remove_id_value x env in
+       (* whatever x maps to, if x is mutated in its scope, the copy of x should
+          not be propagated *)
+       let x_is_assigned : bool = EU.mutate_var x body in
+       let def_set = if x_is_assigned 
+         then 
+           IdSet.add x def_set 
+         else if IdSet.mem x def_set then
+           IdSet.remove x def_set
+         else def_set in
        begin
-       (* look at x_v. we are only interested in situation that x_v is an id *)
-       match x_v with
-       | Id (_, v_id) -> 
-          (* if x, or v_id gets mutated in body, x should not be replaced with v_id in body *)
-          if EU.mutate_var x body || EU.mutate_var v_id body then
-            Let (p, x, x_v, propagate_rec body env)
-          else 
-            let env = IdMap.add x x_v env in
-            Let (p, x, x_v, propagate_rec body env)
-       | _ -> Let (p, x, x_v, propagate_rec body env)
+         (* look at x_v. we are only interested in situation that x_v is an id *)
+         match x_v with
+         | Id (_, v_id) ->
+           (* if x, or v_id gets mutated in body, x should not be replaced with v_id in body *)
+           (* Technically, we don't need to run (EU.mutate_var v_id body) again because it has
+              been done when v_id was bound. But considering we might test on code that contains
+              free variables, the last piece is necessary. Consider the case where a is free variable.
+              {let (b = a)
+               {a := 1.;
+                b}}
+              without the last predicate, the transformation will do it wrong.
+              {let (b = a)
+               {a := 1.;
+                a}}
+           *)
+           let def_set = if EU.mutate_var v_id body then
+               IdSet.add v_id def_set
+             else def_set in
+           if x_is_assigned || (IdSet.mem v_id def_set) then
+             Let (p, x, x_v, propagate_rec body env def_set)
+           else 
+             let env = IdMap.add x x_v env in
+             Let (p, x, x_v, propagate_rec body env def_set)
+         | _ -> Let (p, x, x_v, propagate_rec body env def_set)
        end 
     | Rec (p, x, xexp, body) ->
        let env = IdMap.remove x env in
-       let x_v = propagate_rec xexp env in
+       let def_set = IdSet.remove x def_set in
+       let x_v = propagate_rec xexp env def_set in
        let env = remove_id_value x env in
-       Rec (p, x, x_v, propagate_rec body env)
+       if (EU.mutate_var x xexp) || (EU.mutate_var x body) then
+         let def_set = IdSet.add x def_set in
+         Rec (p, x, x_v, propagate_rec body env def_set)
+       else
+         let def_set = IdSet.remove x def_set in
+         Rec (p, x, x_v, propagate_rec body env def_set)
     | Lambda (p,xs,body) ->
        let rec remove_list (lst : id list) env = match lst with
          | [] -> env
          | fst :: rest -> remove_list rest (remove_id_value fst env) in
        let env = remove_list xs env in
        let env = IdMap.filter (fun var _->not (List.mem var xs)) env in
-       Lambda (p, xs, propagate_rec body env)
+       (* decide for each parameter whether it is modified in body:
+          - if it does, add to def_set
+          - if it does not, remove from def_set
+       *)
+       let def_set = List.fold_left
+           (fun set x-> if EU.mutate_var x body then
+               IdSet.add x set
+             else
+               IdSet.remove x set)
+           def_set xs in
+       Lambda (p, xs, propagate_rec body env def_set)
     | Object (_,_,_) 
     | GetAttr (_, _, _, _)
     | GetObjAttr (_, _, _)
@@ -81,4 +125,4 @@ let propagate_copy (e : exp) : exp =
       -> optimize propagate e
 
   in 
-  propagate_rec e IdMap.empty
+  propagate_rec e IdMap.empty IdSet.empty
