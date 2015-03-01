@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #$ -cwd
-#
+#$ -l long
 #
 BASE="/home/lijunsong/github/LambdaS5/tests/"
 export PATH="/local/bin:/home/lijunsong/.opam/4.02.0/bin/:$PATH"
@@ -28,7 +28,7 @@ get_filepath () {
 
 ################# functions above ###############
 
-# config file: the file MUST contain one lines, which 
+# config file: the file MUST contain one line, which 
 # specifies s5 arguments for optimization phases
 configfilename=config.txt
 listname=jslists.txt
