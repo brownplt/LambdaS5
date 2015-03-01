@@ -4,8 +4,7 @@ module EU = Exp_util
 
 type env = exp IdMap.t
 
-let ljs_str ljs =
-  Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
+let ljs_str = EU.ljs_str
 
 (* any function name in this list is considered not having side effect *)
 let no_sideeffect_list = [
@@ -197,7 +196,7 @@ let eliminate_deadcode (exp : exp) : exp =
        Break (p, l, new_e), ids
 
     | TryCatch (p, body, catch) ->
-      (* TODO: elimiante body that will not through error *)
+      (* TODO: elimiante body that will not throw error *)
        let b, ids = eliminate_ids_rec body ids in
        let c, ids = eliminate_ids_rec catch ids in
        TryCatch (p, b, c), ids

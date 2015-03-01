@@ -204,7 +204,14 @@ let unused_id_test =
        );
 
      "resursive function scope: r is not recursive anymore" >::
-       (no_change "let (r = 1) let (r = func(a) {a := r}) r(1)");
+     (no_change "let (r = 1) let (r = func(a) {a := r}) r(1)");
+
+     "clean rec" >::
+     (cmp "let (a = 1)
+           rec (r = func(t) {r(prim('-', t, 1))})
+           a"
+          "let (a=1)
+           a");
 
       "label and break" >::
       (cmp "label ret : {
