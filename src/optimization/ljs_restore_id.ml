@@ -2,78 +2,38 @@ open Prelude
 open Ljs_syntax
 open Ljs_opt
 open Exp_util
+open Ljs_analyze_env
 
+(* This phase will try to restore JavaScript identifier, for example,
+   restore `var` from %context['var'].
 
-(* 
-   This phase will try to undo the global variable wrapping, i.e. make %context['var'] 
-   to `var`. 
+   This phase needs to know the existance of all properties of context
+   before the actual transformation.
 
-   This phase needs to know all global variable names before the actual transformation.
-
-   this phase should only work in strict mode. In non-strict mode, code like
-   function(a) {this.x = a} will create x in global environment. 
-   Creating code silently makes this phase to lose track of global variables and to do 
-   transformation incorrectly. Consider the code in non-strict mode
+   This phase should only work in strict mode. In non-strict mode,
+   code like function(a) {this.x = a} will create x in global
+   environment.  Creating code silently makes this phase to lose track
+   of global variables and to do transformation incorrectly. Consider
+   the code in non-strict mode
 
    var bar = 2
    function foo() { this.bar = 1 }
    foo();
    bar;
 
-   this phase will turn the last bar as identifier `bar' but leaves the `this.bar = 1` as
-   it is, which is setting field `bar' of `this' object', something like 
-   %set-property(%this, "bar", 1)
+   this phase will turn the last bar as identifier `bar' but leaves
+   the `this.bar = 1` as it is, which is setting field `bar' of `this'
+   object', something like %set-property(%this, "bar", 1)
 
 *)
-
-type env = exp IdMap.t
 
 let debug_on = false
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "restore"
 
-(* only apply the restore on code that is in strict mode *)
+(* set this variable to true if the restoration should be only applied
+   on code in strict mode *)
 let only_strict = false
-
-let create_global_bindings () = 
-  let global_internals =
-    [("window", "%global");
-     ("print", "%print");
-     ("console", "%console");
-     ("Array", "%ArrayGlobalFuncObj");
-     ("String", "%StringGlobalFuncObj");
-     ("Object", "%ObjectGlobalFuncObj");
-     ("Number", "%NumberGlobalFuncObj");
-     ("Boolean", "%BooleanGlobalFuncObj");
-     ("Date", "%DateGlobalFuncObj");
-     ("isNaN", "%isNaN");
-     ("Math", "%Math");
-     ("parseInt", "%parseInt");
-     ("decodeURI", "%decodeURI");
-     ("decodeURIComponent", "%decodeURIComponent");
-     ("encodeURI", "%encodeURI");
-     ("encodeURIComponent", "%encodeURIComponent");
-     ("TypeError", "%TypeErrorGlobalFuncObj");
-     ("ReferenceError", "%ReferenceErrorGlobalFuncObj");
-     ("SyntaxError", "%SyntaxErrorGlobalFuncObj");
-     ("RangeError", "%RangeErrorGlobalFuncObj");
-     ("URIError", "%URIErrorGlobalFuncObj");
-     ("Error", "%ErrorGlobalFuncObj");
-     ("RegExp", "%RegExpGlobalFuncObj");
-     (* special case undefined and NaN *)
-    ]
-  in  
-  let rec to_map maps internals = match internals with
-    | [] -> maps
-    | hd :: rest ->
-      to_map (IdMap.add (fst2 hd) (Id (Pos.dummy, snd2 hd)) maps) rest
-  in 
-  let map = IdMap.from_list [("NaN", Num(Pos.dummy, nan));
-                             ("Infinity", Num(Pos.dummy, infinity)); 
-                             ("undefined", Undefined Pos.dummy)] in
-  to_map map global_internals
-
-let global_bindings = create_global_bindings ()
 
 (* in function object #code attr, parent context is always shadowed,
    This function will recognize pattern of the new context and try to
@@ -106,7 +66,7 @@ let global_bindings = create_global_bindings ()
    function f1(x) {var a = x};
 
                   *)
-let recognize_new_context exp ctx : env =
+let recognize_new_context exp ctx : names_t =
   let rec strip_let exp : exp =  match exp with
     | Let (_, _, _, body) -> strip_let body
     | _ -> exp
@@ -118,13 +78,13 @@ let recognize_new_context exp ctx : env =
     | Break (_, _, body) -> get_id_in_getter body
     | _ -> failwith "[5] pattern assertion failed: getter contains more complicated structure"
   in 
-  let rec collect_fields prop ctx : env = match prop with
+  let rec collect_fields prop ctx : names_t = match prop with
     | fld, Data ({value=value; writable=_},_,_) -> 
-      IdMap.add fld value ctx
+      IdMap.add fld (value, true) ctx
     | fld, Accessor ({getter=getter; setter=_},_,_) ->
-      IdMap.add fld (get_id_in_getter getter) ctx
+      IdMap.add fld ((get_id_in_getter getter), true) ctx
   in 
-  let rec recog_field exp ctx : env = 
+  let rec recog_field exp ctx : names_t = 
     match exp with 
     | Object (_, _, props) -> 
       List.fold_right collect_fields props ctx 
@@ -274,7 +234,7 @@ let rec window_free ?(toplevel=true) exp : bool =
   | _ -> List.for_all (fun e -> window_free ~toplevel e) (child_exps exp)
 *)
 
-let rec eligible_for_restore exp : bool = 
+let rec eligible_for_restoration exp : bool = 
   let is_static_field fld = match fld with
     | String (_, _) -> true
     | _ -> 
@@ -402,52 +362,45 @@ let make_writable_error (msg : string) : exp =
   let msg = msg ^ " not writable" in
   App (Pos.dummy, Id(Pos.dummy, "%TypeError"), [String (Pos.dummy, msg)])
 
-let rec restore_id (e : exp) : exp =
-  let rec restore_rec ?(in_lambda=false) (e : exp) (ctx : env) : exp = 
+let rec restore_id (e : exp) : exp = 
+  let rec restore_rec ?(in_lambda=false) (e : exp) (ctx : names_t) : exp = 
     match e with 
-    | Seq (p, e1, e2) ->
-      (match e1 with
-       | App (_, Id (_, "%defineGlobalVar"), [Id(_,"%context"); String (_, id)]) ->
-         dprint "find defineGlobalVar %s\n" id;
-         (*toplevel define global var by %defineGlobalVar. if the id is NaN, undefined and Infinity etc
-           that are unwritable, stores they as Num (except undefined). Later when context['NaN'=1] appears in
-           toplevel, since NaN is a Number, assignment to NaN is turned to typeError.
-         *)
-         let ctx = if id = "NaN" || id = "undefined" || id = "Infinity" then
-             IdMap.add id (IdMap.find id global_bindings) ctx
-           else IdMap.add id (Undefined Pos.dummy) ctx 
-         in
-         let newe2 = restore_rec ~in_lambda e2 ctx in
-         Let (p, id, Undefined Pos.dummy, newe2)
+    | Seq (p, e1, e2) -> 
+      begin match e1 with 
+        | App (p, Id (_, "%defineGlobalVar"), [Id(_,"%context"); String (_, id)]) ->
+          (* if id is in ctx, do nothing, continue to e2; else, add
+             id->id, true into ctx 
+          *)
+          dprint "find defineGlobalVar %s\n" id;
+          if IdMap.mem id ctx then
+            restore_rec ~in_lambda e2 ctx
+          else
+            let ctx = IdMap.add id (Id (Pos.dummy, id), true) ctx in
+            let newe2 = restore_rec ~in_lambda e2 ctx in
+            Let (p, id, Undefined Pos.dummy, newe2)
        | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 
-         when (IdMap.mem id global_bindings) ->
+         when (IdMap.mem id ctx) ->
+         (* if the id is already in %global, get what it is bound *)
          dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
-         let id_v = IdMap.find id global_bindings in
-         let ctx = IdMap.add id id_v ctx in
-         restore_rec ~in_lambda e2 ctx 
+         restore_rec ~in_lambda e2 ctx
        | _ -> 
          let newe1 = restore_rec ~in_lambda e1 ctx in
          let newe2 = restore_rec ~in_lambda e2 ctx in
-         Seq (p, newe1, newe2))
+         Seq (p, newe1, newe2)
+      end
     | GetField (pos, obj, fld, args) ->
       let o = restore_rec ~in_lambda obj ctx in
       let f = restore_rec ~in_lambda fld ctx in
       let a = restore_rec ~in_lambda args ctx in
-      (match o, f with
-       | Id (_, "%context"), String (_, fldstr) -> (* get fld from context *)
+      (match is_ctx_obj o, f with
+       | true, String (_, fldstr) ->
+         (* get fld from context *)
          (*printf "match context['%s']\n%!" fldstr;
-           IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;*)
-         begin 
-           try
-            match IdMap.find fldstr ctx with
-            | Undefined _ when fldstr <> "undefined" -> Id (Pos.dummy, fldstr)
-            | Undefined _ as udf -> udf
-            | Id (_,_) as id -> id
-            | Num (_,_) as n -> n
-            | e -> 
-              (*dprint "not expecting: %s\n%!" (Exp_util.ljs_str e);*)
-              e
-          with Not_found -> GetField (pos, o, f, a)
+         IdMap.iter (fun k v->printf "%s  -> %s\n%!" k (Exp_util.ljs_str v)) ctx;*)
+         begin try
+             let v, _ = IdMap.find fldstr ctx in
+             v
+           with Not_found -> GetField (pos, o, f, a)
          end 
        | _ -> GetField (pos, o, f, a)
       )
@@ -456,14 +409,14 @@ let rec restore_id (e : exp) : exp =
       let f = restore_rec ~in_lambda fld ctx in
       let v = restore_rec ~in_lambda newval ctx in
       let a = restore_rec ~in_lambda args ctx in
-      (match o, f with
-       | Id (_, "%context"), String (_, fldstr) ->
+      (match is_ctx_obj o, f with
+       | true, String (_, fldstr) ->
          (try match IdMap.find fldstr ctx with
-            | Undefined _ when fldstr <> "undefined" -> SetBang (pos, fldstr, v)
-            | Id (_, id) -> SetBang (pos, id, v)
-            | Undefined _
-            | Num (_,_) -> make_writable_error fldstr
-            | _ -> failwith "SetField: how could IdMap stores unrecognized exp"
+            | _, false -> make_writable_error fldstr
+            | Id (_, id), true -> SetBang(pos, id, v)
+            | err, _ ->
+              (*let _ = IdMap.iter (fun k (v,b)->printf "%s  -> %s,%b\n%!" k (Exp_util.ljs_str v) b) ctx in*)
+              failwith (sprintf "SetField: transformation failed: %s" (ljs_str err))
           with Not_found -> SetField (pos, o, f, v, a)
          )
        | _ -> SetField (pos, o, f, v, a)
@@ -472,24 +425,21 @@ let rec restore_id (e : exp) : exp =
       let f = restore_rec ~in_lambda f ctx in
       let args = List.map (fun x->restore_rec ~in_lambda x ctx) args in
       (match f, args with 
-       | Id (_, "%EnvCheckAssign"), [Id (_, "%context"); String (_, id); v; _] ->
-         (try match IdMap.find id ctx with
-            | Undefined _ when id <> "undefined" -> SetBang (pos, id, v)
-            | Id (_, actual_id) -> SetBang (pos, actual_id, v)
-            (* if NaN, undefined, Infinity, we need to check the writable field *)
-            | Undefined _
-            | Num (_,_) -> make_writable_error id
-            | normal_exp ->
-              (* get normal exp, which means that id is somehow declared in contxt, use that id(see example of es5id: 12.14-1 *)
-              SetBang (pos, id, v)
+       | Id (_, "%EnvCheckAssign"), [o; String (_, fld_name); v; _] when is_ctx_obj o ->
+         (try match IdMap.find fld_name ctx with
+            | _, false -> make_writable_error fld_name
+            | Id (_, id), true -> SetBang (pos, id, v)
+            | _ -> 
+              (* TODO: get normal exp, which means that id is somehow declared in contxt, use that id(see example of es5id: 12.14-1 *)
+              failwith "App: transformation failed"              
           with Not_found -> App (pos, f, args))
        | Id (_, "%PropAccessorCheck"), [Id (_, "%this")] ->
          if in_lambda then
            App (pos, f, args)
          else 
            Id (pos, "%context")
-       | Id (p1, "%set-property"), [Id (p2, "%context"); String (p3, id); v] ->
-         let newexp = SetField (p1, Id(p2, "%context"), String(p3,id), v, Null Pos.dummy) in
+       | Id (p1, "%set-property"), [o; String (p3, id); v] when is_ctx_obj o->
+         let newexp = SetField (p1, o, String(p3,id), v, Null Pos.dummy) in
          (match restore_rec ~in_lambda newexp ctx with
           | SetField(_,_,_,_,_) ->
             (* cannot translate, use the original set-property exp *)
@@ -498,29 +448,25 @@ let rec restore_id (e : exp) : exp =
          )
        | Id (_, "%ToObject"), [Id(_, "%this")] when not in_lambda ->
          Id (Pos.dummy, "%context")
-       | Id (_, "%Typeof"), [Id(_, "%context"); String(_, id)] 
-         when IdMap.mem id ctx ->
-         let actual_var = match IdMap.find id ctx with
-           | Undefined _ when id <> "undefined" -> Id (Pos.dummy, id)
-           | Undefined _ as udf -> udf
-           | Id (_, actual_id) -> Id (Pos.dummy, actual_id)
-           | Num (_,_) as n -> n
-           | _ -> failwith "%Typeof: IdMap stores unrecognized exp"
-         in 
-         TryCatch (Pos.dummy,
-                   Op1(Pos.dummy, "typeof", actual_var),
-                   Lambda (Pos.dummy, ["e"], Undefined Pos.dummy))
-       | Id (pos, op), [Id(_, "%context"); String(_, id)]
-         when IdMap.mem id ctx ->
+       | Id (_, "%Typeof"), [o; String(_, id)]
+         when is_ctx_obj o && IdMap.mem id ctx ->
+         begin try
+             let replace_exp, _ = IdMap.find id ctx in
+             TryCatch (Pos.dummy,
+                       Op1(Pos.dummy, "typeof", replace_exp),
+                       Lambda (Pos.dummy, ["e"], Undefined Pos.dummy))
+           with Not_found ->
+             App (pos, f, args)
+         end
+       | Id (pos, op), [o; String(_, id)]
+         when is_ctx_obj o && IdMap.mem id ctx ->
          let transform var = match pre_post_transform op var with
            | Some (result) -> result
            | None -> App (pos, f, args)
          in
          begin match IdMap.find id ctx with
-           | Undefined _ when id <> "undefined" -> transform id
-           | Id (_, actual_id) -> transform actual_id
-           | Undefined _
-           | Num (_,_) -> make_writable_error id
+           | Id (_, actual_id), _ -> transform actual_id
+           | Num (_,_), _ -> make_writable_error id
            | _ -> failwith (sprintf "%s: IdMap stores unrecognized exp" op)
          end
        | _ -> App (pos, f, args)
@@ -573,19 +519,21 @@ let rec restore_id (e : exp) : exp =
     | Throw (_,_)
     | Hint (_,_,_)
       -> optimize (fun e->restore_rec ~in_lambda e ctx) e
-  in 
+  in
+  let names = get_env_names e in
+  (*let _ = IdMap.iter (fun k (v,b)->printf "%s  -> %s,%b\n%!" k (Exp_util.ljs_str v) b) names in*)
   let rec jump_env (e : exp) : exp =
     match e with
     | Let (p, "%context", Id (p1, c), body) ->
       if (only_strict && c = "%strictContext") || (not only_strict) then
         begin 
-          if eligible_for_restore e then
+          if eligible_for_restoration e then
             begin
-              let env = IdMap.empty in
               dprint_string "eligible for restore, start restore...\n";
-              let newbody = restore_rec body env in
+              let newbody = restore_rec body names in
               Let (p, "%context", Id (p1, c), newbody)
-            end else 
+            end
+          else 
             (dprint_string "not eligible for restore, return original one\n";
              e)
         end
@@ -596,15 +544,16 @@ let rec restore_id (e : exp) : exp =
         end 
     | _ -> optimize jump_env e
   in
-  let rec propagate_this (e : exp) (env : env) =
+  let rec propagate_this (e : exp) (env : names_t) =
+    (* XXX: any good reason to propagate this? *)
     let propagate e = propagate_this e env in
     match e with
     | Id (pos, id) when IdMap.mem id env -> Id (pos, "%this")
     | Let (pos, x, Id (p1, "%this"), body) ->
-      let body = propagate_this body (IdMap.add x (Undefined Pos.dummy) env) in
+      let body = propagate_this body (IdMap.add x ((Undefined Pos.dummy),true) env) in
       Let(pos, x, Id(p1, "%this"), body)
     | _ -> optimize propagate e
   in
-  let e = propagate_this e IdMap.empty in
+  let e = propagate_this e names in
   jump_env e
 
