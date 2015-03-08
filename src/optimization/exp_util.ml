@@ -22,6 +22,13 @@ let exp_to_value (e : S.exp) : V.value =
   | S.False _ -> V.False
   | _ -> raise (ExpValError "exp->value error")
 
+let is_ctx_obj (e : S.exp) : bool = match e with
+  | S.Id (_, id) ->
+    id = "%global" || id = "%globalContext" ||
+    id = "%strictContext" || id = "nonstrictContext" ||
+    id = "%context"
+  | _ -> false
+    
 
 let value_to_exp (v : V.value) (p : Pos.t) : S.exp =
   match v with
@@ -176,6 +183,10 @@ let same_Id (s : string) (e : S.exp) = match e with
 
 let is_Id (x : S.exp) : bool = match x with
   | S.Id (_, _) -> true
+  | _ -> false
+
+let is_Num (x : S.exp) : bool = match x with
+  | S.Num (_, _) -> true
   | _ -> false
 
 let rec is_constant (e : S.exp) pool : bool = match e with
