@@ -149,9 +149,8 @@ let replace_let_body let_exp new_body =
    2. %EnvCheckAssign(_, _, %this, _): code may do bad things through the alias of 'this'
       %EnvCheckAssign(_, _, {object field as this}, _): code may do bad things through the alias of 'this'.
       the "this" alias should also prohibited in lambda, see 6)
-   3. passing %this to a function: code may do something like `function z(a) {a.x = 1}; z(this)`
+   3. passing %this to a function: code may do something like `var a; function z(o) {return o.a}; z(this)`
    4. computation string field on top level. In function computation is fine.
-
    5. with(o): strict mode does not allow "with". But here is how it works: code will make a new context, and
       we cannot decide if the expression %context["x"] should be translated to identifier x or leave it as %context["x"].
    6. this[delete "x"]: try to delete variable from this(no matter in toplevel or lambda).

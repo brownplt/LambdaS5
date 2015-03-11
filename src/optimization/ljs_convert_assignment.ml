@@ -1,5 +1,6 @@
 open Prelude
 open Ljs_syntax
+open Ljs_opt
 module EU = Exp_util
 
 (* this optimize phase will try to convert mutation(SetBang in S5, x := 1 in S5 syntax) to let bindings.
@@ -303,7 +304,23 @@ let rec free_vars_in_lambda exp : IdSet.t =
     IdSet.remove var (IdSet.union (free_vars_in_lambda defn) (free_vars_in_lambda body))
   | Lambda (_, _, _) -> free_vars exp
   | exp -> List.fold_left IdSet.union IdSet.empty (map free_vars_in_lambda (child_exps exp))
-    
+
+(* rearrange (seq (seq e1 e2) e3) to (seq e1 (seq e2 e3)) *)
+let rec arrange_sequence (e : exp) : exp =
+  match e with
+  | Seq (p, e1, e2) ->
+    let newe1 = arrange_sequence e1 in
+    let newe2 = arrange_sequence e2 in
+    seq_append newe1 newe2
+  | _ -> optimize arrange_sequence e
+and seq_append (e1 : exp) (e2 : exp) : exp =
+  (* if e1 is (seq e (seq e (seq ..))); append e2 into the inner-most seq *)
+  match e1 with
+  | Seq (p, s1, s2) ->
+    Seq (p, s1, seq_append s2 e2)
+  | _ ->
+    Seq (Pos.dummy, e1, e2)
+      
 (**  new **)
 let convert_assignment (exp : exp) : exp =
   let rec convert_rec (e : exp) (env : env) (used_ids : IdSet.t) : (exp * IdSet.t) = 
@@ -549,5 +566,5 @@ let convert_assignment (exp : exp) : exp =
       Hint (p, id, new_e), used_ids
 
   in 
-  let new_exp, new_ids = convert_rec exp IdMap.empty IdSet.empty in
+  let new_exp, new_ids = convert_rec (arrange_sequence exp) IdMap.empty IdSet.empty in
   new_exp
