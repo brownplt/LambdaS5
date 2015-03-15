@@ -13,7 +13,7 @@ open Ljs_propagate_copy
 open Ljs_inline_function
 open Ljs_restore_id
 open Ljs_clean_env
-open Ljs_infer_types
+open Ljs_eliminate_static_checks
 open Ljs_convert_assignment
 open Ljs_no_checks
 open Ljs_fixed_arity
@@ -424,9 +424,9 @@ module S5 = struct
     let new_ljs = clean_env ljs in
     push_ljs new_ljs
 
-  let opt_infer_types cmd () =
+  let opt_eliminate_static_checks cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = infer_types ljs in
+    let new_ljs = eliminate_static_checks ljs in
     push_ljs new_ljs
 
   let opt_convert_assignment cmd () =
@@ -606,8 +606,8 @@ module S5 = struct
           "perform function inlining on s5";
         unitCmd "-opt-clean-env" opt_clean_env
           "clean unused env expression";
-        unitCmd "-opt-infer-types" opt_infer_types
-          "use type inference to safely clean static checks";
+        unitCmd "-opt-eliminate-static-checks" opt_eliminate_static_checks
+          "clean static checks as much as possible";
         unitCmd "-opt-convert-assignment" opt_convert_assignment
           "convert assignment to let bindings when possible";
         unitCmd "-opt-no-checks" opt_no_checks

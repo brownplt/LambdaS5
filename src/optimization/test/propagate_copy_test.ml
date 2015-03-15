@@ -8,10 +8,10 @@ let suite =
   let no_change code = no_change code propagate_copy in
   "Test Copy Elimination" >:::
     [
-      "simple" >::
+      "Let p I I' body: where(body has no mutation of I)" >::
         (cmp "let (b=a) b" "let (b=a) a");
 
-      "simple2" >::
+      "[E/I] Let p I I' body" >::
         (cmp "let(a=b)
               let(a=c)
               a"
@@ -19,7 +19,7 @@ let suite =
               let(a=c)
               c");
       
-      "simple3" >::
+      "[E/I] Let p I' xv body" >::
       (cmp "let (a=b)
             let (c=a)
             c"

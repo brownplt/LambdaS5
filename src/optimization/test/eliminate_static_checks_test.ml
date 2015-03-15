@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_infer_types
+open Ljs_eliminate_static_checks
 
 let suite =
-  let cmp before after = cmp before infer_types after in
-  let no_change code = no_change code infer_types in
+  let cmp before after = cmp before eliminate_static_checks after in
+  let no_change code = no_change code eliminate_static_checks in
   "Test Type Infer" >:::
   [
     "simple number" >::
