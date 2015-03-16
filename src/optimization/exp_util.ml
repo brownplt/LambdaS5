@@ -12,8 +12,8 @@ let print_ljs ljs =
 let ljs_str ljs =
   Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
 
-let exp_to_value (e : S.exp) : V.value = 
-  match e with 
+let exp_to_value (e : S.exp) : V.value =
+  match e with
   | S.Null _ -> V.Null
   | S.Undefined _ -> V.Undefined
   | S.Num (_, n) -> V.Num n
@@ -28,7 +28,7 @@ let is_ctx_obj (e : S.exp) : bool = match e with
     id = "%strictContext" || id = "nonstrictContext" ||
     id = "%context"
   | _ -> false
-    
+
 
 let value_to_exp (v : V.value) (p : Pos.t) : S.exp =
   match v with
@@ -46,7 +46,7 @@ let op_has_side_effect (op : string) : bool = match op with
   | "print"
   | "pretty"
   | "current-utc-millis" -> true
-  | _ -> false 
+  | _ -> false
 
 (*
  * this function will check whether exp `e' has side effect *when it is evaluated*.
@@ -63,7 +63,7 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.Num (_,_)
   | S.True _
   | S.False _
-  | S.Id (_,_) 
+  | S.Id (_,_)
   | S.Lambda (_, _, _) -> (* lambda always has no side effect *)
     false
   | S.GetAttr (_, _,obj, flds) ->
@@ -84,49 +84,49 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
      has_side_effect ~env e1|| has_side_effect ~env e2
   | S.Let (_, x, x_v, body) ->
      begin
-       match x_v with 
+       match x_v with
        | S.Lambda (_, xs, lmd_body) -> (* check the body of lambda and return false*)
           let newset = IdSet.filter (fun(x)->not (List.mem x xs)) env in
           let se_lambda = has_side_effect ~env:newset lmd_body in
-          let newenv = match se_lambda with 
-            | true -> IdSet.remove x env 
+          let newenv = match se_lambda with
+            | true -> IdSet.remove x env
             | false -> IdSet.add x env
-          in 
+          in
           has_side_effect ~env:newenv body
-       | _ -> 
+       | _ ->
           let xv_se = has_side_effect ~env x_v in (* x has new se status *)
           if xv_se then xv_se
-          else 
+          else
             let newenv = IdSet.remove x env in
             has_side_effect ~env:newenv body
-     end 
+     end
   | S.Rec (_, x, x_v, body) ->
      (* assume x has no side effect *)
      let env = IdSet.add x env in
      begin
-     match x_v with 
+     match x_v with
      | S.Lambda (_, xs, lmd_body) ->
         let env = IdSet.filter (fun(x)->not (List.mem x xs)) env in
         let se_lambda = has_side_effect ~env:env lmd_body in
         let env = match se_lambda with
           | true -> IdSet.remove x env
           | false -> IdSet.add x env
-        in 
+        in
         has_side_effect ~env:env body
      | _ -> failwith (sprintf "optimizer gets syntax error: rec (%s=%s)" x (ljs_str x_v))
-     end 
+     end
   | S.App (_, f, args) ->          (* check if f(x) has side effect *)
      let se_f =  match f with
-     | S.Id(_, id) -> 
+     | S.Id(_, id) ->
         not (IdSet.mem id env)
-     | S.Lambda (_, xs, lmd_body) -> 
+     | S.Lambda (_, xs, lmd_body) ->
         let env = IdSet.filter (fun(x)->not(List.mem x xs)) env in
         has_side_effect ~env lmd_body
-     | S.App (_,_,_) -> 
+     | S.App (_,_,_) ->
        (*NOTE(junsong): I don't know what to do with this situation
                         f(){f(){print}}()()
        *)
-       true 
+       true
      | _ ->
         has_side_effect ~env f
      in
@@ -138,24 +138,24 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.GetField (_,_,_,_)
   | S.SetField (_,_,_,_,_)
   | S.DeleteField (_,_,_)
-  | S.SetBang (_,_,_) 
+  | S.SetBang (_,_,_)
   | S.TryCatch (_, _, _)    (* any try..catch is assumed to throw out uncatched error *)
   | S.TryFinally (_, _, _)  (* any try..finally is assumed to throw out uncached error *)
   | S.Throw (_,_)
   | S.Hint (_,_,_)
     -> true
 
-let apply_op1 p (op : string) e : S.exp option = 
+let apply_op1 p (op : string) e : S.exp option =
   if (op_has_side_effect op) then
     None
   else
-    try 
+    try
       let v = exp_to_value e in
       let op = op1 dummy_store op in
       let result = op v in
       Some (value_to_exp result p)
     with _ -> None
-                          
+
 let apply_op2 p op e1 e2 : S.exp option =
   if (op_has_side_effect op) then
     None
@@ -169,7 +169,7 @@ let apply_op2 p op e1 e2 : S.exp option =
     with _ -> None
 
 let rec is_bound (x : S.exp) (body : S.exp) : bool =
-  match x, body with 
+  match x, body with
   | S.Id (_, var1), S.Let (_, var2, xexp, body) -> var1 = var2 || is_bound x xexp || is_bound x body
   | S.Id (_, var1), S.Rec (_, var2, xexp, body) -> var1 = var2 || is_bound x xexp || is_bound x body
   | S.Id (_, var1), S.Lambda (_, xs, body) ->
@@ -191,13 +191,13 @@ let is_Num (x : S.exp) : bool = match x with
 
 let rec is_constant (e : S.exp) pool : bool = match e with
   | S.Object(_,_,_) -> is_object_constant e pool
-  | S.Lambda(_,_,_) -> is_lambda_constant e 
+  | S.Lambda(_,_,_) -> is_lambda_constant e
   | S.Id (_, _) -> is_const_var e pool
   | _ -> is_prim_constant e
 (* an const object requires extensible is false, all fields have configurable
    and writable set to false.
 
-   XXX: it seems that when getter and setter are present, configurable cannot be set from 
+   XXX: it seems that when getter and setter are present, configurable cannot be set from
         the syntax. So there is no such an object that getter and setter and configurable attr
         are both initially constant.
  *)
@@ -206,7 +206,7 @@ and is_object_constant (e : S.exp) pool : bool = match e with
      let { S.primval=primval;S.proto=proto;S.code=code;S.extensible = ext;S.klass=_ } = attr in
      let const_primval = match primval with
        | Some x -> is_constant x pool
-       | None -> true 
+       | None -> true
      in
      let const_proto = match proto with
        | Some x -> is_constant x pool
@@ -215,12 +215,12 @@ and is_object_constant (e : S.exp) pool : bool = match e with
      let const_code = match code with
        | Some x -> is_constant x pool
        | None -> true
-     in 
+     in
      if (not const_primval || not const_proto || not const_code || ext = true) then
-       false 
-     else begin 
+       false
+     else begin
          let const_prop (p : string * S.prop) = match p with
-           | (s, S.Data ({S.value = value; S.writable=false}, _, false)) -> 
+           | (s, S.Data ({S.value = value; S.writable=false}, _, false)) ->
               is_constant value pool
            | _ -> false
          in
@@ -246,13 +246,13 @@ and is_prim_constant (e : S.exp) : bool = match e with
   | _ -> false
 
 and is_const_var (e : S.exp)  (pool : pool) : bool = match e with
-  | S.Id (_, id) -> 
+  | S.Id (_, id) ->
      begin
-       try let (_, const, subst) = IdMap.find id pool in const 
+       try let (_, const, subst) = IdMap.find id pool in const
        with _ -> false
      end
   | _ -> false
-       
+
 (* decide if x is mutated in e *)
 let rec mutate_var (x : id) (e : S.exp) : bool = match e with
   | S.SetBang (_, var, target) -> x = var || mutate_var x target
@@ -276,9 +276,9 @@ let rec mutate_var (x : id) (e : S.exp) : bool = match e with
        mutate_var x body
   | _ -> List.exists (fun x->x) (map (fun exp-> mutate_var x exp) (S.child_exps e))
 
-let rec valid_for_folding (e : S.exp) : bool = 
+let rec valid_for_folding (e : S.exp) : bool =
   match e with
-  | S.Null _ 
+  | S.Null _
   | S.Undefined _
   | S.String (_,_)
   | S.Num (_,_)
@@ -292,28 +292,28 @@ let rec valid_for_folding (e : S.exp) : bool =
            S.extensible = ext; S.klass=_ } = attr in
      let const_primval = match primval with
        | Some x -> valid_for_folding x && not (has_side_effect x)
-       | None -> true 
+       | None -> true
      in
-     let const_proto = match proto with 
+     let const_proto = match proto with
        | Some x -> valid_for_folding x && not (has_side_effect x)
        | None -> true
      in
      let const_code = match code with
-       | Some x -> valid_for_folding x && not (has_side_effect x) 
+       | Some x -> valid_for_folding x && not (has_side_effect x)
        | None -> true
-     in 
+     in
      if (not const_primval || not const_proto || not const_code || ext = true) then
-       begin 
-       false 
-       end 
-     else 
+       begin
+       false
+       end
+     else
          let const_prop (p : string * S.prop) = match p with
-           | (s, S.Data ({S.value = value; S.writable=false}, _, false)) -> 
+           | (s, S.Data ({S.value = value; S.writable=false}, _, false)) ->
               valid_for_folding value && not (has_side_effect value)
            (*?*)| (s, S.Accessor ({S.getter=_; S.setter=_},_,_)) -> true
            | _ -> false
          in
-         List.for_all const_prop strprop 
+         List.for_all const_prop strprop
   | S.Lambda (_, xs, body) ->
      IdSet.is_empty (S.free_vars e) && not (has_side_effect body)
   | _ -> List.for_all valid_for_folding (S.child_exps e) && not (has_side_effect e)
@@ -326,10 +326,10 @@ let rec valid_for_folding (e : S.exp) : bool =
 let multiple_usages (var_id : id) (e : S.exp) : bool =
   let use = (ref 0) in
   let result() = !use >= 2 in
-  let rec multiple_usages_rec (var_id : id) (e : S.exp) : bool = 
+  let rec multiple_usages_rec (var_id : id) (e : S.exp) : bool =
     match e with
     | S.Id (p, x) ->
-       if (x = var_id) then 
+       if (x = var_id) then
          begin
            use := !use + 1;
            result()
@@ -343,7 +343,7 @@ let multiple_usages (var_id : id) (e : S.exp) : bool =
            else
              multiple_usages_rec var_id body
          end
-    | S.SetBang (_, x, vexp) -> 
+    | S.SetBang (_, x, vexp) ->
        if (x = var_id) then failwith "should not reach here"
        else multiple_usages_rec var_id vexp
     | S.Rec (_, x, xexp, body) ->
@@ -354,11 +354,9 @@ let multiple_usages (var_id : id) (e : S.exp) : bool =
            else
              multiple_usages_rec var_id body
          end
-    | S.Lambda (_, xs, body) -> 
+    | S.Lambda (_, xs, body) ->
        if (List.mem var_id xs) then false (* don't search body *)
-       else 
+       else
          multiple_usages_rec var_id body
     | _ -> List.exists (fun x->x) (map (fun exp->multiple_usages_rec var_id exp) (S.child_exps e))
   in multiple_usages_rec var_id e
-
-          

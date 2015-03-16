@@ -8,14 +8,15 @@ open Ljs_pretty_html
 open Reachability
 open Ljs_fold_const
 open Ljs_propagate_const
-open Ljs_eliminate_deadcode
+open Ljs_clean_bindings
+open Ljs_clean_sequence
 open Ljs_propagate_copy
 open Ljs_inline_function
 open Ljs_restore_id
 open Ljs_clean_env
-open Ljs_eliminate_static_checks
+open Ljs_clean_static_checks
 open Ljs_convert_assignment
-open Ljs_no_checks
+open Ljs_clean_all_checks
 open Ljs_fixed_arity
 
 type node =
@@ -126,7 +127,7 @@ module S5 = struct
 
   let pop_env cmd : Ljs_syntax.exp -> Ljs_syntax.exp =
     match pop cmd with
-    | Env src -> src 
+    | Env src -> src
     | node -> type_error cmd EnvT node
 
   let pop_answer cmd : Ljs_eval.answer =
@@ -378,7 +379,7 @@ module S5 = struct
     Ljs_sym_z3.print_results results
   (* close_in inch; close_out outch *)
 
-  let ljs_sym_eval_raw cmd () = 
+  let ljs_sym_eval_raw cmd () =
     let results = do_sym_eval cmd in
     print_string "RAW RESULTS"; print_newline();
     output_value stdout results;
@@ -386,12 +387,12 @@ module S5 = struct
 
   (* optimization command *)
 
-  let opt_fold_const cmd () = 
+  let opt_fold_const cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = fold_const ljs in
     push_ljs new_ljs
     (* print origin one for debug *)
-    (*Ljs_pretty.exp ljs std_formatter; 
+    (*Ljs_pretty.exp ljs std_formatter;
     print_newline ()*)
 
   let opt_propagate_const cmd () =
@@ -399,9 +400,14 @@ module S5 = struct
     let new_ljs = propagate_const ljs in
     push_ljs new_ljs
 
-  let opt_eliminate_deadcode cmd () =
+  let opt_clean_bindings cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = eliminate_deadcode ljs in
+    let new_ljs = clean_bindings ljs in
+    push_ljs new_ljs
+
+  let opt_clean_sequence cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = clean_sequence ljs in
     push_ljs new_ljs
 
   let opt_propagate_copy cmd () =
@@ -424,9 +430,9 @@ module S5 = struct
     let new_ljs = clean_env ljs in
     push_ljs new_ljs
 
-  let opt_eliminate_static_checks cmd () =
+  let opt_clean_static_checks cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = eliminate_static_checks ljs in
+    let new_ljs = clean_static_checks ljs in
     push_ljs new_ljs
 
   let opt_convert_assignment cmd () =
@@ -434,16 +440,16 @@ module S5 = struct
     let new_ljs = convert_assignment ljs in
     push_ljs new_ljs
 
-  let opt_no_checks cmd () =
+  let opt_clean_all_checks cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = no_checks ljs in
+    let new_ljs = clean_all_checks ljs in
     push_ljs new_ljs
 
   let opt_fixed_arity cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = fixed_arity ljs in
     push_ljs new_ljs
-      
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -460,7 +466,7 @@ module S5 = struct
     let ljs = pop_ljs cmd in
     let total = count ljs in
     let usercode_n = usercode_count ljs in
-    let envn, usern = 
+    let envn, usern =
       if usercode_n = 0 then (* no env delimitor *)
         0, total - usercode_n
       else
@@ -488,7 +494,7 @@ module S5 = struct
     let ljs = pop_ljs cmd in
     push_ljs ljs;
     Marshal.to_channel (open_out_bin filename) ljs []
-    
+
   let load_s5 cmd (filename : string) =
     let ljs = Marshal.from_channel (open_in_bin filename) in
     push_ljs ljs
@@ -598,19 +604,19 @@ module S5 = struct
           "perform constant folding on s5";
         unitCmd "-opt-propagate-const" opt_propagate_const
           "perform constant propagation on s5";
-        unitCmd "-opt-eliminate-deadcode" opt_eliminate_deadcode
-          "perform dead code elimination on s5";
+        unitCmd "-opt-clean-bindings" opt_clean_bindings
+          "clean unused bindings on s5";
         unitCmd "-opt-propagate-copy" opt_propagate_copy
           "propagate copy (let bindings of an id to another id) on s5";
         unitCmd "-opt-inline-function" opt_inline_function
           "perform function inlining on s5";
         unitCmd "-opt-clean-env" opt_clean_env
           "clean unused env expression";
-        unitCmd "-opt-eliminate-static-checks" opt_eliminate_static_checks
+        unitCmd "-opt-clean-static-checks" opt_clean_static_checks
           "clean static checks as much as possible";
         unitCmd "-opt-convert-assignment" opt_convert_assignment
           "convert assignment to let bindings when possible";
-        unitCmd "-opt-no-checks" opt_no_checks
+        unitCmd "-opt-clean-all-checks" opt_clean_all_checks
           "[semantics altering] clean all static checks";
         unitCmd "-opt-fixed-arity" opt_fixed_arity
           "[semantics altering] disable variable function arity";

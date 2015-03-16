@@ -10,7 +10,7 @@ let pretty_env env =
       printf "%s -> %s\n" k (EU.ljs_str v)) env
 
 (* get_type will return Some (String(_,_)) or None *)
-let rec get_type exp env : exp option = 
+let rec get_type exp env : exp option =
   let rec typeof exp env =
     match exp with
     | Null _ -> "null"
@@ -21,7 +21,7 @@ let rec get_type exp env : exp option =
     | Object (_,attr,_) -> begin match attr with
       | { code = Some _ } -> "function"
       | _ -> "object"
-      end 
+      end
     | Id (_, x) ->
       typeof (IdMap.find x env) env
     | Let (_, x, x_v, body) ->
@@ -36,81 +36,81 @@ let rec get_type exp env : exp option =
       if typeof o env = "function" then "object"
       else failwith (sprintf "cannot decide: %s\n" (EU.ljs_str exp))
     | _ -> failwith (sprintf "Not Support: %s\n" (EU.ljs_str exp))
-  in 
+  in
   try
     Some (String (Pos.dummy, typeof exp env))
   with _ -> None
-  
+
 let op1 p op arg env : exp = match op with
   | "typeof" ->
     begin match get_type arg env with
     | Some e -> e
     | None -> Op1 (p, op, arg)
-    end 
+    end
   | _ -> Op1 (p, op, arg)
-  
+
 (* this function is mainly for cleaning
     1. "prim("typeof", obj)"
     2. IsObject
     3. PropAccessorCheck
     4. ToObject
 *)
-let eliminate_static_checks (exp : exp) : exp =
-  let rec eliminate_rec (exp : exp) (env : env) : exp =
-    let eliminate e = eliminate_rec e env in
+let clean_static_checks (exp : exp) : exp =
+  let rec clean_rec (exp : exp) (env : env) : exp =
+    let clean e = clean_rec e env in
     match exp with
     | Op1 (p, op, arg) ->
-      let arg = eliminate_rec arg env in
+      let arg = clean_rec arg env in
       op1 p op arg env
     | Let (p, x, x_v, body) ->
-      let x_v = eliminate_rec x_v env in
+      let x_v = clean_rec x_v env in
       if (EU.same_Id x x_v) then
-        eliminate_rec body env
+        clean_rec body env
       else if (EU.mutate_var x body) then
         let env = IdMap.remove x env in
-        Let (p, x, x_v, eliminate_rec body env)
+        Let (p, x, x_v, clean_rec body env)
       else
         let env = IdMap.add x x_v env in
-        Let (p, x, x_v, eliminate_rec body env)
+        Let (p, x, x_v, clean_rec body env)
     | Lambda (p, xs, body) ->
       let env = IdMap.filter (fun k _->not (List.mem k xs)) env in
-      let body = eliminate_rec body env in
+      let body = clean_rec body env in
       Lambda (p, xs, body)
     | App (p, f, args) ->
-      let f = eliminate_rec f env in
-      let args = List.map eliminate args in
+      let f = clean_rec f env in
+      let args = List.map clean args in
       begin match f, args with
       | Id (_, "%ToObject"), [e] ->
         begin match get_type e env with
           | Some (String (_, "function"))
           | Some (String (_, "object")) -> e
           | _ -> App (p, f, args)
-        end 
+        end
       | Id (_, "%IsObject"), [e] ->
         begin match get_type e env with
           | Some (String (_, "function"))
           | Some (String (_, "object")) -> True Pos.dummy
           | Some (_) -> False Pos.dummy
           | None -> App (p, f, args)
-        end 
+        end
       | Id (p0, "%PropAccessorCheck"), [e] ->
         begin match get_type e env with
           | Some (String (_, "Undefined")) -> App(p, f, args)
           | Some (_) -> (* make it a ToObject expression *)
             let new_app = App (p, Id(p0, "%ToObject"), [e]) in
-            eliminate_rec new_app env
+            clean_rec new_app env
           | None -> App (p, f, args)
         end
       | _ -> App (p, f, args)
-      end 
-    | If (p, tst, thn, els) ->
-      let tst = eliminate_rec tst env in
-      begin match tst with
-        | True _ -> eliminate_rec thn env 
-        | False _ -> eliminate_rec els env
-        | _ ->
-          If (p, tst, eliminate_rec thn env, eliminate_rec els env)
       end
-    | _ -> optimize eliminate exp
+    | If (p, tst, thn, els) ->
+      let tst = clean_rec tst env in
+      begin match tst with
+        | True _ -> clean_rec thn env
+        | False _ -> clean_rec els env
+        | _ ->
+          If (p, tst, clean_rec thn env, clean_rec els env)
+      end
+    | _ -> optimize clean exp
   in
-  eliminate_rec exp IdMap.empty
+  clean_rec exp IdMap.empty
