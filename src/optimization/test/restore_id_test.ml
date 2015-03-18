@@ -443,6 +443,21 @@ let suite =
          foo();
          x" "1");
 
+    "reuse identifier name: take from 12.14-1.js in test262" >::
+    (eq "'use strict';
+        function testcase() {
+          foo = 'prior to throw';
+          try {
+            throw new Error();
+          }
+          catch (foo) {
+            var foo = 'initializer in catch';
+          }
+         return foo === 'prior to throw';
+          
+         }
+        testcase();" "true");
+
     (* test ++, -- *)
     "test++" >::
     (eq "'use strict'; var i = 1; var j = (i++); if (i == 2 && j == 1) {true} else {false}"

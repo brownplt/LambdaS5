@@ -428,9 +428,12 @@ let rec restore_id (e : exp) : exp =
          (try match IdMap.find fld_name ctx with
             | _, false -> make_writable_error fld_name
             | Id (_, id), true -> SetBang (pos, id, v)
-            | _ -> 
-              (* TODO: get normal exp, which means that id is somehow declared in contxt, use that id(see example of es5id: 12.14-1 *)
-              failwith "App: transformation failed"              
+            | fld, _ -> SetBang (pos, fld_name, v)
+              (* TODO: get normal exp, which means that id is somehow declared in contxt, 
+                use that id(see example of es5id: 12.14-1. 'foo'=>#value (%ToJSError(foo))
+              failwith (sprintf "App: transformation failed: %s. Field is actually:%s"
+                          (ljs_str e) (ljs_str fld))
+              *)
           with Not_found -> App (pos, f, args))
        | Id (_, "%PropAccessorCheck"), [Id (_, "%this")] ->
          if in_lambda then
@@ -553,6 +556,6 @@ let rec restore_id (e : exp) : exp =
       Let(pos, x, Id(p1, "%this"), body)
     | _ -> optimize propagate e
   in
-  let e = propagate_this e names in
-  jump_env e
+  let exp = propagate_this e IdMap.empty in
+  jump_env exp
 
