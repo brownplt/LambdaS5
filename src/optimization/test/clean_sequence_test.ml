@@ -20,6 +20,9 @@ let clean_sequence_test =
     "clean an exp that has no side effect" >::
     (cmp "{undefined; 2}" "2");
 
+    "side effect might occurs" >::
+    (no_change "obj['field']; undefined");
+
     (* elimination can be only applied on e1. e2 may be the return value *)
     "clean sequence" >::
       (cmp "let (x = 1)
@@ -38,5 +41,9 @@ let clean_sequence_test =
          break %ret 1
          }");
 
+    "throw cuts the sequence" >::
+      (cmp
+	 "{throw %JSError; undefined}"
+	 "throw %JSError");
 
     ]
