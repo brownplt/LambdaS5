@@ -8,6 +8,7 @@ open Ljs_pretty_html
 open Reachability
 open Ljs_fold_const
 open Ljs_propagate_const
+open Ljs_propagate_nonconst
 open Ljs_eliminate_deadcode
 open Ljs_propagate_copy
 open Ljs_inline_function
@@ -399,6 +400,11 @@ module S5 = struct
     let new_ljs = propagate_const ljs in
     push_ljs new_ljs
 
+  let opt_propagate_nonconst cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = propagate_nonconst ljs in
+    push_ljs new_ljs
+
   let opt_eliminate_deadcode cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = eliminate_deadcode ljs in
@@ -598,6 +604,8 @@ module S5 = struct
           "perform constant folding on s5";
         unitCmd "-opt-propagate-const" opt_propagate_const
           "perform constant propagation on s5";
+        unitCmd "-opt-propagate-nonconst" opt_propagate_nonconst
+          "propagate single-use functions, objects, and let bindings in s5";
         unitCmd "-opt-eliminate-deadcode" opt_eliminate_deadcode
           "perform dead code elimination on s5";
         unitCmd "-opt-propagate-copy" opt_propagate_copy
