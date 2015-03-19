@@ -605,9 +605,11 @@ module S5 = struct
         unitCmd "-opt-propagate-const" opt_propagate_const
           "perform constant propagation on s5";
         unitCmd "-opt-clean-bindings" opt_clean_bindings
-          "clean unused bindings on s5";
+          "clean unused bindings in s5";
+        unitCmd "-opt-clean-sequence" opt_clean_sequence
+          "clean dead flow in s5";
         unitCmd "-opt-propagate-copy" opt_propagate_copy
-          "propagate copy (let bindings of an id to another id) on s5";
+          "propagate copy (let bindings of an id to another id) in s5";
         unitCmd "-opt-inline-function" opt_inline_function
           "perform function inlining on s5";
         unitCmd "-opt-clean-env" opt_clean_env
