@@ -52,20 +52,6 @@ let propagate_copy (e : exp) : exp =
          match x_v with
          | Id (_, v_id) ->
            (* if x, or v_id gets mutated in body, x should not be replaced with v_id in body *)
-           (* Technically, we don't need to run (EU.mutate_var v_id body) again because it has
-              been done when v_id was bound. But considering we might test on code that contains
-              free variables, the last piece is necessary. Consider the case where a is free variable.
-              {let (b = a)
-               {a := 1.;
-                b}}
-              without the last predicate, the transformation will do it wrong.
-              {let (b = a)
-               {a := 1.;
-                a}}
-           *)
-           let def_set = if EU.mutate_var v_id body then
-               IdSet.add v_id def_set
-             else def_set in
            if x_is_assigned || (IdSet.mem v_id def_set) then
              Let (p, x, x_v, propagate_rec body env def_set)
            else 

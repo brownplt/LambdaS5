@@ -7,44 +7,55 @@ let suite =
   let cmp before after = cmp before propagate_copy after in
   let no_change code = no_change code propagate_copy in
   "Test Copy Elimination" >:::
+  (* Give tests in a whole-program form. That is, don't use free variables,
+     because mutation checks take place at binding time.
+  *)
     [
       "Let p I I' body: where(body has no mutation of I)" >::
-        (cmp "let (b=a) b" "let (b=a) a");
+        (cmp "let (a=1) let (b=a) b" "let (a=1) let (b=a) a");
 
       "[E/I] Let p I I' body" >::
-        (cmp "let(a=b)
+        (cmp "let(b=1)
+              let(a=b)
               let(a=c)
               a"
-             "let(a=b)
+             "let(b=1)
+              let(a=b)
               let(a=c)
               c");
       
       "[E/I] Let p I' xv body" >::
-      (cmp "let (a=b)
+      (cmp "let (b=1)
+            let (a=b)
             let (c=a)
             c"
-           "let (a=b)
+           "let (b=1)
+            let (a=b)
             let (c=b)
             b");
 
       "mutation 1" >::
-        (no_change "let (b=a) {
+        (no_change "let (a=1)
+                    let (b=a) {
                     b:=1;
                     b}");
 
       "mutation 2" >::
-        (no_change "let (b=a) {
+        (no_change "let (a=1)
+                    let (b=a) {
                     a:=1;
                     b}");
 
       "mutation 3" >::
         (cmp
-           "let (b=a) {
+           "let(a=1)
+            let (b=a) {
             a:=1;
             let (a=2)
             let (b=a)
             b}"
-           "let (b=a) {
+           "let(a=1)
+            let (b=a) {
             a:=1;
             let (a=2)
             let (b=a)
@@ -118,74 +129,93 @@ let suite =
             a}");
                     
       "potential mutation 3" >::
-        (no_change "let (b=a) 
+        (no_change "let(a=1)
+                    let (b=a) 
                     let (t = func(x) {b:=x})
                     b");
 
       "bound" >::
-        (no_change "let (b=a)
+        (no_change "let(a=1)
+                    let (b=a)
                     let (b=func(t){1})
                     b");
 
       "shadow 1" >::
-        (no_change "let (b=a)
+        (no_change "let(a=1)
+                    let (b=a)
                     let (a=2)
                     b");
 
       "shadow 2" >::
-        (cmp "let (b=a)
+        (cmp "let(a=1)
+              let (b=a)
               let (t=b)
               let (a=1)
               t"
-             "let (b=a)
+             "let(a=1)
+              let (b=a)
               let (t=a)
               let (a=1)
               t");
 
       "shadow 3" >::
-        (cmp "let (a=y)
+        (cmp "let (y=1)
+              let (b=2)
+              let (a=y)
               let (c=b)
               let (d=b)
               let (b=1)
               {a;b;c;d}"
-             "let (a=y)
+             "let (y=1)
+              let (b=2)
+              let (a=y)
               let (c=b)
               let (d=b)
               let (b=1)
               {y;b;c;d}");
 
       "shadow 4 by rec" >::
-        (no_change "let (a=y)
+        (no_change "let(y=1)
+                    let (a=y)
                     rec (a=func(){1})
                     a");
 
       "copy in lambda" >::
-        (cmp "let (a=b)
+        (cmp "let(b=1)
+              let (a=b)
               let (f=func(x){a}) f"
-             "let (a=b)
+             "let (b=1)
+              let (a=b)
               let (f=func(x){b}) f");
 
       "lambda argument shadow copy" >::
-        (cmp "let (a=b)
+        (cmp "let (b=1)
+              let (a=b)
               func(a){a:=1}(a)"
-             "let (a=b)
+             "let (b=1)
+              let (a=b)
               func(a){a:=1}(b)");
 
       "lambda shadow binding" >::
-        (no_change "let (a=b)
+        (no_change "let(b=1)
+                    let (a=b)
                     func(a){a}");
 
       "lambda 2" >::
-        (cmp "let (c=a)
+        (cmp "let (a=1)
+              let (c=a)
               func(a){c}(c)"
-             "let (c=a)
+             "let (a=1)
+              let (c=a)
               func(a){c}(a)");
 
       "lambda 3" >::
-        (cmp "let(b=a)
+        (cmp "let (a=1)
+              let(b=a)
               let(c=func(x){let (a=x) a:=1})
               b"
-             "let(b=a)
+             "let (a=1)
+              let(b=a)
               let(c=func(x){let (a=x) a:=1})
               a");
 
@@ -197,11 +227,13 @@ let suite =
         
       "self copy" >::
       (cmp
-         "let (a=x)
+         "let (x=1)
+          let (a=x)
           let (b=a)
           let (b=b)
             b"
-         "let (a=x)
+         "let (x=1)
+          let (a=x)
           let (b=x)
           let (b=x)
             x");

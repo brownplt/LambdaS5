@@ -16,9 +16,6 @@ module EU = Exp_util
 (* Id => expression * free vars in expression *)
 type env = (exp * IdSet.t) IdMap.t
 let in_env x env = IdMap.mem x env
-let is_empty_inter s1 s2 =
-  IdSet.is_empty (IdSet.inter s1 s2)
-
 (* For functions and objects, propagate those that are just used once.
 
    For expressions that may have side effect, be careful not alter the
@@ -63,43 +60,26 @@ let propagate_nonconst (exp : exp) : exp =
          else if IdSet.mem x def_set then
            IdSet.remove x def_set
          else def_set in
-       begin
-         (* look at x_v. we are only interested in situation that x_v is an id *)
-         let freevars = free_vars x_v in
-         match x_v with
-         | Id (_, v_id) ->
-           (* if x, or v_id gets mutated in body, x should not be replaced with v_id in body *)
-           (* Technically, we don't need to run (EU.mutate_var v_id body) again because it has
-              been done when v_id was bound. But considering we might test on code that contains
-              free variables, the last piece is necessary. Consider the case where a is free variable.
-              {let (b = a)
-               {a := 1.;
-                b}}
-              without the last predicate, the transformation will do it wrong.
-              {let (b = a)
-               {a := 1.;
-                a}}
+       let freevars = free_vars x_v in
+       begin match x_v with
+         (* x_v has to be single-use form *)
+         | Lambda (_, _, _) when not x_is_assigned &&
+                                 not (EU.multiple_usages x body) &&
+                                 not (IdSet.is_empty freevars) ->
+           (* const function will be propagated by other phases *)
+           (* this lambda form can be propagated.
+              NOTE(junsong): we DO allow the free variables of the
+              function to get mutated in the scope.
            *)
-           let def_set = if EU.mutate_var v_id body then
-               IdSet.add v_id def_set
-             else def_set in
-           if x_is_assigned || (IdSet.mem v_id def_set) then
-             Let (p, x, x_v, propagate_rec body env def_set)
-           else 
-             let env = IdMap.add x (x_v, freevars) env in
-             Let (p, x, x_v, propagate_rec body env def_set)
-         | e when not x_is_assigned &&
-                  not (EU.multiple_usages x body) &&
-                  not (IdSet.is_empty freevars) &&
-                  (is_empty_inter freevars def_set) ->
-           begin match e with
-             | Lambda (_, _, _)
-             | Object (_, _, _) ->
-               let env = IdMap.add x (x_v, freevars) env in
-               Let (p, x, x_v, propagate_rec body env def_set)
-             | _ ->
-               (*for other cases, propagate this constant.*)
-           end
+           let env = IdMap.add x (x_v, freevars) env in
+           Let (p, x, x_v, propagate_rec body env def_set)             
+         | Object (_, _, _) when not (EU.has_side_effect x_v) &&
+                                 not x_is_assigned &&
+                                 not (EU.multiple_usages x body) ->
+           (* if an object has no side effect, it is just like the function
+              case above, though the object could have no free variables. *)
+           let env = IdMap.add x (x_v, freevars) env in
+           Let (p, x, x_v, propagate_rec body env def_set)
          | _ -> Let (p, x, x_v, propagate_rec body env def_set)
        end 
     | Rec (p, x, xexp, body) ->
