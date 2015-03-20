@@ -35,7 +35,7 @@ let split_number (name : id) : (string * int) option =
   else
     None
 
-(* return a fresh name as well a new space *)
+(* give an old name, return a fresh name as well a new space *)
 let rec fresh_name (name : id) (space : IdSet.t) : id * IdSet.t =
   if not (IdSet.mem name space) then
     name, IdSet.add name space
@@ -60,7 +60,6 @@ let rec make_new_name (xs : id list) (namespace : IdSet.t) : id list * IdSet.t =
       let new_tl, new_namespace = make_new_name tl new_namespace in
       hd :: new_tl, new_namespace
 
-(* give an old name, return an fresh name that has name as prefix *)
 let alpha_rename (func : exp) (namespace : IdSet.t) : exp =
   let rec resolve (exp : exp) (env : env) (namespace : IdSet.t) : exp =
     let resolve_helper e = resolve e env namespace in
@@ -101,9 +100,4 @@ let alpha_rename (func : exp) (namespace : IdSet.t) : exp =
       Lambda (p, new_ids, resolve body new_env new_namespace)
     | _ -> optimize resolve_helper exp
   in
-  (* first, let's make sure the function formal argument has conflict *)
-  match func with
-  | Lambda (p, xs, body) ->
-    (* rename xs in body to avoid conflict with namespace *)
-    resolve func IdMap.empty namespace
-  | _ -> failwith "alpha_rename only accepts function definition as the argument"
+  resolve func IdMap.empty namespace
