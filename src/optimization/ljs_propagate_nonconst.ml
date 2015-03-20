@@ -1,6 +1,7 @@
 open Prelude
 open Ljs_syntax
 open Ljs_opt
+open Ljs_alpha_rename
 module EU = Exp_util
 
 
