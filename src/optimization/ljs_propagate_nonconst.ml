@@ -14,9 +14,16 @@ module EU = Exp_util
 
 *)
 
+let debug_on = false
+
+let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "propagate_nonconst"
+
+
 (* Id => expression * free vars in expression *)
 type env = (exp * IdSet.t) IdMap.t
 let in_env x env = IdMap.mem x env
+let have_intersection s1 s2 =
+  not (IdSet.is_empty (IdSet.inter s1 s2))
 (* For functions and objects, propagate those that are just used once.
 
    For expressions that may have side effect, be careful not alter the
@@ -46,6 +53,22 @@ let rename_let x body namespace : id * exp * IdSet.t =
     let new_body = alpha_rename body new_space in
     new_x, new_body, new_space
 
+
+(* predicate for primitive constant *)
+let is_prim_constant (e : exp) : bool = match e with
+  | Null _
+  | Undefined _
+  | Num (_, _)
+  | String (_, _)
+  | True _
+  | False _ -> true
+  | _ -> false
+
+(* constant lambda contains no free vars. Side effect in the body is fine *)
+let is_lambda_constant (e: exp) : bool = match e with
+  | Lambda (_, ids, body) ->
+     IdSet.is_empty (free_vars e)
+  | _ -> false
 
 (* def_set stores the identifiers that are modified by assignment
    somewhere in their scopes, so any identifier that maps to such an
@@ -77,30 +100,73 @@ let propagate_nonconst (exp : exp) : exp =
           def_set 
       in
       let freevars = free_vars x_v in
-      begin match x_v with
+      let is_mutated_in_body = IdSet.mem x def_set in
+      if is_mutated_in_body || EU.multiple_usages x body then
         (* x_v has to be single-use form *)
-        (* TODO: generally, it could be an expression has no side effect; or an
-           expression that has side effect but used immediately in the body
-        *)
-        | Lambda (_, _, _) when not (IdSet.mem x def_set)&&
-                                not (EU.multiple_usages x body) &&
-                                not (IdSet.is_empty freevars) ->
-          (* const function will be propagated by other phases *)
-          (* this lambda form can be propagated.
-              NOTE(junsong): we DO allow the free variables of the
-              function to get mutated in the scope.
-          *)
-          let env = IdMap.add x (x_v, freevars) env in
-          Let (p, x, x_v, propagate_rec body env def_set)             
-        | Object (_, _, _) when not (EU.has_side_effect x_v) &&
-                                not (IdSet.mem x def_set) &&
-                                not (EU.multiple_usages x body) ->
-          (* if an object has no side effect, it is just like the function
-              case above, though the object could have no free variables. *)
+        let _ = dprint "let(%s=...) is mutated or used multiple times in body\n" x in
+        Let (p, x, x_v, propagate_rec body env def_set)
+      else begin match is_mutated_in_body, not (EU.multiple_usages x body), x_v with
+        | true, _, _ ->
+          (* x is mutated in the body, don't propagate x *)
+          let _ = dprint "do not propagate. let(%s=...) is mutated in body\n" x in
+          Let (p, x, x_v, propagate_rec body env def_set)
+
+        | _, _, x_v when (is_prim_constant x_v) || (is_lambda_constant x_v) ->
+          let _ = dprint_string "don't propagate constant var and constant lambda.\n" in
+          Let (p, x, x_v, propagate_rec body env def_set)
+          
+        (* --------- NOW: x is not mutated ----------*)
+        (* use this to propagate constant
+
+        | false, _ , x_v when is_prim_constant x_v ->
+          (* x is a constant, used what-ever many times, propagate it *)
+          let _ = dprint "%s is a constant, propagate" x in
           let env = IdMap.add x (x_v, freevars) env in
           Let (p, x, x_v, propagate_rec body env def_set)
-        (* TODO: if it has side effect, propagate with care *)
-        | _ -> Let (p, x, x_v, propagate_rec body env def_set)
+        *)
+
+        | false, true, Lambda (_, _, _) ->
+          (* a single-use lambda, propagate it 
+             NOTE: we DO allow the free variables of the function to
+             get mutated in the scope
+          *)
+          let _  = dprint "match single-use lambda case for let (%s=...)\n" x in
+          let env = IdMap.add x (x_v, freevars) env in
+          Let (p, x, x_v, propagate_rec body env def_set)
+
+
+        | false, true, x_v when IdSet.is_empty freevars ->
+          (* a single-use expression does not contain free variables, just propagate it *)
+          let _ = dprint_string "match expression that has no free variable. propagate it\n" in
+          let env = IdMap.add x (x_v, freevars) env in
+          Let (p, x, x_v, propagate_rec body env def_set)
+            
+        | false, true, x_v when have_intersection freevars def_set ->
+          (* a single-use expression contains free variables and the
+             free variables will be mutated, *)
+          if EU.no_side_effect_prior_use x body then
+            (* propagate it only when x is used before any side
+               effect *)
+            let _ = dprint "match no-side-effect-prior-use case for let (%s=..)\n" x in
+            let env = IdMap.add x (x_v, freevars) env in
+            Let (p, x, x_v, propagate_rec body env def_set)
+          else
+            let _ = dprint "cannot propagate let(%s=..) because it is used after side effect taking place\n" x in
+            Let (p, x, x_v, propagate_rec body env def_set)
+
+        | false, true, x_v when not (have_intersection freevars def_set) ->
+          (* a single-use expression contains free variables and these free variables are
+             not mutated. just propagate it *)
+          let _ = dprint "%s's expression has no mutated free variable, safe to propagate\n" x in
+          let env = IdMap.add x (x_v, freevars) env in
+          Let (p, x, x_v, propagate_rec body env def_set)
+            
+        | mutate, single, x_v ->
+          let _ = dprint_string (sprintf "mutated? %b\n" mutate) in
+          let _ = dprint_string (sprintf "single? %b\n" single) in
+          let _ = dprint_string (sprintf "intersect? %b\n" (have_intersection freevars def_set)) in
+          let _ = dprint "cannot propagate let(%s=...), no case matched\n" x in 
+          Let (p, x, x_v, propagate_rec body env def_set)
       end 
     | Rec (p, x, xexp, body) ->
       let namespace = existing_names env in
@@ -127,7 +193,7 @@ let propagate_nonconst (exp : exp) : exp =
       (* decide for each parameter whether it is modified in body:
           - if it does, add to def_set
           - if it does not, remove from def_set
-       *)
+      *)
       let def_set = List.fold_left
           (fun set x-> if EU.mutate_var x body then
               IdSet.add x set

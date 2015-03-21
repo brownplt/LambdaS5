@@ -361,4 +361,158 @@ let multiple_usages (var_id : id) (e : S.exp) : bool =
     | _ -> List.exists (fun x->x) (map (fun exp->multiple_usages_rec var_id exp) (S.child_exps e))
   in multiple_usages_rec var_id e
 
-          
+
+(* before any use of x, there is no side effect *)
+(* NOTE: the given exp should contains no duplicate bindings of x *)
+let rec no_side_effect_prior_use (x : id) (e : S.exp) : bool =
+  let rec use_id (id : id) (e : S.exp) : bool =
+    match e with
+    | S.Id (_, x) -> x = id
+    | S.Let (_, x, _, _) when x = id -> false
+    | S.Rec (_, x, _, _) when x = id -> false
+    | S.Lambda (_, xs, _) when List.mem id xs -> false
+    | S.SetBang (_, x, _) when x = id ->
+      failwith "[use id] this cannot happen; the name should have been renamed"
+    | _ -> List.exists (fun exp-> use_id id exp) (S.child_exps e)
+  in
+  let apply_to_attr (f : S.exp->bool) (attr : S.attrs) = 
+    let apply_to_option (opt : S.exp option) : bool = match opt with
+      | Some(e) -> f e
+      | None -> false
+    in 
+    apply_to_option attr.S.primval &&
+    apply_to_option attr.S.code &&
+    apply_to_option attr.S.proto
+  in
+  let rec apply_to_props (f : S.exp->bool) (props : (string * S.prop) list) : bool = 
+    let handle_prop p = match p with
+      | (s, S.Data (data, enum, config)) ->
+        f data.S.value
+      | (s, S.Accessor (acc, enum, config)) ->
+        f acc.S.getter && f acc.S.setter
+    in
+    List.for_all handle_prop props
+  in
+
+  let check_prior_use_x exp : bool = no_side_effect_prior_use x exp in
+  (* for every expression, if x is not in it but this expression
+     has side effect, the whole expressionn should return false.
+  *)
+  let x_in_use = use_id x e in
+  let e_has_side_effect = has_side_effect e in
+  match x_in_use, e_has_side_effect with
+  | false, true -> false
+  | false, false -> true
+  | true, false -> true
+  | true, true ->
+    (* NOTE: in the following expression, 
+       X IS IN USE and e has side effect. break down e and
+       do scrutiny *)
+    begin match e with
+      | S.Undefined _
+      | S.Null _
+      | S.String (_,_)
+      | S.Num (_,_)
+      | S.True _
+      | S.False _ 
+      | S.Id (_, _)
+      | S.Hint (_, _, _) ->
+        (* in these cases, e should have no side effect *)
+        failwith "unreachable"
+      | S.Object (_, attrs, props) ->
+        (*this says: if attrs has no side effect before x use,
+          continue to check attrs; otherwise return false *)
+        apply_to_attr check_prior_use_x attrs &&
+        apply_to_props check_prior_use_x props
+
+      | S.GetAttr(_, _, obj, field) ->
+        check_prior_use_x obj && check_prior_use_x field
+
+      | S.SetAttr (_, _, obj, field, newval) ->
+        check_prior_use_x obj &&
+        check_prior_use_x field &&
+        check_prior_use_x newval
+
+      | S.GetObjAttr (_, _, obj) ->
+        check_prior_use_x obj
+
+      | S.SetObjAttr (_, _, obj, attre) ->
+        check_prior_use_x obj &&
+        check_prior_use_x attre
+
+      | S.GetField (_, obj, fld, args) -> 
+        check_prior_use_x obj &&
+        check_prior_use_x fld &&
+        check_prior_use_x args
+
+
+      | S.SetField (_, obj, fld, newval, args) ->
+        check_prior_use_x obj &&
+        check_prior_use_x fld &&
+        check_prior_use_x newval &&
+        check_prior_use_x args
+
+      | S.DeleteField (_, obj, fld) ->
+        check_prior_use_x obj &&
+        check_prior_use_x fld
+
+      | S.OwnFieldNames (_, obj) -> 
+        check_prior_use_x obj
+
+      | S.SetBang (_, xx, v) ->
+        (* x in use and e is SetBang*)
+        let _ = assert (xx <> x) in
+        check_prior_use_x v
+
+
+      | S.Op1 (_, _, e) ->
+        check_prior_use_x e
+
+      | S.Op2 (_, _, e1, e2) ->
+        check_prior_use_x e1 && check_prior_use_x e2
+
+      | S.If (_, cond, thn, els) -> 
+        check_prior_use_x cond &&
+        check_prior_use_x thn &&
+        check_prior_use_x els
+
+      | S.App (_, func, args) ->
+        check_prior_use_x func &&
+        List.for_all check_prior_use_x args
+
+      | S.Seq (_, e1, e2) ->
+        check_prior_use_x e1 &&
+        check_prior_use_x e2
+
+      | S.Let (_, xx, exp, body) ->
+        let _ = assert (xx <> x) in
+        check_prior_use_x exp &&
+        check_prior_use_x body 
+
+      | S.Rec (_, xx, exp, body) ->
+        let _ = assert (x <> xx) in
+        check_prior_use_x exp &&
+        check_prior_use_x body
+
+      | S.Label (_, l, e) ->
+        check_prior_use_x e
+
+      | S.Break (_, l, e) ->
+        check_prior_use_x e
+
+      | S.TryCatch (_, body, catch) ->
+        check_prior_use_x body &&
+        check_prior_use_x catch
+
+      | S.TryFinally (_, body, fin) ->
+        check_prior_use_x body &&
+        check_prior_use_x fin
+
+      | S.Throw (_, e) ->
+        check_prior_use_x e
+
+      | S.Lambda (_, xs, e) ->
+        assert (not (List.mem x xs));
+        check_prior_use_x e
+    end
+

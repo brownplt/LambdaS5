@@ -88,6 +88,86 @@ let suite =
             func(){prim('+',x,y)}();
           x0
         }");
+
+    "propagate single-use object" >::
+    (cmp "
+       let (x={[]})
+       let (y = 1)
+         y := x
+       "
+       "
+       let (x = {[]})
+       let (y = 1)
+         y := {[]}
+       ");
+
+    "propagate with side effect but only with single use" >::
+    (no_change "
+       let (x = {[]})
+       let (y = 1) {
+         y := x;
+         y := x
+       }");
+
+    "do not propagate if side effect will happen before the use of id" >::
+    (no_change "
+       let (y = {[]})
+       let (f = test(y)) {
+         y := 15;
+         f
+       }");
+
+    "propagate in function" >::
+    (cmp "
+       func(x, y) {
+         label %ret: {
+           let (z = y['0'])
+             break %ret z
+         }}"
+       "func(x, y) {
+         label %ret: {
+           let (z = y['0'])
+             break %ret y['0']
+         }}");
+       
+    "propagating function allows side effect" >::
+    (cmp
+       "
+       let (y = 1)
+       let (x = func(t) { y }) {
+          y := 2;
+          x(1)
+       }"
+       "
+       let (y = 1)
+       let (x = func(t) { y }) {
+          y := 2;
+          func(t){y}(1)
+       }");
+
+    "do not propagate into function if the value will be changed" >::
+    (cmp
+      "
+      let (a = {[]})
+      let (b = func(){a}) {
+         a := 5;
+         b}"
+      "
+      let (a = {[]})
+      let (b = func(){a}) {
+         a := 5;
+         func(){a}
+      }");
+
+    "propagating non-function does not allow side effect" >::
+    (no_change
+       "
+       let (y = 1)
+       let (x = func(t) { y }()) {
+          y := 2;
+          x(1)
+       }");
+
   ]
 
 let _ =
