@@ -70,10 +70,13 @@ let is_lambda_constant (e: exp) : bool = match e with
      IdSet.is_empty (free_vars e)
   | _ -> false
 
-(* def_set stores the identifiers that are modified by assignment
-   somewhere in their scopes, so any identifier that maps to such an
-   id should not be appied copy propagation. This is a really
-   conservative approximation.
+(* def_set stores identifiers that are mutated in the scope.
+
+   propagate_nonconst makes sure that even if an expression has side
+   effect, the side effect happens in the same order as it was
+   before. This means that this transformation will clean the let
+   bindings as well, because clean dead code transformationn can do
+   nothing about an dead expression that may contain side effect.
 *)
 let propagate_nonconst (exp : exp) : exp =
   let rec propagate_rec (exp : exp) (env : env) (def_set : IdSet.t) : exp =
@@ -132,14 +135,14 @@ let propagate_nonconst (exp : exp) : exp =
           *)
           let _  = dprint "match single-use lambda case for let (%s=...)\n" x in
           let env = IdMap.add x (x_v, freevars) env in
-          Let (p, x, x_v, propagate_rec body env def_set)
+          propagate_rec body env def_set
 
 
         | false, true, x_v when IdSet.is_empty freevars ->
           (* a single-use expression does not contain free variables, just propagate it *)
           let _ = dprint_string "match expression that has no free variable. propagate it\n" in
           let env = IdMap.add x (x_v, freevars) env in
-          Let (p, x, x_v, propagate_rec body env def_set)
+          propagate_rec body env def_set
             
         | false, true, x_v when have_intersection freevars def_set ->
           (* a single-use expression contains free variables and the
@@ -149,7 +152,7 @@ let propagate_nonconst (exp : exp) : exp =
                effect *)
             let _ = dprint "match no-side-effect-prior-use case for let (%s=..)\n" x in
             let env = IdMap.add x (x_v, freevars) env in
-            Let (p, x, x_v, propagate_rec body env def_set)
+            propagate_rec body env def_set
           else
             let _ = dprint "cannot propagate let(%s=..) because it is used after side effect taking place\n" x in
             Let (p, x, x_v, propagate_rec body env def_set)
@@ -159,7 +162,7 @@ let propagate_nonconst (exp : exp) : exp =
              not mutated. just propagate it *)
           let _ = dprint "%s's expression has no mutated free variable, safe to propagate\n" x in
           let env = IdMap.add x (x_v, freevars) env in
-          Let (p, x, x_v, propagate_rec body env def_set)
+          propagate_rec body env def_set
             
         | mutate, single, x_v ->
           let _ = dprint_string (sprintf "mutated? %b\n" mutate) in

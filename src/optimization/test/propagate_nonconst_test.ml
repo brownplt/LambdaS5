@@ -17,8 +17,6 @@ let suite =
         let (t=2)
           g()"
        "let (x=1)
-        let (f = func() {x})
-        let (g = func() {(func(){x})()})
         let (t=2)
           func(){(func(){x})()}()");
 
@@ -31,8 +29,6 @@ let suite =
       let (x=2)
         g()"
        "let (x=1)
-      let (f = func() {x})
-      let (g = func() {(func(){x})()})
       let (x0=2)
         func() {(func(){x})()}()");
 
@@ -46,7 +42,6 @@ let suite =
         }"
        "let (x = 1)
         let (y = 2)
-        let (t = func(){prim('+',x,y)})
         func(x0) {
            x0 := func(){prim('+',x,y)}
         }");
@@ -63,7 +58,6 @@ let suite =
         }"
        "let (x = 1)
         let (y = 2)
-        let (t = func(){prim('+',x,y)})
         func(x0) {
           let (x1 = 2)
             func(){prim('+',x,y)}();
@@ -82,7 +76,6 @@ let suite =
         }"
        "let (x = 1)
         let (y = 2)
-        let (t = func(){prim('+',x,y)})
         func(x0) {
           let (y0 = 2)
             func(){prim('+',x,y)}();
@@ -96,7 +89,6 @@ let suite =
          y := x
        "
        "
-       let (x = {[]})
        let (y = 1)
          y := {[]}
        ");
@@ -126,7 +118,6 @@ let suite =
          }}"
        "func(x, y) {
          label %ret: {
-           let (z = y['0'])
              break %ret y['0']
          }}");
        
@@ -139,8 +130,7 @@ let suite =
           x(1)
        }"
        "
-       let (y = 1)
-       let (x = func(t) { y }) {
+       let (y = 1) {
           y := 2;
           func(t){y}(1)
        }");
@@ -153,8 +143,7 @@ let suite =
          a := 5;
          b}"
       "
-      let (a = {[]})
-      let (b = func(){a}) {
+      let (a = {[]}) {
          a := 5;
          func(){a}
       }");
