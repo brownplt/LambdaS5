@@ -1,7 +1,8 @@
 #!/bin/sh
 #
 #$ -cwd
-#$ -l long
+#
+# "use -l long to request long-hour machine"
 #
 # this script is supposed to be run in the directory containing config.txt
 

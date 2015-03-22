@@ -273,12 +273,12 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
 
 let get_last_one (lst : 'a list) : 'a =
   let len = List.length lst in
-  let _ = assert (not (len <> 0)) in
+  let _ = assert (len <> 0) in
   List.nth lst (len-1)
 
 let get_first_one (lst : 'a list) : 'a =
   let len = List.length lst in
-  let _ = assert (not (len <> 0)) in
+  let _ = assert (len <> 0) in
   List.nth lst 0
     
 let get_mean (lst : float list) : float =
@@ -304,12 +304,12 @@ let get_median (lst : float list) : float =
 (* ratio: max, min, mean, median *)
 let pretty_summary (hash : fileinfo_t) : unit =
   let calculate (lst : int list) : float =
-    (* given [i1, i2, ...in], calculate (in-i1)/i1 *)
+    (* given [i1, i2, ...in], calculate (i1-in)/i1 *)
     let last = (get_last_one lst)
                |> float_of_int in
     let fst =  (get_first_one lst)
                |> float_of_int in
-    (last -. fst) /. fst
+    ((fst -. last) /. fst) *. 100.0
   in
   let get_max_min_mean_median (lst : float list) : (float * float * float * float) =
     get_last_one lst,
@@ -320,31 +320,39 @@ let pretty_summary (hash : fileinfo_t) : unit =
   let print_info (prefix : string) (lst : float list) : unit =
     let max, min, mean, median =
       get_max_min_mean_median lst in
-    printf "%s: Max %3.2f, Min %3.2f, Mean %3.2f, Median %3.2f"
+    printf "%s: Max %6.2f, Min %6.2f, Mean %6.2f, Median %6.2f\n%!"
       prefix max min mean median
   in
-    
   (* for each file, get overall shrinkage of #env, #usr, #total *)
   let shrinkage : (float * float * float) list = Hashtbl.fold
-      (fun _ optinfo lst ->
+      (fun fname optinfo lst ->
          let env, usr = List.split optinfo in
+         (*let _ = printf "get shrinkage info of file %s\n%!" fname in
+         let _ = printf "env length: %d\n" (List.length env) in
+         let _ = calculate env in
+         let _ = printf "get shrinkage info of file %s\n%!" fname in
+         let _ = calculate usr in
+         let _ = printf "get shrinkage info of file %s\n%!" fname in*)
          (calculate env,
           calculate usr,
           calculate (List.map2 (fun e u -> e + u) env usr)) :: lst)
       hash []
   in
-  (* in increasing orders *)
-  let env_lst = List.sort compare
-      (List.map (fun (a,_,_)->a) shrinkage) in
-  let usr_lst = List.sort compare
-      (List.map (fun (_,b,_)->b) shrinkage) in
-  let all_lst = List.sort compare
-      (List.map (fun (_,_,c)->c) shrinkage) in
-  begin
-    print_info "Env" env_lst;
-    print_info "Usr" usr_lst;
-    print_info "All" all_lst
-  end
+  if shrinkage = [] then
+      printf "empty\n%!"
+  else
+      (* in increasing orders *)
+      let env_lst = List.sort compare
+          (List.map (fun (a,_,_)->a) shrinkage) in
+      let usr_lst = List.sort compare
+          (List.map (fun (_,b,_)->b) shrinkage) in
+      let all_lst = List.sort compare
+          (List.map (fun (_,_,c)->c) shrinkage) in
+      begin
+        print_info "Env" env_lst;
+        print_info "Usr" usr_lst;
+        print_info "All" all_lst
+      end
     
   
   
@@ -425,19 +433,22 @@ let performance cmd () =
   let sections = existing_sections () in
   pretty_sec sections
 
-let summary cmd () =
+let summary cmd (sec : string) =
   let _ = if !analyze_dir = "" then
       raise (Arg.Bad "-set-analyze is required") in
-  let rec print_summary rest_sections = match rest_sections with
-    | [] -> ()
-    | hd :: tl ->
-      let fileinfo = get_section_optinfo hd !analyze_dir in
-      printf "\nSection: %s\n" hd;
+  let print_summary sec =
+      let fileinfo = get_section_optinfo sec !analyze_dir in
+      printf "\nSection: %s\n" sec;
       pretty_summary fileinfo;
-      print_summary tl
   in
   let sections = existing_sections () in
-  print_summary sections
+  match sec with
+  | "all" ->
+    List.iter (fun section -> print_summary section) sections
+  | sec when (List.mem sec sections) ->
+    print_summary  sec
+  | _ ->
+    raise (Arg.Bad (sprintf "section %s is not found" sec))
 
 
 let list_section_diff cmd (sec : string) =
@@ -472,6 +483,8 @@ let main () : unit =
         "produce optimization performance(measured by AST node shrinkage) results";
       strCmd "-list-section-diff" list_section_diff
         "list files that passed in base directory but failed in analyze directory";
+      strCmd "-summary" summary
+        "<section>|<all> give summary for specific section(or all sections)"
     ]
     (fun s -> printf "anot: %s" s)
     ("Note: argument order matters.")
