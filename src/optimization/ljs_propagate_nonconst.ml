@@ -14,7 +14,7 @@ module EU = Exp_util
 
 *)
 
-let debug_on = false
+let debug_on = true
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "propagate_nonconst"
 
@@ -145,11 +145,11 @@ let propagate_nonconst (exp : exp) : exp =
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
 
-        (*| false, _, Id (_, _) ->
+        | false, _, Id (_, _) ->
           (* this is a copy, no mater how many times it is used, just propagate it *)
           let _ = dprint "let (%s=..) is bound to an id, just propagate it\n" x in
           let env = IdMap.add x (x_v, freevars) env in
-          propagate_rec body env def_set*)
+          propagate_rec body env def_set
             
         | false, true, x_v when have_intersection freevars def_set ->
           (* a single-use expression contains free variables and the
