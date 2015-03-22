@@ -57,6 +57,22 @@ let exp_util_test =
           y:=x"
        true);
 
+    "test_no_side_effect_prior_use 7" >::
+    (test_no_side_effect_prior_use
+       "px"
+       "let (py = %ToPrimitiveHint(r, 'number'))
+        rest(px, py)"
+       false
+     );
+
+   "test_no_side_effect_prior_use 7" >::
+    (test_no_side_effect_prior_use
+       "py"
+       "let (px = %ToPrimitiveHint(l, 'number'))
+        rest(px, py)"
+       false
+     );
+    
     "test mutliple usages" >::
     (test_multiple_usages
        "%context0"

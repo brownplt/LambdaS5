@@ -167,6 +167,29 @@ let suite =
       let (context0 = func(){1})
          f(context0, context0)");
 
+    "regression test" >::
+    (cmp
+       "
+       let (py = %ToPrimitiveHint(r, 'number'))
+       let (px = %ToPrimitiveHint(l, 'number'))
+       rest(px, py)"
+       "
+       let (py = %ToPrimitiveHint(r, 'number'))
+       rest(%ToPrimitiveHint(l, 'number'), py)"
+    );
+
+    "side effect takes place" >::
+    (* rerun this can shrink more by propagating p *)
+    (cmp
+       "
+       let (p = prim('print', 1))
+       let (q = prim('print', 2))
+         f(p, q)"
+       "
+       let (p = prim('print', 1))
+         f(p, prim('print', 2))"
+    );
+
   ]
 
 let _ =
