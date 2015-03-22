@@ -10,7 +10,14 @@ let exp_util_test =
       assert_equal result (no_side_effect_prior_use id (parse code))
     in
     test
+  in
+  let test_multiple_usages (id : id) (code : string) (result : bool) = 
+    let test test_ctxt = 
+      assert_equal result (multiple_usages id (parse code))
+    in
+    test
   in 
+  
   "Test Exp Util" >:::
   [
     "test_no_side_effect_prior_use 1" >::
@@ -48,6 +55,18 @@ let exp_util_test =
        "x"
        "let (f = func(t){prim('print',t)})
           y:=x"
+       true);
+
+    "test mutliple usages" >::
+    (test_multiple_usages
+       "%context0"
+       "prim('!', prim('stx=', %instanceof(%context0['e' , {[#proto: null,
+                                                      #class: 'Object',
+                                                      #extensible: true,]}],
+                                    %context0['TypeError' , {[#proto: null,
+                                                              #class: 'Object',
+                                                              #extensible: true,]}]) , true))"
+       (*"f(%context0['e'], %context0['TypeError'])"*)
        true);
     
   ]

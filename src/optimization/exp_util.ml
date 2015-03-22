@@ -343,9 +343,9 @@ let multiple_usages (var_id : id) (e : S.exp) : bool =
            else
              multiple_usages_rec var_id body
          end
-    | S.SetBang (_, x, vexp) -> 
-       if (x = var_id) then failwith "should not reach here"
-       else multiple_usages_rec var_id vexp
+    | S.SetBang (_, x, vexp) ->
+      (*ignore when x = id*)
+      multiple_usages_rec var_id vexp
     | S.Rec (_, x, xexp, body) ->
        if (multiple_usages_rec var_id xexp) then true
        else begin

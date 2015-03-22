@@ -41,17 +41,24 @@ let remove_id_value (id : id) (env : env) : env =
 (* get current free variables in the env *)
 let existing_names env : IdSet.t =
   IdMap.fold (fun str elm set ->
-      let _, frees = elm in
-      IdSet.union frees set
+      let k, frees = elm in
+      IdSet.union (IdSet.add str frees) set
     ) env IdSet.empty
 
-let rename_let x body namespace : id * exp * IdSet.t =
-  if not (IdSet.mem x namespace) then
-    x, body, namespace
-  else
-    let new_x, new_space = fresh_name x namespace in
-    let new_body = alpha_rename body new_space in
-    new_x, new_body, new_space
+let rename_let exp namespace : id * exp * IdSet.t =
+  match exp with
+  | Let (_, x, _, body) ->
+    if not (IdSet.mem x namespace) then
+      x, body, namespace
+    else
+      let new_x, new_space = fresh_name x namespace in
+      let new_exp = alpha_rename exp namespace in
+      begin match new_exp with
+        | Let (_, new_x, _, new_body) ->
+          new_x, new_body, new_space
+        | _ -> failwith "[rename_let] unreachable"
+      end
+  | _ -> failwith "[rename_let] unreachable"
 
 
 (* predicate for primitive constant *)
@@ -91,24 +98,18 @@ let propagate_nonconst (exp : exp) : exp =
       let x_v = propagate_rec xexp env def_set in
       (* rename current x into something else if necessary. *)
       let namespace = existing_names env in
-      let x, body, namespace = rename_let x body namespace in
-      (* x may or may be be renamed, so x could be rebound and might
+      let x, body, namespace = rename_let exp namespace in
+      (* if x is mutated in its scope, the x should not be propagated;
+         and x may or may be be renamed, so x could be rebound and might
          be able to propagate again. remove from the def_set *)
-      let def_set = IdSet.remove x def_set in
-      let _ = assert (not (IdSet.mem x def_set)) in
-      (* if x is mutated in its scope, the x should not be propagated *)
       let def_set = if EU.mutate_var x body then 
-          IdSet.add x def_set  (* add new_x instead of x *)
+          IdSet.add x def_set  
         else
-          def_set 
+          IdSet.remove x def_set 
       in
       let freevars = free_vars x_v in
       let is_mutated_in_body = IdSet.mem x def_set in
-      if is_mutated_in_body || EU.multiple_usages x body then
-        (* x_v has to be single-use form *)
-        let _ = dprint "let(%s=...) is mutated or used multiple times in body\n" x in
-        Let (p, x, x_v, propagate_rec body env def_set)
-      else begin match is_mutated_in_body, not (EU.multiple_usages x body), x_v with
+      begin match is_mutated_in_body, not (EU.multiple_usages x body), x_v with
         | true, _, _ ->
           (* x is mutated in the body, don't propagate x *)
           let _ = dprint "do not propagate. let(%s=...) is mutated in body\n" x in
@@ -143,6 +144,12 @@ let propagate_nonconst (exp : exp) : exp =
           let _ = dprint_string "match expression that has no free variable. propagate it\n" in
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
+
+        (*| false, _, Id (_, _) ->
+          (* this is a copy, no mater how many times it is used, just propagate it *)
+          let _ = dprint "let (%s=..) is bound to an id, just propagate it\n" x in
+          let env = IdMap.add x (x_v, freevars) env in
+          propagate_rec body env def_set*)
             
         | false, true, x_v when have_intersection freevars def_set ->
           (* a single-use expression contains free variables and the
@@ -160,17 +167,17 @@ let propagate_nonconst (exp : exp) : exp =
         | false, true, x_v when not (have_intersection freevars def_set) ->
           (* a single-use expression contains free variables and these free variables are
              not mutated. just propagate it *)
-          let _ = dprint "%s's expression has no mutated free variable, safe to propagate\n" x in
+          let _ = dprint "let(%s=..) bound value has free vars and free vars are not mutated, just propagate it\n" x in
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
-            
+
         | mutate, single, x_v ->
+          let _ = dprint "cannot propagate let(%s=...), no case matched\n" x in
           let _ = dprint_string (sprintf "mutated? %b\n" mutate) in
           let _ = dprint_string (sprintf "single? %b\n" single) in
           let _ = dprint_string (sprintf "intersect? %b\n" (have_intersection freevars def_set)) in
-          let _ = dprint "cannot propagate let(%s=...), no case matched\n" x in 
           Let (p, x, x_v, propagate_rec body env def_set)
-      end 
+      end
     | Rec (p, x, xexp, body) ->
       let namespace = existing_names env in
       let exp = alpha_rename exp namespace in

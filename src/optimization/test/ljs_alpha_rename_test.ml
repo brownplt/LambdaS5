@@ -107,6 +107,23 @@ let suite =
           prim('+', n6, n3)
         }(n4, n5)
        }");
+
+    "rename let bindings" >::
+    (cmp
+       ["a"]
+       "
+       let (a = {[#proto: a]})
+        prim('!', prim('stx=', %instanceof(a['e'],
+                                           a['TypeError']),
+                               true))
+       "
+       "
+       let (a0 = {[#proto: a]})
+        prim('!', prim('stx=', %instanceof(a0['e'],
+                                           a0['TypeError']),
+                               true))
+       ");
+    
   ]
 
 let _ =

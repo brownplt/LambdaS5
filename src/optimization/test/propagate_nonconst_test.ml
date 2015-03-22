@@ -157,6 +157,16 @@ let suite =
           x(1)
        }");
 
+    "stop propagating if the id is shadowed" >::
+    (cmp
+      "
+      let (context = {[]})
+      let (context = func(){1})
+         f(context, context)"
+      "
+      let (context0 = func(){1})
+         f(context0, context0)");
+
   ]
 
 let _ =
