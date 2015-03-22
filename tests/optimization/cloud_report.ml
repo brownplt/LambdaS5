@@ -271,6 +271,84 @@ let pretty_fileinfo (hash : fileinfo_t) : unit =
     List.iter pretty_one_file fnames
   end
 
+let get_last_one (lst : 'a list) : 'a =
+  let len = List.length lst in
+  let _ = assert (not (len <> 0)) in
+  List.nth lst (len-1)
+
+let get_first_one (lst : 'a list) : 'a =
+  let len = List.length lst in
+  let _ = assert (not (len <> 0)) in
+  List.nth lst 0
+    
+let get_mean (lst : float list) : float =
+  let sum = List.fold_left (+.) 0. lst in
+  sum /. (float_of_int (List.length lst))
+
+let get_median (lst : float list) : float =
+  let len = List.length lst in
+  if (len mod 2) = 1 then
+    let middle = len - 1
+                 |> float_of_int
+                 |> (fun n -> n /. 2.0)
+                 |> int_of_float in
+    List.nth lst middle
+  else
+    let middle1 = len
+                 |> float_of_int
+                 |> (fun n -> n /. 2.0)
+                 |> int_of_float in
+    let middle2 = middle1 - 1 in
+    ((List.nth lst middle1) +. (List.nth lst middle2)) /. 2.0
+
+(* ratio: max, min, mean, median *)
+let pretty_summary (hash : fileinfo_t) : unit =
+  let calculate (lst : int list) : float =
+    (* given [i1, i2, ...in], calculate (in-i1)/i1 *)
+    let last = (get_last_one lst)
+               |> float_of_int in
+    let fst =  (get_first_one lst)
+               |> float_of_int in
+    (last -. fst) /. fst
+  in
+  let get_max_min_mean_median (lst : float list) : (float * float * float * float) =
+    get_last_one lst,
+    get_first_one lst,
+    get_mean lst,
+    get_median lst
+  in
+  let print_info (prefix : string) (lst : float list) : unit =
+    let max, min, mean, median =
+      get_max_min_mean_median lst in
+    printf "%s: Max %3.2f, Min %3.2f, Mean %3.2f, Median %3.2f"
+      prefix max min mean median
+  in
+    
+  (* for each file, get overall shrinkage of #env, #usr, #total *)
+  let shrinkage : (float * float * float) list = Hashtbl.fold
+      (fun _ optinfo lst ->
+         let env, usr = List.split optinfo in
+         (calculate env,
+          calculate usr,
+          calculate (List.map2 (fun e u -> e + u) env usr)) :: lst)
+      hash []
+  in
+  (* in increasing orders *)
+  let env_lst = List.sort compare
+      (List.map (fun (a,_,_)->a) shrinkage) in
+  let usr_lst = List.sort compare
+      (List.map (fun (_,b,_)->b) shrinkage) in
+  let all_lst = List.sort compare
+      (List.map (fun (_,_,c)->c) shrinkage) in
+  begin
+    print_info "Env" env_lst;
+    print_info "Usr" usr_lst;
+    print_info "All" all_lst
+  end
+    
+  
+  
+         
 let diff_section (section : name_t) : unit =
   assert (List.mem section sections);
   let analyze_result_hash = Hashtbl.create 7000 in
@@ -346,6 +424,21 @@ let performance cmd () =
   in
   let sections = existing_sections () in
   pretty_sec sections
+
+let summary cmd () =
+  let _ = if !analyze_dir = "" then
+      raise (Arg.Bad "-set-analyze is required") in
+  let rec print_summary rest_sections = match rest_sections with
+    | [] -> ()
+    | hd :: tl ->
+      let fileinfo = get_section_optinfo hd !analyze_dir in
+      printf "\nSection: %s\n" hd;
+      pretty_summary fileinfo;
+      print_summary tl
+  in
+  let sections = existing_sections () in
+  print_summary sections
+
 
 let list_section_diff cmd (sec : string) =
   let _ = if !analyze_dir = "" || !base_dir= "" then
