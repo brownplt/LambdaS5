@@ -14,7 +14,7 @@ module EU = Exp_util
 
 *)
 
-let debug_on = true
+let debug_on = false
 
 let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "propagate_nonconst"
 
@@ -138,35 +138,39 @@ let propagate_nonconst (exp : exp) : exp =
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
 
-
-        | false, true, x_v when IdSet.is_empty freevars ->
-          (* a single-use expression does not contain free variables, just propagate it *)
-          let _ = dprint_string "match expression that has no free variable. propagate it\n" in
-          let env = IdMap.add x (x_v, freevars) env in
-          propagate_rec body env def_set
-
         | false, _, Id (_, _) ->
           (* this is a copy, no mater how many times it is used, just propagate it *)
           let _ = dprint "let (%s=..) is bound to an id, just propagate it\n" x in
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
             
-        | false, true, x_v when have_intersection freevars def_set ->
-          (* a single-use expression contains free variables and the
-             free variables will be mutated, *)
+        | false, true, x_v when EU.has_side_effect x_v || have_intersection freevars def_set ->
+          (* a single-use expression has side effect, propagate it with care *)
           if EU.no_side_effect_prior_use x body then
             (* propagate it only when x is used before any side
                effect *)
-            let _ = dprint "match no-side-effect-prior-use case for let (%s=..)\n" x in
+            let _ = dprint "let (%s=..) has side effect or to-be-mutated var, but it used immediately, propagate it\n" x in
             let env = IdMap.add x (x_v, freevars) env in
             propagate_rec body env def_set
           else
-            let _ = dprint "cannot propagate let(%s=..) because it is used after side effect taking place\n" x in
+            let _ = dprint "cannot propagate let(%s=..) because of the side effect\n" x in
             Let (p, x, x_v, propagate_rec body env def_set)
+
+        (*-------- Now, x has no side effects --------*)
+        | false, true, x_v when IdSet.is_empty freevars ->
+          (* a single-use expression does not contain free variables,
+             just propagate it.  like: prim('+', 1, 2) .  NOTE: side
+             effect has to be checked before this, an expression that
+             does not contain free vars might has side effect! like
+             prim('pretty', 1) *)
+          let _ = dprint_string "match expression that has no free variable. propagate it\n" in
+          let env = IdMap.add x (x_v, freevars) env in
+          propagate_rec body env def_set
 
         | false, true, x_v when not (have_intersection freevars def_set) ->
           (* a single-use expression contains free variables and these free variables are
-             not mutated. just propagate it *)
+             not mutated. just propagate it. For example: prim('+', x, y);
+          *)
           let _ = dprint "let(%s=..) bound value has free vars and free vars are not mutated, just propagate it\n" x in
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
