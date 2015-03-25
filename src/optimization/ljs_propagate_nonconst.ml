@@ -118,15 +118,15 @@ let propagate_nonconst (exp : exp) : exp =
         | _, _, x_v when (is_prim_constant x_v) || (is_lambda_constant x_v) ->
           let _ = dprint_string "don't propagate constant var and constant lambda.\n" in
           Let (p, x, x_v, propagate_rec body env def_set)
-          
+
         (* --------- NOW: x is not mutated ----------*)
         (* use this to propagate constant
 
-        | false, _ , x_v when is_prim_constant x_v ->
-          (* x is a constant, used what-ever many times, propagate it *)
-          let _ = dprint "%s is a constant, propagate" x in
-          let env = IdMap.add x (x_v, freevars) env in
-          Let (p, x, x_v, propagate_rec body env def_set)
+           | false, _ , x_v when is_prim_constant x_v ->
+           (* x is a constant, used what-ever many times, propagate it *)
+           let _ = dprint "%s is a constant, propagate" x in
+           let env = IdMap.add x (x_v, freevars) env in
+           Let (p, x, x_v, propagate_rec body env def_set)
         *)
 
         | false, true, Lambda (_, _, _) ->
@@ -139,17 +139,27 @@ let propagate_nonconst (exp : exp) : exp =
           propagate_rec body env def_set
 
         | false, _, Id (_, _) ->
-          (* this is a copy, no mater how many times it is used, just propagate it *)
-          let _ = dprint "let (%s=..) is bound to an id, just propagate it\n" x in
-          let env = IdMap.add x (x_v, freevars) env in
-          propagate_rec body env def_set
-            
+          (* this is a copy, it can be used many times. in case that
+             the id is mutated, propagate it with care *)
+          if not (have_intersection freevars def_set) then
+            (* free vars is not mutated *)
+            let _ = dprint "the id in let (%s=...) is not mutated, just propagated it\n" x in
+            let env = IdMap.add x (x_v, freevars) env in
+            propagate_rec body env def_set
+          else if EU.no_side_effect_prior_use x body then
+            let _ = dprint "let (%s=..) is bound to an mutated id but it is used immediately, just propagate it\n" x in
+            let env = IdMap.add x (x_v, freevars) env in
+            propagate_rec body env def_set
+          else
+            let _ = dprint "cannot propagate the id let(%s=...) because of the side effect\n" x in
+            Let (p, x, x_v, propagate_rec body env def_set)
+
         | false, true, x_v when EU.has_side_effect x_v || have_intersection freevars def_set ->
           (* a single-use expression has side effect, propagate it with care *)
           if EU.no_side_effect_prior_use x body then
             (* propagate it only when x is used before any side
                effect *)
-            let _ = dprint "let (%s=..) has side effect or to-be-mutated var, but it used immediately, propagate it\n" x in
+            let _ = dprint "let (%s=..) has side effect or to-be-mutated var, but it is used immediately, propagate it\n" x in
             let env = IdMap.add x (x_v, freevars) env in
             propagate_rec body env def_set
           else
