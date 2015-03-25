@@ -8,8 +8,8 @@ open Ljs_pretty_html
 open Reachability
 open Ljs_fold_const
 open Ljs_propagate_const
+open Ljs_propagate_nonconst
 open Ljs_eliminate_deadcode
-open Ljs_propagate_copy
 open Ljs_inline_function
 open Ljs_restore_id
 open Ljs_clean_env
@@ -399,14 +399,14 @@ module S5 = struct
     let new_ljs = propagate_const ljs in
     push_ljs new_ljs
 
+  let opt_propagate_nonconst cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = propagate_nonconst ljs in
+    push_ljs new_ljs
+
   let opt_eliminate_deadcode cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = eliminate_deadcode ljs in
-    push_ljs new_ljs
-
-  let opt_propagate_copy cmd () =
-    let ljs = pop_ljs cmd in
-    let new_ljs = propagate_copy ljs in
     push_ljs new_ljs
 
   let opt_inline_function cmd () =
@@ -598,10 +598,10 @@ module S5 = struct
           "perform constant folding on s5";
         unitCmd "-opt-propagate-const" opt_propagate_const
           "perform constant propagation on s5";
+        unitCmd "-opt-propagate-nonconst" opt_propagate_nonconst
+          "propagate single-use functions, objects, and let bindings in s5";
         unitCmd "-opt-eliminate-deadcode" opt_eliminate_deadcode
           "perform dead code elimination on s5";
-        unitCmd "-opt-propagate-copy" opt_propagate_copy
-          "propagate copy (let bindings of an id to another id) on s5";
         unitCmd "-opt-inline-function" opt_inline_function
           "perform function inlining on s5";
         unitCmd "-opt-clean-env" opt_clean_env
