@@ -10,7 +10,6 @@ open Ljs_fold_const
 open Ljs_propagate_const
 open Ljs_propagate_nonconst
 open Ljs_eliminate_deadcode
-open Ljs_propagate_copy
 open Ljs_inline_function
 open Ljs_restore_id
 open Ljs_clean_env
@@ -410,11 +409,6 @@ module S5 = struct
     let new_ljs = eliminate_deadcode ljs in
     push_ljs new_ljs
 
-  let opt_propagate_copy cmd () =
-    let ljs = pop_ljs cmd in
-    let new_ljs = propagate_copy ljs in
-    push_ljs new_ljs
-
   let opt_inline_function cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = inline_function ljs in
@@ -608,8 +602,6 @@ module S5 = struct
           "propagate single-use functions, objects, and let bindings in s5";
         unitCmd "-opt-eliminate-deadcode" opt_eliminate_deadcode
           "perform dead code elimination on s5";
-        unitCmd "-opt-propagate-copy" opt_propagate_copy
-          "propagate copy (let bindings of an id to another id) on s5";
         unitCmd "-opt-inline-function" opt_inline_function
           "perform function inlining on s5";
         unitCmd "-opt-clean-env" opt_clean_env
