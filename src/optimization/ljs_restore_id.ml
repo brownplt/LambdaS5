@@ -479,7 +479,7 @@ let rec restore_id (e : exp) : exp =
       begin match get_localcontext e with
         | None -> (* not a new context binding in lambda *)
           (* in the desugared code, there is no place to bind %context to a non-obj *)
-          assert (x <> "%context");
+          (*assert (x <> "%context");*)
           Let (p, x, x_v, restore_rec ~in_lambda body ctx)
         | Some (new_let) -> (* FIXME: 12.14-1 *)
           dprint "new_let is %s\n" (Exp_util.ljs_str new_let);
@@ -526,24 +526,8 @@ let rec restore_id (e : exp) : exp =
   (*let _ = IdMap.iter (fun k (v,b)->printf "%s  -> %s,%b\n%!" k (Exp_util.ljs_str v) b) names in*)
   let rec jump_env (e : exp) : exp =
     match e with
-    | Let (p, "%context", Id (p1, c), body) ->
-      if (only_strict && c = "%strictContext") || (not only_strict) then
-        begin 
-          if eligible_for_restoration e then
-            begin
-              dprint_string "eligible for restore, start restore...\n";
-              let newbody = restore_rec body names in
-              Let (p, "%context", Id (p1, c), newbody)
-            end
-          else 
-            (dprint_string "not eligible for restore, return original one\n";
-             e)
-        end
-      else
-        begin
-          dprint_string "find nonstrict context. not eligible for restore...\n";
-          e
-        end 
+    | Seq (p0, S.Hint (p1, hint, e), e2) when is_env_delimiter hint ->
+      Seq (p0, S.Hint (p1, hint, e), restore_rec e2 names)
     | _ -> optimize jump_env e
   in
   let rec propagate_this (e : exp) (env : names_t) =

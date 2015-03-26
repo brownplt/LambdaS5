@@ -17,6 +17,7 @@ open Ljs_eliminate_static_checks
 open Ljs_convert_assignment
 open Ljs_no_checks
 open Ljs_fixed_arity
+open Exp_util
 
 type node =
   | Js of Js_syntax.program
@@ -448,18 +449,9 @@ module S5 = struct
     let rec count (e : exp) : int =
       match e with
       | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
-    let usercode_regexp = Str.regexp ".*USER CODE BELOW.*" in
-    let rec usercode_count (e : exp) : int = match e with
-      | Seq (_, Hint (_, id, _), e2)
-        when (Str.string_match usercode_regexp id 0) ->
-        let total = usercode_count e2 in
-        (* if this hint is the nearest to the user code, count e2 *)
-        if total = 0 then (count e2)
-        else total
-      | _ -> List.fold_left (+) 0 (List.map usercode_count (child_exps e)) in
     let ljs = pop_ljs cmd in
     let total = count ljs in
-    let usercode_n = usercode_count ljs in
+    let usercode_n = apply_to_user_code ljs count in
     let envn, usern = 
       if usercode_n = 0 then (* no env delimitor *)
         0, total - usercode_n
@@ -471,17 +463,12 @@ module S5 = struct
     end
 
   let print_user_s5 cmd () =
-    let usercode_regexp = Str.regexp ".*USER CODE BELOW.*" in
-    let rec print (e : exp) : bool = match e with
-      | Seq (_, Hint(_, id, _), e2)
-        when (Str.string_match usercode_regexp id 0) ->
-        let already_printed = print e2 in
-        if already_printed then true
-        else (Ljs_pretty.exp e2 std_formatter; print_newline (); true)
-      | _ -> List.exists print (child_exps e)
-    in
     match peek cmd with
-    | Ljs src -> ignore(print src)
+    | Ljs src ->
+      apply_to_user_code src
+        (fun e ->
+           Ljs_pretty.exp e std_formatter;
+           print_newline ();)
     | _ -> failwith "print-user-s5 only supports printing s5 code"
 
   let save_s5 cmd (filename : string) =

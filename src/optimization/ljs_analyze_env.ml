@@ -91,9 +91,18 @@ let get_env_names (exp : exp) : names_t =
     match exp with
     | SetAttr (_, Writable, o, String(_, fld_name), False _) when is_global o ->
       (* match %global["fld_name"<#writable> = false] *)
-      let id, _ = IdMap.find fld_name !names in
-      names := IdMap.add fld_name (id, false) !names;
-      exp
+      begin try
+        let id, _ = IdMap.find fld_name !names in
+        names := IdMap.add fld_name (id, false) !names;
+        exp
+        with _ ->
+          (* pattern %global['fld_name'<#writable>=false] is found, but the field is not found
+             something wrong with the fld_name, unmap it
+          *)
+          (*names := IdMap.remove fld_name !names;
+            exp*)
+          failwith "error field name during scanning environment"
+      end
     | App (_, defineProperty, [o; String(_, fld_name); obj])
       when is_global o && is_defineOwnProperty defineProperty ->
       (* match defineOwnProperty(%global, "fld_name", {[] "value":..,"writable":..}) *)
@@ -106,9 +115,9 @@ let get_env_names (exp : exp) : names_t =
       end;
       exp
     | SetField (_, o, String(_, fld_name), v, _)
-      when is_global o && (is_Id v || is_Num v) ->
+      when is_global o && (is_Id v || is_Num v || is_Undef v) ->
       (* match %global["RegExp" = %RegExpGlobalFuncObj]; *) 
-      (* match %global["Infinity" = +inf]; *)     
+      (* match %global["Infinity" = +inf]; *)
       let real_v = get_correct_exp v env in
       names := IdMap.add fld_name (real_v, true) !names;
       exp

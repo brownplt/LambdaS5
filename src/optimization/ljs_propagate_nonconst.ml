@@ -254,4 +254,5 @@ let propagate_nonconst (exp : exp) : exp =
     | Hint (_,_,_)
       -> optimize propagate exp
   in
-  propagate_rec exp IdMap.empty IdSet.empty
+  EU.keep_env_apply_to_user_code exp
+    (fun e -> propagate_rec e IdMap.empty IdSet.empty)

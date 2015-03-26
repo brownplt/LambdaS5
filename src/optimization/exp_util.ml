@@ -1,5 +1,6 @@
 open Prelude
 open Ljs_delta
+open Ljs_opt
 module S = Ljs_syntax
 module V = Ljs_values
 
@@ -187,6 +188,10 @@ let is_Id (x : S.exp) : bool = match x with
 
 let is_Num (x : S.exp) : bool = match x with
   | S.Num (_, _) -> true
+  | _ -> false
+
+let is_Undef (x : S.exp) : bool = match x with
+  | S.Undefined _ -> true
   | _ -> false
 
 let rec is_constant (e : S.exp) pool : bool = match e with
@@ -515,4 +520,58 @@ let rec no_side_effect_prior_use (x : id) (e : S.exp) : bool =
         assert (not (List.mem x xs));
         check_prior_use_x e
     end
+
+let usercode_regexp = Str.regexp ".*USER CODE BELOW.*"
+
+let is_env_delimiter str =
+  Str.string_match usercode_regexp str 0
+
+(* reach the delimiter of environment and user code *)
+let rec get_code_after_delimiter e : S.exp option =
+  match e with
+  | S.Seq (_, S.Hint (p, id, _), e2) when is_env_delimiter id ->
+    Some e2
+  | S.Seq (_, _, e2) ->
+    get_code_after_delimiter e2
+  | S.Let (_, _, _, body) ->
+    get_code_after_delimiter body
+  | S.Rec (_, _, _, body) ->
+    get_code_after_delimiter body
+  | _ ->
+    None
+
+(* only apply function f to user code. This function will totally
+   ignore the environment code. Note: USER CODE BELOW hint might occur
+   multiple times.
+*)
+let apply_to_user_code (e : S.exp) (f : (S.exp -> 'a)) : 'a =
+  let rec get_user_code_rec e : S.exp =
+    match get_code_after_delimiter e with
+    | None -> e
+    | Some (code) ->
+      get_user_code_rec code
+  in
+  f (get_user_code_rec e)
+
+(*TOO slow to be useful*)
+let rec keep_env_apply_to_user_code (e : S.exp) (f : (S.exp -> S.exp)) : S.exp =
+  let apply e f =
+    match e with
+    | S.Seq (p, S.Hint (p1, id, e), e2) when is_env_delimiter id ->
+      begin match get_code_after_delimiter e2 with
+        | None ->
+          S.Seq (p, S.Hint (p1, id, e), f e2)
+        | Some (_) ->
+          S.Seq (p, S.Hint (p1, id, e), keep_env_apply_to_user_code e2 f)
+      end
+    | _ ->
+      optimize (fun e -> keep_env_apply_to_user_code e f) e
+  in
+  match get_code_after_delimiter e with
+  | None ->
+    (* there is not environment *)
+    f e
+  | _ ->
+    (* otherwise, start apply f to user code *)
+    apply e f
 
