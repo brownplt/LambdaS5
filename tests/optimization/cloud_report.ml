@@ -5,6 +5,8 @@ open Str
 
 let analyze_dir = ref ""
 let base_dir = ref ""
+let latex_format = ref false
+let table_header_printed = ref false
 
 let sections =
   let names = ["07"; "08"; "09"; "10"; "11"; "12"; "13"; "14"; "15"] in
@@ -126,11 +128,17 @@ let compare_section (section : name_t) : unit =
   let base_result_list = hash_to_list base_result_hash in
   let analyze_pass, analyze_fail = num_pass_fail analyze_result_list in
   let base_pass, base_fail = num_pass_fail base_result_list in
-  print_endline ("section: " ^ section);
-  printf "%-10s%-40s%-30s\n" "" (Filename.basename !analyze_dir) (Filename.basename !base_dir);
-  printf "%-10s%15d%30d\n" "PASS"  analyze_pass base_pass;
-  printf "%-10s%15d%30d\n" "FAIL"  analyze_fail base_fail;
-  printf "%!"
+  if not (!latex_format) then begin
+    print_endline ("section: " ^ section);
+    printf "%-10s%-40s%-30s\n" "" (Filename.basename !analyze_dir) (Filename.basename !base_dir);
+    printf "%-10s%15d%30d\n" "PASS"  analyze_pass base_pass;
+    printf "%-10s%15d%30d\n" "FAIL"  analyze_fail base_fail;
+    printf "%!"
+  end else begin
+    (*section | transformed pass | transformed fail | untranformed pass | untranformed fail *)
+    printf "%s & %d & %d & %d & %d \\\\\n\\hline\n%!"
+      section analyze_pass analyze_fail base_pass base_fail
+  end
 
 (* ============================= produce performance ============================= *)
 type count_t = int * int
@@ -302,7 +310,7 @@ let get_median (lst : float list) : float =
     ((List.nth lst middle1) +. (List.nth lst middle2)) /. 2.0
 
 (* ratio: max, min, mean, median *)
-let pretty_summary (hash : fileinfo_t) : unit =
+let pretty_summary (use_latex: bool) (section: string) (hash : fileinfo_t) : unit =
   let calculate (lst : int list) : float =
     (* given [i1, i2, ...in], calculate (i1-in)/i1 *)
     let last = (get_last_one lst)
@@ -320,8 +328,24 @@ let pretty_summary (hash : fileinfo_t) : unit =
   let print_info (prefix : string) (lst : float list) : unit =
     let max, min, mean, median =
       get_max_min_mean_median lst in
-    printf "%s: Max %6.2f, Min %6.2f, Mean %6.2f, Median %6.2f\n%!"
-      prefix max min mean median
+    if use_latex then
+      if prefix = "All" then
+        (* latex only needs the overall summary *)
+        printf "%s & %.2f & %.2f & %.2f & %.2f \\\\\n\\hline\n%!" section max min mean median
+      else
+        ()
+    else
+      begin 
+        printf "%s: Max %8.2f, Min %8.2f, Mean %8.2f, Median %8.2f\n%!"
+          prefix max min mean median
+      end
+  in
+  let print_empty_info () : unit =
+    (if use_latex then
+      printf "%s & N/A & N/A & N/A & N/A \\\\\n\\hline\n%!" section
+    else
+      printf "\nSection %s is empty" section);
+    printf "\n%!";
   in
   (* for each file, get overall shrinkage of #env, #usr, #total *)
   let shrinkage : (float * float * float) list = Hashtbl.fold
@@ -338,21 +362,27 @@ let pretty_summary (hash : fileinfo_t) : unit =
           calculate (List.map2 (fun e u -> e + u) env usr)) :: lst)
       hash []
   in
+  if use_latex && not (!table_header_printed) then begin
+    printf " & Max & Min & Mean & Media \\\\\n\\hline\n";
+    table_header_printed := true
+  end;
   if shrinkage = [] then
-      printf "empty\n%!"
+    print_empty_info ()
   else
-      (* in increasing orders *)
-      let env_lst = List.sort compare
-          (List.map (fun (a,_,_)->a) shrinkage) in
-      let usr_lst = List.sort compare
-          (List.map (fun (_,b,_)->b) shrinkage) in
-      let all_lst = List.sort compare
-          (List.map (fun (_,_,c)->c) shrinkage) in
-      begin
-        print_info "Env" env_lst;
-        print_info "Usr" usr_lst;
-        print_info "All" all_lst
-      end
+    (* in increasing orders *)
+    let env_lst = List.sort compare
+        (List.map (fun (a,_,_)->a) shrinkage) in
+    let usr_lst = List.sort compare
+        (List.map (fun (_,b,_)->b) shrinkage) in
+    let all_lst = List.sort compare
+        (List.map (fun (_,_,c)->c) shrinkage) in
+    begin
+      if not use_latex then
+        printf "\nSection: %s\n" section;
+      print_info "Env" env_lst;
+      print_info "Usr" usr_lst;
+      print_info "All" all_lst
+    end
     
   
   
@@ -437,9 +467,8 @@ let summary cmd (sec : string) =
   let _ = if !analyze_dir = "" then
       raise (Arg.Bad "-set-analyze is required") in
   let print_summary sec =
-      let fileinfo = get_section_optinfo sec !analyze_dir in
-      printf "\nSection: %s\n" sec;
-      pretty_summary fileinfo;
+    let fileinfo = get_section_optinfo sec !analyze_dir in
+    pretty_summary (!latex_format) sec fileinfo;
   in
   let sections = existing_sections () in
   match sec with
@@ -463,6 +492,8 @@ let list_section_diff cmd (sec : string) =
   | _ ->
     raise (Arg.Bad (sprintf "section %s is not found" sec))
 
+let use_latex_format cmd () =
+  latex_format := true
 
 let strCmd optName func desc =
   (optName, Arg.String (func optName), desc)
@@ -481,10 +512,12 @@ let main () : unit =
         "<which section-strict>|<which-section-nonstrict>|<all> compare pass/fail results in section";
       unitCmd "-performance" performance
         "produce optimization performance(measured by AST node shrinkage) results";
+      unitCmd "-use-latex-format" use_latex_format
+        "if '-summary' is followed, summary is printed as latex tabular";
       strCmd "-list-section-diff" list_section_diff
         "list files that passed in base directory but failed in analyze directory";
       strCmd "-summary" summary
-        "<section>|<all> give summary for specific section(or all sections)"
+        "<section>|<all> give summary for specific section(or all sections)";
     ]
     (fun s -> printf "anot: %s" s)
     ("Note: argument order matters.")
