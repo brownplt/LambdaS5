@@ -366,7 +366,6 @@ let multiple_usages (var_id : id) (e : S.exp) : bool =
     | _ -> List.exists (fun x->x) (map (fun exp->multiple_usages_rec var_id exp) (S.child_exps e))
   in multiple_usages_rec var_id e
 
-
 (* before any use of x, there is no side effect *)
 (* NOTE: the given exp should contains no duplicate bindings of x *)
 let rec no_side_effect_prior_use (x : id) (e : S.exp) : bool =

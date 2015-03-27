@@ -366,7 +366,7 @@ let rec restore_id (e : exp) : exp =
     match e with 
     | Seq (p, e1, e2) -> 
       begin match e1 with 
-        | App (p, Id (_, "%defineGlobalVar"), [Id(_,"%context"); String (_, id)]) ->
+        | App (p, Id (_, "%defineGlobalVar"), [ctxobj; String (_, id)]) when is_ctx_obj ctxobj ->
           (* if id is in ctx, do nothing, continue to e2; else, add
              id->id, true into ctx 
           *)
@@ -377,8 +377,8 @@ let rec restore_id (e : exp) : exp =
             let ctx = IdMap.add id (Id (Pos.dummy, id), true) ctx in
             let newe2 = restore_rec ~in_lambda e2 ctx in
             Let (p, id, Undefined Pos.dummy, newe2)
-       | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 
-         when (IdMap.mem id ctx) ->
+       | App (_, Id (_, "%defineGlobalAccessors"), [ctxobj; String (_, id)]) 
+         when is_ctx_obj ctxobj && IdMap.mem id ctx ->
          (* if the id is already in %global, get what it is bound *)
          dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
          restore_rec ~in_lambda e2 ctx
@@ -439,7 +439,7 @@ let rec restore_id (e : exp) : exp =
          if in_lambda then
            App (pos, f, args)
          else 
-           Id (pos, "%context")
+           Id (pos, "%global")
        | Id (p1, "%set-property"), [o; String (p3, id); v] when is_ctx_obj o->
          let newexp = SetField (p1, o, String(p3,id), v, Null Pos.dummy) in
          (match restore_rec ~in_lambda newexp ctx with
@@ -449,7 +449,7 @@ let rec restore_id (e : exp) : exp =
           | result -> result
          )
        | Id (_, "%ToObject"), [Id(_, "%this")] when not in_lambda ->
-         Id (Pos.dummy, "%context")
+         Id (Pos.dummy, "%global")
        | Id (_, "%Typeof"), [o; String(_, id)]
          when is_ctx_obj o && IdMap.mem id ctx ->
          begin try
