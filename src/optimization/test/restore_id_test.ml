@@ -59,7 +59,7 @@ let suite =
   let not_eligible (jscode : string) =
     eligible_test jscode false
   in 
-  "Test Restore" >:::
+  "Test Restore Id" >:::
   [
     (* ------- test window free ------- *)
     "not window free: window reference" >::

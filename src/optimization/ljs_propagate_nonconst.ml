@@ -16,7 +16,7 @@ module EU = Exp_util
 
 let debug_on = false
 
-let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "propagate_nonconst"
+let dprint = Debug.make_debug_printer ~on:debug_on "propagate_nonconst"
 
 
 (* Id => expression * free vars in expression *)
@@ -112,11 +112,11 @@ let propagate_nonconst (exp : exp) : exp =
       begin match is_mutated_in_body, not (EU.multiple_usages x body), x_v with
         | true, _, _ ->
           (* x is mutated in the body, don't propagate x *)
-          let _ = dprint "do not propagate. let(%s=...) is mutated in body\n" x in
+          let _ = dprint (sprintf "do not propagate. let(%s=...) is mutated in body\n" x) in
           Let (p, x, x_v, propagate_rec body env def_set)
 
         | _, _, x_v when (is_prim_constant x_v) || (is_lambda_constant x_v) ->
-          let _ = dprint_string "don't propagate constant var and constant lambda.\n" in
+          let _ = dprint "don't propagate constant var and constant lambda.\n" in
           Let (p, x, x_v, propagate_rec body env def_set)
 
         (* --------- NOW: x is not mutated ----------*)
@@ -134,7 +134,7 @@ let propagate_nonconst (exp : exp) : exp =
              NOTE: we DO allow the free variables of the function to
              get mutated in the scope
           *)
-          let _  = dprint "match single-use lambda case for let (%s=...)\n" x in
+          let _  = dprint (sprintf "match single-use lambda case for let (%s=...)\n" x) in
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
 
@@ -143,15 +143,15 @@ let propagate_nonconst (exp : exp) : exp =
              the id is mutated, propagate it with care *)
           if not (have_intersection freevars def_set) then
             (* free vars is not mutated *)
-            let _ = dprint "the id in let (%s=...) is not mutated, just propagated it\n" x in
+            let _ = dprint (sprintf "the id in let (%s=...) is not mutated, just propagated it\n" x) in
             let env = IdMap.add x (x_v, freevars) env in
             propagate_rec body env def_set
           else if EU.no_side_effect_prior_use x body then
-            let _ = dprint "let (%s=..) is bound to an mutated id but it is used immediately, just propagate it\n" x in
+            let _ = dprint (sprintf "let (%s=..) is bound to an mutated id but it is used immediately, just propagate it\n" x) in
             let env = IdMap.add x (x_v, freevars) env in
             propagate_rec body env def_set
           else
-            let _ = dprint "cannot propagate the id let(%s=...) because of the side effect\n" x in
+            let _ = dprint (sprintf "cannot propagate the id let(%s=...) because of the side effect\n" x) in
             Let (p, x, x_v, propagate_rec body env def_set)
 
         | false, true, x_v when EU.has_side_effect x_v || have_intersection freevars def_set ->
@@ -159,11 +159,11 @@ let propagate_nonconst (exp : exp) : exp =
           if EU.no_side_effect_prior_use x body then
             (* propagate it only when x is used before any side
                effect *)
-            let _ = dprint "let (%s=..) has side effect or to-be-mutated var, but it is used immediately, propagate it\n" x in
+            let _ = dprint (sprintf "let (%s=..) has side effect or to-be-mutated var, but it is used immediately, propagate it\n" x) in
             let env = IdMap.add x (x_v, freevars) env in
             propagate_rec body env def_set
           else
-            let _ = dprint "cannot propagate let(%s=..) because of the side effect\n" x in
+            let _ = dprint (sprintf "cannot propagate let(%s=..) because of the side effect\n" x) in
             Let (p, x, x_v, propagate_rec body env def_set)
 
         (*-------- Now, x has no side effects --------*)
@@ -173,7 +173,7 @@ let propagate_nonconst (exp : exp) : exp =
              effect has to be checked before this, an expression that
              does not contain free vars might has side effect! like
              prim('pretty', 1) *)
-          let _ = dprint_string "match expression that has no free variable. propagate it\n" in
+          let _ = dprint "match expression that has no free variable. propagate it\n" in
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
 
@@ -181,15 +181,15 @@ let propagate_nonconst (exp : exp) : exp =
           (* a single-use expression contains free variables and these free variables are
              not mutated. just propagate it. For example: prim('+', x, y);
           *)
-          let _ = dprint "let(%s=..) bound value has free vars and free vars are not mutated, just propagate it\n" x in
+          let _ = dprint (sprintf "let(%s=..) bound value has free vars and free vars are not mutated, just propagate it\n" x) in
           let env = IdMap.add x (x_v, freevars) env in
           propagate_rec body env def_set
 
         | mutate, single, x_v ->
-          let _ = dprint "cannot propagate let(%s=...), no case matched\n" x in
-          let _ = dprint_string (sprintf "mutated? %b\n" mutate) in
-          let _ = dprint_string (sprintf "single? %b\n" single) in
-          let _ = dprint_string (sprintf "intersect? %b\n" (have_intersection freevars def_set)) in
+          let _ = dprint (sprintf "cannot propagate let(%s=...), no case matched\n" x) in
+          let _ = dprint (sprintf "mutated? %b\n" mutate) in
+          let _ = dprint (sprintf "single? %b\n" single) in
+          let _ = dprint (sprintf "intersect? %b\n" (have_intersection freevars def_set)) in
           Let (p, x, x_v, propagate_rec body env def_set)
       end
     | Rec (p, x, xexp, body) ->

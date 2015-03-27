@@ -4,6 +4,10 @@ open Ljs_syntax
 open Debug
 open Exp_util
 
+let debug_on = false
+
+let dprint = Debug.make_debug_printer ~on:debug_on "restore func"
+
 
 (* if match successfully, this function will trim off
    the function object's properties and leave the function body
@@ -30,13 +34,17 @@ let rec get_lambda exp : exp option =
             Some (Let (p, x, x_v, code))
           | None -> None
       end
-    | _ -> None
+    | exp ->
+      get_js_func exp
   in
   match exp with
   | Let (_, x, x_v, body) when is_proto_obj x_v ->
     (* function object always starts with prototype and then lambda *)
+    let _ = dprint "find prototype, continue matching\n" in
     get_func body
-  | _ -> None
+  | exp ->
+    let _ = dprint (sprintf "entry not matched. it cannot be converted to procedure.\n" ) in
+    None
       
 (* env stores the id -> lambda code *)
 type env = exp IdMap.t
@@ -63,10 +71,12 @@ let restore_function exp : exp =
     let restore e = restore_rec e env in
     match exp with
     | Let (p, x, x_v, body) ->
-      begin match get_lambda x_v with
+      begin match get_lambda exp with
         | Some (code) ->
-          Let (p, x, restore code, restore body)
+          let _ = dprint (sprintf "find patterns, procedure found\n") in
+          restore code
         | None ->
+          let _ = dprint (sprintf "for let(%s=...), no patterns found\n" x) in
           Let (p, x, restore x_v, restore body)
       end
     | _ -> optimize restore exp

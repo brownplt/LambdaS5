@@ -29,7 +29,7 @@ open Ljs_analyze_env
 
 let debug_on = false
 
-let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "restore"
+let dprint = Debug.make_debug_printer ~on:debug_on "restore"
 
 (* set this variable to true if the restoration should be only applied
    on code in strict mode *)
@@ -174,11 +174,11 @@ let rec window_free ?(toplevel=true) exp : bool =
   | GetField (_, obj, String(_, "window"), args) ->
     window_free ~toplevel args && 
     (match obj with
-     | Id (_, "%context") -> dprint_string "not eligible: reference to window variable\n";
+     | Id (_, "%context") -> dprint "not eligible: reference to window variable\n";
        false
      | App (_, Id (_, "%PropAccessorCheck"), [Id (_, "%this")]) -> 
        if toplevel then 
-         (dprint_string "not eligible: reference window through this in top-level\n";
+         (dprint "not eligible: reference window through this in top-level\n";
           false)
        else true
      | _ -> window_free ~toplevel obj)
@@ -237,13 +237,13 @@ let rec eligible_for_restoration exp : bool =
   let is_static_field fld = match fld with
     | String (_, _) -> true
     | _ -> 
-      dprint "not eligible: find non-static field: %s\n%!" (Exp_util.ljs_str fld);
+      dprint (sprintf "not eligible: find non-static field: %s\n%!" (Exp_util.ljs_str fld));
       false
   in 
   let rec contain_this_keyword toplevel (args_obj : exp) = 
     match args_obj with
     | Id (_, "%this") -> let result = toplevel in
-      if result then (dprint_string "not eligible: make alias on %this\n"; true)
+      if result then (dprint "not eligible: make alias on %this\n"; true)
       else false
     | Lambda (_, _, body) -> contain_this_keyword false body
     | _ -> List.exists (fun e ->  contain_this_keyword toplevel e) (child_exps args_obj)
@@ -284,7 +284,7 @@ let rec eligible_for_restoration exp : bool =
       (if toplevel then (eligible_field obj fld) else true)
     | App (_, f, args) -> (match f, args with
         | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] when toplevel -> 
-          dprint_string "make alias of 'this'. not eligible";
+          dprint "make alias of 'this'. not eligible";
           false
         | Id (_, "%EnvCheckAssign"), [_;_; Object(_,_,_) as obj;_] -> 
           not (List.exists (fun x->contain_this_keyword toplevel x) (child_exps obj)) &&
@@ -294,10 +294,10 @@ let rec eligible_for_restoration exp : bool =
           (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
           is_eligible arg && (if toplevel then (is_static_field this_fld) else true)
         | Id (_, "%makeWithContext"), _ ->
-          dprint_string "Use 'with'. Not eligible";
+          dprint "Use 'with'. Not eligible";
           false
         | Id (_, "%propertyNames"), [Id(_, "%this"); _] when toplevel ->
-          dprint_string "get property from top-level this. Not eligible";
+          dprint "get property from top-level this. Not eligible";
           false
         | Id (_, fname), args ->
           List.for_all is_eligible args &&
@@ -312,7 +312,7 @@ let rec eligible_for_restoration exp : bool =
     | Lambda (_, _, body) ->
       is_eligible_rec ~toplevel body
     | DeleteField (_, Id(_, "%this"), v) ->
-      dprint_string (sprintf "deletefield: %s\n" (Exp_util.ljs_str v));
+      dprint (sprintf "deletefield: %s\n" (Exp_util.ljs_str v));
       false
     | _ -> List.for_all is_eligible (child_exps exp)
   in
@@ -370,7 +370,7 @@ let rec restore_id (e : exp) : exp =
           (* if id is in ctx, do nothing, continue to e2; else, add
              id->id, true into ctx 
           *)
-          dprint "find defineGlobalVar %s\n" id;
+          dprint (sprintf "find defineGlobalVar %s\n" id);
           if IdMap.mem id ctx then
             restore_rec ~in_lambda e2 ctx
           else
@@ -380,7 +380,7 @@ let rec restore_id (e : exp) : exp =
        | App (_, Id (_, "%defineGlobalAccessors"), [ctxobj; String (_, id)]) 
          when is_ctx_obj ctxobj && IdMap.mem id ctx ->
          (* if the id is already in %global, get what it is bound *)
-         dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
+         dprint (sprintf "find defineGlobalAccessor %s in %%global bindings\n" id);
          restore_rec ~in_lambda e2 ctx
        | _ -> 
          let newe1 = restore_rec ~in_lambda e1 ctx in
@@ -482,7 +482,7 @@ let rec restore_id (e : exp) : exp =
           (*assert (x <> "%context");*)
           Let (p, x, x_v, restore_rec ~in_lambda body ctx)
         | Some (new_let) -> (* FIXME: 12.14-1 *)
-          dprint "new_let is %s\n" (Exp_util.ljs_str new_let);
+          dprint (sprintf "new_let is %s\n" (Exp_util.ljs_str new_let));
           (try
              let new_ctx = recognize_new_context x_v ctx in
              replace_let_body new_let (restore_rec ~in_lambda body new_ctx)

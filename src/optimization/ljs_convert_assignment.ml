@@ -7,9 +7,9 @@ module EU = Exp_util
 *)
 let debug_on = false
 
-let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "less_mutation"
+let dprint = Debug.make_debug_printer ~on:debug_on "less_mutation"
 let dprint_set set =
-  dprint "set {%s}\n" (String.concat ", " (IdSet.to_list set))
+  dprint (sprintf "set {%s}\n" (String.concat ", " (IdSet.to_list set)))
 
 let set_str idset : string = 
   let rec lst_str lst : string =
@@ -412,7 +412,7 @@ let convert_assignment (exp : exp) : exp =
     | SetBang (p, x, x_v) ->
       let x_v, used_ids = convert_rec x_v env used_ids in
       let used_ids = IdSet.add x used_ids in
-      dprint "find usage point at SetBang %s\n" x;
+      dprint (sprintf "find usage point at SetBang %s\n" x);
       SetBang (p, x, x_v), used_ids
 
     | Op1 (p, op, e) ->
@@ -448,56 +448,56 @@ let convert_assignment (exp : exp) : exp =
 
     | Seq (p, e1, e2) ->
       (* apply to e2 and then e1 *)
-      dprint "seq visiting %s. The id set is:\n" (ljs_str e1);
+      dprint (sprintf "seq visiting %s. The id set is:\n" (ljs_str e1));
       dprint_set used_ids;
       begin match e1 with
         | SetBang (p, x, x_v) when IdSet.mem x used_ids || id_used_in_env_lambda x env ->
-          let _ = dprint "%s of setBang is used elsewhere. no change\n" x in
+          let _ = dprint (sprintf "%s of setBang is used elsewhere. no change\n" x) in
           (* we haven't visit e2 yet, but used used_ids already contains x. That means
             x is used outside the execution path. we cannot do the transformation *)
           let new_e2, used_ids = convert_rec e2 env used_ids in
           let new_e1, used_ids = convert_rec e1 env used_ids in
           Seq (p, e1, new_e2), used_ids
         | SetBang (p, x, x_v) ->
-          let _ = dprint "transform %s" (ljs_str e1) in
+          let _ = dprint (sprintf "transform %s" (ljs_str e1)) in
           (* x may only be used in e2, so transform it! *)
           let x_v, used_ids = convert_rec x_v env used_ids in
           let new_e2, used_ids = convert_rec e2 env used_ids in
           Let (p, x, x_v, new_e2), used_ids
         | Let (pos, "#strict", v, Let (p, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2))))
           when tmp_name = tmp_name2 ->
-          dprint_string "find js function pattern\n";
+          dprint "find js function pattern\n";
           (* desugared js function *)
           let new_func, used_ids = convert_rec func env used_ids in
           if IdSet.mem real_name used_ids then
             (* if the func contains the real_name, this function definition is a recursive function.
                We cannot do the transformation *)
-            let _ = dprint "recursive function %s. keep it as it was\n" real_name in
+            let _ = dprint (sprintf "recursive function %s. keep it as it was\n" real_name) in
             let new_e1 = Let (pos, "#strict", v, Let(pos, tmp_name, new_func, SetBang(p1, real_name, Id(p2, tmp_name2)))) in
             let new_e2, used_ids = convert_rec e2 env used_ids in
             Seq (p, new_e1, new_e2), used_ids
           else
-            let _ = dprint "convert js function def pattern %s to let\n" (ljs_str e1) in
+            let _ = dprint (sprintf "convert js function def pattern %s to let\n" (ljs_str e1)) in
             let new_e2, used_ids = convert_rec e2 env used_ids in
             Let (pos, "#strict", v, Let(pos, real_name, new_func, new_e2)), IdSet.remove real_name used_ids
         | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
           when tmp_name = tmp_name2 ->
-          dprint_string "find js function pattern\n";
+          dprint "find js function pattern\n";
           (* desugared js function *)
           let new_func, used_ids = convert_rec func env used_ids in
           if IdSet.mem real_name used_ids then
             (* if the func contains the real_name, this function definition is a recursive function.
                We cannot do the transformation *)
-            let _ = dprint "recursive function %s. keep it as it was\n" real_name in
+            let _ = dprint (sprintf "recursive function %s. keep it as it was\n" real_name) in
             let new_e1 = Let(pos, tmp_name, new_func, SetBang(p1, real_name, Id(p2, tmp_name2))) in
             let new_e2, used_ids = convert_rec e2 env used_ids in
             Seq (p, new_e1, new_e2), used_ids
           else
-            let _ = dprint "convert js function def pattern %s to let\n" (ljs_str e1) in
+            let _ = dprint (sprintf "convert js function def pattern %s to let\n" (ljs_str e1)) in
             let new_e2, used_ids = convert_rec e2 env used_ids in
             Let(pos, real_name, new_func, new_e2), IdSet.remove real_name used_ids
         | _ ->
-          let _ = dprint_string "normal seq\n" in
+          let _ = dprint "normal seq\n" in
           let used_ids = IdSet.union (free_vars_in_lambda e1) used_ids in
           let new_e2, used_ids = convert_rec e2 env used_ids in
           let new_e1, used_ids = convert_rec e1 env used_ids in
