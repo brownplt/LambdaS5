@@ -35,17 +35,17 @@ let rec get_lambda exp : exp option =
 (* env stores the id -> lambda code *)
 type env = exp IdMap.t
   
-let unwrap_lambda exp : exp =
-  let rec unwrap_rec exp env : exp =
-    let unwrap e = unwrap_rec e env in
+let restore_function exp : exp =
+  let rec restore_rec exp env : exp =
+    let restore e = restore_rec e env in
     match exp with
     | Let (p, x, x_v, body) ->
       begin match get_lambda x_v with
         | Some (code) ->
-          Let (p, x, unwrap code, unwrap body)
+          Let (p, x, restore code, restore body)
         | None ->
-          Let (p, x, unwrap x_v, unwrap body)
+          Let (p, x, restore x_v, restore body)
       end
-    | _ -> optimize unwrap exp
+    | _ -> optimize restore exp
   in
-  unwrap_rec exp IdMap.empty
+  restore_rec exp IdMap.empty

@@ -16,7 +16,7 @@ open Ljs_clean_env
 open Ljs_eliminate_static_checks
 open Ljs_convert_assignment
 open Ljs_no_checks
-open Ljs_unwrap_lambda
+open Ljs_restore_function
 open Ljs_fixed_arity
 open Exp_util
 
@@ -441,9 +441,9 @@ module S5 = struct
     let new_ljs = no_checks ljs in
     push_ljs new_ljs
 
-  let opt_unwrap_lambda cmd () =
+  let opt_restore_function cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = unwrap_lambda ljs in
+    let new_ljs = restore_function ljs in
     push_ljs new_ljs
 
   let opt_fixed_arity cmd () =
@@ -603,7 +603,7 @@ module S5 = struct
           "clean static checks as much as possible";
         unitCmd "-opt-convert-assignment" opt_convert_assignment
           "convert assignment to let bindings when possible";
-        unitCmd "-opt-restore-function" opt_unwrap_lambda
+        unitCmd "-opt-restore-function" opt_restore_function
           "restore function objects to procedures";
         unitCmd "-opt-no-checks" opt_no_checks
           "[semantics altering] clean all static checks";
