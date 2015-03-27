@@ -1,12 +1,12 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_fixed_arity
+open Ljs_fix_arity
 
 
 let suite =
-  let cmp before after = cmp before fixed_arity after in
-  let no_change code = no_change code fixed_arity in
+  let cmp before after = cmp before fix_arity after in
+  let no_change code = no_change code fix_arity in
   "Test fixing arity" >:::
   [
     "getter's arity should not change!" >::

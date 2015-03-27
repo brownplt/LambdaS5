@@ -92,10 +92,10 @@ let delete_field (fld : string) (obj : exp) : exp =
     Object (p, a, delete fld props)
   | _ -> obj
     
-let fixed_arity (exp : exp) : exp =
+let fix_arity (exp : exp) : exp =
   (* clean formal parameter *)
-  let rec fixed_formal_parameter ?(in_getter=false) (exp : exp) : exp =
-    let fix e = fixed_formal_parameter ~in_getter e in
+  let rec fix_formal_parameter ?(in_getter=false) (exp : exp) : exp =
+    let fix e = fix_formal_parameter ~in_getter e in
     (* clean related %args expression *)
     let rec clean_args (fbody : exp) : exp =
       let is_arg_delete (exp : exp) : bool = match exp with
@@ -129,10 +129,10 @@ let fixed_arity (exp : exp) : exp =
       let new_xs = update_args xs args in
       (* clean %args in the body, and "arguments" property in context(if exists)*)
       let new_body = clean_args new_body in
-      Lambda (pos, new_xs, fixed_formal_parameter ~in_getter new_body)
+      Lambda (pos, new_xs, fix_formal_parameter ~in_getter new_body)
     | Lambda (pos, ["%this"; "%args"], body) when in_getter->
       (*let _ = printf "find a getter, do not transform the formal argument\n%!" in*)
-      Lambda (pos, ["%this"; "%args"], fixed_formal_parameter ~in_getter:false body)
+      Lambda (pos, ["%this"; "%args"], fix_formal_parameter ~in_getter:false body)
     | Object (p, attrs, props) ->
       let new_attrs = apply_to_attr fix attrs in
       let new_props = List.map
@@ -140,7 +140,7 @@ let fixed_arity (exp : exp) : exp =
              | (s, Data (data, enum, config)) ->
                s, Data ({value = fix data.value; writable=data.writable}, enum, config)
              | (s, Accessor (acc, enum, config)) ->
-               s, Accessor ({getter = fixed_formal_parameter ~in_getter:true acc.getter;
+               s, Accessor ({getter = fix_formal_parameter ~in_getter:true acc.getter;
                              setter = fix acc.setter}, enum, config))
           props
       in
@@ -149,19 +149,19 @@ let fixed_arity (exp : exp) : exp =
       optimize fix exp
   in
   (* clean call site *)
-  let rec fixed_call_site (exp : exp) : exp =
+  let rec fix_call_site (exp : exp) : exp =
     match exp with
     | App (p, f, args) ->
-      let f = fixed_call_site f in
+      let f = fix_call_site f in
       begin match parse_args_obj args with
       | Some (arg_list) ->
         App (p, f, arg_list)
       | None ->
-        let args = List.map fixed_call_site args in
+        let args = List.map fix_call_site args in
         App (p, f, args)
       end
-    | _ -> optimize fixed_call_site exp
+    | _ -> optimize fix_call_site exp
   in
-  let e1 = fixed_formal_parameter exp in
-  let e2 = fixed_call_site e1 in
+  let e1 = fix_formal_parameter exp in
+  let e2 = fix_call_site e1 in
   e2

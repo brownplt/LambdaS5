@@ -17,7 +17,7 @@ open Ljs_clean_assertion
 open Ljs_convert_assignment
 open Ljs_clean_assertion_harsh
 open Ljs_restore_function
-open Ljs_fixed_arity
+open Ljs_fix_arity
 open Exp_util
 
 type node =
@@ -446,9 +446,9 @@ module S5 = struct
     let new_ljs = restore_function ljs in
     push_ljs new_ljs
 
-  let opt_fixed_arity cmd () =
+  let opt_fix_arity cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = fixed_arity ljs in
+    let new_ljs = fix_arity ljs in
     push_ljs new_ljs
 
   let count_nodes cmd (str : string) =
@@ -607,7 +607,7 @@ module S5 = struct
           "[semantics altering] restore function objects to procedures";
         unitCmd "-opt-clean-env" opt_clean_env
           "[semantics altering] clean unused env expression";
-        unitCmd "-opt-fixed-arity" opt_fixed_arity
+        unitCmd "-opt-fix-arity" opt_fix_arity
           "[semantics altering] disable variable function arity";
         strCmd "-count-nodes" count_nodes
           "count the nodes of S5"
