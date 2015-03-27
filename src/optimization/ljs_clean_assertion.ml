@@ -55,7 +55,7 @@ let op1 p op arg env : exp = match op with
     3. PropAccessorCheck
     4. ToObject
 *)
-let clean_static_checks (exp : exp) : exp =
+let clean_assertion (exp : exp) : exp =
   let rec clean_rec (exp : exp) (env : env) : exp =
     let clean e = clean_rec e env in
     match exp with

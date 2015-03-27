@@ -13,9 +13,9 @@ open Ljs_propagate_nonconst
 open Ljs_inline_function
 open Ljs_restore_id
 open Ljs_clean_env
-open Ljs_clean_static_checks
+open Ljs_clean_assertion
 open Ljs_convert_assignment
-open Ljs_clean_all_checks
+open Ljs_clean_assertion_harsh
 open Ljs_restore_function
 open Ljs_fixed_arity
 open Exp_util
@@ -426,9 +426,9 @@ module S5 = struct
     let new_ljs = clean_env ljs in
     push_ljs new_ljs
 
-  let opt_clean_static_checks cmd () =
+  let opt_clean_assertion cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = clean_static_checks ljs in
+    let new_ljs = clean_assertion ljs in
     push_ljs new_ljs
 
   let opt_convert_assignment cmd () =
@@ -436,9 +436,9 @@ module S5 = struct
     let new_ljs = convert_assignment ljs in
     push_ljs new_ljs
 
-  let opt_clean_all_checks cmd () =
+  let opt_clean_assertion_harsh cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = clean_all_checks ljs in
+    let new_ljs = clean_assertion_harsh ljs in
     push_ljs new_ljs
 
   let opt_restore_function cmd () =
@@ -585,8 +585,6 @@ module S5 = struct
           "marshal s5 code to file as sequence of bytes";
         strCmd "-load-s5" load_s5
           "load s5 from marshalled file that created by -save-s5(use -s5 to load text form of s5 code)";
-        unitCmd "-opt-restore-id" opt_restore_id
-          "restore JavaScript id in desugared S5";
         unitCmd "-opt-fold-const" opt_fold_const
           "perform constant folding on s5";
         unitCmd "-opt-propagate-const" opt_propagate_const
@@ -597,16 +595,18 @@ module S5 = struct
           "propagate single-use functions, objects, and let bindings in s5";
         unitCmd "-opt-inline-function" opt_inline_function
           "perform function inlining on s5";
-        unitCmd "-opt-clean-env" opt_clean_env
-          "clean unused env expression";
-        unitCmd "-opt-clean-static-checks" opt_clean_static_checks
+        unitCmd "-opt-clean-assertion" opt_clean_assertion
           "clean static checks as much as possible";
         unitCmd "-opt-convert-assignment" opt_convert_assignment
           "convert assignment to let bindings when possible";
-        unitCmd "-opt-clean-all-checks" opt_clean_all_checks
+        unitCmd "-opt-restore-id" opt_restore_id
+          "[semantics altering] restore JavaScript id in desugared S5";
+        unitCmd "-opt-clean-assertion-harsh" opt_clean_assertion_harsh
           "[semantics altering] clean all static checks";
         unitCmd "-opt-restore-function" opt_restore_function
-          "restore function objects to procedures";
+          "[semantics altering] restore function objects to procedures";
+        unitCmd "-opt-clean-env" opt_clean_env
+          "[semantics altering] clean unused env expression";
         unitCmd "-opt-fixed-arity" opt_fixed_arity
           "[semantics altering] disable variable function arity";
         strCmd "-count-nodes" count_nodes

@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_clean_static_checks
+open Ljs_clean_assertion
 
 let suite =
-  let cmp before after = cmp before clean_static_checks after in
-  let no_change code = no_change code clean_static_checks in
+  let cmp before after = cmp before clean_assertion after in
+  let no_change code = no_change code clean_assertion in
   "Test Type Infer" >:::
   [
     "simple number" >::
