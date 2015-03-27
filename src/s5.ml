@@ -10,14 +10,16 @@ open Ljs_fold_const
 open Ljs_propagate_const
 open Ljs_clean_bindings
 open Ljs_clean_sequence
-open Ljs_propagate_copy
+open Ljs_propagate_nonconst
 open Ljs_inline_function
 open Ljs_restore_id
 open Ljs_clean_env
 open Ljs_clean_static_checks
 open Ljs_convert_assignment
 open Ljs_clean_all_checks
+open Ljs_restore_function
 open Ljs_fixed_arity
+open Exp_util
 
 type node =
   | Js of Js_syntax.program
@@ -410,9 +412,9 @@ module S5 = struct
     let new_ljs = clean_sequence ljs in
     push_ljs new_ljs
 
-  let opt_propagate_copy cmd () =
+  let opt_propagate_nonconst cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = propagate_copy ljs in
+    let new_ljs = propagate_nonconst ljs in
     push_ljs new_ljs
 
   let opt_inline_function cmd () =
@@ -445,6 +447,11 @@ module S5 = struct
     let new_ljs = clean_all_checks ljs in
     push_ljs new_ljs
 
+  let opt_restore_function cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = restore_function ljs in
+    push_ljs new_ljs
+
   let opt_fixed_arity cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = fixed_arity ljs in
@@ -454,19 +461,10 @@ module S5 = struct
     let rec count (e : exp) : int =
       match e with
       | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
-    let usercode_regexp = Str.regexp ".*USER CODE BELOW.*" in
-    let rec usercode_count (e : exp) : int = match e with
-      | Seq (_, Hint (_, id, _), e2)
-        when (Str.string_match usercode_regexp id 0) ->
-        let total = usercode_count e2 in
-        (* if this hint is the nearest to the user code, count e2 *)
-        if total = 0 then (count e2)
-        else total
-      | _ -> List.fold_left (+) 0 (List.map usercode_count (child_exps e)) in
     let ljs = pop_ljs cmd in
     let total = count ljs in
-    let usercode_n = usercode_count ljs in
-    let envn, usern =
+    let usercode_n = apply_to_user_code ljs count in
+    let envn, usern = 
       if usercode_n = 0 then (* no env delimitor *)
         0, total - usercode_n
       else
@@ -477,17 +475,12 @@ module S5 = struct
     end
 
   let print_user_s5 cmd () =
-    let usercode_regexp = Str.regexp ".*USER CODE BELOW.*" in
-    let rec print (e : exp) : bool = match e with
-      | Seq (_, Hint(_, id, _), e2)
-        when (Str.string_match usercode_regexp id 0) ->
-        let already_printed = print e2 in
-        if already_printed then true
-        else (Ljs_pretty.exp e2 std_formatter; print_newline (); true)
-      | _ -> List.exists print (child_exps e)
-    in
     match peek cmd with
-    | Ljs src -> ignore(print src)
+    | Ljs src ->
+      apply_to_user_code src
+        (fun e ->
+           Ljs_pretty.exp e std_formatter;
+           print_newline ();)
     | _ -> failwith "print-user-s5 only supports printing s5 code"
 
   let save_s5 cmd (filename : string) =
@@ -608,8 +601,8 @@ module S5 = struct
           "clean unused bindings in s5";
         unitCmd "-opt-clean-sequence" opt_clean_sequence
           "clean dead flow in s5";
-        unitCmd "-opt-propagate-copy" opt_propagate_copy
-          "propagate copy (let bindings of an id to another id) in s5";
+        unitCmd "-opt-propagate-nonconst" opt_propagate_nonconst
+          "propagate single-use functions, objects, and let bindings in s5";
         unitCmd "-opt-inline-function" opt_inline_function
           "perform function inlining on s5";
         unitCmd "-opt-clean-env" opt_clean_env
@@ -620,6 +613,8 @@ module S5 = struct
           "convert assignment to let bindings when possible";
         unitCmd "-opt-clean-all-checks" opt_clean_all_checks
           "[semantics altering] clean all static checks";
+        unitCmd "-opt-restore-function" opt_restore_function
+          "restore function objects to procedures";
         unitCmd "-opt-fixed-arity" opt_fixed_arity
           "[semantics altering] disable variable function arity";
         strCmd "-count-nodes" count_nodes

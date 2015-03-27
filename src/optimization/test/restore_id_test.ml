@@ -59,7 +59,7 @@ let suite =
   let not_eligible (jscode : string) =
     eligible_test jscode false
   in 
-  "Test Restore" >:::
+  "Test Restore Id" >:::
   [
     (* ------- test window free ------- *)
     "not window free: window reference" >::
@@ -442,6 +442,21 @@ let suite =
          function foo() {var x = 2; x = 3;}
          foo();
          x" "1");
+
+    "reuse identifier name: take from 12.14-1.js in test262" >::
+    (eq "'use strict';
+        function testcase() {
+          foo = 'prior to throw';
+          try {
+            throw new Error();
+          }
+          catch (foo) {
+            var foo = 'initializer in catch';
+          }
+         return foo === 'prior to throw';
+          
+         }
+        testcase();" "true");
 
     (* test ++, -- *)
     "test++" >::

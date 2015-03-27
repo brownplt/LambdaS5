@@ -7,7 +7,7 @@ let ljs_str ljs =
 
 let debug_on = false
 
-let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "env-clean"
+let dprint = Debug.make_debug_printer ~on:debug_on "env-clean"
 
 let set_str idset : string = 
   let rec lst_str lst : string =
@@ -17,9 +17,6 @@ let set_str idset : string =
     | hd :: tl -> let rest = lst_str tl in sprintf "%s, %s" hd rest
   in 
   "( " ^ lst_str (IdSet.elements idset)
-
-let dprint_set set =
-  dprint "set {%s}\n" (String.concat ", " (IdSet.to_list set))
 
 let is_context_id id : bool =
   match id with
@@ -93,7 +90,7 @@ let clean_env (exp : exp) : exp =
     | Id (_,id) ->
       begin
         let used_ids = related_ids id env used_ids in
-        dprint_string (sprintf "visit %s. related ids are %s\n" id (set_str used_ids));
+        dprint (sprintf "visit %s. related ids are %s\n" id (set_str used_ids));
         e, used_ids
       end 
     | Object (p, attrs, strprop) ->
@@ -131,7 +128,7 @@ let clean_env (exp : exp) : exp =
 
     | SetAttr (p, attr, obj, field, newval) -> 
       if useless_obj_set obj field env used_ids then begin
-        dprint "clean SetAttr: %s\n" (EU.ljs_str e);
+        dprint (sprintf "clean SetAttr: %s\n" (EU.ljs_str e));
         Undefined Pos.dummy, used_ids
       end else 
         let o, used_ids = clean_rec obj env used_ids in
@@ -154,14 +151,15 @@ let clean_env (exp : exp) : exp =
       let a, used_ids = clean_rec args env used_ids in
       let used_ids = match obj, fld with
         | Id (_, "%context"), String (_, id) -> 
-          (dprint "use point %s\n" id; IdSet.add id used_ids)
+          (dprint (sprintf "use point %s\n" id);
+           IdSet.add id used_ids)
         | _ -> used_ids
       in 
       GetField (p, o, f, a), used_ids
 
     | SetField (p, obj, fld, newval, args) ->
       if useless_obj_set obj fld env used_ids then begin
-        dprint "clean SetField: %s\n" (EU.ljs_str e);
+        dprint (sprintf "clean SetField: %s\n" (EU.ljs_str e));
         Undefined Pos.dummy, used_ids
       end 
       else
@@ -183,7 +181,7 @@ let clean_env (exp : exp) : exp =
     | SetBang (p, x, x_v) ->
       let x_v, used_ids = clean_rec x_v env used_ids in
       let used_ids = IdSet.add x used_ids in
-      dprint "find usage point at SetBang %s\n" x;
+      dprint (sprintf "find usage point at SetBang %s\n" x);
       SetBang (p, x, x_v), used_ids
 
     | Op1 (p, op, e) ->
@@ -213,7 +211,7 @@ let clean_env (exp : exp) : exp =
         | None -> used_ids
       in 
       if useless_def_point f args env used_ids then begin
-        dprint "clean app: %s\n" (EU.ljs_str e);
+        dprint (sprintf "clean app: %s\n" (EU.ljs_str e));
         Undefined Pos.dummy, used_ids
       end else 
         let f, used_ids = clean_rec f env used_ids in
@@ -240,7 +238,7 @@ let clean_env (exp : exp) : exp =
       let new_env = IdMap.add x x_v env in
       let new_body, used_ids = clean_rec body new_env used_ids in
       if not (IdSet.mem x used_ids) then begin
-        dprint "Clean Let(%s=..)\n" x;
+        dprint (sprintf "Clean Let(%s=..)\n" x);
         new_body, used_ids
       end else 
         let xv_used_id = free_vars x_v in
@@ -251,7 +249,7 @@ let clean_env (exp : exp) : exp =
       let new_env = IdMap.add x lambda env in
       let new_body, used_ids = clean_rec body new_env used_ids in
       if not (IdSet.mem x used_ids) then begin
-        dprint "Clean Rec(%s=..)\n" x;
+        dprint (sprintf "Clean Rec(%s=..)\n" x);
         new_body, used_ids
       end else 
         (* x is recursive function def, so remove x from lambda's env *)

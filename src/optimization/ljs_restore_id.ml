@@ -29,7 +29,7 @@ open Ljs_analyze_env
 
 let debug_on = false
 
-let dprint, dprint_string, dprint_ljs = Debug.make_debug_printer ~on:debug_on "restore"
+let dprint = Debug.make_debug_printer ~on:debug_on "restore"
 
 (* set this variable to true if the restoration should be only applied
    on code in strict mode *)
@@ -174,11 +174,11 @@ let rec window_free ?(toplevel=true) exp : bool =
   | GetField (_, obj, String(_, "window"), args) ->
     window_free ~toplevel args && 
     (match obj with
-     | Id (_, "%context") -> dprint_string "not eligible: reference to window variable\n";
+     | Id (_, "%context") -> dprint "not eligible: reference to window variable\n";
        false
      | App (_, Id (_, "%PropAccessorCheck"), [Id (_, "%this")]) -> 
        if toplevel then 
-         (dprint_string "not eligible: reference window through this in top-level\n";
+         (dprint "not eligible: reference window through this in top-level\n";
           false)
        else true
      | _ -> window_free ~toplevel obj)
@@ -237,13 +237,13 @@ let rec eligible_for_restoration exp : bool =
   let is_static_field fld = match fld with
     | String (_, _) -> true
     | _ -> 
-      dprint "not eligible: find non-static field: %s\n%!" (Exp_util.ljs_str fld);
+      dprint (sprintf "not eligible: find non-static field: %s\n%!" (Exp_util.ljs_str fld));
       false
   in 
   let rec contain_this_keyword toplevel (args_obj : exp) = 
     match args_obj with
     | Id (_, "%this") -> let result = toplevel in
-      if result then (dprint_string "not eligible: make alias on %this\n"; true)
+      if result then (dprint "not eligible: make alias on %this\n"; true)
       else false
     | Lambda (_, _, body) -> contain_this_keyword false body
     | _ -> List.exists (fun e ->  contain_this_keyword toplevel e) (child_exps args_obj)
@@ -284,7 +284,7 @@ let rec eligible_for_restoration exp : bool =
       (if toplevel then (eligible_field obj fld) else true)
     | App (_, f, args) -> (match f, args with
         | Id (_, "%EnvCheckAssign"), [_;_; Id(_, "%this");_] when toplevel -> 
-          dprint_string "make alias of 'this'. not eligible";
+          dprint "make alias of 'this'. not eligible";
           false
         | Id (_, "%EnvCheckAssign"), [_;_; Object(_,_,_) as obj;_] -> 
           not (List.exists (fun x->contain_this_keyword toplevel x) (child_exps obj)) &&
@@ -294,10 +294,10 @@ let rec eligible_for_restoration exp : bool =
           (* this['fld'] = 1=> desugar to %set-property(%ToObject(%this), 'fld', 1.)  *)
           is_eligible arg && (if toplevel then (is_static_field this_fld) else true)
         | Id (_, "%makeWithContext"), _ ->
-          dprint_string "Use 'with'. Not eligible";
+          dprint "Use 'with'. Not eligible";
           false
         | Id (_, "%propertyNames"), [Id(_, "%this"); _] when toplevel ->
-          dprint_string "get property from top-level this. Not eligible";
+          dprint "get property from top-level this. Not eligible";
           false
         | Id (_, fname), args ->
           List.for_all is_eligible args &&
@@ -312,7 +312,7 @@ let rec eligible_for_restoration exp : bool =
     | Lambda (_, _, body) ->
       is_eligible_rec ~toplevel body
     | DeleteField (_, Id(_, "%this"), v) ->
-      dprint_string (sprintf "deletefield: %s\n" (Exp_util.ljs_str v));
+      dprint (sprintf "deletefield: %s\n" (Exp_util.ljs_str v));
       false
     | _ -> List.for_all is_eligible (child_exps exp)
   in
@@ -366,21 +366,21 @@ let rec restore_id (e : exp) : exp =
     match e with 
     | Seq (p, e1, e2) -> 
       begin match e1 with 
-        | App (p, Id (_, "%defineGlobalVar"), [Id(_,"%context"); String (_, id)]) ->
+        | App (p, Id (_, "%defineGlobalVar"), [ctxobj; String (_, id)]) when is_ctx_obj ctxobj ->
           (* if id is in ctx, do nothing, continue to e2; else, add
              id->id, true into ctx 
           *)
-          dprint "find defineGlobalVar %s\n" id;
+          dprint (sprintf "find defineGlobalVar %s\n" id);
           if IdMap.mem id ctx then
             restore_rec ~in_lambda e2 ctx
           else
             let ctx = IdMap.add id (Id (Pos.dummy, id), true) ctx in
             let newe2 = restore_rec ~in_lambda e2 ctx in
             Let (p, id, Undefined Pos.dummy, newe2)
-       | App (_, Id (_, "%defineGlobalAccessors"), [Id(_, "%context"); String (_, id)]) 
-         when (IdMap.mem id ctx) ->
+       | App (_, Id (_, "%defineGlobalAccessors"), [ctxobj; String (_, id)]) 
+         when is_ctx_obj ctxobj && IdMap.mem id ctx ->
          (* if the id is already in %global, get what it is bound *)
-         dprint "find defineGlobalAccessor %s in %%global bindings\n" id;
+         dprint (sprintf "find defineGlobalAccessor %s in %%global bindings\n" id);
          restore_rec ~in_lambda e2 ctx
        | _ -> 
          let newe1 = restore_rec ~in_lambda e1 ctx in
@@ -428,15 +428,18 @@ let rec restore_id (e : exp) : exp =
          (try match IdMap.find fld_name ctx with
             | _, false -> make_writable_error fld_name
             | Id (_, id), true -> SetBang (pos, id, v)
-            | _ -> 
-              (* TODO: get normal exp, which means that id is somehow declared in contxt, use that id(see example of es5id: 12.14-1 *)
-              failwith "App: transformation failed"              
+            | fld, _ -> SetBang (pos, fld_name, v)
+              (* TODO: get normal exp, which means that id is somehow declared in contxt, 
+                use that id(see example of es5id: 12.14-1. 'foo'=>#value (%ToJSError(foo))
+              failwith (sprintf "App: transformation failed: %s. Field is actually:%s"
+                          (ljs_str e) (ljs_str fld))
+              *)
           with Not_found -> App (pos, f, args))
        | Id (_, "%PropAccessorCheck"), [Id (_, "%this")] ->
          if in_lambda then
            App (pos, f, args)
          else 
-           Id (pos, "%context")
+           Id (pos, "%global")
        | Id (p1, "%set-property"), [o; String (p3, id); v] when is_ctx_obj o->
          let newexp = SetField (p1, o, String(p3,id), v, Null Pos.dummy) in
          (match restore_rec ~in_lambda newexp ctx with
@@ -446,7 +449,7 @@ let rec restore_id (e : exp) : exp =
           | result -> result
          )
        | Id (_, "%ToObject"), [Id(_, "%this")] when not in_lambda ->
-         Id (Pos.dummy, "%context")
+         Id (Pos.dummy, "%global")
        | Id (_, "%Typeof"), [o; String(_, id)]
          when is_ctx_obj o && IdMap.mem id ctx ->
          begin try
@@ -476,10 +479,10 @@ let rec restore_id (e : exp) : exp =
       begin match get_localcontext e with
         | None -> (* not a new context binding in lambda *)
           (* in the desugared code, there is no place to bind %context to a non-obj *)
-          assert (x <> "%context");
+          (*assert (x <> "%context");*)
           Let (p, x, x_v, restore_rec ~in_lambda body ctx)
         | Some (new_let) -> (* FIXME: 12.14-1 *)
-          dprint "new_let is %s\n" (Exp_util.ljs_str new_let);
+          dprint (sprintf "new_let is %s\n" (Exp_util.ljs_str new_let));
           (try
              let new_ctx = recognize_new_context x_v ctx in
              replace_let_body new_let (restore_rec ~in_lambda body new_ctx)
@@ -523,24 +526,8 @@ let rec restore_id (e : exp) : exp =
   (*let _ = IdMap.iter (fun k (v,b)->printf "%s  -> %s,%b\n%!" k (Exp_util.ljs_str v) b) names in*)
   let rec jump_env (e : exp) : exp =
     match e with
-    | Let (p, "%context", Id (p1, c), body) ->
-      if (only_strict && c = "%strictContext") || (not only_strict) then
-        begin 
-          if eligible_for_restoration e then
-            begin
-              dprint_string "eligible for restore, start restore...\n";
-              let newbody = restore_rec body names in
-              Let (p, "%context", Id (p1, c), newbody)
-            end
-          else 
-            (dprint_string "not eligible for restore, return original one\n";
-             e)
-        end
-      else
-        begin
-          dprint_string "find nonstrict context. not eligible for restore...\n";
-          e
-        end 
+    | Seq (p0, S.Hint (p1, hint, e), e2) when is_env_delimiter hint ->
+      Seq (p0, S.Hint (p1, hint, e), restore_rec e2 names)
     | _ -> optimize jump_env e
   in
   let rec propagate_this (e : exp) (env : names_t) =
@@ -553,6 +540,10 @@ let rec restore_id (e : exp) : exp =
       Let(pos, x, Id(p1, "%this"), body)
     | _ -> optimize propagate e
   in
-  let e = propagate_this e names in
-  jump_env e
+  let exp = propagate_this e IdMap.empty in
+  (* if there are environment, jump over the env. Otherwise just start
+     from the very begin of the code.*)
+  match get_code_after_delimiter exp with
+  | None -> restore_rec exp names
+  | Some (_) -> jump_env exp
 
