@@ -1,7 +1,7 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_preprocess
+open Ljs_restore_id
 open Sys
 
 let jsparser_path = "../tests/jsparser.sh"
@@ -17,17 +17,19 @@ let suite =
   let eligible_test (jscode : string) (expected : bool) = 
     fun test_ctx ->
       let s5code = desugar jscode in
-      assert_equal expected (eligible_for_preprocess s5code)
-        ~printer: (fun x -> if x then "eligible" else "not eligible")
+      assert_equal expected (eligible_for_restoration s5code)
+        ~printer: (fun x -> if x then ("eligible:\n" ^ jscode)
+                    else ("not eligible:\n" ^ jscode))
   in 
-  let window_free_test (jscode : string) (expected : bool) =
+  let window_free_test ?(td=false) (jscode : string) (expected : bool) =
     fun test_ctx ->
       let s5code = desugar jscode in
-        assert_equal expected (window_free s5code)
-          ~printer: (fun x -> if x then "window free" else "not window free")
+      (if td then todo "todo" else ());
+      assert_equal expected (window_free s5code)
+        ~printer: (fun x -> if x then "window free" else "not window free")
   in
   let eq ?(nyi=false) (jscode : string) (expected : string) =
-    (* this function will first assert the code is eligible for preprocessing.
+    (* this function will first assert the code is eligible for restoreing.
        and evaluate the jscode and expected, and compare the result with that of 
        expected *)
     fun text_ctx ->
@@ -36,20 +38,20 @@ let suite =
       let es5env = Ljs.parse_es5_env (open_in "../envs/es5.env") "../envs/es5.env" in
       let s5code = desugar jscode in
       let s5expected = desugar expected in
-      assert_equal true (eligible_for_preprocess s5code)
+      assert_equal true (eligible_for_restoration s5code)
         ~printer: (fun x -> if x then "eligible" else "not eligible");
-      let s5value = Ljs_eval.eval_expr (es5env (preprocess s5code)) desugar true in
+      let s5value = Ljs_eval.eval_expr (restore_id (es5env s5code)) desugar true in
       let expectedv = Ljs_eval.eval_expr (es5env s5expected) desugar true in
       match s5value, expectedv with
       | Ljs_eval.Answer(_,value,_,_), Ljs_eval.Answer(_,value2,_,_) ->
         assert_equal value2 value
           ~printer: (Ljs_values.pretty_value)
   in 
-  let is_window_free (jscode : string) =
-    window_free_test jscode true
+  let is_window_free ?(td=false) (jscode : string) =
+    window_free_test ~td jscode true
   in
-  let not_window_free (jscode : string) =
-    window_free_test jscode false
+  let not_window_free ?(td=false) (jscode : string) =
+    window_free_test ~td jscode false
   in
   let eligible (jscode : string) =
     eligible_test jscode true
@@ -57,7 +59,7 @@ let suite =
   let not_eligible (jscode : string) =
     eligible_test jscode false
   in 
-  "Test Preprocess" >:::
+  "Test Restore" >:::
   [
     (* ------- test window free ------- *)
     "not window free: window reference" >::
@@ -66,8 +68,8 @@ let suite =
     "not window free: window def" >::
     (not_window_free "this.window.x = 1");
 
-    "not window free: window reference" >::
-    (not_window_free "this.window['x']");
+    "is window free: window reference" >::
+    (is_window_free ~td:true "this.window['x']");
 
     "not window free: window reference" >::
     (not_window_free "this['window']");
@@ -78,8 +80,17 @@ let suite =
     "not window free: window def" >::
     (not_window_free "window.x = 1");
 
-    "not window free: window reference" >::
-    (not_window_free "window['x']");
+    "is window free: use property of window" >::
+    (is_window_free ~td:true "window['x']");
+
+    "is window free: use property of window" >::
+    (is_window_free ~td:true "window['x']()");
+
+    "is window free: use property of window" >::
+    (is_window_free ~td:true "if (window.var == 1) {1} else {2}");
+
+    "is window free: use property of window" >::
+    (is_window_free ~td:true "var x = window.var");
 
     "not window free: directly refer to window in functions" >::
     (not_window_free "function foo() { var a = window }");
@@ -92,6 +103,9 @@ let suite =
 
     "not window free: passing window " >::
     (not_window_free "function foo() { bar(window);}");
+
+    "not window free: return window" >::
+    (not_window_free "function foo() { return window }");
 
     "window free: window in functions" >::
     (is_window_free "function foo() { this.window }");
@@ -276,9 +290,9 @@ let suite =
 
     "not eligible nonstrict mode is not eligible" >::
     (fun ctx ->
-       skip_if (Ljs_preprocess.only_strict = false) "only strict mode is off";
+       skip_if (Ljs_restore_id.only_strict = false) "only strict mode is off";
        let s5code = desugar "var bar = 2; bar" in
-       assert_equal false (eligible_for_preprocess s5code));
+       assert_equal false (eligible_for_restoration s5code));
 
     "not eligible nonstrict mode is not eligible" >::
     (fun ctx ->
@@ -286,7 +300,7 @@ let suite =
        let s5code = desugar "var f = function () {return 1}
                              var o = {'v1' : this['f']()}
                              o.v1" in
-       assert_equal true (eligible_for_preprocess s5code));
+       assert_equal true (eligible_for_restoration s5code));
 
 
     "not eligible: computation string field" >::
@@ -310,12 +324,13 @@ let suite =
        window['b'+'bar'] = 3;
        bar");
 
-    "not eligible: computation string field" >::
-    (not_eligible 
+    (* uncomment this when window is able to be analyzed
+    "eligible: use window property by computation string field" >::
+    (eligible 
       "'use strict';
        var bar = 2;
        var foo = window['ba'+'r'];
-       foo");
+       foo");*)
 
     "not eligible: computation string field" >::
     (not_eligible 
@@ -323,13 +338,13 @@ let suite =
        var bar = 2;
        var foo = this['ba'+'r'];
        foo");
-
-    "not eligible: computation string field" >::
-    (not_eligible 
+    (* uncomment this when window is able to be analyzed
+    "eligible: use window property by computation string field" >::
+    (eligible 
       "'use strict';
        var bar = 2;
        var foo = this.window['ba'+'r'];
-       boo");
+       boo");*)
 
     "eligible: computation string field on normal object" >::
     (eligible
@@ -346,7 +361,7 @@ let suite =
        foo");
 
     (* todo: use arguments keyword *)
-    (* todo: make preprocess works over environment *)
+    (* todo: make restore works over environment *)
 
     "test this" >::
     (eq  "'use strict'; 
@@ -427,6 +442,21 @@ let suite =
          function foo() {var x = 2; x = 3;}
          foo();
          x" "1");
+
+    "reuse identifier name: take from 12.14-1.js in test262" >::
+    (eq "'use strict';
+        function testcase() {
+          foo = 'prior to throw';
+          try {
+            throw new Error();
+          }
+          catch (foo) {
+            var foo = 'initializer in catch';
+          }
+         return foo === 'prior to throw';
+          
+         }
+        testcase();" "true");
 
     (* test ++, -- *)
     "test++" >::

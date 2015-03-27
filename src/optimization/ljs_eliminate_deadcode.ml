@@ -4,8 +4,7 @@ module EU = Exp_util
 
 type env = exp IdMap.t
 
-let ljs_str ljs =
-  Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
+let ljs_str = EU.ljs_str
 
 (* any function name in this list is considered not having side effect *)
 let no_sideeffect_list = [
@@ -15,7 +14,7 @@ let no_sideeffect_list = [
 let no_sideeffect_set = IdSet.from_list no_sideeffect_list
 
 (* eliminate unused ids, sequence *)
-let deadcode_elimination (exp : exp) : exp =
+let eliminate_deadcode (exp : exp) : exp =
   let rec eliminate_ids_rec (e : exp) (ids : IdSet.t) : (exp * IdSet.t) = 
     let rec handle_option (opt : exp option) ids : exp option * IdSet.t = 
       match opt with
@@ -144,6 +143,10 @@ let deadcode_elimination (exp : exp) : exp =
        else 
          Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
 
+    | Let (p, x, x_v, body) when EU.same_Id x x_v ->
+      (* clean pattern: let (x = x) *)
+      eliminate_ids_rec body ids
+
     (* to retain this let,
        1. x is used in body, or
        2. x_v will be evaluated to have side effect
@@ -182,13 +185,18 @@ let deadcode_elimination (exp : exp) : exp =
 
     | Label (p, l, e) ->
        let new_e, ids = eliminate_ids_rec e ids in
-       Label (p, l, new_e), ids
+       begin match new_e with
+         | Break (_, l', brk) when l = l' ->
+           brk, ids 
+         | _ ->  Label (p, l, new_e), ids
+       end
 
     | Break (p, l, e) ->
        let new_e, ids = eliminate_ids_rec e ids in
        Break (p, l, new_e), ids
 
     | TryCatch (p, body, catch) ->
+      (* TODO: elimiante body that will not throw error *)
        let b, ids = eliminate_ids_rec body ids in
        let c, ids = eliminate_ids_rec catch ids in
        TryCatch (p, b, c), ids

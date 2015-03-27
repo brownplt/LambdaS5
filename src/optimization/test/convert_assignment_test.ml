@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_less_mutation
+open Ljs_convert_assignment
 
 let suite =
-  let cmp before after = cmp before less_mutation after in
-  let no_change code = no_change code less_mutation in
+  let cmp before after = cmp before convert_assignment after in
+  let no_change code = no_change code convert_assignment in
   "Test Less Mutation" >:::
   [
     "transform SetBang to Let" >::
@@ -22,12 +22,43 @@ let suite =
          let (x = 2)
            x");
 
-    (* todo setbang and recursive function *)
-    "setbang x and usage x are in different seq" >::
+    "pattern1: let(a=..) x:=a. ">::
+    (cmp
+      "let (x = undefined) {
+       {let (a = 1)
+           x:=a};
+       1}"
+      "let (x = undefined) {
+       {let (x = 1)
+        1}}");
+
+    "pattern1 again: let(a=..) x:=a. ">::
     (no_change
       "let (x = undefined) {
+       {let (a = 1)
+        let (b = 2)
+           x:=a};
+       1}");
+    
+
+    "the setbang x and the usage of x are in different seq" >::
+    (no_change
+      "let (x = undefined) {
+         {let (y = 2) x := prim('+', y, 1)}; x
+       }"
+    );
+    
+    (* todo setbang and recursive function *)
+    "the setbang x and the usage of x are in different seq" >::
+    (cmp
+       "let (x = undefined) {
          {let (y = 2) x := y; x};
          x
+       }"
+       "let (x = undefined) {
+         {let (x = 2) {
+          x;x
+         }}
        }"
     );
 
@@ -58,15 +89,21 @@ let suite =
 
 
     "let shadow" >::
+    (* NOTE: after arrange the sequence, the answer is no long
+"let (x = undefined) {
+         {let (x = 2) x};
+         {let (x = 3) x}
+       }" *)    
     (cmp
        "let (x = undefined) {
          {x := 2; x};
          {let (x = 3) x}
        }"
        "let (x = undefined) {
-         {let (x = 2) x};
-         {let (x = 3) x}
-       }"
+         let (x = 2) {
+           x;
+           {let (x = 3) x}}
+         }"
     );
 
     "js func pattern" >::

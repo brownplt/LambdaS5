@@ -1,4 +1,6 @@
-
+open Prelude
+open Ljs_syntax
+    
 let print_ljs ljs =
   Ljs_pretty.exp ljs Format.std_formatter; print_newline()
 
@@ -27,3 +29,5 @@ let make_debug_printer ?(on=false) name =
   (print, print_string, print_ljs)
 
         
+let debug_exp_IdMap (m : exp IdMap.t) : unit =
+  IdMap.iter (fun k v->printf "| %s  -> %s \n%!" k (Exp_util.ljs_str v)) m
