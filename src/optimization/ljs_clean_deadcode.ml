@@ -13,8 +13,17 @@ let no_sideeffect_list = [
 
 let no_sideeffect_set = IdSet.from_list no_sideeffect_list
 
+let stopping_flow (exp : exp) =
+  (* Decide whether the exp will stop the flow. like 'break', 'throw' will
+     stop the flow *)
+  match exp with
+  | Break (_, _, _) -> true
+  | Throw (_, _) -> true
+  | _ -> false
+  
+
 (* clean unused ids, sequence *)
-let clean_bindings (exp : exp) : exp =
+let clean_deadcode (exp : exp) : exp =
   let rec clean_ids_rec (e : exp) (ids : IdSet.t) : (exp * IdSet.t) =
     let rec handle_option (opt : exp option) ids : exp option * IdSet.t =
       match opt with
@@ -137,7 +146,13 @@ let clean_bindings (exp : exp) : exp =
           But it is not the case in env-clean *)
        let new_e2, e2_ids = clean_ids_rec e2 ids in
        let new_e1, e1_ids = clean_ids_rec e1 ids in
-       Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
+       if stopping_flow new_e1 then
+         new_e1, e1_ids
+       else if not (EU.has_side_effect new_e1) then
+         new_e2, e2_ids
+       else
+         Seq (p, new_e1, new_e2), IdSet.union e1_ids e2_ids
+         
 
     | Let (p, x, x_v, body) when EU.same_Id x x_v ->
       (* clean pattern: let (x = x) *)

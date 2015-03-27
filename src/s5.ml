@@ -8,8 +8,7 @@ open Ljs_pretty_html
 open Reachability
 open Ljs_fold_const
 open Ljs_propagate_const
-open Ljs_clean_bindings
-open Ljs_clean_sequence
+open Ljs_clean_deadcode
 open Ljs_propagate_nonconst
 open Ljs_inline_function
 open Ljs_restore_id
@@ -402,14 +401,9 @@ module S5 = struct
     let new_ljs = propagate_const ljs in
     push_ljs new_ljs
 
-  let opt_clean_bindings cmd () =
+  let opt_clean_deadcode cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = clean_bindings ljs in
-    push_ljs new_ljs
-
-  let opt_clean_sequence cmd () =
-    let ljs = pop_ljs cmd in
-    let new_ljs = clean_sequence ljs in
+    let new_ljs = clean_deadcode ljs in
     push_ljs new_ljs
 
   let opt_propagate_nonconst cmd () =
@@ -597,10 +591,8 @@ module S5 = struct
           "perform constant folding on s5";
         unitCmd "-opt-propagate-const" opt_propagate_const
           "perform constant propagation on s5";
-        unitCmd "-opt-clean-bindings" opt_clean_bindings
+        unitCmd "-opt-clean-deadcode" opt_clean_deadcode
           "clean unused bindings in s5";
-        unitCmd "-opt-clean-sequence" opt_clean_sequence
-          "clean dead flow in s5";
         unitCmd "-opt-propagate-nonconst" opt_propagate_nonconst
           "propagate single-use functions, objects, and let bindings in s5";
         unitCmd "-opt-inline-function" opt_inline_function
