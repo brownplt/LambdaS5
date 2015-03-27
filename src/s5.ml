@@ -8,14 +8,14 @@ open Ljs_pretty_html
 open Reachability
 open Ljs_fold_const
 open Ljs_propagate_const
+open Ljs_clean_deadcode
 open Ljs_propagate_nonconst
-open Ljs_eliminate_deadcode
 open Ljs_inline_function
 open Ljs_restore_id
 open Ljs_clean_env
-open Ljs_eliminate_static_checks
+open Ljs_clean_assertion
 open Ljs_convert_assignment
-open Ljs_no_checks
+open Ljs_clean_assertion_harsh
 open Ljs_restore_function
 open Ljs_fixed_arity
 open Exp_util
@@ -128,7 +128,7 @@ module S5 = struct
 
   let pop_env cmd : Ljs_syntax.exp -> Ljs_syntax.exp =
     match pop cmd with
-    | Env src -> src 
+    | Env src -> src
     | node -> type_error cmd EnvT node
 
   let pop_answer cmd : Ljs_eval.answer =
@@ -380,7 +380,7 @@ module S5 = struct
     Ljs_sym_z3.print_results results
   (* close_in inch; close_out outch *)
 
-  let ljs_sym_eval_raw cmd () = 
+  let ljs_sym_eval_raw cmd () =
     let results = do_sym_eval cmd in
     print_string "RAW RESULTS"; print_newline();
     output_value stdout results;
@@ -388,12 +388,12 @@ module S5 = struct
 
   (* optimization command *)
 
-  let opt_fold_const cmd () = 
+  let opt_fold_const cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = fold_const ljs in
     push_ljs new_ljs
     (* print origin one for debug *)
-    (*Ljs_pretty.exp ljs std_formatter; 
+    (*Ljs_pretty.exp ljs std_formatter;
     print_newline ()*)
 
   let opt_propagate_const cmd () =
@@ -401,14 +401,14 @@ module S5 = struct
     let new_ljs = propagate_const ljs in
     push_ljs new_ljs
 
+  let opt_clean_deadcode cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = clean_deadcode ljs in
+    push_ljs new_ljs
+
   let opt_propagate_nonconst cmd () =
     let ljs = pop_ljs cmd in
     let new_ljs = propagate_nonconst ljs in
-    push_ljs new_ljs
-
-  let opt_eliminate_deadcode cmd () =
-    let ljs = pop_ljs cmd in
-    let new_ljs = eliminate_deadcode ljs in
     push_ljs new_ljs
 
   let opt_inline_function cmd () =
@@ -426,9 +426,9 @@ module S5 = struct
     let new_ljs = clean_env ljs in
     push_ljs new_ljs
 
-  let opt_eliminate_static_checks cmd () =
+  let opt_clean_assertion cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = eliminate_static_checks ljs in
+    let new_ljs = clean_assertion ljs in
     push_ljs new_ljs
 
   let opt_convert_assignment cmd () =
@@ -436,9 +436,9 @@ module S5 = struct
     let new_ljs = convert_assignment ljs in
     push_ljs new_ljs
 
-  let opt_no_checks cmd () =
+  let opt_clean_assertion_harsh cmd () =
     let ljs = pop_ljs cmd in
-    let new_ljs = no_checks ljs in
+    let new_ljs = clean_assertion_harsh ljs in
     push_ljs new_ljs
 
   let opt_restore_function cmd () =
@@ -450,7 +450,7 @@ module S5 = struct
     let ljs = pop_ljs cmd in
     let new_ljs = fixed_arity ljs in
     push_ljs new_ljs
-      
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       match e with
@@ -481,7 +481,7 @@ module S5 = struct
     let ljs = pop_ljs cmd in
     push_ljs ljs;
     Marshal.to_channel (open_out_bin filename) ljs []
-    
+
   let load_s5 cmd (filename : string) =
     let ljs = Marshal.from_channel (open_in_bin filename) in
     push_ljs ljs
@@ -585,28 +585,28 @@ module S5 = struct
           "marshal s5 code to file as sequence of bytes";
         strCmd "-load-s5" load_s5
           "load s5 from marshalled file that created by -save-s5(use -s5 to load text form of s5 code)";
-        unitCmd "-opt-restore-id" opt_restore_id
-          "restore JavaScript id in desugared S5";
         unitCmd "-opt-fold-const" opt_fold_const
           "perform constant folding on s5";
         unitCmd "-opt-propagate-const" opt_propagate_const
           "perform constant propagation on s5";
+        unitCmd "-opt-clean-deadcode" opt_clean_deadcode
+          "clean unused bindings in s5";
         unitCmd "-opt-propagate-nonconst" opt_propagate_nonconst
           "propagate single-use functions, objects, and let bindings in s5";
-        unitCmd "-opt-eliminate-deadcode" opt_eliminate_deadcode
-          "perform dead code elimination on s5";
         unitCmd "-opt-inline-function" opt_inline_function
           "perform function inlining on s5";
-        unitCmd "-opt-clean-env" opt_clean_env
-          "clean unused env expression";
-        unitCmd "-opt-eliminate-static-checks" opt_eliminate_static_checks
+        unitCmd "-opt-clean-assertion" opt_clean_assertion
           "clean static checks as much as possible";
         unitCmd "-opt-convert-assignment" opt_convert_assignment
           "convert assignment to let bindings when possible";
-        unitCmd "-opt-restore-function" opt_restore_function
-          "restore function objects to procedures";
-        unitCmd "-opt-no-checks" opt_no_checks
+        unitCmd "-opt-restore-id" opt_restore_id
+          "[semantics altering] restore JavaScript id in desugared S5";
+        unitCmd "-opt-clean-assertion-harsh" opt_clean_assertion_harsh
           "[semantics altering] clean all static checks";
+        unitCmd "-opt-restore-function" opt_restore_function
+          "[semantics altering] restore function objects to procedures";
+        unitCmd "-opt-clean-env" opt_clean_env
+          "[semantics altering] clean unused env expression";
         unitCmd "-opt-fixed-arity" opt_fixed_arity
           "[semantics altering] disable variable function arity";
         strCmd "-count-nodes" count_nodes

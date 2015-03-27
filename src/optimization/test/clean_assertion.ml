@@ -1,11 +1,11 @@
 open Prelude
 open Util
 open OUnit2
-open Ljs_eliminate_static_checks
+open Ljs_clean_assertion
 
 let suite =
-  let cmp before after = cmp before eliminate_static_checks after in
-  let no_change code = no_change code eliminate_static_checks in
+  let cmp before after = cmp before clean_assertion after in
+  let no_change code = no_change code clean_assertion in
   "Test Type Infer" >:::
   [
     "simple number" >::
@@ -45,7 +45,7 @@ let suite =
          "let (x = {let (x1 = 1) let (x2 = {[]}) let (x3 = {[#code: func(){1}]}) {x1;x2;x3}})
           'function'"
     );
-    
+
     "undecidable type" >::
     (no_change "let (x = {if (f) {1} else {'1'}}) prim('typeof', x)");
 
