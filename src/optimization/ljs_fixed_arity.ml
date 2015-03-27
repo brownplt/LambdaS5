@@ -2,6 +2,7 @@ open Prelude
 open Ljs_syntax
 open Ljs_opt
 
+
 (* take out argument declaration exp, and return ordered formal
    parameter list *)
 let trim_args (exp : exp) : id list * exp =
@@ -93,7 +94,8 @@ let delete_field (fld : string) (obj : exp) : exp =
     
 let fixed_arity (exp : exp) : exp =
   (* clean formal parameter *)
-  let rec fixed_formal_parameter (exp : exp) : exp =
+  let rec fixed_formal_parameter ?(in_getter=false) (exp : exp) : exp =
+    let fix e = fixed_formal_parameter ~in_getter e in
     (* clean related %args expression *)
     let rec clean_args (fbody : exp) : exp =
       let is_arg_delete (exp : exp) : bool = match exp with
@@ -105,6 +107,7 @@ let fixed_arity (exp : exp) : exp =
         (* clean "arguments" property in context *)
         match exp with
         | Let (p, "%context", xv, body) ->
+          (*let _ = printf "start clean the arguments(if any)\n" in*)
           Let (p, "%context", clean_arguments xv, body)
         | Let (p, x, xv, body) ->
           Let (p, x, xv, clean_arguments body)
@@ -118,16 +121,32 @@ let fixed_arity (exp : exp) : exp =
       | _ -> fbody
     in
     match exp with
-    | Lambda (pos, xs, body) ->
+    | Lambda (pos, xs, body) when not in_getter && xs = ["%this"; "%args"]->
+      (*let _ = printf "find a non-getter lambda, transform it\n%!" in*)
       (* take out those Let bindings in function body *)
       let args, new_body = trim_args body in
       (* make a new formal parameter list *)
       let new_xs = update_args xs args in
       (* clean %args in the body, and "arguments" property in context(if exists)*)
       let new_body = clean_args new_body in
-      Lambda (pos, new_xs, fixed_formal_parameter new_body)
+      Lambda (pos, new_xs, fixed_formal_parameter ~in_getter new_body)
+    | Lambda (pos, ["%this"; "%args"], body) when in_getter->
+      (*let _ = printf "find a getter, do not transform the formal argument\n%!" in*)
+      Lambda (pos, ["%this"; "%args"], fixed_formal_parameter ~in_getter:false body)
+    | Object (p, attrs, props) ->
+      let new_attrs = apply_to_attr fix attrs in
+      let new_props = List.map
+          (fun p -> match p with
+             | (s, Data (data, enum, config)) ->
+               s, Data ({value = fix data.value; writable=data.writable}, enum, config)
+             | (s, Accessor (acc, enum, config)) ->
+               s, Accessor ({getter = fixed_formal_parameter ~in_getter:true acc.getter;
+                             setter = fix acc.setter}, enum, config))
+          props
+      in
+      Object (p, new_attrs, new_props)
     | _ ->
-      optimize fixed_formal_parameter exp
+      optimize fix exp
   in
   (* clean call site *)
   let rec fixed_call_site (exp : exp) : exp =
