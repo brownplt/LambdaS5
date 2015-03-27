@@ -541,5 +541,9 @@ let rec restore_id (e : exp) : exp =
     | _ -> optimize propagate e
   in
   let exp = propagate_this e IdMap.empty in
-  jump_env exp
+  (* if there are environment, jump over the env. Otherwise just start
+     from the very begin of the code.*)
+  match get_code_after_delimiter exp with
+  | None -> restore_rec exp names
+  | Some (_) -> jump_env exp
 
