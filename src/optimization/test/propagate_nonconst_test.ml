@@ -471,6 +471,17 @@ let suite =
           }"         
       );
 
+(*      "this test is wrong! it cannot be propagated" >::
+      (cmp
+       "let (x = undefined) {
+          x := 12;
+          let (%constr1 = x)
+          if (prim('!', prim('stx=', prim('typeof', %constr1) , 'function'))) {%contr1(1)} else {2}}"
+       "let (x = undefined) {
+          x := 12;
+          if (prim('!', prim('stx=', prim('typeof', x) , 'function'))) {x(1)} else {2}}"
+      );
+*)
 ]
 let _ =
   run_test_tt_main suite

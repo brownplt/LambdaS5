@@ -31,10 +31,10 @@ let rec get_type exp env : exp option =
       let env = IdMap.add x x_v env in
       typeof body env
     | Seq (_, e1, e2) -> typeof e2 env
-    | GetField (_, o, String(_, "prototype"), _) ->
+    (*| GetField (_, o, String(_, "prototype"), _) ->
       (* function always has an object as prototype *)
       if typeof o env = "function" then "object"
-      else failwith (sprintf "cannot decide: %s\n" (EU.ljs_str exp))
+      else failwith (sprintf "cannot decide: %s\n" (EU.ljs_str exp))*)
     | _ -> failwith (sprintf "Not Support: %s\n" (EU.ljs_str exp))
   in
   try
