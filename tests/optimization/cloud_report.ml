@@ -6,7 +6,6 @@ open Str
 let analyze_dir = ref ""
 let base_dir = ref ""
 let latex_format = ref false
-let table_header_printed = ref false
 
 let sections =
   let names = ["07"; "08"; "09"; "10"; "11"; "12"; "13"; "14"; "15"] in
@@ -362,10 +361,6 @@ let pretty_summary (use_latex: bool) (section: string) (hash : fileinfo_t) : uni
           calculate (List.map2 (fun e u -> e + u) env usr)) :: lst)
       hash []
   in
-  if use_latex && not (!table_header_printed) then begin
-    printf " & Max & Min & Mean & Media \\\\\n\\hline\n";
-    table_header_printed := true
-  end;
   if shrinkage = [] then
     print_empty_info ()
   else
