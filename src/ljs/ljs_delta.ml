@@ -27,7 +27,7 @@ let typeof store v = str begin match v with
       | ({ code = Some cexp }, _) -> "function"
       | _ -> "object"
   end
-  | Closure _ -> raise (PrimErr ([], str "typeof got lambda"))
+  | Closure _ -> "function" (*raise (PrimErr ([], str "typeof got lambda"))*)
 end
 
 let is_closure store v = match v with

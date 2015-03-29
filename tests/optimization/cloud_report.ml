@@ -134,9 +134,13 @@ let compare_section (section : name_t) : unit =
     printf "%-10s%15d%30d\n" "FAIL"  analyze_fail base_fail;
     printf "%!"
   end else begin
-    (*section | transformed pass | transformed fail | untranformed pass | untranformed fail *)
-    printf "%s & %d & %d & %d & %d \\\\\n\\hline\n%!"
-      section analyze_pass analyze_fail base_pass base_fail
+    (*section | transformed pass | base pass | percentage *)
+    printf "%s & %d & %d & %s \\\\\n\\hline\n%!"
+      section analyze_pass base_pass 
+        (if base_pass = 0 then
+           sprintf "N/A"
+        else
+           sprintf "%.1f\\%%" ((float_of_int analyze_pass) /. (float_of_int base_pass) *. 100.0))
   end
 
 (* ============================= produce performance ============================= *)
