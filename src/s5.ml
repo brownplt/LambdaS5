@@ -453,7 +453,33 @@ module S5 = struct
 
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
+      (* shrinkage change the object model, function signature, etc.
+         Counting must reflect these node *)
+      let data_count {value=x; writable=_} = 1 + (count x) in
+      let acc_count {getter=x; setter=y} = (count x) + (count y) in
+      let prop_count (prop : Ljs_syntax.prop) = match prop with
+        | Ljs_syntax.Data (data, _, _) -> 2 + data_count data
+        | Ljs_syntax.Accessor (acc, _, _) -> 2 + acc_count acc
+      in
+      let prop_list_count props = 
+        List.fold_left (+) 0 (List.map (fun (_, prop) -> 
+                                          1 + (prop_count prop)) props)
+      in
+      let option_count option = match option with
+        | None -> 0
+        | Some x -> count x
+      in
+      let attrs_count attrs = match attrs with
+        | {primval=e1; code=e2; proto=e3;klass=_;extensible=_} ->
+         2 + (option_count e1) + (option_count e2) + (option_count e3)
+      in
       match e with
+      | Object (_, attrs, props) ->
+        (attrs_count attrs) + (prop_list_count props)
+      | Let (_, _, xv, body) -> 1 + (count xv) + (count body)
+      | Rec (_, _, xv, body) -> 1 + (count xv) + (count body)
+      | Lambda (_, xs, body) -> (List.length xs) + (count body)
+      | SetBang (_, _, v) -> 1 + (count v)
       | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
     let ljs = pop_ljs cmd in
     let total = count ljs in
