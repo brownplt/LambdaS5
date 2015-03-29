@@ -33,21 +33,22 @@ let suite =
   let cmp before after = cmp before restore_function after in
   let no_change code = no_change code restore_function in
 
+  (*NOTE: use %this, rather than 'this' in the test case! *)
   "Test restore function" >:::
   [
     "restore object 1" >::
     (cmp
        "let (prototype={[#proto: %ObjectProto]})
-           {[#code: func(this, x, y, z) {x}]}"
-       "func(this, x, y, z){x}");
+           {[#code: func(%this, x, y, z) {x}]}"
+       "func(%this, x, y, z){x}");
 
     "restore object 2" >::
     (cmp
       "let (prototype={[#proto: %ObjectProto]})
          let (extra = 1)
-           {[#code: func(this) {extra}]}"
+           {[#code: func(%this) {extra}]}"
       "let (extra=1)
-         func(this){extra}");
+         func(%this){extra}");
 
     "restore object 3" >::
     (no_change
@@ -59,23 +60,23 @@ let suite =
     (cmp
       "{[]
          'foo' : {#getter {let (p={[#proto: %ObjectProto]})
-                            {[#code: func(){1}]}},
+                            {[#code: func(%this){1}]}},
                   #setter {let (p={[#proto: %ObjectProto]})
-                            {[#code: func(){1}]}}}}"
-      "{[] 'foo' : {#getter func(){1},
-                    #setter func(){1}}}");
+                            {[#code: func(%this){1}]}}}}"
+      "{[] 'foo' : {#getter func(%this){1},
+                    #setter func(%this){1}}}");
 
     "dont restore this" >::
     (no_change
       "let (extra = 1)
-        {[#code: func(this) {extra}]}");
+        {[#code: func(%this) {extra}]}");
       
       
     "restore in assignment" >::
     (cmp
       "obj := {let (prototype={[#proto: %ObjectProto]})
-           {[#code: func(this, x, y, z) {x}]}}"
-      "obj := func(this, x, y, z) {x}");
+           {[#code: func(%this, x, y, z) {x}]}}"
+      "obj := func(%this, x, y, z) {x}");
   ]
 
 
