@@ -22,6 +22,7 @@ let rec get_type exp env : exp option =
       | { code = Some _ } -> "function"
       | _ -> "object"
       end
+    | Lambda (_, _, _) -> "function"
     | Id (_, x) ->
       typeof (IdMap.find x env) env
     | Let (_, x, x_v, body) ->

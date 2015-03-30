@@ -17,9 +17,17 @@ let fold_const_op1 (p : Pos.t) (op : string) (e : exp) : exp option =
 let fold_const_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp option = 
   EU.apply_op2 p op e1 e2
 
-let rec fold_const_app pos lambda args =
-  Null pos
-  
+let rec fold_app f args : exp option =
+  let get_id e = match e with
+    | Id (_, id) -> id
+    | _ -> ""
+  in
+  match get_id f, args with
+  | "%PrimAdd", [Num (p, n1); Num (_, n2)] ->
+    Some (Num (p, n1 +. n2))
+  | "", _
+  | _ -> None
+    
 let rec fold_const (e : exp) : exp =
   match e with
   | Undefined _ 
@@ -60,7 +68,14 @@ let rec fold_const (e : exp) : exp =
             let e = fold_const els in
             If (p, c_val, t, e)
           end 
-     end 
+     end
+  | App (p, f, args) ->
+    let f = fold_const f in
+    let args = List.map fold_const args in
+    begin match fold_app f args with
+      | Some (newexp) -> newexp
+      | None -> App (p, f, args)
+    end
   | GetAttr (_, _, _, _)
   | GetObjAttr (_, _, _)
   | GetField (_, _, _, _)
@@ -75,7 +90,6 @@ let rec fold_const (e : exp) : exp =
   | Seq (_,_,_) 
   | Let (_,_,_,_)
   | Rec (_,_,_,_)
-  | App (_, _, _)
   | Label (_, _, _)
   | TryCatch (_, _, _)
   | Break (_,_,_)
