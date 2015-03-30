@@ -94,13 +94,13 @@ let suite =
       "Only inline function that has been propagated" >::
       (cmp "func(t){1}(2)" "1");
 
-      "argument is constant variable" >::
+      "arguments can be any variable" >::
         (cmp "let (a = func(t){t})
               func(x){x;x}(a)"
              "let (a = func(t){t})
               {a;a}");
 
-      "argument can be any variabe" >::
+      "arguments can be any variabe" >::
         (cmp "let (b={[]})
               func(x){prim('+', x, 1)}(b)"
              "let (b={[]})
@@ -118,12 +118,6 @@ let suite =
               a[<#extensible>=true]"
         );
 
-      "don't inline if free vars exists" >::
-        (no_change "let (a = func(x) { prim('+',x,t) })
-                    let (t=2) {
-                    a(t)
-                    }");
-
       "mutation" >::
       (* one of the reason why inline function only applies to
          function in place
@@ -135,27 +129,26 @@ let suite =
 
 
       "don't inline if argument is assigned again" >::
-        (no_change "let (a = func(x) { let (t = 1) {x:=t}})
-                    let (t=2) {
-                    a(t);
-                    prim('pretty', t)
-                    }");
-      (*  it is bad to be inlined to:
-              let (a = func(x) { let (t = 1) {x:=t}})
-              let (t=2) {
-                let (%alpha_t=1)
-                  {t:=%alpha_t};
-                prim('pretty', t)
-              } *)
+      (no_change
+         "(func(t, y){
+             func(x){y := t}
+           })(3,4)");
 
-
+      "but inline if not" >::
+      (cmp
+         "(func(t, y){
+             func(x){x := y}
+           })(3,4)"
+         "func(x){x := 4}"
+      );
+      
       "inline even if side effect will occur" >::
         (cmp "let (t=func(x){x:=1}) {
                 func(x) { let (t = 1) x(t) }(t)
               }"
               "{let (t = func(x) {x := 1.})
-                 {let (%alphaconv1 = 1.)
-                     t(%alphaconv1)}}"
+                 {let (t0 = 1.)
+                     t(t0)}}"
         );
 
       "don't inline: arguments are not consts or ids" >::
@@ -176,8 +169,8 @@ let suite =
                func(x) { let (t = 1) t}(t)
               }"
              "let (t=2) {
-                {let (%alphaconv1=1)
-                  %alphaconv1}
+                {let (t0=1)
+                  t0}
               }"); 
       "alpha conversion 2" >::
         (cmp "let (a = 1)
@@ -190,12 +183,12 @@ let suite =
                       }}(a)"
               "let (a=1)
               { 
-                let (%alphaconv1=3) {
-                   prim('+', a, %alphaconv1);
-                   let (%alphaconv2 = 2) {
-                      prim('+', a, %alphaconv2)
+                let (a0=3) {
+                   prim('+', a, a0);
+                   let (a1 = 2) {
+                      prim('+', a, a1)
                    };
-                   prim('+', a, %alphaconv1)
+                   prim('+', a, a0)
                  }
               }");
 
@@ -211,9 +204,9 @@ let suite =
 
              "let (r = {[#extensible: false]})
               {
-                let (%alphaconv1 = 1)
-                rec (%alphaconv2 = func(t) { %alphaconv2(prim('-', t, 1))})
-                  %alphaconv2(r)
+                let (r0 = 1)
+                rec (r1 = func(t) { r1(prim('-', t, 1))})
+                  r1(r)
               }
               ");           
                         
