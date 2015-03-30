@@ -332,23 +332,16 @@ let pretty_summary (use_latex: bool) (section: string) (hash : fileinfo_t) : uni
     let max, min, mean, median =
       get_max_min_mean_median lst in
     if use_latex then
-      if prefix = "All" then
-        (* latex only needs the overall summary *)
-        printf "%s & %.2f & %.2f & %.2f & %.2f \\\\\n\\hline\n%!" section max min mean median
-      else
-        ()
+        printf "%s & %.2f & %.2f & %.2f & %.2f \\\\\n\\hline\n%!" prefix max min mean median
     else
-      begin 
         printf "%s: Max %8.2f, Min %8.2f, Mean %8.2f, Median %8.2f\n%!"
           prefix max min mean median
-      end
   in
   let print_empty_info () : unit =
     (if use_latex then
       printf "%s & N/A & N/A & N/A & N/A \\\\\n\\hline\n%!" section
     else
-      printf "\nSection %s is empty" section);
-    printf "\n%!";
+      printf "\nSection %s is empty\n\n%!" section);
   in
   (* for each file, get overall shrinkage of #env, #usr, #total *)
   let shrinkage : (float * float * float) list = Hashtbl.fold
@@ -376,11 +369,10 @@ let pretty_summary (use_latex: bool) (section: string) (hash : fileinfo_t) : uni
     let all_lst = List.sort compare
         (List.map (fun (_,_,c)->c) shrinkage) in
     begin
-      if not use_latex then
-        printf "\nSection: %s\n" section;
-      print_info "Env" env_lst;
-      print_info "Usr" usr_lst;
-      print_info "All" all_lst
+      print_info (sprintf "%14s   Env" section) env_lst;
+      print_info (sprintf "%14s   Usr" section) usr_lst;
+      print_info (sprintf "%14s Total" section) all_lst;
+      printf "\n%!"
     end
     
   
