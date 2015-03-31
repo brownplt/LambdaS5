@@ -134,13 +134,14 @@ let rec fix_env (exp : exp) (env : env) : exp =
       | SetBang(_, "args", _) ->
         let _ = dprint "setbang args\n" in
         use_arg := true
-      | GetField(_, _, _, _) ->
+      | GetField(_, Id(_, "args"), _, _) ->
         begin match args_with_num exp with
           | Some (n) ->
             let _ = dprint (sprintf "match args['n'] :%s\n" (ljs_str exp)) in
             if !result < n then
               result := n
-          | None -> ()
+          | None -> (*use arg for other property*)
+            use_arg := true
         end
       | _ -> List.iter get_max_arity (child_exps exp)
     in
