@@ -90,6 +90,66 @@ let suite =
           undefined
        }");
 
+    (* NO, clean it. fix arity means 'arguments' keyword is not available.
+     "donot clean %args if context['arguments'] is used" >::
+    (no_change
+       "func(%this, %args) {
+        %args[delete '%new'];
+        let (%context = {[]
+                         'arguments' : {#value %args, #writable true}})
+          %context['arguments']
+       }");
+    *)
+    
+    (* ======= testing fix arity in env ========*)
+    "env 1" >::
+    (cmp
+      "let (x = func(this, args) { args['0']; args['1'] }) {
+        {(/*:USER CODE BELOW*/0)};
+        x
+       }
+      "
+      "let (x = func(this, fargsn0, fargsn1) { fargsn0; fargsn1 }) {
+       {(/*:USER CODE BELOW*/0)};
+       x}
+      ");
+
+    "env 2" >::
+    (cmp
+       "%sbstringlambda(str, %oneArgObj(afterix));
+       {(/*:USER CODE BELOW*/0)};
+       undefined
+       "
+       "%sbstringlambda(str, afterix);
+       {(/*:USER CODE BELOW*/0)};
+       undefined
+       "
+    );
+
+    "env 3" >::
+    (cmp
+      "let (x = func(this, args) {
+        let (t = args['0'])
+          let (y = args['1']) {
+             t; y
+          }
+       }) {
+       x(this, {[] '0':{#value x, #writable true},
+                   '1':{#value y, #writable true}});
+       {(/*:USER CODE BELOW*/0)}; undefined
+       }"
+      "let (x = func(this, fargsn0, fargsn1) {
+        let (t = fargsn0)
+          let (y = fargsn1) {
+             t; y
+          }
+       }) {
+       x(this, x, y);
+       {(/*:USER CODE BELOW*/0)}; undefined
+       }"
+    );
+
+
   ]
 
 let _ =
