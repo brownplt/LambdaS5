@@ -106,11 +106,19 @@ let delete_field (fld : string) (obj : exp) : exp =
     Object (p, a, delete fld props)
   | _ -> obj
 
-type env = exp IdMap.t
-    
-(* fix the arity for library code *)
-let rec fix_env (exp : exp) (env : env) : exp =
-  let rec fix e = fix_env e env in
+(* fix the arity for code that just uses args['0'] with binding it
+   to a specific name *)
+(* TODO: when apply this function to user code, it just happens to
+   to be right for getters. because max_arity now returns None for
+    function that does not use 'args' in body. The right thing to
+    do is to explictly keep the signature as (this, args) even when
+    args is not used. See fix_arity.
+
+    fix_arity did not clean the SetField, which is wrong. fix_by_giving_name
+    is doing right thing for fix_arity.
+*)
+let rec fix_by_giving_name ~in_env (exp : exp) : exp =
+  let rec fix e = fix_by_giving_name ~in_env e in
   (*let arity_changed name = IdMap.mem fixed name in*)
   let fixable_sig (args : string list) = match args with
     | ["this"; "args"] -> true
@@ -178,16 +186,8 @@ let rec fix_env (exp : exp) (env : env) : exp =
     | _ -> optimize remove_args exp
   in
   match exp with
-  (*| Let (p, x, xv, body) ->
-    let fixed = begin match xv with
-      | Lambda (_, xs, body) when fixable_sig xs ->
-        IdSet.add x fixed
-      | _ -> fixed
-    end in
-    let newxv = fix_env xv env fixed in
-    let newbody = fix_env body env fixed in
-    Let (p, x, newxv, newbody)*)
   | Lambda (p, xs, body) when fixable_sig xs ->
+    (* good for both env and user *)
     begin match max_arity body with
       | None ->
         (* 1. make sure the variable arity is not used,like args['length'] *)
@@ -200,8 +200,8 @@ let rec fix_env (exp : exp) (env : env) : exp =
         let newbody = remove_args (fix body) in
         Lambda (p, newxs, newbody)
     end
-  | App (p, Id(p0, f), args) ->
-    (* if the function's arity has been fixed, change this call site *)
+  | App (p, Id(p0, f), args) when in_env ->
+    (*this pattern only for env*)
     begin match parse_args_obj ~raw_obj:true args with
       | Some (arg_list) ->
         App (p, Id(p0, f), arg_list)
@@ -210,9 +210,10 @@ let rec fix_env (exp : exp) (env : env) : exp =
         App (p, Id(p0, f), args)
     end
   | Seq (p, S.Hint (p1, s, e), e2) when is_env_delimiter s ->
-    (* stop at env-user delimiter *)
-    exp
+    Seq (p, S.Hint (p1, s, e), fix_by_giving_name ~in_env:false e2)
+
   | SetField (p, obj, fld, newval, arg) ->
+    (* good for both env and user *)
     (* Junsong: why fixing this? Wow, really complicated story.
 
        If makesetter is fixed(which is used in defineGlobalVar),
@@ -311,16 +312,11 @@ let fix_arity (exp : exp) : exp =
       end
     | _ -> optimize fix_call_site exp
   in
-  let newexp = match get_code_after_delimiter exp with
-    | None ->
-      (* No env present, start *)
-      let _ = dprint "newexp\n" in
-      exp
-    | Some (_) ->
-      (* we have to clean the env first *)
-      let _ = dprint "clean env first\n" in
-      fix_env exp IdMap.empty
+  let has_env = match get_code_after_delimiter exp with
+      | None -> false
+      | _ -> true
   in
+  let newexp = fix_by_giving_name ~in_env:has_env exp in
   let e1 = fix_formal_parameter newexp in
   let e2 = fix_call_site e1 in
   e2
