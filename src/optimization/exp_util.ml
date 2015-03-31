@@ -13,6 +13,13 @@ let print_ljs ljs =
 let ljs_str ljs =
   Ljs_pretty.exp ljs Format.str_formatter; Format.flush_str_formatter()
 
+let is_num (s : string) =
+  try
+    let _ = int_of_string s in
+    true
+  with
+    _ -> false
+    
 let exp_to_value (e : S.exp) : V.value =
   match e with
   | S.Null _ -> V.Null

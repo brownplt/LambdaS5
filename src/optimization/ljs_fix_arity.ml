@@ -1,7 +1,10 @@
 open Prelude
 open Ljs_syntax
 open Ljs_opt
+open Exp_util
 
+let debug_on = false
+let dprint = Debug.make_debug_printer ~on:debug_on "fix arity"
 
 (* take out argument declaration exp, and return ordered formal
    parameter list *)
@@ -49,29 +52,40 @@ let update_args (old_xs : id list) (new_xs : id list) =
   | _ -> old_xs
 
 (* mkArgsObj is called on an object which has the arguments as properties.
-   This function will extract those arguments.
- *)
-let parse_args_obj (args : exp list) : exp list option =
-  let get_field_values (obj : exp) : exp list option =
-    let rec get_values props = match props with
-      | [] -> []
-      | (s, Data({value=value}, _, _)) :: tl ->
+   the following two functions will extract those arguments.
+*)
+let get_field_values (obj : exp) : exp list option =
+  let rec get_values props = match props with
+    | [] -> []
+    | (s, Data({value=value}, _, _)) :: tl ->
+      if is_num s then
         value :: get_values tl
-      | (s, Accessor(_,_,_)) :: tl ->
-        failwith "ArgsObj should not contain Accessor"
-    in
-    match obj with
-    | Object (_, _, props) ->
-      begin try
-          Some (get_values props)
-        with
-          _ -> failwith (sprintf "ArgsObj pattern match failed: %s"
-                           (Exp_util.ljs_str obj))
-      end
-    | _ -> None
+      else
+        get_values tl
+    | (s, Accessor(_,_,_)) :: tl ->
+      failwith "ArgsObj should not contain Accessor"
   in
-  match args with
-  | match_this :: [App (_, Id (_, "%mkArgsObj"), [argobj])] ->
+  match obj with
+  | Object (_, _, props) ->
+    begin try
+        Some (get_values props)
+      with
+        _ -> failwith (sprintf "ArgsObj pattern match failed: %s"
+                         (Exp_util.ljs_str obj))
+    end
+  | _ -> None
+    
+let parse_args_obj ?(raw_obj=false) (args : exp list) : exp list option =
+  match raw_obj, args with
+  | false, match_this :: [App (_, Id (_, "%mkArgsObj"), [argobj])] ->
+    begin match get_field_values argobj with
+      | Some (lst) -> Some (match_this :: lst)
+      | None -> None
+    end
+  | true, match_this :: [App (_, Id (_, builtin), args)]
+    when builtin = "%oneArgObj" || builtin = "%twoArgObj" ->
+    Some (match_this :: args)
+  | true, match_this :: [argobj] ->
     begin match get_field_values argobj with
       | Some (lst) -> Some (match_this :: lst)
       | None -> None
@@ -91,6 +105,139 @@ let delete_field (fld : string) (obj : exp) : exp =
   | Object (p, a, props) ->
     Object (p, a, delete fld props)
   | _ -> obj
+
+type env = exp IdMap.t
+    
+(* fix the arity for library code *)
+let rec fix_env (exp : exp) (env : env) : exp =
+  let rec fix e = fix_env e env in
+  (*let arity_changed name = IdMap.mem fixed name in*)
+  let fixable_sig (args : string list) = match args with
+    | ["this"; "args"] -> true
+    | _ -> false
+  in
+  let args_with_num exp : int option = match exp with
+    (* get the number(int) in args['0'] *)
+    | GetField(_, Id (_, "args"), String(_, s), _) ->
+        begin try Some (int_of_string s)
+          with _ -> None
+        end
+    | _ -> None
+  in
+  let max_arity exp : int option =
+    let result = ref (-1) in
+    let use_arg = ref false in
+    let rec get_max_arity exp : unit = match exp with
+      | Id (_, "args") ->
+        let _ = dprint "use args alone\n" in
+        use_arg := true
+      | SetBang(_, "args", _) ->
+        let _ = dprint "setbang args\n" in
+        use_arg := true
+      | GetField(_, _, _, _) ->
+        begin match args_with_num exp with
+          | Some (n) ->
+            let _ = dprint (sprintf "match args['n'] :%s\n" (ljs_str exp)) in
+            if !result < n then
+              result := n
+          | None -> ()
+        end
+      | _ -> List.iter get_max_arity (child_exps exp)
+    in
+    begin
+      get_max_arity exp;
+      if !use_arg || !result = -1 then
+        None
+      else
+        Some (!result + 1)
+    end
+  in
+  let make_arg (n : int) : string =
+    "fargsn" ^ (string_of_int n)
+  in
+  let make_args (total : int) : string list =
+    let rec helper cur =
+      if cur >= total then
+        []
+      else
+        (make_arg cur) :: (helper (cur+1))
+    in
+    helper 0
+  in
+  let rec remove_args (exp : exp) : exp =
+    (*1. remove all the let (t = args['0']), and
+        2. replace all the use of args['0'] with fargsn0
+    *)
+    match exp with
+    | GetField (_, _, _, _) ->
+      begin match args_with_num exp with
+        | Some (n) -> Id (Pos.dummy, make_arg n)
+        | None -> exp
+      end
+    | _ -> optimize remove_args exp
+  in
+  match exp with
+  (*| Let (p, x, xv, body) ->
+    let fixed = begin match xv with
+      | Lambda (_, xs, body) when fixable_sig xs ->
+        IdSet.add x fixed
+      | _ -> fixed
+    end in
+    let newxv = fix_env xv env fixed in
+    let newbody = fix_env body env fixed in
+    Let (p, x, newxv, newbody)*)
+  | Lambda (p, xs, body) when fixable_sig xs ->
+    begin match max_arity body with
+      | None ->
+        (* 1. make sure the variable arity is not used,like args['length'] *)
+        let _ = dprint (sprintf "max arity is not found in %s\n" (ljs_str body)) in
+        Lambda (p, xs, body) (*XXX: maybe no need to go deeper?*)
+      | Some (n) ->
+        (* 2. fix the arity *)
+        let _ = dprint "fix the arity \n" in
+        let newxs = "this" :: (make_args n) in
+        let newbody = remove_args (fix body) in
+        Lambda (p, newxs, newbody)
+    end
+  | App (p, Id(p0, f), args) ->
+    (* if the function's arity has been fixed, change this call site *)
+    begin match parse_args_obj ~raw_obj:true args with
+      | Some (arg_list) ->
+        App (p, Id(p0, f), arg_list)
+      | None ->
+        let args = List.map fix args in
+        App (p, Id(p0, f), args)
+    end
+  | Seq (p, S.Hint (p1, s, e), e2) when is_env_delimiter s ->
+    (* stop at env-user delimiter *)
+    exp
+  | SetField (p, obj, fld, newval, arg) ->
+    (* Junsong: why fixing this? Wow, really complicated story.
+
+       If makesetter is fixed(which is used in defineGlobalVar),
+       set-property will run code like this
+       
+         {let
+             ($newVal = val)
+             obj[fld = $newVal ,
+                 {[#proto: null, #class: "Object", #extensible: true,]
+                  '0' : {#value ($newVal) ,
+                         #writable true ,
+                         #configurable true}
+
+       now, if we just same
+       defineGlobalVar(context, 'a')
+       set-property(context, 'a', 1)
+
+       'a' now actually {[] '0':{#value 1...}}, instead of 1.
+    *)
+    begin match get_field_values arg with
+      | Some (e) ->
+        SetField (p, obj, fld, newval, List.nth e 0)
+      | None ->
+        exp
+    end
+  | _ -> optimize fix exp
     
 let fix_arity (exp : exp) : exp =
   (* clean formal parameter *)
@@ -107,7 +254,7 @@ let fix_arity (exp : exp) : exp =
         (* clean "arguments" property in context *)
         match exp with
         | Let (p, "%context", xv, body) ->
-          (*let _ = printf "start clean the arguments(if any)\n" in*)
+          (*let _ = dprint "start clean the arguments(if any)\n" in*)
           Let (p, "%context", clean_arguments xv, body)
         | Let (p, x, xv, body) ->
           Let (p, x, xv, clean_arguments body)
@@ -121,8 +268,9 @@ let fix_arity (exp : exp) : exp =
       | _ -> fbody
     in
     match exp with
-    | Lambda (pos, xs, body) when not in_getter && xs = ["%this"; "%args"]->
-      (*let _ = printf "find a non-getter lambda, transform it\n%!" in*)
+    | Lambda (pos, xs, body)
+      when not in_getter && xs = ["%this"; "%args"]->
+      (*let _ = dprint "find a non-getter lambda, transform it\n%!" in*)
       (* take out those Let bindings in function body *)
       let args, new_body = trim_args body in
       (* make a new formal parameter list *)
@@ -131,7 +279,7 @@ let fix_arity (exp : exp) : exp =
       let new_body = clean_args new_body in
       Lambda (pos, new_xs, fix_formal_parameter ~in_getter new_body)
     | Lambda (pos, ["%this"; "%args"], body) when in_getter->
-      (*let _ = printf "find a getter, do not transform the formal argument\n%!" in*)
+      (*let _ = dprint "find a getter, do not transform the formal argument\n%!" in*)
       Lambda (pos, ["%this"; "%args"], fix_formal_parameter ~in_getter:false body)
     | Object (p, attrs, props) ->
       let new_attrs = apply_to_attr fix attrs in
@@ -162,6 +310,17 @@ let fix_arity (exp : exp) : exp =
       end
     | _ -> optimize fix_call_site exp
   in
-  let e1 = fix_formal_parameter exp in
+  let newexp = match get_code_after_delimiter exp with
+    | None ->
+      (* No env present, start *)
+      let _ = dprint "newexp\n" in
+      exp
+    | Some (_) ->
+      (* we have to clean the env first *)
+      let _ = dprint "clean env first\n" in
+      fix_env exp IdMap.empty
+  in
+  let e1 = fix_formal_parameter newexp in
   let e2 = fix_call_site e1 in
   e2
+
