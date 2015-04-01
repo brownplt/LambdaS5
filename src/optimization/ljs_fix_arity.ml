@@ -287,6 +287,9 @@ let fix_arity (exp : exp) : exp =
       let new_attrs = apply_to_attr fix attrs in
       let new_props = List.map
           (fun p -> match p with
+             | (s, Data (data, enum, config)) when s = "get" ->
+               s, Data ({value = fix_formal_parameter ~in_getter:true data.value;
+                         writable=data.writable}, enum, config)
              | (s, Data (data, enum, config)) ->
                s, Data ({value = fix data.value; writable=data.writable}, enum, config)
              | (s, Accessor (acc, enum, config)) ->
