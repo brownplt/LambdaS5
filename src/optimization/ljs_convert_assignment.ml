@@ -504,7 +504,7 @@ let convert_assignment (exp : exp) : exp =
           Seq (p, new_e1, new_e2), used_ids
       end 
 
-    | Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
+    (*| Let (pos, tmp_name, func, SetBang(p1, real_name, Id(p2, tmp_name2)))
       (* this exp is a standalone js function definition *)
       when tmp_name = tmp_name2 ->
       let func, used_ids = convert_rec func env used_ids in
@@ -514,6 +514,7 @@ let convert_assignment (exp : exp) : exp =
              IdSet.remove real_name used_ids
       else 
         Let (pos, real_name, func, Undefined Pos.dummy), used_ids
+    *)
 
     | Let (p, x, x_v, body) ->
       let new_env = IdMap.add x x_v env in

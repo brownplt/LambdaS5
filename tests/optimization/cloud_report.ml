@@ -7,11 +7,10 @@ let analyze_dir = ref ""
 let base_dir = ref ""
 let latex_format = ref false
 
-let sections =
-  let names = ["07"; "08"; "09"; "10"; "11"; "12"; "13"; "14"; "15"] in
-  let nonstrict = List.map (fun (s) -> sprintf "ch%s-nonstrict" s) names in
-  let strict = List.map (fun (s) -> sprintf "ch%s-strict" s) names in
-  List.append strict nonstrict
+let names = ["07"; "08"; "09"; "10"; "11"; "12"; "13"; "14"; "15"]
+let nonstrict = List.map (fun (s) -> sprintf "ch%s-nonstrict" s) names
+let strict = List.map (fun (s) -> sprintf "ch%s-strict" s) names
+let sections = List.append strict nonstrict
 
 let set_analyze cmd (str : string) =
   if is_directory str then
@@ -454,6 +453,9 @@ let performance cmd () =
   let sections = existing_sections () in
   pretty_sec sections
 
+let sum l = List.fold_left (+.) 0. l
+
+  
 let summary cmd (sec : string) =
   let _ = if !analyze_dir = "" then
       raise (Arg.Bad "-set-analyze is required") in
@@ -486,6 +488,44 @@ let list_section_diff cmd (sec : string) =
 let use_latex_format cmd () =
   latex_format := true
 
+let shrink_per_test cmd () =
+  let _ = if !analyze_dir = "" then
+      raise (Arg.Bad "-set-analyze is required") in
+  let calculate (lst : int list) : float =
+    (* given [i1, i2, ...in], calculate (i1-in)/i1 *)
+    let last = (get_last_one lst)
+               |> float_of_int in
+    let fst =  (get_first_one lst)
+               |> float_of_int in
+    ((fst -. last) /. fst) *. 100.0
+  in
+  let sections = List.filter (fun sec ->
+      Sys.file_exists (Filename.concat !analyze_dir sec)) strict in
+  assert (0 <> (List.length sections));
+  let sections_info : (fileinfo_t list) =
+    (* collections of all files *)
+    List.map (fun s->get_section_optinfo s !analyze_dir) sections in
+  let get_shrinkage (hash : fileinfo_t) : (float * float) list = Hashtbl.fold
+      (fun fname optinfo lst ->
+         let env, usr = List.split optinfo in
+         (calculate env, calculate usr) :: lst)
+      hash []
+  in
+  let shrinkage : (float * float) list = List.concat (List.map (fun h->get_shrinkage h) sections_info) in
+  if shrinkage = [] then
+    printf "No file found to calcualte the shrinkage!"
+  else
+    let envlst = List.map (fun (env,_) -> env) shrinkage in
+    let usrlst = List.map (fun (_,usr) -> usr) shrinkage in
+    let total_files = List.length envlst in
+    printf "run through the chapters: ";
+    List.iter (fun s->printf "%s " s) sections;
+    printf "\n";
+    printf "find %d files: average env shrinkage is %.2f\n" total_files
+      ((sum envlst) /. (float_of_int total_files));
+    printf "find %d files: average env shrinkage is %.2f\n" total_files
+      ((sum usrlst) /. (float_of_int total_files))
+
 let strCmd optName func desc =
   (optName, Arg.String (func optName), desc)
 
@@ -505,6 +545,8 @@ let main () : unit =
         "produce optimization performance(measured by AST node shrinkage) results";
       unitCmd "-use-latex-format" use_latex_format
         "if '-summary' is followed, summary is printed as latex tabular";
+      unitCmd "-shrink-per-test" shrink_per_test
+        "shrinkage per test";
       strCmd "-list-section-diff" list_section_diff
         "list files that passed in base directory but failed in analyze directory";
       strCmd "-summary" summary
