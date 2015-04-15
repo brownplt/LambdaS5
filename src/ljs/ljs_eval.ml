@@ -330,7 +330,9 @@ let rec eval desugar exp env (store : store) : (value * store) =
             begin match prop with
               | Some (Data ({value=v;}, _, _)) -> v, store
               | Some (Accessor ({getter=g;},_,_)) ->
-                apply p store g [obj_value; args_value]
+                if g = Undefined
+                then Undefined, store
+                else apply p store g [obj_value; args_value]
               | None -> Undefined, store
             end
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
