@@ -17,14 +17,7 @@ What we ran on (approximate system requirements):
 
 To build S5, you need to build the ocamlgraph library and copy some files to
 the right spot.  All the source is included in this tarball, but you need to
-run the following:
-
-1. cd src/ocamlgraph-1.8.1
-2. ./configure
-3. make
-4. cp graph.cmi graph.cma ../../lib/
-5. cd ..
-6. make
+run the following: opam install ocamlgraph
 
 Before you can run anything, you need to make sure that bin/js is linked to an
 appropriate executable for your OS.  The default is js-1.8.5-Linux-i686, which
