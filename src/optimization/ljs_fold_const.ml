@@ -17,6 +17,24 @@ let fold_const_op1 (p : Pos.t) (op : string) (e : exp) : exp option =
 let fold_const_op2 (p : Pos.t) (op : string) (e1 : exp) (e2 : exp) : exp option = 
   EU.apply_op2 p op e1 e2
 
+let fold_eqeq (e1 : exp) (e2 : exp) : exp option =
+  let to_ans b = match b with
+    | true -> Some (True Pos.dummy)
+    | false -> Some (False Pos.dummy) in
+  match e1, e2 with
+  | Undefined _, Undefined _
+  | Undefined _, Null _
+  | Null _, Undefined _
+  | Null _, Null _ 
+  | True _, True _ 
+  | False _, False _ -> to_ans true
+  | True _, False _
+  | False _, True _ -> to_ans false
+  | Num (_, n1), Num (_, n2) -> to_ans (n1 = n2)
+  | String (_, s1), String (_, s2) -> to_ans (s1 = s2)
+  | _ -> None
+  
+
 let rec fold_app f args : exp option =
   let get_id e = match e with
     | Id (_, id) -> id
@@ -25,6 +43,11 @@ let rec fold_app f args : exp option =
   match get_id f, args with
   | "%PrimAdd", [Num (p, n1); Num (_, n2)] ->
     Some (Num (p, n1 +. n2))
+  | "%PrimAdd", [String (p, s1); String (_, s2)] ->
+    Some (String (p, s1 ^ s2))
+  | "%PrimSub", [Num (p, n1); Num (_, n2)] ->
+    Some (Num (p, n1 -. n2))
+  | "%EqEq", [e1; e2] -> fold_eqeq e1 e2
   | "", _
   | _ -> None
     

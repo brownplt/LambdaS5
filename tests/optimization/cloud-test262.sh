@@ -52,7 +52,7 @@ if [ -z $SGE_TASK_ID ]; then
 
     if [ -z $1 ]; then
         # if no argument is passed in
-        fileindex=598
+        fileindex=879
     elif echo $1 | egrep -q '^[0-9]+$'; then
         # if argument is passed in and the argument is a number
         fileindex=$1
