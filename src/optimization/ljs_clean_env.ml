@@ -141,8 +141,8 @@ let clean_env (exp : exp) : exp =
       let o, used_ids = clean ~in_usr_code obj env used_ids in
       let f, used_ids = clean ~in_usr_code fld env used_ids in
       let a, used_ids = clean ~in_usr_code args env used_ids in
-      let used_ids = match obj, fld with
-        | Id (_, "%context"), String (_, id) -> 
+      let used_ids = match o, f with
+        | Id (_, ctxobj), String (_, id) when EU.is_ctx_obj o || ctxobj = "%this"-> 
           (dprint (sprintf "use point %s\n" id);
            IdSet.add id used_ids)
         | App (_, Id (_, "%PropAccessorCheck"), [Id (_, "%this")]), String (_, fld)
