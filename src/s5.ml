@@ -451,6 +451,23 @@ module S5 = struct
     let new_ljs = fix_arity ljs in
     push_ljs new_ljs
 
+  (* measure function accepts a function that does actual counting (measuring),
+     and output the environment and user measurement, separately.
+  *)
+  let measure cmd (str : string) (count_function : exp -> int) =
+    let ljs = pop_ljs cmd in
+    let total = count_function ljs in
+    let usercode_n = apply_to_user_code ljs count_function in
+    let envn, usern = 
+      if usercode_n = 0 then (* no env delimitor *)
+        0, total - usercode_n
+      else
+        total - usercode_n, usercode_n in
+    begin
+      print_string str; printf ": env(%d);usr(%d)\n" envn usern;
+      push_ljs ljs;
+    end
+
   let count_nodes cmd (str : string) =
     let rec count (e : exp) : int =
       (* shrinkage change the object model, function signature, etc.
@@ -481,19 +498,25 @@ module S5 = struct
       | Lambda (_, xs, body) -> (List.length xs) + (count body)
       | SetBang (_, _, v) -> 1 + (count v)
       | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
-    let ljs = pop_ljs cmd in
-    let total = count ljs in
-    let usercode_n = apply_to_user_code ljs count in
-    let envn, usern = 
-      if usercode_n = 0 then (* no env delimitor *)
-        0, total - usercode_n
-      else
-        total - usercode_n, usercode_n in
-    begin
-      print_string str; printf ": env(%d);usr(%d)\n" envn usern;
-      push_ljs ljs;
-    end
+    measure cmd str count
 
+  let count_max_depth cmd (str : string) =
+    let max_in_list (lst : 'a list) =
+      let rec max_iter m l = match l with
+        | [] -> m
+        | a :: tail ->
+          if a > m then
+            max_iter a tail
+          else
+            max_iter m tail
+      in
+      max_iter 0 lst
+    in
+    let rec count (e : exp) : int =
+      1 + (max_in_list (List.map count (child_exps e)))
+    in
+    measure cmd str count
+    
   let print_user_s5 cmd () =
     match peek cmd with
     | Ljs src ->
@@ -636,7 +659,10 @@ module S5 = struct
         unitCmd "-opt-fix-arity" opt_fix_arity
           "[semantics altering] disable variable function arity";
         strCmd "-count-nodes" count_nodes
-          "count the nodes of S5"
+          "count the nodes of S5";
+        strCmd "-count-max-depth" count_max_depth
+          "count the max depth of the S5 syntax tree"
+          
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"
