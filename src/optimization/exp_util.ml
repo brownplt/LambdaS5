@@ -30,11 +30,17 @@ let exp_to_value (e : S.exp) : V.value =
   | S.False _ -> V.False
   | _ -> raise (ExpValError "exp->value error")
 
+let is_context_id id : bool =
+  match id with
+  | "%context"
+  | "%global"
+  | "%globalContext"
+  | "%strictContext"
+  | "%nonstrictContext" -> true
+  | _ -> false
+
 let is_ctx_obj (e : S.exp) : bool = match e with
-  | S.Id (_, id) ->
-    id = "%global" || id = "%globalContext" ||
-    id = "%strictContext" || id = "nonstrictContext" ||
-    id = "%context"
+  | S.Id (_, id) -> is_context_id id
   | _ -> false
 
 

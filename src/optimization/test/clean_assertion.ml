@@ -69,6 +69,13 @@ let suite =
 
     "test other" >::
     (no_change "let (x = 1) %ToObject(x)");
+
+    "%PropAccessorCheck" >::
+    (no_change "prim('typeof', %PropAccessorCheck(nan))");
+
+    "%PropAccessorCheck" >::
+    (no_change "prim('typeof', %PropAccessorCheck(%this['NaN']))");
+
   ]
 
 let _ =

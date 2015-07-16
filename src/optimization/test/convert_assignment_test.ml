@@ -247,21 +247,14 @@ let suite =
             let (fun2 = foo)
             use(fun2)}"
     );
-    "js function patterns. function is defined but not used" >::
-    (cmp 
+    "js function patterns. A program is a function" >::
+    (no_change
       "let (fobj16 = {let (proto={[]})
                          let (parent=context)
                          let (thisfunc15 = {[#code: func(){1}]}) {
                             proto['constructor' = thisfunc15];
                             thisfunc15}})
-        foo := fobj16"
-      "let (foo = {let (proto={[]})
-                         let (parent=context)
-                         let (thisfunc15 = {[#code: func(){1}]}) {
-                            proto['constructor' = thisfunc15];
-                            thisfunc15}})
-        undefined"
-    );
+        foo := fobj16");
     
     (* a in b's scope is the top-level a *)
     "variable scope" >::

@@ -43,6 +43,32 @@ let suite =
         (no_change "let (r = 1)
                     rec (r = func(t) { r(prim('-',t,1))})
                     r(x)");
+      "%EqEq" >::
+      (cmp "%EqEq(1, 1)" "true");
+      
+      "%EqEq" >::
+      (no_change "%EqEq(1, '1')");
+
+      "%EqEq" >::
+      (cmp "%EqEq('1', '1')" "true");
+
+      "%EqEq" >::
+      (cmp "%EqEq(undefined, null)" "true");
+      
+      "%EqEq" >::
+      (no_change "%EqEq(undefined, 1)");
+
+      "%PrimAdd" >::
+      (cmp "%PrimAdd(1, 2)" "3");
+
+      "%PrimAdd" >::
+      (no_change "%PrimAdd(1, '1')");
+
+      "%PrimSub" >::
+      (cmp "%PrimSub(12, 1)" "11");
+      
+      "%PrimSub" >::
+      (no_change "%PrimSub(12, '1')");
     ]
 
 let _ =
