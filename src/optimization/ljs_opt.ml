@@ -144,3 +144,4 @@ let rec optimize (optimizer : exp->exp) (e : exp) : exp =
      let e = optimizer e in
      Hint (p, id, e)
 
+  | Eval (_, _, _) -> e

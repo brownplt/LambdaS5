@@ -157,6 +157,7 @@ let rec has_side_effect ?(env=IdSet.empty) (e : S.exp) : bool = match e with
   | S.TryFinally (_, _, _)  (* any try..finally is assumed to throw out uncached error *)
   | S.Throw (_,_)
   | S.Hint (_,_,_)
+  | S.Eval (_,_,_)
     -> true
 
 let apply_op1 p (op : string) e : S.exp option =
@@ -435,7 +436,8 @@ let rec no_side_effect_prior_use (x : id) (e : S.exp) : bool =
       | S.Id (_, _)
       | S.Hint (_, _, _) ->
         (* in these cases, e should have no side effect *)
-        failwith "unreachable"
+         failwith "unreachable"
+      | S.Eval (_, _, _) -> true
       | S.Object (_, attrs, props) ->
         (*this says: if attrs has no side effect before x use,
           continue to check attrs; otherwise return false *)

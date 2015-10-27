@@ -169,14 +169,13 @@ module S5 = struct
   let load_env cmd path =
     push_env (Ljs.parse_es5_env (open_in path) path)
 
-  (*let load_internal_env cmd name = match name with
-    | "env-vars" ->
-      push_env (Env_free_vars.vars_env)
-    | _ -> failwith ("Unknown internal environment " ^ name)*)
-
+  (* FIXME(junsong): the internal_env is mainly for nested eval. It
+   * interpolates es5.env IDs into environment, and has a huge negative
+   * impact on constant folding. It should not be used with
+   * optimization flags. I don't know what to do to integrate the two.*)
   let load_internal_env cmd name = match name with
     | "env-vars" ->
-      push_env (Env_free_vars.dummy_env)
+       push_env (Env_free_vars.vars_env)
     | _ -> failwith ("Unknown internal environment " ^ name)
 
   (* Conversion Commands *)
@@ -561,7 +560,8 @@ module S5 = struct
         strCmd "-internal-env" load_internal_env
           ("[env-vars] load an internal environment as S5-env.  " ^
           "Options are currently only env-vars, which sets up the " ^
-          "global environment for nested evals");
+            "global environment for nested evals (this flag shoud " ^
+              "not be used with optimization flags)");
         (* Conversion *)
         unitCmd "-js-to-ejs" js_to_ejs (showType [JsT] [EjsT]);
         unitCmd "-ejs-to-s5" ejs_to_ljs (showType [EjsT] [LjsT]);

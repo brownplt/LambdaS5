@@ -71,7 +71,7 @@ let rec exp_helper exprec e = match e with
   | Seq (p, e1, e2) ->
     vert [squish [exprec e1; text ";"]; exprec e2]
   | Let (p, x, e, body) ->
-    braces (vert [text "let"; vert [parens (horz [text x; text "="; exprec e]);
+    braces (horz [text "let"; vert [parens (horz [text x; text "="; exprec e]);
                                     opt_braces exprec body]])
   | Rec (p, x, e, body) -> 
     horz [text "rec"; vert [parens (horz [text x; text "="; exprec e]);
@@ -89,6 +89,8 @@ let rec exp_helper exprec e = match e with
   | Lambda (p, xs, e) ->
     vert [squish [text "func"; parens (horz (intersperse (text ",") (map text xs)))];
           braces (exprec e)]
+  | Eval (p, s, obj) -> 
+      squish [text "@eval"; parens (horz [exprec s; text ","; exprec obj])]
   | Hint (p, hint, e) ->
       parens (vert [squish [text "/*: "; text hint; text "*/"];
 	                 exprec e])

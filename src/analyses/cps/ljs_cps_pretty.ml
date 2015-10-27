@@ -112,6 +112,8 @@ and exp verbose e =
     label verbose lbl (horz [squish [print_ret verbose r; parens (horz [value x])]])
   | AppExnCont (p,lbl,e, x, l) ->
     label verbose lbl (horz [squish [print_exn verbose e; parens (horz [value x ; text ","; value l])]])
+  | Eval (p,lbl, s) -> 
+    label verbose lbl (squish [text "@eval"; parens (exp s)])
 
 
 and attrsv verbose { proto = p; code = c; extensible = b; klass = k } =

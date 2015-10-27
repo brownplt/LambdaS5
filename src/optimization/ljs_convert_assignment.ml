@@ -565,6 +565,9 @@ let convert_assignment (exp : exp) : exp =
     | Hint (p, id, e) ->
       let new_e, used_ids = convert_rec e env used_ids in
       Hint (p, id, new_e), used_ids
+                             
+    | Eval (_, _, _) -> e, used_ids
+       
 
   in 
   let new_exp, new_ids = convert_rec (arrange_sequence exp) IdMap.empty IdSet.empty in

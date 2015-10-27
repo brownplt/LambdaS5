@@ -520,6 +520,7 @@ let rec restore_id (e : exp) : exp =
     | TryFinally (_,_,_)
     | Throw (_,_)
     | Hint (_,_,_)
+    | Eval (_,_,_)
       -> optimize (fun e->restore_rec ~in_lambda e ctx) e
   in
   let names = get_env_names e in

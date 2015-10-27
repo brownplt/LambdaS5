@@ -1,0 +1,11 @@
+The repo is self contained if you just want to use S5 to desugar and
+evaluate javascript programs.
+
+To run our tests for optimization phases, you need to install ounit
+(2.0+). The easiest way to get the two libraries is to install opam
+and then install libraries using opam. The following instruction
+assumes opam is installed.
+
+$ opam install ounit
+$ cd <LambdaS5-path>/src
+$ make opttest

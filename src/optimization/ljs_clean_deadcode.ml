@@ -232,6 +232,7 @@ let clean_deadcode (exp : exp) : exp =
          Hint (p, id, new_e), ids
        else
          Undefined Pos.dummy, ids
+    | Eval (_, _, _) -> e, ids
 
   in
   let new_exp, new_ids = clean_ids_rec exp IdSet.empty in

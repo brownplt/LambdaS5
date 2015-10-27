@@ -104,7 +104,7 @@ rule token = parse
    | "catch" { CATCH }
    | "finally" { FINALLY }
    | "throw" { THROW }
-   (*| "@eval" { EVAL }*)
+   | "@eval" { EVAL }
    | "===" { EQEQEQUALS }
    | "!==" { BANGEQEQUALS }
    | "typeof" { TYPEOF }

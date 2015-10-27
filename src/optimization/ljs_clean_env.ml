@@ -290,6 +290,8 @@ let clean_env (exp : exp) : exp =
     | Hint (p, id, e) ->
       let new_e, used_ids = clean ~in_usr_code e env used_ids in
       Hint (p, id, new_e), used_ids
+    | Eval (_, _, _) ->
+       e, used_ids
 
   in 
   match EU.get_code_after_delimiter exp with

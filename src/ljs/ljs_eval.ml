@@ -330,7 +330,9 @@ let rec eval desugar exp env (store : store) : (value * store) =
             begin match prop with
               | Some (Data ({value=v;}, _, _)) -> v, store
               | Some (Accessor ({getter=g;},_,_)) ->
-                apply p store g [obj_value; args_value]
+                if g = Undefined
+                then Undefined, store
+                else apply p store g [obj_value; args_value]
               | None -> Undefined, store
             end
           | _ -> failwith ("[interp] Get field didn't get an object and a string at " 
@@ -485,8 +487,9 @@ let rec eval desugar exp env (store : store) : (value * store) =
     end
   | S.TryFinally (p, body, fin) -> begin
       try
-        let (_, store) = eval body env store in
-        eval fin env store
+        let (v, store) = eval body env store in
+        let (_, store') = eval fin env store in
+        (v, store')
       with
         | Throw (t, v, store) ->
           let (_, store) = eval fin env store in
@@ -503,7 +506,7 @@ let rec eval desugar exp env (store : store) : (value * store) =
     let filtered_env =
       IdMap.filter (fun var _ -> IdSet.mem var free_vars) env in
     Closure (filtered_env, xs, e), store
-    (*                             
+  | S.Eval (p, e, bindings) ->
     let evalstr, store = eval e env store in
     let bindobj, store = eval bindings env store in
     begin match evalstr, bindobj with
@@ -513,7 +516,7 @@ let rec eval desugar exp env (store : store) : (value * store) =
         eval expr env store
       | String s, _ -> interp_error p "Non-object given to eval() for env"
       | v, _ -> v, store
-    end*)
+    end
 
 and envstore_of_obj p (_, props) store =
   IdMap.fold (fun id prop (env, store) -> match prop with

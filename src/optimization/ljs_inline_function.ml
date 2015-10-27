@@ -118,6 +118,7 @@ let rec inline_function (e : exp) : exp =
     | TryFinally (_,_,_)
     | Throw (_,_)
     | Hint(_,_,_)
+    | Eval(_,_,_)
       -> optimize (fun x->inlining_rec x env) e
   in 
   inlining_rec e empty_env

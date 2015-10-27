@@ -252,6 +252,7 @@ let propagate_nonconst (exp : exp) : exp =
     | TryFinally (_,_,_)
     | Throw (_,_)
     | Hint (_,_,_)
+    | Eval (_,_,_)
       -> optimize propagate exp
   in
   EU.keep_env_apply_to_user_code exp

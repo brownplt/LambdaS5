@@ -24,7 +24,7 @@ compare: debug
 	$(OCAMLBUILD) sym_compare.d.byte
 
 ######## for optimization ##########
-# since all include path of ocamlbuild should be relative to current directory,
+# since all include paths of ocamlbuild should be relative to current directory,
 # ../ is forbidden in -Is. The simplest way to make and run optimization test is writing
 # targets in this top-level makefile
 TEST_SRC = $(wildcard optimization/test/*.ml)

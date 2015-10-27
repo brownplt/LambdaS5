@@ -102,5 +102,6 @@ let rec propagate_const (e : exp) : exp =
     | TryCatch (_,_,_)
     | TryFinally (_,_,_)
     | Throw (_,_)
-    | Hint (_,_,_) -> optimize propagate e in
+    | Hint (_,_,_)
+    | Eval (_,_,_) -> optimize propagate e in
   propagate_rec e empty_const_pool

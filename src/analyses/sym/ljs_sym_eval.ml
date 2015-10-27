@@ -1125,6 +1125,7 @@ let rec eval jsonPath maxDepth depth exp (envs : Env.stack) (pc : ctx) : results
       | String s -> eval_op s envs jsonPath
       | v -> v
     *)
+    | S.Eval _ -> failwith "[interp] not yet implemented (Eval)"
 
 
 

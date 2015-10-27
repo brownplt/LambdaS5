@@ -77,5 +77,8 @@ let env_var p s =
   if List.mem s ids
   then S.Id (Pos.synth p, s)
   else failwith ("[desugar] Attempted to use unbound id " ^ s ^
-                 " in env_var.  Add it to env_free_vars.ml")
+                   " in env_var.  Add it to env_free_vars.ml")
+                
+(* dummy_env is initially used for replace env_var when flag
+ * -internal-env is used with optimization flags. *)
 let dummy_env exp = S.Seq (Pos.dummy, S.Undefined Pos.dummy, exp)

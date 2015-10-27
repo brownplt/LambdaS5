@@ -119,5 +119,6 @@ let rec fold_const (e : exp) : exp =
   | TryFinally (_,_,_)
   | Throw (_,_)
   | Hint (_,_,_)
+  | Eval (_,_,_)
     -> optimize fold_const e
 

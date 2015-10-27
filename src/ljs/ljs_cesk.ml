@@ -479,6 +479,8 @@ let rec eval_cesk desugar clo store kont i =
     (* S.Eval (pos, str_expr, bindings)
      * Evaluates str_expr with the fields defined in the object
      * bindings added to the environment. *)
+    | C.ExpClos (S.Eval (pos, str, bindings), env), k ->
+      eval (C.ExpClos (str, env)) store (K.Eval (pos, bindings, k))
     | C.ValClos (str_val, env), K.Eval (pos, bindings, k) ->
       eval (C.ExpClos (bindings, env)) store (K.Eval2 (pos, str_val, k))
     | C.ValClos (bind_val, env), K.Eval2 (pos, str_val, k) ->

@@ -35,7 +35,7 @@ let suite =
     fun text_ctx ->
       (if nyi then todo "not implemented"
        else ());
-      let es5env = Ljs.parse_es5_env (open_in "../envs/es5.env") "../envs/es5.env" in
+      let es5env = Ljs.parse_es5_env (open_in "../envs/es5-optimization.env") "../envs/es5-optimization.env" in
       let s5code = desugar jscode in
       let s5expected = desugar expected in
       assert_equal true (eligible_for_restoration s5code)

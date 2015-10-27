@@ -274,6 +274,8 @@ let eval (exp : C.cps_exp) =
       eval_exp body
         bindingEnv' (IdMap.add retArg retAddr cRetEnv) (IdMap.add exnArg exnAddr cExnEnv)
         bindingStore' (Ljs_cps_values.Store.add retAddr ret' retContStore) (Ljs_cps_values.Store.add exnAddr exn' exnContStore)
+    | C.Eval (pos, _, _) ->
+      (Err (V.Undefined(Pos.synth pos, newLabel())), bindingStore, retContStore, exnContStore)
   and eval_val (value : C.cps_value) env bindingStore retEnv retStore exnEnv exnStore : (V.bind_value * Ljs_cps_values.bindingStore * Ljs_cps_values.retContStore * Ljs_cps_values.exnContStore) = match value with
     | C.Id(_, _, id) -> ((Ljs_cps_values.Store.find (IdMap.find id env) bindingStore), bindingStore, retStore, exnStore)
     | C.Null(p,l) -> (V.Null(p,l), bindingStore, retStore, exnStore)
@@ -713,7 +715,7 @@ let build expr =
   | C.AppFun(pos,l, func, ret, exn, args) -> (g, entry)
   | C.AppRetCont(p, l,ret, arg) -> (g, entry)
   | C.AppExnCont(p, l,exn, arg, label) -> (g, entry)
-  in
+  | C.Eval(pos,l, eval) -> (g, entry) in
   fst (build_exp cfg IdMap.empty v expr)
 
 let cpsv_to_string cps_value =
@@ -731,6 +733,7 @@ module Display = struct
   | C.AppFun(pos,l, func, ret, exn, args) -> "App(" ^ (cpsv_to_string func) ^ ")"
   | C.AppRetCont(p, l,ret, arg) -> "Ret()"
   | C.AppExnCont(p, l,exn, arg, label) -> "Exn(" ^ (cpsv_to_string label) ^ ")"
+  | C.Eval(pos,l, eval) -> "Eval"
   let graph_attributes _ = []
   let default_vertex_attributes _ = []
   let vertex_attributes _ = []
