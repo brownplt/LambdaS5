@@ -1,2 +1,40 @@
 Semantics for ECMAScript 5.0
+============================
 
+Install and Usage
+-----------------
+See `INSTALL` for installation instruction.
+
+s5 options are implemented as stack manipulation so the order of
+options matters. Here are a few examples (in `src/` directory, and a
+js file `test.js` exists):
+
+Desugar a Javascript program and print the S5 source.
+
+    $ ./s5.d.byte -desugar test.js -print-src
+
+Desugar a Javascript program, wrap with an Environment and do evaluation.
+
+    $ ./s5.d.byte -desugar test.js -env ../envs/es5.env -apply -eval
+
+Desugar a Javascript program, wrap with an Environment, apply
+optimizations and finally print out the optimized code (excluding the
+environment).
+
+    $ ./s5.d.byte -desugar test.js -env ../envs/es5-optimization.env -apply -opt-restore-id -opt-restore-function -opt-propagate-const -opt-clean-deadcode -print-user-s5
+
+Slimming Language Options
+-------------------------
+
+All optimization options start with "-opt-". There are a few options
+not compatible with the optimization flags:
+
+1. `-internal-env env-vars`. This option introduces identifiers of
+es5.env in the nested environment for `eval`. It has a huge negative
+impact on the constant propagation.
+2. `-env es5.env`. There are several `env` files in env/
+directory. Optimization flags only work on `es5-optimization.env`,
+which is similar to `es5.env`. The only difference is that it excludes
+built-in `eval` support (-opt-restore-id would not work if `es5.env`
+is used). See previous usage examples for how to pass a correct
+environment.

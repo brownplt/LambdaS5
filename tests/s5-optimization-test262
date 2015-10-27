@@ -1,0 +1,20 @@
+#!/bin/bash
+
+TMP=`mktemp -t js.XXXXXX`
+if [ $# -eq 0 ]; then
+  cat>$TMP
+  JSFILE=$TMP
+else
+  JSFILE=$1
+fi
+
+ocamlrun ../obj/s5.d.byte \
+  -desugar $JSFILE \
+  -internal-env env-vars -apply \
+  -env ../envs/es5.env -apply \
+  -opt-const-propagation \
+  -eval-s5
+EX=$?
+rm $TMP
+
+exit $EX

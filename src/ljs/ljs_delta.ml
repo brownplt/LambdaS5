@@ -27,7 +27,7 @@ let typeof store v = str begin match v with
       | ({ code = Some cexp }, _) -> "function"
       | _ -> "object"
   end
-  | Closure _ -> raise (PrimErr ([], str "typeof got lambda"))
+  | Closure _ -> "function" (*raise (PrimErr ([], str "typeof got lambda"))*)
 end
 
 let is_closure store v = match v with
@@ -335,7 +335,7 @@ let base store n r =
     let digit = String.make 1 (List.nth digits (int_of_float index)) in
     if len = 0.0 then result ^ digit
     else convert (b -. (index *. lp)) (result ^ digit)  (len -. 1.0) in
-  let rec shift frac n = if n = 0 then frac else shift (frac *. 10.0) (n - 1) in
+  (*let rec shift frac n = if n = 0 then frac else shift (frac *. 10.0) (n - 1) in*)
   let (f, integ) = modf n in
   (* TODO(joe): shifted is unused *)
   (* let shifted = shift f ((String.length (string_of_float f)) - 2) in *)

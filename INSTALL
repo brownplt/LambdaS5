@@ -13,14 +13,14 @@ What we ran on (approximate system requirements):
   to run on other systems)
 - Ocaml 3.12 or higher (though nothing higher exists as this is written)
 - Python 2.6 or higher (earlier might work, but you need good popen() support)
-- sh, make, etc.
+- sh, make, autoconf, etc.
 
 To build S5, you need to build the ocamlgraph library and copy some files to
 the right spot.  All the source is included in this tarball, but you need to
 run the following:
 
 1. cd src/ocamlgraph-1.8.1
-2. ./configure
+2. autoconf && ./configure
 3. make
 4. cp graph.cmi graph.cma ../../lib/
 5. cd ..

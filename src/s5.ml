@@ -6,6 +6,19 @@ open Ljs_cesk
 open Ljs_syntax
 open Ljs_pretty_html
 open Reachability
+open Ljs_fold_const
+open Ljs_propagate_const
+open Ljs_clean_deadcode
+open Ljs_propagate_nonconst
+open Ljs_inline_function
+open Ljs_restore_id
+open Ljs_clean_env
+open Ljs_clean_assertion
+open Ljs_convert_assignment
+open Ljs_clean_assertion_harsh
+open Ljs_restore_function
+open Ljs_fix_arity
+open Exp_util
 
 type node =
   | Js of Js_syntax.program
@@ -115,7 +128,7 @@ module S5 = struct
 
   let pop_env cmd : Ljs_syntax.exp -> Ljs_syntax.exp =
     match pop cmd with
-    | Env src -> src 
+    | Env src -> src
     | node -> type_error cmd EnvT node
 
   let pop_answer cmd : Ljs_eval.answer =
@@ -156,11 +169,14 @@ module S5 = struct
   let load_env cmd path =
     push_env (Ljs.parse_es5_env (open_in path) path)
 
+  (* FIXME(junsong): the internal_env is mainly for nested eval. It
+   * interpolates es5.env IDs into environment, and has a huge negative
+   * impact on constant folding. It should not be used with
+   * optimization flags. I don't know what to do to integrate the two.*)
   let load_internal_env cmd name = match name with
     | "env-vars" ->
-      push_env (Env_free_vars.vars_env)
+       push_env (Env_free_vars.vars_env)
     | _ -> failwith ("Unknown internal environment " ^ name)
-
 
   (* Conversion Commands *)
 
@@ -363,12 +379,160 @@ module S5 = struct
     Ljs_sym_z3.print_results results
   (* close_in inch; close_out outch *)
 
-  let ljs_sym_eval_raw cmd () = 
+  let ljs_sym_eval_raw cmd () =
     let results = do_sym_eval cmd in
     print_string "RAW RESULTS"; print_newline();
     output_value stdout results;
     print_newline()
 
+  (* optimization command *)
+
+  let opt_fold_const cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = fold_const ljs in
+    push_ljs new_ljs
+    (* print origin one for debug *)
+    (*Ljs_pretty.exp ljs std_formatter;
+    print_newline ()*)
+
+  let opt_propagate_const cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = propagate_const ljs in
+    push_ljs new_ljs
+
+  let opt_clean_deadcode cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = clean_deadcode ljs in
+    push_ljs new_ljs
+
+  let opt_propagate_nonconst cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = propagate_nonconst ljs in
+    push_ljs new_ljs
+
+  let opt_inline_function cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = inline_function ljs in
+    push_ljs new_ljs
+
+  let opt_restore_id cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = restore_id ljs in
+    push_ljs new_ljs
+
+  let opt_clean_env cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = clean_env ljs in
+    push_ljs new_ljs
+
+  let opt_clean_assertion cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = clean_assertion ljs in
+    push_ljs new_ljs
+
+  let opt_convert_assignment cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = convert_assignment ljs in
+    push_ljs new_ljs
+
+  let opt_clean_assertion_harsh cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = clean_assertion_harsh ljs in
+    push_ljs new_ljs
+
+  let opt_restore_function cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = restore_function ljs in
+    push_ljs new_ljs
+
+  let opt_fix_arity cmd () =
+    let ljs = pop_ljs cmd in
+    let new_ljs = fix_arity ljs in
+    push_ljs new_ljs
+
+  (* measure function accepts a function that does actual counting (measuring),
+     and output the environment and user measurement, separately.
+  *)
+  let measure cmd (str : string) (count_function : exp -> int) =
+    let ljs = pop_ljs cmd in
+    let total = count_function ljs in
+    let usercode_n = apply_to_user_code ljs count_function in
+    let envn, usern = 
+      if usercode_n = 0 then (* no env delimitor *)
+        0, total - usercode_n
+      else
+        total - usercode_n, usercode_n in
+    begin
+      print_string str; printf ": env(%d);usr(%d)\n" envn usern;
+      push_ljs ljs;
+    end
+
+  let count_nodes cmd (str : string) =
+    let rec count (e : exp) : int =
+      (* shrinkage change the object model, function signature, etc.
+         Counting must reflect these node *)
+      let data_count {value=x; writable=_} = 1 + (count x) in
+      let acc_count {getter=x; setter=y} = (count x) + (count y) in
+      let prop_count (prop : Ljs_syntax.prop) = match prop with
+        | Ljs_syntax.Data (data, _, _) -> 2 + data_count data
+        | Ljs_syntax.Accessor (acc, _, _) -> 2 + acc_count acc
+      in
+      let prop_list_count props = 
+        List.fold_left (+) 0 (List.map (fun (_, prop) -> 
+                                          1 + (prop_count prop)) props)
+      in
+      let option_count option = match option with
+        | None -> 0
+        | Some x -> count x
+      in
+      let attrs_count attrs = match attrs with
+        | {primval=e1; code=e2; proto=e3;klass=_;extensible=_} ->
+         2 + (option_count e1) + (option_count e2) + (option_count e3)
+      in
+      match e with
+      | Object (_, attrs, props) ->
+        (attrs_count attrs) + (prop_list_count props)
+      | Let (_, _, xv, body) -> 1 + (count xv) + (count body)
+      | Rec (_, _, xv, body) -> 1 + (count xv) + (count body)
+      | Lambda (_, xs, body) -> (List.length xs) + (count body)
+      | SetBang (_, _, v) -> 1 + (count v)
+      | _ -> 1 + (List.fold_left (+) 0 (List.map count (child_exps e))) in
+    measure cmd str count
+
+  let count_max_depth cmd (str : string) =
+    let max_in_list (lst : 'a list) =
+      let rec max_iter m l = match l with
+        | [] -> m
+        | a :: tail ->
+          if a > m then
+            max_iter a tail
+          else
+            max_iter m tail
+      in
+      max_iter 0 lst
+    in
+    let rec count (e : exp) : int =
+      1 + (max_in_list (List.map count (child_exps e)))
+    in
+    measure cmd str count
+    
+  let print_user_s5 cmd () =
+    match peek cmd with
+    | Ljs src ->
+      apply_to_user_code src
+        (fun e ->
+           Ljs_pretty.exp e std_formatter;
+           print_newline ();)
+    | _ -> failwith "print-user-s5 only supports printing s5 code"
+
+  let save_s5 cmd (filename : string) =
+    let ljs = pop_ljs cmd in
+    push_ljs ljs;
+    Marshal.to_channel (open_out_bin filename) ljs []
+
+  let load_s5 cmd (filename : string) =
+    let ljs = Marshal.from_channel (open_in_bin filename) in
+    push_ljs ljs
 
   (* Main *)
 
@@ -396,7 +560,8 @@ module S5 = struct
         strCmd "-internal-env" load_internal_env
           ("[env-vars] load an internal environment as S5-env.  " ^
           "Options are currently only env-vars, which sets up the " ^
-          "global environment for nested evals");
+            "global environment for nested evals (this flag shoud " ^
+              "not be used with optimization flags)");
         (* Conversion *)
         unitCmd "-js-to-ejs" js_to_ejs (showType [JsT] [EjsT]);
         unitCmd "-ejs-to-s5" ejs_to_ljs (showType [EjsT] [LjsT]);
@@ -420,6 +585,8 @@ module S5 = struct
           "print the environment (id to store location mapping)";
         unitCmd "-print-src" print_src
           "pretty-print s5 or exprjs code";
+        unitCmd "-print-user-s5" print_user_s5
+          "pretty-user user code of the s5 code";
         unitCmd "-print-fvs" print_js_fvs
           "print JavaScript free variables";
         unitCmd "-print-heap" print_store
@@ -462,6 +629,40 @@ module S5 = struct
           "evaluate code symbolically";
         unitCmd "-sym-eval-raw" ljs_sym_eval_raw
           "evaluate code symbolically and print raw OCaml results";
+        (* optimization *)
+        strCmd "-save-s5" save_s5
+          "marshal s5 code to file as sequence of bytes";
+        strCmd "-load-s5" load_s5
+          "load s5 from marshalled file that created by -save-s5(use -s5 to load text form of s5 code)";
+        unitCmd "-opt-fold-const" opt_fold_const
+          "perform constant folding on s5";
+        unitCmd "-opt-propagate-const" opt_propagate_const
+          "perform constant propagation on s5";
+        unitCmd "-opt-clean-deadcode" opt_clean_deadcode
+          "clean unused bindings in s5";
+        unitCmd "-opt-propagate-nonconst" opt_propagate_nonconst
+          "propagate single-use functions, objects, and let bindings in s5";
+        unitCmd "-opt-inline-function" opt_inline_function
+          "perform function inlining on s5";
+        unitCmd "-opt-clean-assertion" opt_clean_assertion
+          "clean static checks as much as possible";
+        unitCmd "-opt-convert-assignment" opt_convert_assignment
+          "convert assignment to let bindings when possible";
+        unitCmd "-opt-restore-id" opt_restore_id
+          "[semantics altering] restore JavaScript id in desugared S5";
+        unitCmd "-opt-clean-assertion-harsh" opt_clean_assertion_harsh
+          "[semantics altering] clean all static checks";
+        unitCmd "-opt-restore-function" opt_restore_function
+          "[semantics altering] restore function objects to procedures";
+        unitCmd "-opt-clean-env" opt_clean_env
+          "[semantics altering] clean unused env expression";
+        unitCmd "-opt-fix-arity" opt_fix_arity
+          "[semantics altering] disable variable function arity";
+        strCmd "-count-nodes" count_nodes
+          "count the nodes of S5";
+        strCmd "-count-max-depth" count_max_depth
+          "count the max depth of the S5 syntax tree"
+          
       ]
       (load_ljs "-s5")
       ("Usage: s5 <action> <path> ...\n"
