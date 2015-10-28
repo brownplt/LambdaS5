@@ -1,17 +1,18 @@
 Test262
 =======
 
-As the official Test262 adds new tests now and then. We compressed a tar file
-which contains the snapshot of test262 and the test harness used in the paper.
+As the official Test262 keeps adding new tests, we have compressed a tar file which
+contains a snapshot of test262 and the test harness that are used in the Onward!
+paper (Slimming Languages by Reducing Sugar).
 
-To get test262 used for S5, type:
+To get test262 test suite, type:
 
 $ tar xf test262.tar.gz
 
-All js tests can be found at LambdaS5/tests/test262/test262/test/suite/.
+Then all js tests can be found at <LambdaS5-path>/tests/test262/test262/test/suite/.
 
-All tests in the test suite are modified to add esid in comments. The esid is
-for analyzing testing result.
+All tests in the snapshot are modified to add `esid` in js comments. The esid is for
+analyzing testing result.
 
 There are two suites in the tar file:
  - LambdaS5/tests/test262/test262/test/suite: modified to exclude eval and Function
