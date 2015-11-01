@@ -35,10 +35,10 @@ let rec get_prop p store obj field =
          try Some (IdMap.find field props)
          with Not_found -> get_prop p store pvalue field
       end
-    | _ -> failwith (interp_error p 
+    | _ -> failwith (interp_error p (
            "get_prop on a non-object.  The expression was (get-prop " 
          ^ pretty_value obj 
-         ^ " " ^ field ^ ")")
+         ^ " " ^ field ^ ")"))
 
 let get_obj_attr attrs attr = match attrs, attr with
   | { proto=proto }, S.Proto -> proto
