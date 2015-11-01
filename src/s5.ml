@@ -68,7 +68,7 @@ module S5 = struct
 
   (* Global Options *)
 
-  let jsparser_path = ref "../tests/jsparser.sh"
+  let jsparser_path = ref (Filename.concat (Filename.dirname Sys.executable_name) "../tests/jsparser.sh")
   let stack_trace = ref true
 
   let set_stack_trace (cmdName : string) (on : bool) : unit =

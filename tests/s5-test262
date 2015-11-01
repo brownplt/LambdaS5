@@ -1,5 +1,7 @@
 #!/bin/bash
 
+BASE_PATH=`dirname $0`/..
+
 TMP=`mktemp -t js.XXXXXX`
 if [ $# -eq 0 ]; then
   cat>$TMP
@@ -8,10 +10,10 @@ else
   JSFILE=$1
 fi
 
-ocamlrun ../obj/s5.d.byte \
+ocamlrun $BASE_PATH/obj/s5.d.byte \
   -desugar $JSFILE \
   -internal-env env-vars -apply \
-  -env ../envs/es5.env -apply \
+  -env $BASE_PATH/envs/es5.env -apply \
   -eval-s5
 EX=$?
 rm $TMP
