@@ -1051,7 +1051,7 @@ function testBuiltInObject(obj, isFunction, isConstructor, properties, length) {
 
 function testcase() {
     "use strict";
-    var a = new RegExp();
+    var a = new RegExp("foo");
     try {
         var b = delete RegExp.length;
         console.log('Deleted');

@@ -73,7 +73,7 @@ and accessor =
     {getter : exp;
      setter : exp; }
 and prop =
-  | Data of data * bool * bool
+  | Data of data * bool * bool (* value, enumerable, configurable *)
   | Accessor of accessor * bool * bool
 and attrs =
     { primval : exp option;

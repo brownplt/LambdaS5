@@ -575,7 +575,7 @@ and get_fobj p args body context =
   let proto_prop = S.Data ({ S.value = S.Id (p, proto_id); S.writable = true}, 
                            false, true) in
   let length_prop = S.Data ({ S.value = S.Num (p, (float_of_int param_len)); S.writable = true}, 
-                           false, true) in
+                           false, false) in
   let errorer = F.env_var p "%ThrowTypeError" in
   let errorer_prop = S.Accessor ({ S.getter = errorer; S.setter = errorer },
                                  false, false) in
