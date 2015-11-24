@@ -9,7 +9,6 @@ bin/js
 tests/*.swp
 tests/unit-tests/*.swp
 src/*.swp
-tests/test262/test262/
 tests/test262/results*
 tests/ses/es-lab-read-only/
 tests/sym/harness/*/*.es5.result
