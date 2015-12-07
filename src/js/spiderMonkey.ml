@@ -88,10 +88,13 @@ let rec stmt (v : json_type) : stmt =
       (* NOTE(jpolitz): We simply take the first handler --- multiple 
          handlers are Spidermonkey-specific.  JS only specifies one
          or zero catch blocks. *)
-      (match (list (get "handlers" v)) with
-        | [] -> None
-        | [handler] -> catch handler
-        | _ -> pos_error v "More than one catch handler provided"),
+      (match (try_get "handlers" v) with
+        | None -> catch (get "handler" v) (* New Spidermonkey *)
+        | Some(handlers) ->
+          (match (list handlers) with
+            | [] -> None
+            | [handler] -> catch handler (* Old Spidermonkey *)
+            | _ -> pos_error v "More than one catch handler provided")),
       maybe block (get "finalizer" v))
     | "While" -> While (p, expr (get "test" v), stmt (get "body" v))
     | "DoWhile" -> DoWhile (p, stmt (get "body" v), expr (get "test" v))
@@ -282,4 +285,3 @@ let parse_spidermonkey (cin : in_channel) (name : string) : Js_syntax.program =
                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
                       (Lexing.lexeme lexbuf)))
       | _ -> raise (Failure "Unexpected error in parse_spidermonkey")
-
