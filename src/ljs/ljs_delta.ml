@@ -224,6 +224,15 @@ let arith store s i_op f_op v1 v2 = match v1, v2 with
                                  (pretty_value v1) ^ ", " ^ (pretty_value v2) ^
                                    "perhaps something wasn't desugared fully?")))
 
+let cmp store s f_op undef_left undef_both undef_right v1 v2 = match v1, v2 with
+  | Num x, Num y -> bool (f_op x y)
+  | Undefined, Num _ -> bool undef_left
+  | Undefined, Undefined -> bool undef_both
+  | Num _, Undefined -> bool undef_right
+  | v1, v2 -> raise (PrimErr ([], str ("arithmetic operator: " ^ s ^ " got non-numbers: " ^
+                                 (pretty_value v1) ^ ", " ^ (pretty_value v2) ^
+                                   "perhaps something wasn't desugared fully?")))
+
 let arith_sum store = arith store "+" (+) (+.)
 
 let arith_sub store = arith store "-" (-) (-.)
@@ -237,13 +246,13 @@ with Division_by_zero -> Num infinity
 let arith_mod store x y = try arith store "mod" (mod) mod_float x y
 with Division_by_zero -> Num nan
 
-let arith_lt store x y = bool (x < y)
+let cmp_lt store = cmp store "<" (fun x y -> x < y) true false false
 
-let arith_le store x y = bool (x <= y)
+let cmp_le store = cmp store "<=" (fun x y -> x <= y) true true false
 
-let arith_gt store x y = bool (x > y)
+let cmp_gt store = cmp store ">" (fun x y -> x > y) false false true
 
-let arith_ge store x y = bool (x >= y)
+let cmp_ge store = cmp store ">=" (fun x y -> x >= y) false true true
 
 let bitwise_and store v1 v2 = Num (float_of_int ((to_int v1) land (to_int v2)))
 
@@ -409,10 +418,10 @@ let op2 store op = match op with
   | "<<" -> bitwise_shiftl store
   | ">>" -> bitwise_shiftr store
   | ">>>" -> bitwise_zfshiftr store
-  | "<" -> arith_lt store
-  | "<=" -> arith_le store
-  | ">" -> arith_gt store
-  | ">=" -> arith_ge store
+  | "<" -> cmp_lt store
+  | "<=" -> cmp_le store
+  | ">" -> cmp_gt store
+  | ">=" -> cmp_ge store
   | "stx=" -> stx_eq store
   | "abs=" -> abs_eq store
   | "sameValue" -> same_value store
